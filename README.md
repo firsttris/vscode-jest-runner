@@ -1,63 +1,42 @@
-# jest-runner README
+# vscode-jest-runner
 
-This is the README for your extension "jest-runner". After writing up a brief description, we recommend including the following sections.
+## The Aim
+
+Simple way to run or debug a single (or multiple) tests by right-clicking them.  
+(as it is possible in webstorm)
 
 ## Features
 
-Run your Jest Test by selecting the Test Name, right click and run Jest
+To run your Jest test by right-clicking them....  
+Select a test name, right click it, select "Run Jest" from context menu
+To run a test in Debug Mode select "Debug Jest" from context menu
 
-![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/vscode-jest.gif)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Required to have Jest installed (as project dependency or global)
+
+Required to have a test task/job in your package.json which starts jest
+```json
+"scripts": {
+    "test": "jest"
+}
+```
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: enable/disable this extension
-* `myExtension.thing`: set to `blah` to do something
+TBD
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Possibility to show additional context menu items only while in a test file e.g. test.(js|ts).
+Currently its shown when text is selected, no matter which file.
 
 ## Release Notes
 
 Users appreciate release notes as you update your extension.
 
-### 1.0.0
+### 0.0.1
 
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
------------------------------------------------------------------------------------------------------------
-
-## Working with Markdown
-
-**Note:** You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on OSX or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+CMD+V` on OSX or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux) or `Cmd+Space` (OSX) to see a list of Markdown snippets
-
-### For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Initial release vscode-jest-runner
