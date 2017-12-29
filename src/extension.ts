@@ -12,6 +12,10 @@ export function activate(context: vscode.ExtensionContext) {
   function getLatestTerminal() {
     return terminalStack[terminalStack.length - 1];
   }
+
+  vscode.window.onDidCloseTerminal(() => {
+    terminalStack = [];
+  });
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
   console.log('Congratulations, your extension "jest-runner" is now active!');
@@ -26,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!editor) {
       return; // No open text editor
     }
-
+    
     var selection = editor.selection;
     var text = editor.document.getText(selection);
 
@@ -36,8 +40,6 @@ export function activate(context: vscode.ExtensionContext) {
     const terminal = getLatestTerminal();
     terminal.show();
     terminal.sendText(`yarn test -t '${text}'`);
-
-    vscode.languages.getLanguages().then(l => console.log('languages', l));
   });
 
   let debugJest = vscode.commands.registerCommand("extension.debugJest", () => {
