@@ -2,8 +2,8 @@
 
 ## The Aim
 
-Simple way to run or debug a single (or multiple) tests by right-clicking them.  
-(as it is possible in webstorm)
+Simple way to run or debug a single or multiple test(s) by right-clicking them.  
+(as it is possible in Webstorm)
 
 ## Features
 
