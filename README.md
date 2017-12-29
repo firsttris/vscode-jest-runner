@@ -8,16 +8,15 @@ Simple way to run or debug a single (or multiple) tests by right-clicking them.
 ## Features
 
 To run your Jest test by right-clicking them....  
-Select a test name, right click it, select "Run Jest" from context menu
-To run a test in Debug Mode select "Debug Jest" from context menu
-
+- Select a test name, right click it, select "Run Jest" from context menu 
+- To run a test in Debug Mode select "Debug Jest" from context menu
+    
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Requirements
 
-Required to have Jest installed (as project dependency or global)
-
-Required to have a test task/job in your package.json which starts jest
+- Have [Jest](https://github.com/facebook/jest) installed (as project or global dependency)
+- Have a test task/job in your package.json which starts jest
 ```json
 "scripts": {
     "test": "jest"
@@ -30,7 +29,7 @@ TBD
 
 ## Known Issues
 
-Possibility to show additional context menu items only while in a test file e.g. test.(js|ts).
+Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts).
 Currently its shown when text is selected, no matter which file.
 
 ## Release Notes
