@@ -2,6 +2,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { debug } from 'util';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -14,14 +15,54 @@ export function activate(context: vscode.ExtensionContext) {
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('extension.sayHello', () => {
+    let runJest = vscode.commands.registerCommand('extension.runJest', () => {
         // The code you place here will be executed every time your command is executed
 
+        var editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return; // No open text editor
+        }
+        
+        var selection = editor.selection;
+        var text = editor.document.getText(selection);
+        
         // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
+        // vscode.window.showInformationMessage('Running Test ' + text);
+       // const terminal = vscode.window.createTerminal('jest');
+       // terminal.show();
+       // terminal.sendText("yarn test -t " + text);
+        const config = {
+            "name": "Debug Jest Tests",
+            "type": "node",
+            "request": "launch",
+            "port": 9229,
+            "runtimeArgs": [
+              "--inspect-brk",
+              "${workspaceRoot}/node_modules/jest/bin/jest.js",
+              "--runInBand"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        };
+       vscode.debug.startDebugging(undefined, config);
+
     });
 
-    context.subscriptions.push(disposable);
+    let debugJest = vscode.commands.registerCommand('extension.debugJest', () => {
+        // The code you place here will be executed every time your command is executed
+
+        var editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return; // No open text editor
+        }
+
+        
+
+        //terminal.sendText("asdasdsadsad");
+
+    });
+    context.subscriptions.push(runJest);
+    context.subscriptions.push(debugJest);
 }
 
 // this method is called when your extension is deactivated

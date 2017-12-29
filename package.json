@@ -11,16 +11,33 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "onCommand:extension.runJest"
     ],
     "main": "./out/extension",
     "contributes": {
         "commands": [
             {
-                "command": "extension.sayHello",
-                "title": "Hello World"
+                "command": "extension.runJest",
+                "title": "Run Jest"
+            },
+            {
+                "command": "extension.debugJest",
+                "title": "Debug Jest"
+            }
+        ],
+        "menus": {
+            "editor/context": [{
+                "when": "editorHasSelection",
+                "command": "extension.runJest",
+                "group": "navigation"
+            },
+            {
+                "when": "editorHasSelection",
+                "command": "extension.debugJest",
+                "group": "navigation"
             }
         ]
+        }
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",
