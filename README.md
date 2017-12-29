@@ -15,7 +15,7 @@ To run your Jest test by right-clicking them....
 
 ## Requirements
 
-- Have [Jest](https://github.com/facebook/jest) installed (as project or global dependency)
+- Have [Jest](https://github.com/facebook/jest) installed as project dependency
 - Have a test task/job in your package.json which starts jest
 ```json
 "scripts": {
