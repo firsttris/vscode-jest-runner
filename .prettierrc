@@ -1,0 +1,5 @@
+{
+    "singleQuote": true,
+    "parser": "typescript",
+    "printWidth": 120
+  }

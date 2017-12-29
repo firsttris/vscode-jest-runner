@@ -1,0 +1,9 @@
+{
+  "extends": ["tslint:latest", "tslint-config-prettier", "tslint-plugin-prettier"],
+  "rules": {
+    "prettier": true,
+    "no-implicit-dependencies": false,
+    "no-invalid-template-strings": false,
+    "quotemark": [true, "single"]
+  }
+}
