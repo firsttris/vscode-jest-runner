@@ -1,11 +1,7 @@
 "use strict";
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { debug } from "util";
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
   let terminalStack: vscode.Terminal[] = [];
 
@@ -16,19 +12,12 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.window.onDidCloseTerminal(() => {
     terminalStack = [];
   });
-  // Use the console to output diagnostic information (console.log) and errors (console.error)
-  // This line of code will only be executed once when your extension is activated
-  console.log('Congratulations, your extension "jest-runner" is now active!');
 
-  // The command has been defined in the package.json file
-  // Now provide the implementation of the command with  registerCommand
-  // The commandId parameter must match the command field in package.json
   let runJest = vscode.commands.registerCommand("extension.runJest", () => {
-    // The code you place here will be executed every time your command is executed
 
     var editor = vscode.window.activeTextEditor;
     if (!editor) {
-      return; // No open text editor
+      return;
     }
     
     var selection = editor.selection;
@@ -43,11 +32,10 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   let debugJest = vscode.commands.registerCommand("extension.debugJest", () => {
-    // The code you place here will be executed every time your command is executed
 
     var editor = vscode.window.activeTextEditor;
     if (!editor) {
-      return; // No open text editor
+      return;
     }
 
     var selection = editor.selection;
@@ -58,14 +46,14 @@ export function activate(context: vscode.ExtensionContext) {
       type: "node",
       request: "launch",
       port: 9229,
-      runtimeArgs: [
-        "--inspect-brk",
-        "${workspaceRoot}/node_modules/jest/bin/jest.js",
-        "--runInBand"
-      ],
+      runtimeArgs: [],
       console: "integratedTerminal",
       internalConsoleOptions: "neverOpen"
     };
+    const jestPath = process.platform.includes('win32') ? "${workspaceRoot}/node_modules/jest/bin/jest.js" : "${workspaceRoot}/node_modules/.bin/jest";
+    config.runtimeArgs.push("--inspect-brk");
+    config.runtimeArgs.push(jestPath);
+    config.runtimeArgs.push("--runInBand");
     config.runtimeArgs.push("-t " + text);
     vscode.debug.startDebugging(undefined, config);
   });
@@ -73,5 +61,4 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(debugJest);
 }
 
-// this method is called when your extension is deactivated
 export function deactivate() {}
