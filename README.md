@@ -6,7 +6,7 @@ This is the README for your extension "jest-runner". After writing up a brief de
 
 Run your Jest Test by selecting the Test Name, right click and run Jest
 
-![Extension Example]()
+![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/vscode-jest.gif)
 
 > Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
 
