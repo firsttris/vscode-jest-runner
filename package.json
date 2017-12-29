@@ -12,7 +12,7 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.runJest"
+        "*"
     ],
     "main": "./out/extension",
     "contributes": {

@@ -57,6 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
     config.runtimeArgs.push("-t " + text);
     vscode.debug.startDebugging(undefined, config);
   });
+  
   context.subscriptions.push(runJest);
   context.subscriptions.push(debugJest);
 }
