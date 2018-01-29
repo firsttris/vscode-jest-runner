@@ -9,6 +9,10 @@ export function activate(context: vscode.ExtensionContext) {
     return terminalStack[terminalStack.length - 1];
   }
 
+  function getConfig() {
+    return vscode.workspace.getConfiguration().get('jestrunner.configPath');
+  }
+
   vscode.window.onDidCloseTerminal(() => {
     terminalStack = [];
   });
@@ -19,15 +23,23 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
+    const configuration = getConfig();
     const selection = editor.selection;
     const text = editor.document.getText(selection);
+
+    const jestPath = process.platform.includes('win32') ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
 
     if (terminalStack.length === 0) {
       terminalStack.push(vscode.window.createTerminal('jest'));
     }
+
+    let command = `node ${jestPath} -t '${text}'`;
+    if (configuration) {
+      command += ` --config '${configuration}'`;
+    }
     const terminal = getLatestTerminal();
     terminal.show();
-    terminal.sendText(`yarn test -t '${text}'`);
+    terminal.sendText(command);
   });
 
   const debugJest = vscode.commands.registerCommand('extension.debugJest', () => {
@@ -36,17 +48,18 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
+    const configuration = getConfig();
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
     const config = {
-      name: 'Debug Jest Tests',
-      type: 'node',
-      request: 'launch',
-      port: 9229,
-      runtimeArgs: [],
       console: 'integratedTerminal',
-      internalConsoleOptions: 'neverOpen'
+      internalConsoleOptions: 'neverOpen',
+      name: 'Debug Jest Tests',
+      port: 9229,
+      request: 'launch',
+      runtimeArgs: [],
+      type: 'node'
     };
     const jestPath = process.platform.includes('win32')
       ? '${workspaceRoot}/node_modules/jest/bin/jest.js'
@@ -55,6 +68,9 @@ export function activate(context: vscode.ExtensionContext) {
     config.runtimeArgs.push(jestPath);
     config.runtimeArgs.push('--runInBand');
     config.runtimeArgs.push('-t ' + text);
+    if (configuration) {
+      config.runtimeArgs.push('--config ' + configuration);
+    }
     vscode.debug.startDebugging(undefined, config);
   });
 
