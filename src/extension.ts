@@ -58,19 +58,19 @@ export function activate(context: vscode.ExtensionContext) {
       name: 'Debug Jest Tests',
       port: 9229,
       request: 'launch',
-      runtimeArgs: [],
+      runtimeArgs: '',
       type: 'node'
     };
     const jestPath = process.platform.includes('win32')
       ? '${workspaceRoot}/node_modules/jest/bin/jest.js'
       : '${workspaceRoot}/node_modules/.bin/jest';
-    config.runtimeArgs.push('--inspect-brk');
-    config.runtimeArgs.push(jestPath);
-    config.runtimeArgs.push('--runInBand');
+    config.runtimeArgs += '--inspect-brk ';
+    config.runtimeArgs += jestPath;
+    config.runtimeArgs += ' --runInBand';
     if (configuration) {
-      config.runtimeArgs.push('--config ${workspaceRoot}/' +configuration);
+      config.runtimeArgs += ` --config '${configuration}'` ;
     }
-    config.runtimeArgs.push(`-t ${text}`);
+    config.runtimeArgs += ` -t ${text}`;
     vscode.debug.startDebugging(undefined, config);
   });
 
