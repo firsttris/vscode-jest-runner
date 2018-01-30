@@ -18,7 +18,7 @@ Run your Jest Test's by right-clicking them....
 - Have [Jest](https://github.com/facebook/jest) installed as project dependency
 
 ## Extension Settings
-by default jest is uses the config from package.json
+by default jest uses the config from package.json, if you want to define a external config file use:
 
 - jestrunner.configPath - (optionally) define jest config path
 

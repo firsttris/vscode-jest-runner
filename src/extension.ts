@@ -67,10 +67,10 @@ export function activate(context: vscode.ExtensionContext) {
     config.runtimeArgs.push('--inspect-brk');
     config.runtimeArgs.push(jestPath);
     config.runtimeArgs.push('--runInBand');
-    config.runtimeArgs.push('-t ' + text);
     if (configuration) {
-      config.runtimeArgs.push('--config ' + configuration);
+      config.runtimeArgs.push(`--config ${configuration}`);
     }
+    config.runtimeArgs.push(`-t ${text}`);
     vscode.debug.startDebugging(undefined, config);
   });
 
