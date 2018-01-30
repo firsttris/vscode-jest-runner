@@ -68,7 +68,7 @@ export function activate(context: vscode.ExtensionContext) {
     config.runtimeArgs.push(jestPath);
     config.runtimeArgs.push('--runInBand');
     if (configuration) {
-      config.runtimeArgs.push(`--config ${configuration}`);
+      config.runtimeArgs.push('--config ${workspaceRoot}/' +configuration);
     }
     config.runtimeArgs.push(`-t ${text}`);
     vscode.debug.startDebugging(undefined, config);
