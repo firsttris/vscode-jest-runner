@@ -35,7 +35,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     let command = `node ${jestPath} -t '${text}'`;
     if (configuration) {
-      command += ` --config '${configuration}'`;
+      command += ` -c '${configuration}'`;
     }
     const terminal = getLatestTerminal();
     terminal.show();
@@ -66,9 +66,9 @@ export function activate(context: vscode.ExtensionContext) {
       : '${workspaceRoot}/node_modules/.bin/jest';
     config.runtimeArgs.push('--inspect-brk');
     config.runtimeArgs.push(jestPath);
-    config.runtimeArgs.push('--runInBand');
+    config.runtimeArgs.push('-i');
     if (configuration) {
-      config.runtimeArgs.push(`--config '${configuration}'`);
+      config.runtimeArgs.push(`-c ${configuration}`);
     }
     config.runtimeArgs.push(`-t ${text}`);
     vscode.debug.startDebugging(undefined, config);

@@ -3,7 +3,7 @@
 ## The Aim
 
 Simple way to run or debug a single or multiple test(s) by right-clicking them.  
-(as it is possible in IntelliJ / Webstorm)
+(As it is possible in IntelliJ / Webstorm)
 
 ## Features
 
@@ -18,12 +18,13 @@ Run your Jest Test's by right-clicking them....
 - Have [Jest](https://github.com/facebook/jest) installed as project dependency
 
 ## Extension Settings
-by default jest uses the config from package.json, if you want to define a external config file use:
+By default jest uses the config from package.json with attribut "jest": {}, if you want to define a external config file use
 
-- jestrunner.configPath - (optionally) define jest config path
+- jestrunner.configPath - (optionally) define external jest-config.json path
 
 
 ## Known Issues
 
-Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts).
-Currently its shown when text is selected, no matter which file.
+- Jest Debug throws error if external jest-config.json is defined  
+```Error: Can't find a root directory while resolving a config file path.``` I didn't manage to create a vscode jest debug profile with external jest config file.
+- Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts). Currently its shown when text is selected, no matter which file.
