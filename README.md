@@ -2,7 +2,7 @@
 
 ## The Aim
 
-Simple way to run or debug a single or multiple **Jest-Test(s)** from context menu.  
+Simple way to run or debug a single or multiple **Jest-Tests** from context menu.  
 *As it is possible in IntelliJ / Webstorm*
 
 ## Features
