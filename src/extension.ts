@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
     return terminalStack[terminalStack.length - 1];
   }
 
-  function getJestPath(debugMode: boolean): string {
+  function getJestPath(): string {
     const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
     if (jestPath) {
       return jestPath;
@@ -17,9 +17,6 @@ export function activate(context: vscode.ExtensionContext) {
     const jestDirectoy = process.platform.includes('win32')
       ? 'node_modules/jest/bin/jest.js'
       : 'node_modules/.bin/jest';
-    if (debugMode) {
-      return '${workspaceFolder}/' + jestDirectoy;
-    }
     return jestDirectoy;
   }
 
@@ -41,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
-    const jestPath = getJestPath(false);
+    const jestPath = getJestPath();
 
     if (terminalStack.length === 0) {
       terminalStack.push(vscode.window.createTerminal('jest'));
@@ -71,7 +68,7 @@ export function activate(context: vscode.ExtensionContext) {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
-      program: getJestPath(true),
+      program: '${workspaceFolder}/' + getJestPath(),
       request: 'launch',
       type: 'node'
     };
