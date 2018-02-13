@@ -78,8 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     config.args.push('-i');
     if (configuration) {
-      config.args.push('-c');
-      config.args.push(configuration);
+      config.args.push('--config=' + configuration);
     }
     config.args.push('-t');
     config.args.push(text);
