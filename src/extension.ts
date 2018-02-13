@@ -71,7 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
-      programm: getJestPath(true),
+      program: getJestPath(true),
       request: 'launch',
       type: 'node'
     };
