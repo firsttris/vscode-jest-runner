@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     config.args.push('-i');
     if (configuration) {
-      config.args.push('--config=' + configuration);
+      config.args.push('--config=' + '${workspaceFolder}/' +configuration);
     }
     config.args.push('-t');
     config.args.push(text);
