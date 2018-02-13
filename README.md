@@ -2,29 +2,33 @@
 
 ## The Aim
 
-Simple way to run or debug a single or multiple test(s) by right-clicking them.  
-(As it is possible in IntelliJ / Webstorm)
+Simple way to run or debug a single or multiple **Jest-Test(s)** from context menu.  
+*As it is possible in IntelliJ / Webstorm*
 
 ## Features
 
-Run your Jest Test's by right-clicking them....  
-- Select a test name, right click it, select "Run Jest" from context menu 
-- To run a test in Debug Mode select "Debug Jest" from context menu
+Run your Jest Tests from context-menu  
+- select a test name, right click it, select **Run Jest** from context menu 
+- to run a test in debug mode use **Debug Jest**
     
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Requirements
 
-- Have [Jest](https://github.com/facebook/jest) installed as project dependency
+- Have a valid [Jest](https://github.com/facebook/jest) config
+- Have [Jest](https://github.com/facebook/jest) installed globally or as project dependency
 
 ## Extension Settings
-By default jest uses the config from package.json with attribut "jest": {}, if you want to define a external config file use
+By default **Jest** finds config from `package.json` or if you `module.export = {}` in a `jest.config.js` file.
 
-- jestrunner.configPath - (optionally) define external jest-config.json path
+But if you need to define a external config file use the following config options:
+
+| Command | Description |
+| --- | --- |
+| jestrunner.configPath | Define an external jest-config path to jest (e.g. /user/lib/node_modules/jest/bin/jest.js) |
+| jestrunner.jestPath | Define an absolut path to your jest |
 
 
 ## Known Issues
 
-- Jest Debug throws error if external jest-config.json is defined  
-```Error: Can't find a root directory while resolving a config file path.``` I didn't manage to create a vscode jest debug profile with external jest config file.
 - Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts). Currently its shown when text is selected, no matter which file.

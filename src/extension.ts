@@ -9,7 +9,21 @@ export function activate(context: vscode.ExtensionContext) {
     return terminalStack[terminalStack.length - 1];
   }
 
-  function getConfig() {
+  function getJestPath(debugMode: boolean): string {
+    const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
+    if (jestPath) {
+      return jestPath;
+    }
+    const jestDirectoy = process.platform.includes('win32')
+      ? 'node_modules/jest/bin/jest.js'
+      : 'node_modules/.bin/jest';
+    if (debugMode) {
+      return '${workspaceFolder}/' + jestDirectoy;
+    }
+    return jestDirectoy;
+  }
+
+  function getConfigPath(): string {
     return vscode.workspace.getConfiguration().get('jestrunner.configPath');
   }
 
@@ -23,11 +37,11 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfig();
+    const configuration = getConfigPath();
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
-    const jestPath = process.platform.includes('win32') ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
+    const jestPath = getJestPath(false);
 
     if (terminalStack.length === 0) {
       terminalStack.push(vscode.window.createTerminal('jest'));
@@ -48,29 +62,27 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfig();
+    const configuration = getConfigPath();
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
     const config = {
+      args: [],
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
-      port: 9229,
+      programm: getJestPath(true),
       request: 'launch',
-      runtimeArgs: [],
       type: 'node'
     };
-    const jestPath = process.platform.includes('win32')
-      ? '${workspaceRoot}/node_modules/jest/bin/jest.js'
-      : '${workspaceRoot}/node_modules/.bin/jest';
-    config.runtimeArgs.push('--inspect-brk');
-    config.runtimeArgs.push(jestPath);
-    config.runtimeArgs.push('-i');
+
+    config.args.push('-i');
     if (configuration) {
-      config.runtimeArgs.push(`-c ${configuration}`);
+      config.args.push('-c');
+      config.args.push(configuration);
     }
-    config.runtimeArgs.push(`-t ${text}`);
+    config.args.push('-t');
+    config.args.push(text);
     vscode.debug.startDebugging(undefined, config);
   });
 
