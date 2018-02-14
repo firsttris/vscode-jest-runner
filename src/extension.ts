@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
     return terminalStack[terminalStack.length - 1];
   }
 
-  function getJestPath(): string {
+  function getJestPath(debugMode: boolean): string {
     const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
     if (jestPath) {
       return jestPath;
@@ -17,11 +17,21 @@ export function activate(context: vscode.ExtensionContext) {
     const jestDirectoy = process.platform.includes('win32')
       ? 'node_modules/jest/bin/jest.js'
       : 'node_modules/.bin/jest';
+    if (debugMode) {
+      return '${workspaceFolder}/' + jestDirectoy;
+    }
     return jestDirectoy;
   }
 
-  function getConfigPath(): string {
-    return vscode.workspace.getConfiguration().get('jestrunner.configPath');
+  function getConfigPath(debugMode: boolean): string {
+    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
+    if (!configPath) {
+      return;
+    }
+    if (debugMode) {
+      return '${workspaceFolder}/' + configPath;
+    }
+    return configPath;
   }
 
   vscode.window.onDidCloseTerminal(() => {
@@ -34,11 +44,11 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfigPath();
+    const configuration = getConfigPath(false);
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
-    const jestPath = getJestPath();
+    const jestPath = getJestPath(false);
 
     if (terminalStack.length === 0) {
       terminalStack.push(vscode.window.createTerminal('jest'));
@@ -59,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfigPath();
+    const configuration = getConfigPath(true);
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
@@ -68,14 +78,16 @@ export function activate(context: vscode.ExtensionContext) {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
-      program: '${workspaceFolder}/' + getJestPath(),
       request: 'launch',
       type: 'node'
     };
 
+    config.args.push('--inspect-brk');
+    config.args.push(getJestPath(true));
     config.args.push('-i');
     if (configuration) {
-      config.args.push('--config=' + '${workspaceFolder}/' +configuration);
+      config.args.push('-c');
+      config.args.push(configuration);
     }
     config.args.push('-t');
     config.args.push(text);
