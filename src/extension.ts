@@ -1,4 +1,5 @@
 'use strict';
+import { join } from 'path';
 import { debug } from 'util';
 import * as vscode from 'vscode';
 
@@ -9,7 +10,7 @@ export function activate(context: vscode.ExtensionContext) {
     return terminalStack[terminalStack.length - 1];
   }
 
-  function getJestPath(debugMode: boolean): string {
+  function getJestPath(): string {
     const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
     if (jestPath) {
       return jestPath;
@@ -17,21 +18,15 @@ export function activate(context: vscode.ExtensionContext) {
     const jestDirectoy = process.platform.includes('win32')
       ? 'node_modules/jest/bin/jest.js'
       : 'node_modules/.bin/jest';
-    if (debugMode) {
-      return '${workspaceFolder}/' + jestDirectoy;
-    }
-    return jestDirectoy;
+    return join(vscode.workspace.workspaceFolders[0].uri.path, jestDirectoy);
   }
 
-  function getConfigPath(debugMode: boolean): string {
+  function getConfigPath(): string {
     const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
     if (!configPath) {
       return;
     }
-    if (debugMode) {
-      return '${workspaceFolder}/' + configPath;
-    }
-    return configPath;
+    return join(vscode.workspace.workspaceFolders[0].uri.path, configPath);
   }
 
   vscode.window.onDidCloseTerminal(() => {
@@ -44,11 +39,11 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfigPath(false);
+    const configuration = getConfigPath();
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
-    const jestPath = getJestPath(false);
+    const jestPath = getJestPath();
 
     if (terminalStack.length === 0) {
       terminalStack.push(vscode.window.createTerminal('jest'));
@@ -69,7 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfigPath(true);
+    const configuration = getConfigPath();
     const selection = editor.selection;
     const text = editor.document.getText(selection);
 
@@ -78,12 +73,11 @@ export function activate(context: vscode.ExtensionContext) {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
+      program: getJestPath(),
       request: 'launch',
       type: 'node'
     };
 
-    config.args.push('--inspect-brk');
-    config.args.push(getJestPath(true));
     config.args.push('-i');
     if (configuration) {
       config.args.push('-c');
