@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
     const jestDirectoy = process.platform.includes('win32')
       ? 'node_modules/jest/bin/jest.js'
       : 'node_modules/.bin/jest';
-    return join(vscode.workspace.workspaceFolders[0].uri.path, jestDirectoy);
+    return join(vscode.workspace.workspaceFolders[0].uri.fsPath, jestDirectoy);
   }
 
   function getConfigPath(): string {
@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!configPath) {
       return;
     }
-    return join(vscode.workspace.workspaceFolders[0].uri.path, configPath);
+    return join(vscode.workspace.workspaceFolders[0].uri.fsPath, configPath);
   }
 
   vscode.window.onDidCloseTerminal(() => {
