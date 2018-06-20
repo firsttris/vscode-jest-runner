@@ -1,7 +1,7 @@
 'use strict';
 import { join } from 'path';
-import { debug } from 'util';
 import * as vscode from 'vscode';
+import { parseTestName, platformWin32, quote } from './util';
 
 export function activate(context: vscode.ExtensionContext) {
   let terminalStack: vscode.Terminal[] = [];
@@ -15,9 +15,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (jestPath) {
       return jestPath;
     }
-    const jestDirectoy = process.platform.includes('win32')
-      ? 'node_modules/jest/bin/jest.js'
-      : 'node_modules/.bin/jest';
+    const jestDirectoy = platformWin32() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
     return join(vscode.workspace.workspaceFolders[0].uri.fsPath, jestDirectoy);
   }
 
@@ -33,15 +31,14 @@ export function activate(context: vscode.ExtensionContext) {
     terminalStack = [];
   });
 
-  const runJest = vscode.commands.registerCommand('extension.runJest', () => {
+  const runJest = vscode.commands.registerCommand('extension.runJest', async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
     }
 
     const configuration = getConfigPath();
-    const selection = editor.selection;
-    const text = editor.document.getText(selection);
+    const testName = parseTestName(editor);
 
     const jestPath = getJestPath();
 
@@ -49,24 +46,26 @@ export function activate(context: vscode.ExtensionContext) {
       terminalStack.push(vscode.window.createTerminal('jest'));
     }
 
-    let command = `node ${jestPath} -t '${text}'`;
+    let command = `node ${jestPath} -t ${quote(testName)}`;
     if (configuration) {
-      command += ` -c '${configuration}'`;
+      command += ` -c ${quote(configuration)}`;
     }
+
+    await editor.document.save();
+
     const terminal = getLatestTerminal();
     terminal.show();
     terminal.sendText(command);
   });
 
-  const debugJest = vscode.commands.registerCommand('extension.debugJest', () => {
+  const debugJest = vscode.commands.registerCommand('extension.debugJest', async () => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
     }
 
     const configuration = getConfigPath();
-    const selection = editor.selection;
-    const text = editor.document.getText(selection);
+    const testName = parseTestName(editor);
 
     const config = {
       args: [],
@@ -84,7 +83,10 @@ export function activate(context: vscode.ExtensionContext) {
       config.args.push(configuration);
     }
     config.args.push('-t');
-    config.args.push(text);
+    config.args.push(testName);
+
+    await editor.document.save();
+
     vscode.debug.startDebugging(undefined, config);
   });
 
