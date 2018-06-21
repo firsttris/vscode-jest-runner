@@ -54,12 +54,10 @@
         "menus": {
             "editor/context": [
                 {
-                    "when": "editorHasSelection",
                     "command": "extension.runJest",
                     "group": "navigation"
                 },
                 {
-                    "when": "editorHasSelection",
                     "command": "extension.debugJest",
                     "group": "navigation"
                 }
