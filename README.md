@@ -8,7 +8,7 @@ Simple way to run or debug a single or multiple **Jest-Tests** from context menu
 ## Features
 
 Run your Jest Tests from context-menu  
-- select a test name, right click it, select **Run Jest** from context menu 
+- right click your test and select **Run Jest** from context menu 
 - to run a test in debug mode use **Debug Jest**
     
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
@@ -31,4 +31,4 @@ But if you need to define a external config file use the following config option
 
 ## Known Issues
 
-- Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts). Currently its shown when text is selected, no matter which file.
+- Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
