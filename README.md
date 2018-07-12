@@ -26,7 +26,7 @@ But if you need to define a external config file use the following config option
 | Command | Description |
 | --- | --- |
 | jestrunner.configPath | Define an external jest-config path to jest (from ${workFolder} e.g. jest-config.json) |
-| jestrunner.jestPath | Define an absolut path to jest (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
+| jestrunner.jestPath | Define an absolute path to jest (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
 
 
 ## Known Issues
