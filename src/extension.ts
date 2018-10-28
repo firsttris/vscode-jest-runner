@@ -42,10 +42,6 @@ export function activate(context: vscode.ExtensionContext) {
     const fileName = editor.document.fileName;
     const jestPath = getJestCommand();
 
-    if (terminalStack.length === 0) {
-      terminalStack.push(vscode.window.createTerminal('jest'));
-    }
-
     let command = `${jestPath} ${fileName} -t ${quote(testName)}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
@@ -53,9 +49,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     await editor.document.save();
 
+    if (terminalStack.length === 0) {
+      terminalStack.push(vscode.window.createTerminal('jest'));
+    }
+
     const terminal = getLatestTerminal();
     terminal.show();
-    terminal.sendText('clear');
+    vscode.commands.executeCommand('workbench.action.terminal.clear');
     terminal.sendText(command);
   });
 
