@@ -39,14 +39,14 @@ export function activate(context: vscode.ExtensionContext) {
 
     const configuration = getConfigPath();
     const testName = parseTestName(editor);
-
+    const fileName = editor.document.fileName;
     const jestPath = getJestPath();
 
     if (terminalStack.length === 0) {
       terminalStack.push(vscode.window.createTerminal('jest'));
     }
 
-    let command = `node ${quote(jestPath)} -t ${quote(testName)}`;
+    let command = `node ${quote(jestPath)} ${fileName} -t ${quote(testName)}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
     }
@@ -55,6 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const terminal = getLatestTerminal();
     terminal.show();
+    terminal.sendText('clear');
     terminal.sendText(command);
   });
 
