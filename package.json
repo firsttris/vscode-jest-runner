@@ -32,10 +32,10 @@
                         "description": "Define jest config path (optionally)",
                         "scope": "window"
                     },
-                    "jestrunner.jestPath": {
+                    "jestrunner.jestCommand": {
                         "type": "string",
                         "default": "",
-                        "description": "Define an absolute path to jest (optionally)",
+                        "description": "Define jest command (optionally)",
                         "scope": "window"
                     }
                 }

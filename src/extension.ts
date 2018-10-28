@@ -10,12 +10,12 @@ export function activate(context: vscode.ExtensionContext) {
     return terminalStack[terminalStack.length - 1];
   }
 
-  function getJestPath(): string {
-    const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
-    if (jestPath) {
-      return jestPath;
+  function getJestCommand(): string {
+    const jestCommand: string = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
+    if (jestCommand) {
+      return jestCommand;
     }
-    const jestDirectoy = platformWin32() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
+    const jestDirectoy = platformWin32() ? 'node node_modules/jest/bin/jest.js' : 'node node_modules/.bin/jest';
     return join(vscode.workspace.workspaceFolders[0].uri.fsPath, jestDirectoy);
   }
 
@@ -40,13 +40,13 @@ export function activate(context: vscode.ExtensionContext) {
     const configuration = getConfigPath();
     const testName = parseTestName(editor);
     const fileName = editor.document.fileName;
-    const jestPath = getJestPath();
+    const jestPath = getJestCommand();
 
     if (terminalStack.length === 0) {
       terminalStack.push(vscode.window.createTerminal('jest'));
     }
 
-    let command = `node ${quote(jestPath)} ${fileName} -t ${quote(testName)}`;
+    let command = `${jestPath} ${fileName} -t ${quote(testName)}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
     }
@@ -73,7 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
-      program: getJestPath(),
+      program: getJestCommand(),
       request: 'launch',
       type: 'node'
     };
