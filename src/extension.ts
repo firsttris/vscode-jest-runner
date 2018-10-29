@@ -42,9 +42,13 @@ export function activate(context: vscode.ExtensionContext) {
     const fileName = editor.document.fileName;
     const jestPath = getJestCommand();
 
-    let command = `${jestPath} ${fileName} -t ${quote(testName)}`;
+    let command = `${jestPath} ${fileName}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
+    }
+
+    if (testName !== '') {
+      command += ` -t ${quote(testName)}`;
     }
 
     await editor.document.save();
