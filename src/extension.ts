@@ -46,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
       terminalStack.push(vscode.window.createTerminal('jest'));
     }
 
-    let command = `node ${jestPath} -t ${quote(testName)}`;
+    let command = `node ${quote(jestPath)} -t ${quote(testName)}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
     }
