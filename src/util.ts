@@ -16,7 +16,7 @@ export function quote(s: string): string {
   return [q, s, q].join('');
 }
 
-const TEST_NAME_REGEX = /(describe|it)\(('|"|`)(.*)('|"|`)/;
+const TEST_NAME_REGEX = /(describe|it|test)\(('|"|`)(.*)('|"|`)/;
 
 function unquote(s: string): string {
   if (QUOTES[s[0]]) {

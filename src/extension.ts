@@ -1,21 +1,17 @@
 'use strict';
 import { join } from 'path';
 import * as vscode from 'vscode';
-import { parseTestName, platformWin32, quote } from './util';
+import { parseTestName, quote, platformWin32 } from './util';
 
 export function activate(context: vscode.ExtensionContext) {
-  let terminalStack: vscode.Terminal[] = [];
+  let terminal: vscode.Terminal | null;
 
-  function getLatestTerminal() {
-    return terminalStack[terminalStack.length - 1];
-  }
-
-  function getJestCommand(): string {
-    const jestCommand: string = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
-    if (jestCommand) {
-      return jestCommand;
+  function getJestPath(): string {
+    const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
+    if (jestPath) {
+      return jestPath;
     }
-    const jestDirectoy = platformWin32() ? 'node node_modules/jest/bin/jest.js' : 'node node_modules/.bin/jest';
+    const jestDirectoy = platformWin32() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
     return join(vscode.workspace.workspaceFolders[0].uri.fsPath, jestDirectoy);
   }
 
@@ -28,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   vscode.window.onDidCloseTerminal(() => {
-    terminalStack = [];
+    terminal = null;
   });
 
   const runJest = vscode.commands.registerCommand('extension.runJest', async () => {
@@ -40,9 +36,9 @@ export function activate(context: vscode.ExtensionContext) {
     const configuration = getConfigPath();
     const testName = parseTestName(editor);
     const fileName = editor.document.fileName;
-    const jestPath = getJestCommand();
+    const jestPath = getJestPath();
 
-    let command = `${jestPath} ${fileName}`;
+    let command = `node ${quote(jestPath)} ${quote(fileName)}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
     }
@@ -52,14 +48,11 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     await editor.document.save();
-
-    if (terminalStack.length === 0) {
-      terminalStack.push(vscode.window.createTerminal('jest'));
+    if (!terminal) {
+      terminal = vscode.window.createTerminal('jest');
     }
-
-    const terminal = getLatestTerminal();
     terminal.show();
-    vscode.commands.executeCommand('workbench.action.terminal.clear');
+    await vscode.commands.executeCommand('workbench.action.terminal.clear');
     terminal.sendText(command);
   });
 
@@ -77,18 +70,22 @@ export function activate(context: vscode.ExtensionContext) {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
-      program: getJestCommand(),
+      program: getJestPath(),
       request: 'launch',
       type: 'node'
     };
 
     config.args.push('-i');
+    config.args.push(editor.document.fileName);
     if (configuration) {
       config.args.push('-c');
       config.args.push(configuration);
     }
-    config.args.push('-t');
-    config.args.push(testName);
+
+    if(testName != '') {
+      config.args.push('-t');
+      config.args.push(testName);
+    }
 
     await editor.document.save();
 
