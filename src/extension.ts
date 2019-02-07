@@ -1,14 +1,10 @@
 'use strict';
 import { join } from 'path';
 import * as vscode from 'vscode';
-import { parseTestName, platformWin32, quote } from './util';
+import { parseTestName, quote, platformWin32 } from './util';
 
 export function activate(context: vscode.ExtensionContext) {
-  let terminalStack: vscode.Terminal[] = [];
-
-  function getLatestTerminal() {
-    return terminalStack[terminalStack.length - 1];
-  }
+  let terminal: vscode.Terminal | null;
 
   function getJestPath(): string {
     const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
@@ -28,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   vscode.window.onDidCloseTerminal(() => {
-    terminalStack = [];
+    terminal = null;
   });
 
   const runJest = vscode.commands.registerCommand('extension.runJest', async () => {
@@ -39,22 +35,24 @@ export function activate(context: vscode.ExtensionContext) {
 
     const configuration = getConfigPath();
     const testName = parseTestName(editor);
-
+    const fileName = editor.document.fileName;
     const jestPath = getJestPath();
 
-    if (terminalStack.length === 0) {
-      terminalStack.push(vscode.window.createTerminal('jest'));
-    }
-
-    let command = `node ${quote(jestPath)} -t ${quote(testName)}`;
+    let command = `node ${quote(jestPath)} ${quote(fileName)}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
     }
 
-    await editor.document.save();
+    if (testName !== '') {
+      command += ` -t ${quote(testName)}`;
+    }
 
-    const terminal = getLatestTerminal();
+    await editor.document.save();
+    if (!terminal) {
+      terminal = vscode.window.createTerminal('jest');
+    }
     terminal.show();
+    await vscode.commands.executeCommand('workbench.action.terminal.clear');
     terminal.sendText(command);
   });
 
@@ -78,12 +76,16 @@ export function activate(context: vscode.ExtensionContext) {
     };
 
     config.args.push('-i');
+    config.args.push(editor.document.fileName);
     if (configuration) {
       config.args.push('-c');
       config.args.push(configuration);
     }
-    config.args.push('-t');
-    config.args.push(testName);
+
+    if(testName != '') {
+      config.args.push('-t');
+      config.args.push(testName);
+    }
 
     await editor.document.save();
 

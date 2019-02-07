@@ -35,7 +35,7 @@
                     "jestrunner.jestPath": {
                         "type": "string",
                         "default": "",
-                        "description": "Define an absolute path to jest (optionally)",
+                        "description": "Define jest path (optionally)",
                         "scope": "window"
                     }
                 }
