@@ -1,7 +1,7 @@
 'use strict';
 import { join } from 'path';
 import * as vscode from 'vscode';
-import { parseTestName, quote, platformWin32 } from './util';
+import { parseTestName, platformWin32, quote, slash } from './util';
 
 export function activate(context: vscode.ExtensionContext) {
   let terminal: vscode.Terminal | null;
@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
   function getConfigPath(): string {
     const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
     if (!configPath) {
-      return;
+      return '';
     }
     return join(vscode.workspace.workspaceFolders[0].uri.fsPath, configPath);
   }
@@ -33,10 +33,10 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfigPath();
+    const configuration = slash(getConfigPath());
     const testName = parseTestName(editor);
-    const fileName = editor.document.fileName;
-    const jestPath = getJestPath();
+    const fileName = slash(editor.document.fileName);
+    const jestPath = slash(getJestPath());
 
     let command = `node ${quote(jestPath)} ${quote(fileName)}`;
     if (configuration) {
@@ -62,7 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    const configuration = getConfigPath();
+    const configuration = slash(getConfigPath());
     const testName = parseTestName(editor);
 
     const config = {
@@ -76,13 +76,13 @@ export function activate(context: vscode.ExtensionContext) {
     };
 
     config.args.push('-i');
-    config.args.push(editor.document.fileName);
+    config.args.push(slash(editor.document.fileName));
     if (configuration) {
       config.args.push('-c');
       config.args.push(configuration);
     }
 
-    if(testName != '') {
+    if (testName !== '') {
       config.args.push('-t');
       config.args.push(testName);
     }

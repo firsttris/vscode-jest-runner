@@ -18,6 +18,10 @@ export function quote(s: string): string {
 
 const TEST_NAME_REGEX = /(describe|it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
 
+export function slash(s: string): string {
+  return platformWin32() ? s.replace(/\\/g, '/') : s;
+}
+
 function unquote(s: string): string {
   if (QUOTES[s[0]]) {
     s = s.substring(1);
