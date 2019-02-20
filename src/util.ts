@@ -16,11 +16,11 @@ export function quote(s: string): string {
   return [q, s, q].join('');
 }
 
+const TEST_NAME_REGEX = /(describe|it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
+
 export function slash(s: string): string {
   return platformWin32() ? s.replace(/\\/g, '/') : s;
 }
-
-const TEST_NAME_REGEX = /(describe|it|test)\(('|"|`)(.*)('|"|`)/;
 
 function unquote(s: string): string {
   if (QUOTES[s[0]]) {
@@ -43,7 +43,7 @@ export function parseTestName(editor: vscode.TextEditor) {
     const text = document.getText(new vscode.Range(currentLine, 0, currentLine, 100000));
     const match = TEST_NAME_REGEX.exec(text);
     if (match) {
-      return match[3];
+      return match[2];
     }
   }
   return '';
