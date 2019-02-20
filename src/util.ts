@@ -43,7 +43,7 @@ export function parseTestName(editor: vscode.TextEditor) {
     const text = document.getText(new vscode.Range(currentLine, 0, currentLine, 100000));
     const match = TEST_NAME_REGEX.exec(text);
     if (match) {
-      return match[match.length - 1];
+      return match[3];
     }
   }
   return '';
