@@ -70,7 +70,7 @@
         "watch": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "npm run compile && node ./node_modules/vscode/bin/test",
-        "publish": "vsce publish minor"
+		"publish:patch": "vsce publish patch"
     },
     "devDependencies": {
         "@types/node": "^10.12.18",
