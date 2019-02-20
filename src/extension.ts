@@ -83,8 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     if (testName !== '') {
-      config.args.push('-t');
-      config.args.push(testName);
+      config.args.push(`-t ${testName}`);
     }
 
     await editor.document.save();
