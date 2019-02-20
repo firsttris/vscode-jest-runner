@@ -16,6 +16,10 @@ export function quote(s: string): string {
   return [q, s, q].join('');
 }
 
+export function slash(s: string): string {
+  return platformWin32() ? s.replace(/\\/g, '/') : s;
+}
+
 const TEST_NAME_REGEX = /(describe|it|test)\(('|"|`)(.*)('|"|`)/;
 
 function unquote(s: string): string {
