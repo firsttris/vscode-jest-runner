@@ -47,6 +47,10 @@
                 "title": "Run Jest"
             },
             {
+                "command": "extension.runJestFile",
+                "title": "Run Jest File"
+            },
+            {
                 "command": "extension.debugJest",
                 "title": "Debug Jest"
             }
@@ -55,6 +59,10 @@
             "editor/context": [
                 {
                     "command": "extension.runJest",
+                    "group": "navigation"
+                },
+                {
+                    "command": "extension.runJestFile",
                     "group": "navigation"
                 },
                 {

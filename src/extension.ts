@@ -27,14 +27,14 @@ export function activate(context: vscode.ExtensionContext) {
     terminal = null;
   });
 
-  const runJest = vscode.commands.registerCommand('extension.runJest', async () => {
+  const execRunJest = async ({ useTestName } = { useTestName: true }) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
     }
 
     const configuration = slash(getConfigPath());
-    const testName = parseTestName(editor);
+    const testName = useTestName ? parseTestName(editor) : '';
     const fileName = slash(editor.document.fileName);
     const jestPath = slash(getJestPath());
 
@@ -54,7 +54,13 @@ export function activate(context: vscode.ExtensionContext) {
     terminal.show();
     await vscode.commands.executeCommand('workbench.action.terminal.clear');
     terminal.sendText(command);
-  });
+  };
+
+  const runJestFile = vscode.commands.registerCommand('extension.runJestFile', async () =>
+    execRunJest({ useTestName: false })
+  );
+
+  const runJest = vscode.commands.registerCommand('extension.runJest', async () => execRunJest());
 
   const debugJest = vscode.commands.registerCommand('extension.debugJest', async () => {
     const editor = vscode.window.activeTextEditor;
@@ -93,6 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(runJest);
+  context.subscriptions.push(runJestFile);
   context.subscriptions.push(debugJest);
 }
 
