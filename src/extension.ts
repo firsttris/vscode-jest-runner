@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!editor) {
       return;
     }
-    
+
     const configuration = slash(getConfigPath());
     const testName = parseTestName(editor);
     const fileName = slash(editor.document.fileName);
