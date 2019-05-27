@@ -12,7 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
       return jestPath;
     }
     const editor = vscode.window.activeTextEditor;
-    const editorFolderPath = vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath
+    const editorFolderPath = vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
     const jestDirectoy = platformWin32() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
     return join(editorFolderPath, jestDirectoy);
   }
