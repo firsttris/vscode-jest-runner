@@ -11,8 +11,10 @@ export function activate(context: vscode.ExtensionContext) {
     if (jestPath) {
       return jestPath;
     }
+    const editor = vscode.window.activeTextEditor;
+    const editorFolderPath = vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath
     const jestDirectoy = platformWin32() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
-    return join(vscode.workspace.workspaceFolders[0].uri.fsPath, jestDirectoy);
+    return join(editorFolderPath, jestDirectoy);
   }
 
   function getConfigPath(): string {
@@ -32,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (!editor) {
       return;
     }
-
+    
     const configuration = slash(getConfigPath());
     const testName = parseTestName(editor);
     const fileName = slash(editor.document.fileName);
