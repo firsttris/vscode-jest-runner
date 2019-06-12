@@ -3,6 +3,8 @@ import { join } from 'path';
 import * as vscode from 'vscode';
 import { parseTestName, platformWin32, quote, slash } from './util';
 
+var globalCommand;
+
 export function activate(context: vscode.ExtensionContext) {
   let terminal: vscode.Terminal | null;
 
@@ -29,25 +31,32 @@ export function activate(context: vscode.ExtensionContext) {
     terminal = null;
   });
 
-  const execRunJest = async ({ useTestName } = { useTestName: true }) => {
+  const execRunJest = async ({ useTestName, runPrev } = { useTestName: true, runPrev: false }) => {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
     }
 
-    const configuration = slash(getConfigPath());
-    const testName = useTestName ? parseTestName(editor) : '';
-    const fileName = slash(editor.document.fileName);
-    const jestPath = slash(getJestPath());
+    let command = globalCommand
 
-    let command = `node ${quote(jestPath)} ${quote(fileName)}`;
-    if (configuration) {
-      command += ` -c ${quote(configuration)}`;
+    if (! runPrev) {
+      const configuration = slash(getConfigPath());
+      const testName = useTestName ? parseTestName(editor) : '';
+      const fileName = slash(editor.document.fileName);
+      const jestPath = slash(getJestPath());
+  
+      command = `node ${quote(jestPath)} ${quote(fileName)}`;
+      
+      if (configuration) {
+        command += ` -c ${quote(configuration)}`;
+      }
+
+      if (testName !== '') {
+        command += ` -t ${quote(testName)}`;
+      }
     }
 
-    if (testName !== '') {
-      command += ` -t ${quote(testName)}`;
-    }
+    globalCommand = command
 
     await editor.document.save();
     if (!terminal) {
@@ -59,10 +68,14 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   const runJestFile = vscode.commands.registerCommand('extension.runJestFile', async () =>
-    execRunJest({ useTestName: false })
+    execRunJest({ useTestName: false, runPrev: false })
   );
 
   const runJest = vscode.commands.registerCommand('extension.runJest', async () => execRunJest());
+
+  const runPrev = vscode.commands.registerCommand('extension.runPrevJest', async () => 
+    execRunJest({ useTestName: false, runPrev: true })
+  );
 
   const debugJest = vscode.commands.registerCommand('extension.debugJest', async () => {
     const editor = vscode.window.activeTextEditor;
@@ -103,6 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(runJest);
   context.subscriptions.push(runJestFile);
   context.subscriptions.push(debugJest);
+  context.subscriptions.push(runPrev);
 }
 
 export function deactivate() {
