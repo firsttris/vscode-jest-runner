@@ -3,7 +3,7 @@ import { join } from 'path';
 import * as vscode from 'vscode';
 import { parseTestName, platformWin32, quote, slash } from './util';
 
-var globalCommand;
+let previousCommand;
 
 export function activate(context: vscode.ExtensionContext) {
   let terminal: vscode.Terminal | null;
@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    let command = globalCommand
+    let command = previousCommand
 
     if (! runPrev) {
       const configuration = slash(getConfigPath());
@@ -56,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }
 
-    globalCommand = command
+    previousCommand = command
 
     await editor.document.save();
     if (!terminal) {
