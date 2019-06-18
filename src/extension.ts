@@ -72,6 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const configuration = slash(getConfigPath());
     const testName = parseTestName(editor);
+    const runOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions')
 
     const config = {
       args: [],
@@ -80,7 +81,8 @@ export function activate(context: vscode.ExtensionContext) {
       name: 'Debug Jest Tests',
       program: getJestPath(),
       request: 'launch',
-      type: 'node'
+      type: 'node',
+      ...runOptions
     };
 
     config.args.push('-i');

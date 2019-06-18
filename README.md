@@ -27,6 +27,7 @@ But if you need to define a external config file use the following config option
 | --- | --- |
 | jestrunner.configPath | Define an external jest-config path to jest (from ${workFolder} e.g. jest-config.json) |
 | jestrunner.jestPath | Define an absolute path to jest (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
+| jestrunner.runOptions | Add or overwrite VScode run options in settings.json  (e.g. "jestrunner.runOptions": { "args": ["--no-cache"] }) |
 
 ## Shortcuts
 
