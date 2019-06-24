@@ -43,6 +43,12 @@
                         "default": "",
                         "description": "Define jest path (optionally)",
                         "scope": "window"
+                    },
+                    "jestrunner.runOptions": {
+                        "type": "object",
+                        "default": {},
+                        "description": "Add or overwrite VScode run options (optionally)",
+                        "scope": "window"
                     }
                 }
             }
