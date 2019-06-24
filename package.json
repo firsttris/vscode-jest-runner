@@ -26,6 +26,12 @@
             {
                 "title": "Jest-Runner Config",
                 "properties": {
+                    "jestrunner.jestCommand": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Define jest command (optionally)",
+                        "scope": "window"
+                    },
                     "jestrunner.configPath": {
                         "type": "string",
                         "default": "",
