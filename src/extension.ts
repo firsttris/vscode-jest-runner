@@ -6,6 +6,10 @@ import { parseTestName, platformWin32, quote, slash } from './util';
 export function activate(context: vscode.ExtensionContext) {
   let terminal: vscode.Terminal | null;
 
+  function getJestCommand(): string {
+    return vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
+  }
+
   function getJestPath(): string {
     const jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
     if (jestPath) {
@@ -39,8 +43,9 @@ export function activate(context: vscode.ExtensionContext) {
     const testName = useTestName ? parseTestName(editor) : '';
     const fileName = slash(editor.document.fileName);
     const jestPath = slash(getJestPath());
+    const jestCommand = getJestCommand() || `node ${quote(jestPath)}`;
 
-    let command = `node ${quote(jestPath)} ${quote(fileName)}`;
+    let command = `${jestCommand} ${quote(fileName)}`;
     if (configuration) {
       command += ` -c ${quote(configuration)}`;
     }

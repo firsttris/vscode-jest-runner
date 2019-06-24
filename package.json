@@ -26,6 +26,12 @@
             {
                 "title": "Jest-Runner Config",
                 "properties": {
+                    "jestrunner.jestCommand": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Define jest command (optionally)",
+                        "scope": "window"
+                    },
                     "jestrunner.configPath": {
                         "type": "string",
                         "default": "",
@@ -87,12 +93,12 @@
         "publish": "vsce publish patch"
     },
     "devDependencies": {
-        "@types/node": "^10.12.18",
-        "prettier": "^1.16.0",
-        "tslint": "^5.12.1",
-        "tslint-config-prettier": "^1.17.0",
+        "@types/node": "^12.0.10",
+        "prettier": "^1.18.2",
+        "tslint": "^5.18.0",
+        "tslint-config-prettier": "^1.18.0",
         "tslint-plugin-prettier": "^2.0.1",
-        "typescript": "^3.2.4",
-        "vscode": "^1.1.27"
+        "typescript": "^3.5.2",
+        "vscode": "^1.1.34"
     }
 }
