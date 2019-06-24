@@ -47,4 +47,14 @@ add this:
 
 ## Known Issues
 
+- Breakspoints not working properly, add this to vscode config:
+
+````
+"jestrunner.runOptions": {
+    "args": ["--no-cache"],
+    "sourcemaps": "inline",
+    "disableOptimisticBPs": true,
+}
+````
+
 - Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
