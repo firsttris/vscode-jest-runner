@@ -59,6 +59,10 @@
                 "title": "Run Jest"
             },
             {
+                "command": "extension.runPrevJest",
+                "title": "Run Previous Jest"
+            },
+            {
                 "command": "extension.runJestFile",
                 "title": "Run Jest File"
             },
