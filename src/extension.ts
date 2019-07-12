@@ -104,15 +104,15 @@ export function activate(context: vscode.ExtensionContext) {
     };
 
     config.args.push('-i');
-    config.args.push(slash(editor.document.fileName));
+    config.args.push(quote(slash(editor.document.fileName)));
     if (configuration) {
       config.args.push('-c');
-      config.args.push(configuration);
+      config.args.push(quote(configuration));
     }
 
     if (testName !== '') {
       config.args.push('-t');
-      config.args.push(testName);
+      config.args.push(quote(testName));
     }
 
     await editor.document.save();
