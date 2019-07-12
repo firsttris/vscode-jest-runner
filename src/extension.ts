@@ -112,7 +112,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     if (testName !== '') {
       config.args.push('-t');
-      config.args.push(quote(testName));
+      config.args.push(testName.includes(' ') ? testName : quote(testName));
     }
 
     await editor.document.save();
