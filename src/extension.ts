@@ -90,17 +90,20 @@ export function activate(context: vscode.ExtensionContext) {
 
     const configuration = slash(getConfigPath());
     const testName = parseTestName(editor);
-    const runOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
+    const {
+      args: runArgs,
+      ...restRunOptions
+    } = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
 
     const config: any = {
-      args: [],
+      args: runArgs ? [...runArgs] : [],
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
       program: getJestPath(),
       request: 'launch',
       type: 'node',
-      ...runOptions
+      ...restRunOptions
     };
 
     config.args.push('-i');
