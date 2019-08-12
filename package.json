@@ -75,15 +75,15 @@
             "editor/context": [
                 {
                     "command": "extension.runJest",
-                    "group": "2_jest"
+                    "group": "02_jest"
                 },
                 {
                     "command": "extension.runJestFile",
-                    "group": "2_jest"
+                    "group": "02_jest"
                 },
                 {
                     "command": "extension.debugJest",
-                    "group": "2_jest"
+                    "group": "02_jest"
                 }
             ]
         }
