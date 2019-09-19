@@ -1,12 +1,10 @@
 # vscode-jest-runner
 
 ## The Aim
-
 Simple way to run or debug a single or multiple **Jest-Tests** from context menu.  
 *As it is possible in IntelliJ / Webstorm*
 
 ## Features
-
 Run your Jest Tests from context-menu  
 - right click your test and select **Run Jest** from context menu 
 - to run a test in debug mode use **Debug Jest**
@@ -14,7 +12,6 @@ Run your Jest Tests from context-menu
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Requirements
-
 - Have a valid [Jest](https://github.com/facebook/jest) config
 - Have [Jest](https://github.com/facebook/jest) installed globally or as project dependency
 
@@ -27,11 +24,10 @@ But if you need to define a external config file use the following config option
 | --- | --- |
 | jestrunner.configPath | Define an external jest-config path to jest (from ${workFolder} e.g. jest-config.json) |
 | jestrunner.jestPath | Define an absolute path to jest (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
-| jestrunner.runOptions | Add or overwrite VScode run options in settings.json  (e.g. "jestrunner.runOptions": { "args": ["--no-cache"] }) |
+| jestrunner.runOptions | (only in debug mode) Add or overwrite cmd arugments (run options) to jest (e.g. "jestrunner.runOptions": { "args": ["--no-cache"] }) |
 | jestrunner.jestCommand | Define an alternative Jest command (e.g. for Create React App and similar abstractions) |
 
 ## Shortcuts
-
 click File -> Preferences -> Keyboard Shortcuts -> "{}" (top right)
 the json config file will open
 add this:
@@ -47,7 +43,7 @@ add this:
 ````
 
 ## Known Issues
-
+- Windows Users have to use Powershell
 - Breakspoints not working properly, add this to vscode config:
 
 ````
@@ -58,4 +54,8 @@ add this:
 }
 ````
 
-- Possibility to show the additional context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
+## Want to start contributing features?
+Here are some requested features:
+- For Windows always default to Powershell for running tests.
+- Ability to pass command line arguments to Jest. (already implemented for Debug, missing for Run)
+- Show vscode-jest-runner context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
