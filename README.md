@@ -1,5 +1,8 @@
 # vscode-jest-runner
 
+## Visual Studio Code Marketplace
+[firsttris.vscode-jest-runner](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+
 ## The Aim
 Simple way to run or debug a single or multiple **Jest-Tests** from context menu.  
 *As it is possible in IntelliJ / Webstorm*
