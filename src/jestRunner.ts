@@ -73,21 +73,16 @@ export class JestRunner {
 
         await editor.document.save();
 
-        const {
-            args: debugOptionsArgs,
-            ...restDebugOptions
-        } = this.config.debugOptions;
-
         const config: vscode.DebugConfiguration = {
-            args: debugOptionsArgs ? [...debugOptionsArgs] : [],
             console: 'integratedTerminal',
             internalConsoleOptions: 'neverOpen',
             name: 'Debug Jest Tests',
             program: this.config.jestBinPath,            
             request: 'launch',
             type: 'node',
-            ...restDebugOptions
+            ...this.config.debugOptions
         };
+        config.args = config.args ? config.args.slice() : [];
 
         const filePath = editor.document.fileName;
         const testName = this.findCurrentTestName(editor);

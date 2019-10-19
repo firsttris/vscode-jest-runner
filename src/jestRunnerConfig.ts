@@ -2,10 +2,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { quote, normalizePath, isWindows } from './util';
 
-export interface DebugOptions {
-    args?: string[];
-}
-
 export class JestRunnerConfig {
 
     /**
@@ -50,7 +46,7 @@ export class JestRunnerConfig {
         return normalizePath(configPath);
     }
 
-    public get debugOptions(): DebugOptions {
+    public get debugOptions(): Partial<vscode.DebugConfiguration> {
 
         // legacy
         let debugOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
