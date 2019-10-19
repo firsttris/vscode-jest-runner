@@ -2,7 +2,7 @@
     "name": "vscode-jest-runner",
     "displayName": "Jest Runner",
     "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
-    "version": "0.3.11",
+    "version": "0.4.0",
     "publisher": "firsttris",
     "author": "Tristan Teufel",
     "repository": {
@@ -26,28 +26,28 @@
             {
                 "title": "Jest-Runner Config",
                 "properties": {
-                    "jestrunner.jestCommand": {
-                        "type": "string",
-                        "default": "",
-                        "description": "Define jest command (optionally)",
-                        "scope": "window"
-                    },
                     "jestrunner.configPath": {
                         "type": "string",
                         "default": "",
-                        "description": "Define jest config path (optionally)",
+                        "description": "Jest config path (relative to ${workFolder} e.g. jest-config.json)",
                         "scope": "window"
                     },
                     "jestrunner.jestPath": {
                         "type": "string",
                         "default": "",
-                        "description": "Define jest path (optionally)",
+                        "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
                         "scope": "window"
                     },
-                    "jestrunner.runOptions": {
+                    "jestrunner.debugOptions": {
                         "type": "object",
                         "default": {},
-                        "description": "Add or overwrite VScode run options (optionally)",
+                        "description": "Add or overwrite vscode debug configurations (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
+                        "scope": "window"
+                    },
+                    "jestrunner.jestCommand": {
+                        "type": "string",
+                        "default": "",
+                        "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
                         "scope": "window"
                     }
                 }
@@ -56,7 +56,7 @@
         "commands": [
             {
                 "command": "extension.runJest",
-                "title": "Run Jest"
+                "title": "🃏 Run Jest"
             },
             {
                 "command": "extension.runPrevJest",

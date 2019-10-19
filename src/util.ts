@@ -1,4 +1,11 @@
-import * as vscode from 'vscode';
+
+export function isWindows(): boolean {
+  return process.platform.includes('win32');
+}
+
+export function normalizePath(path: string): string {
+  return isWindows() ? path.replace(/\\/g, '/') : path;
+}
 
 const QUOTES = {
   '"': true,
@@ -7,22 +14,12 @@ const QUOTES = {
   '`': true
 };
 
-export function platformWin32(): boolean {
-  return process.platform.includes('win32');
-}
-
 export function quote(s: string): string {
-  const q = platformWin32() ? '"' : `'`;
+  const q = isWindows() ? '"' : `'`;
   return [q, s, q].join('');
 }
 
-const TEST_NAME_REGEX = /(describe|it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
-
-export function slash(s: string): string {
-  return platformWin32() ? s.replace(/\\/g, '/') : s;
-}
-
-function unquote(s: string): string {
+export function unquote(s: string): string {
   if (QUOTES[s[0]]) {
     s = s.substring(1);
   }
@@ -34,17 +31,6 @@ function unquote(s: string): string {
   return s;
 }
 
-export function parseTestName(editor: vscode.TextEditor) {
-  const { selection, document } = editor;
-  if (!selection.isEmpty) {
-    return unquote(document.getText(selection));
-  }
-  for (let currentLine = selection.active.line; currentLine >= 0; currentLine--) {
-    const text = document.getText(new vscode.Range(currentLine, 0, currentLine, 100000));
-    const match = TEST_NAME_REGEX.exec(text);
-    if (match) {
-      return unquote(match[2]);
-    }
-  }
-  return '';
+export function pushMany<T>(arr: T[], items: T[]): number {
+  return Array.prototype.push.apply(arr, items);
 }
