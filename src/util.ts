@@ -1,4 +1,3 @@
-
 export function isWindows(): boolean {
   return process.platform.includes('win32');
 }

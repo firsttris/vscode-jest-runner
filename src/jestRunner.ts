@@ -1,161 +1,157 @@
 import * as vscode from 'vscode';
-import { quote, normalizePath, unquote, pushMany } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
+import { normalizePath, pushMany, quote, unquote } from './util';
 
 export class JestRunner {
+  private static readonly TEST_NAME_REGEX = /(describe|it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
 
-    private static readonly TEST_NAME_REGEX = /(describe|it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
+  private previousCommand: string;
 
-    private previousCommand: string;
+  private terminal: vscode.Terminal;
 
-    private terminal: vscode.Terminal;
+  private readonly config = new JestRunnerConfig();
 
-    private readonly config = new JestRunnerConfig();
+  constructor() {
+    this.setup();
+  }
 
-    constructor() {
-        this.setup();
+  //
+  // public methods
+  //
+
+  public async runCurrentTest() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
     }
 
-    //
-    // public methods
-    //
+    await editor.document.save();
 
-    public async runCurrentTest() {
+    const filePath = editor.document.fileName;
+    const testName = this.findCurrentTestName(editor);
+    const command = this.buildJestCommand(filePath, testName);
 
-        const editor = vscode.window.activeTextEditor;
-        if (!editor)
-            return;
+    this.previousCommand = command;
 
-        await editor.document.save();
+    await this.runTerminalCommand(command);
+  }
 
-        const filePath = editor.document.fileName;
-        const testName = this.findCurrentTestName(editor);
-        const command = this.buildJestCommand(filePath, testName);
-
-        this.previousCommand = command
-
-        await this.runTerminalCommand(command);
+  public async runCurrentFile() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
     }
 
-    public async runCurrentFile() {
+    await editor.document.save();
 
-        const editor = vscode.window.activeTextEditor;
-        if (!editor)
-            return;
+    const filePath = editor.document.fileName;
+    const command = this.buildJestCommand(filePath);
 
-        await editor.document.save();
+    this.previousCommand = command;
 
-        const filePath = editor.document.fileName;
-        const command = this.buildJestCommand(filePath);
+    await this.runTerminalCommand(command);
+  }
 
-        this.previousCommand = command
-
-        await this.runTerminalCommand(command);
+  public async runPreviousTest() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
     }
 
-    public async runPreviousTest() {
+    await editor.document.save();
 
-        const editor = vscode.window.activeTextEditor;
-        if (!editor)
-            return;
+    await this.runTerminalCommand(this.previousCommand);
+  }
 
-        await editor.document.save();
-
-        await this.runTerminalCommand(this.previousCommand);
+  public async debugCurrentTest() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
     }
 
-    public async debugCurrentTest() {
+    await editor.document.save();
 
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            return;
-        }
+    const config: vscode.DebugConfiguration = {
+      console: 'integratedTerminal',
+      internalConsoleOptions: 'neverOpen',
+      name: 'Debug Jest Tests',
+      program: this.config.jestBinPath,
+      request: 'launch',
+      type: 'node',
+      ...this.config.debugOptions
+    };
+    config.args = config.args ? config.args.slice() : [];
 
-        await editor.document.save();
+    const filePath = editor.document.fileName;
+    const testName = this.findCurrentTestName(editor);
 
-        const config: vscode.DebugConfiguration = {
-            console: 'integratedTerminal',
-            internalConsoleOptions: 'neverOpen',
-            name: 'Debug Jest Tests',
-            program: this.config.jestBinPath,            
-            request: 'launch',
-            type: 'node',
-            ...this.config.debugOptions
-        };
-        config.args = config.args ? config.args.slice() : [];
+    const standardArgs = this.buildJestArgs(filePath, testName, false);
+    pushMany(config.args, standardArgs);
 
-        const filePath = editor.document.fileName;
-        const testName = this.findCurrentTestName(editor);
+    config.args.push('--runInBand');
 
-        const standardArgs = this.buildJestArgs(filePath, testName, false);
-        pushMany(config.args, standardArgs);
+    vscode.debug.startDebugging(undefined, config);
+  }
 
-        config.args.push('--runInBand');                
+  //
+  // private methods
+  //
 
-        vscode.debug.startDebugging(undefined, config);
+  private findCurrentTestName(editor: vscode.TextEditor): string {
+    // from selection
+    const { selection, document } = editor;
+    if (!selection.isEmpty) {
+      return unquote(document.getText(selection));
     }
 
-    //
-    // private methods
-    //
-
-    private findCurrentTestName(editor: vscode.TextEditor): string {
-
-        // from selection
-        const { selection, document } = editor;
-        if (!selection.isEmpty) {
-            return unquote(document.getText(selection));
-        }
-
-        // from cursor position
-        for (let currentLine = selection.active.line; currentLine >= 0; currentLine--) {
-            const text = document.getText(new vscode.Range(currentLine, 0, currentLine, 100000));
-            const match = JestRunner.TEST_NAME_REGEX.exec(text);
-            if (match) {
-                return unquote(match[2]);
-            }
-        }
-
-        return '';
-    }    
-
-    private buildJestCommand(filePath: string, testName?: string): string {
-        const args = this.buildJestArgs(filePath, testName, true);
-        return `${this.config.jestCommand} ${args.join(' ')}`;
+    // from cursor position
+    for (let currentLine = selection.active.line; currentLine >= 0; currentLine--) {
+      const text = document.getText(new vscode.Range(currentLine, 0, currentLine, 100000));
+      const match = JestRunner.TEST_NAME_REGEX.exec(text);
+      if (match) {
+        return unquote(match[2]);
+      }
     }
 
-    private buildJestArgs(filePath: string, testName: string, withQuotes: boolean): string[] {
+    return '';
+  }
 
-        const args: string[] = [];
-        const quoter = withQuotes ? quote : str => str;
+  private buildJestCommand(filePath: string, testName?: string): string {
+    const args = this.buildJestArgs(filePath, testName, true);
+    return `${this.config.jestCommand} ${args.join(' ')}`;
+  }
 
-        args.push(quoter(normalizePath(filePath)));
+  private buildJestArgs(filePath: string, testName: string, withQuotes: boolean): string[] {
+    const args: string[] = [];
+    const quoter = withQuotes ? quote : str => str;
 
-        if (this.config.jestConfigPath) {
-            args.push('-c');
-            args.push(quoter(normalizePath(this.config.jestConfigPath)));
-        }
+    args.push(quoter(normalizePath(filePath)));
 
-        if (testName) {
-            args.push('-t');
-            args.push(quoter(testName));
-        }
-
-        return args;
+    if (this.config.jestConfigPath) {
+      args.push('-c');
+      args.push(quoter(normalizePath(this.config.jestConfigPath)));
     }
 
-    private async runTerminalCommand(command: string) {
-        if (!this.terminal) {
-            this.terminal = vscode.window.createTerminal('jest');
-        }
-        this.terminal.show();
-        await vscode.commands.executeCommand('workbench.action.terminal.clear');
-        this.terminal.sendText(command);
+    if (testName) {
+      args.push('-t');
+      args.push(quoter(testName));
     }
 
-    private setup() {
-        vscode.window.onDidCloseTerminal(() => {
-            this.terminal = null;
-        });
+    return args;
+  }
+
+  private async runTerminalCommand(command: string) {
+    if (!this.terminal) {
+      this.terminal = vscode.window.createTerminal('jest');
     }
+    this.terminal.show();
+    await vscode.commands.executeCommand('workbench.action.terminal.clear');
+    this.terminal.sendText(command);
+  }
+
+  private setup() {
+    vscode.window.onDidCloseTerminal(() => {
+      this.terminal = null;
+    });
+  }
 }

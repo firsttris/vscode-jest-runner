@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import { JestRunner } from './jestRunner';
 
 export function activate(context: vscode.ExtensionContext) {
-
   const jestRunner = new JestRunner();
 
   const runJest = vscode.commands.registerCommand('extension.runJest', async () => jestRunner.runCurrentTest());
