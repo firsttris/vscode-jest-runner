@@ -2,7 +2,7 @@
 
 ## Visual Studio Code Marketplace
 
-[firsttris.vscode-jest-runner](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[Go to Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 
 ## The Aim
 
@@ -15,6 +15,7 @@ Run your Jest Tests from context-menu
 
 - right click your test and select **Run Jest** from context menu
 - to run a test in debug mode use **Debug Jest**
+- run previous test from command palette (strg+shift+p)
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
@@ -27,7 +28,8 @@ Run your Jest Tests from context-menu
 
 By default **Jest** finds config from `package.json` or if you `module.export = {}` in a `jest.config.js` file.
 
-Jest Runner should work out of the box in most cases. In case needed you can configure it using the following options:
+Jest Runner will work out of the box, with a valid Jest config.   
+If you have a custom setup use the following options to configure Jest Runner:
 
 | Command | Description |
 | --- | --- |
@@ -53,22 +55,23 @@ add this:
 },
 ```
 
-## Known Issues
+## Want to start contributing features?
 
-- Breakspoints not working properly, add this to vscode config:
+Some open topics get you started:
+
+- [Test cases with overlapping names are run accidentally](https://github.com/firsttris/vscode-jest-runner/issues/40)
+- Add Command to update a single snapshot test
+- Ability to pass command line arguments to Jest (already implemented jestrunner.debugOptions, need the same for run with jestrunner.runOptions).
+- Show vscode-jest-runner context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
+
+## Notes
+
+- If Breakspoints are not working properly, try adding this to vscode config:
 
 ```javascript
-"jestrunner.runOptions": {
+"jestrunner.debugOptions": {
     "args": ["--no-cache"],
     "sourcemaps": "inline",
     "disableOptimisticBPs": true,
 }
 ```
-
-## Want to start contributing features?
-
-Here are some requested features:
-
-- For Windows always default to Powershell for running tests.
-- Ability to pass command line arguments to Jest (already implemented for Debug, missing for Run).
-- Show vscode-jest-runner context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
