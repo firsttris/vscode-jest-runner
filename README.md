@@ -26,8 +26,6 @@ Run your Jest Tests from context-menu
 
 ## Extension Settings
 
-By default **Jest** finds config from `package.json` or if you `module.export = {}` in a `jest.config.js` file.
-
 Jest Runner will work out of the box, with a valid Jest config.   
 If you have a custom setup use the following options to configure Jest Runner:
 
@@ -65,6 +63,9 @@ Some open topics get you started:
 - Show vscode-jest-runner context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
 
 ## Notes
+
+- By default **Jest** finds its config from the `"jest"` attribute in your `package.json` or if you export an object `module.export = {}` in a `jest.config.js` file in your project root directory.   
+Read More: [Configuring Jest Docs](https://jestjs.io/docs/en/configuration)
 
 - If Breakspoints are not working properly, try adding this to vscode config:
 
