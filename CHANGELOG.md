@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.4.2 - 2017-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.2)
+ 
+### Changed 
+
+- Extended Readme.
+
 ## [0.4.0 - 2017-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.0)
 
 ### Added
