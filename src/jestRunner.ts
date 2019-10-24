@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
-import { normalizePath, pushMany, quote, unquote } from './util';
+import { exactRegexMatch, normalizePath, pushMany, quote, unquote } from './util';
 
 export class JestRunner {
   private static readonly TEST_NAME_REGEX = /(describe|it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
@@ -134,7 +134,7 @@ export class JestRunner {
 
     if (testName) {
       args.push('-t');
-      args.push(quoter(testName));
+      args.push(quoter(exactRegexMatch(testName)));
     }
 
     return args;

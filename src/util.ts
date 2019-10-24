@@ -30,6 +30,10 @@ export function unquote(s: string): string {
   return s;
 }
 
+export function exactRegexMatch(s: string): string {
+  return ["^", s, "$"].join('');
+} 
+
 export function pushMany<T>(arr: T[], items: T[]): number {
   return Array.prototype.push.apply(arr, items);
 }
