@@ -34,8 +34,8 @@ If you have a custom setup use the following options to configure Jest Runner:
 | --- | --- |
 | jestrunner.configPath | Jest config path (relative to ${workFolder} e.g. jest-config.json) |
 | jestrunner.jestPath | Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
-| jestrunner.debugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. "jestrunner.debugOptions": { "args": ["--no-cache"] }) |
-| jestrunner.runOptions | Add CLI Options to the Jest Command e.g. --coverage https://jestjs.io/docs/en/cli |
+| jestrunner.debugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"jestrunner.debugOptions": { "args": ["--no-cache"] }`) |
+| jestrunner.runOptions | Add CLI Options to the Jest Command (e.g. `"jestrunner.runOptions": ["--coverage", "--colors"]`) https://jestjs.io/docs/en/cli |
 | jestrunner.jestCommand | Define an alternative Jest command (e.g. for Create React App and similar abstractions) |
 
 ## Shortcuts
