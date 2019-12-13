@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.4.3 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.2)
+
+- Fixed Support for VSCode Workspaces for Run and Debug Mode
+
 ## [0.4.2 - 2017-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.2)
  
 ### Changed 

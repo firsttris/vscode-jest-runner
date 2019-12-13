@@ -90,7 +90,7 @@ export class JestRunner {
 
     config.args.push('--runInBand');
 
-    vscode.debug.startDebugging(undefined, config);
+    vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(editor.document.uri), config);
   }
 
   //
@@ -118,7 +118,7 @@ export class JestRunner {
 
   private buildJestCommand(filePath: string, testName?: string): string {
     const args = this.buildJestArgs(filePath, testName, true);
-    return `${this.config.jestCommand} ${args.join(' ')}`;
+    return `cd ${quote(this.config.currentWorkspaceFolderPath)}; ${this.config.jestCommand} ${args.join(' ')}`;
   }
 
   private buildJestArgs(filePath: string, testName: string, withQuotes: boolean): string[] {

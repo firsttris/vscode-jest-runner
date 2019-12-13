@@ -26,11 +26,14 @@ export class JestRunnerConfig {
     }
 
     // default
-    const editor = vscode.window.activeTextEditor;
-    const editorFolderPath = vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
     const relativeJestBin = isWindows() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
-    jestPath = path.join(editorFolderPath, relativeJestBin);
+    jestPath = path.join(this.currentWorkspaceFolderPath, relativeJestBin);
     return normalizePath(jestPath);
+  }
+
+  public get currentWorkspaceFolderPath() {
+    const editor = vscode.window.activeTextEditor;
+    return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
   }
 
   public get jestConfigPath(): string {
@@ -41,7 +44,7 @@ export class JestRunnerConfig {
     }
 
     // default
-    configPath = path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, configPath);
+    configPath = path.join(this.currentWorkspaceFolderPath, configPath);
     return normalizePath(configPath);
   }
 
