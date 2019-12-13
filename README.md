@@ -55,12 +55,7 @@ add this:
 
 ## Want to start contributing features?
 
-Some open topics get you started:
-
-- [Test cases with overlapping names are run accidentally](https://github.com/firsttris/vscode-jest-runner/issues/40)
-- Add Command to update a single snapshot test
-- Ability to pass command line arguments to Jest (already implemented jestrunner.debugOptions, need the same for run with jestrunner.runOptions).
-- Show vscode-jest-runner context menu items only while in a test file e.g. test.(js|ts). Currently its shown, no matter which file.
+[Some open topics get you started](https://github.com/firsttris/vscode-jest-runner/issues)
 
 ## Notes
 
