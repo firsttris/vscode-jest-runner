@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.4.5 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.5)
+
+### Changed
+
+- Removed icon from context menu entry
+
 ## [0.4.4 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.4)
 
 ### Added
