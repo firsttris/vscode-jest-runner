@@ -13,6 +13,10 @@ const QUOTES = {
   '`': true
 };
 
+export function exactRegexMatch(s: string): string {
+  return ['^', s, '$'].join('');
+}
+
 export function quote(s: string): string {
   const q = isWindows() ? '"' : `'`;
   return [q, s, q].join('');
