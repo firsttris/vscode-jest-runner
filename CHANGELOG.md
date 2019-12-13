@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.4.4 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.4)
+
+### Added
+
+- Add ability to add CLI Options to run Jest command with jestrunner.runOptions
+
 ## [0.4.3 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.3)
 
 ### Fixed

@@ -44,6 +44,16 @@
 						"description": "Add or overwrite vscode debug configurations (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
 						"scope": "window"
 					},
+					"jestrunner.runOptions": {
+						"type": "array",
+						"default": [],
+						"items": {
+							"type": "string",
+							"description": "CLI Option e.g. --coverage"
+						},
+						"description": "Add CLI Options to the Jest Command e.g. https://jestjs.io/docs/en/cli",
+						"scope": "window"
+					},
 					"jestrunner.jestCommand": {
 						"type": "string",
 						"default": "",
@@ -105,5 +115,10 @@
 		"tslint-plugin-prettier": "^2.0.1",
 		"typescript": "^3.7.3",
 		"vscode": "^1.1.36"
+	},
+	"__metadata": {
+		"id": "13cd6cd6-3da6-4eb8-8d81-b47e6e710e59",
+		"publisherDisplayName": "firsttris",
+		"publisherId": "d3042740-ad00-46f8-87c9-ee28ad76da0e"
 	}
 }

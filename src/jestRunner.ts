@@ -153,6 +153,10 @@ export class JestRunner {
       args.push(quoter(testName));
     }
 
+    if (this.config.runOptions) {
+      args.push(...this.config.runOptions);
+    }
+
     return args;
   }
 

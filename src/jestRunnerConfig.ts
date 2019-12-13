@@ -48,18 +48,16 @@ export class JestRunnerConfig {
     return normalizePath(configPath);
   }
 
-  public get debugOptions(): Partial<vscode.DebugConfiguration> {
-    // legacy
-    let debugOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
-    if (debugOptions) {
-      vscode.window.showWarningMessage(
-        'The "jestrunner.runOptions" option is deprecated. Please use "jestrunner.debugOptions" instead.'
-      );
-      return debugOptions;
+  public get runOptions(): any {
+    const runOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
+    if (runOptions) {
+      return runOptions;
     }
+    return null;
+  }
 
-    // custom
-    debugOptions = vscode.workspace.getConfiguration().get('jestrunner.debugOptions');
+  public get debugOptions(): Partial<vscode.DebugConfiguration> {
+    const debugOptions = vscode.workspace.getConfiguration().get('jestrunner.debugOptions');
     if (debugOptions) {
       return debugOptions;
     }

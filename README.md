@@ -16,6 +16,7 @@ Run your Jest Tests from context-menu
 - right click your test and select **Run Jest** from context menu
 - to run a test in debug mode use **Debug Jest**
 - run previous test from command palette (strg+shift+p)
+- supports yarn & vscode workspaces (monorepo)
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
@@ -34,6 +35,7 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.configPath | Jest config path (relative to ${workFolder} e.g. jest-config.json) |
 | jestrunner.jestPath | Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
 | jestrunner.debugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. "jestrunner.debugOptions": { "args": ["--no-cache"] }) |
+| jestrunner.runOptions | Add CLI Options to the Jest Command e.g. --coverage https://jestjs.io/docs/en/cli |
 | jestrunner.jestCommand | Define an alternative Jest command (e.g. for Create React App and similar abstractions) |
 
 ## Shortcuts
