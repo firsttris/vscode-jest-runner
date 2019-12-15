@@ -6,6 +6,10 @@ export function normalizePath(path: string): string {
   return isWindows() ? path.replace(/\\/g, '/') : path;
 }
 
+export function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
 const QUOTES = {
   '"': true,
   // tslint:disable-next-line:prettier

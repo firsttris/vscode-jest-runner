@@ -1,7 +1,6 @@
-import escapeStringRegexp = require('escape-string-regexp');
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
-import { exactRegexMatch, normalizePath, pushMany, quote, unquote } from './util';
+import { escapeRegExp, exactRegexMatch, normalizePath, pushMany, quote, unquote } from './util';
 
 export class JestRunner {
   private static readonly TEST_NAME_REGEX = /(it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
@@ -115,16 +114,16 @@ export class JestRunner {
       const matchDescribe = JestRunner.DESCRIBE_NAME_REGEX.exec(text);
       if (matchDescribe) {
         if (testName) {
-          return exactRegexMatch(escapeStringRegexp(unquote(matchDescribe[2]) + ' ' + testName));
+          return exactRegexMatch(escapeRegExp(unquote(matchDescribe[2]) + ' ' + testName));
         }
-        return escapeStringRegexp(unquote(matchDescribe[2]));
+        return escapeRegExp(unquote(matchDescribe[2]));
       }
       if (matchTest && !testFound) {
         testFound = true;
         testName = unquote(matchTest[2]);
       }
       if (testFound && currentLine === 0) {
-        return exactRegexMatch(escapeStringRegexp(testName));
+        return exactRegexMatch(escapeRegExp(testName));
       }
     }
 

@@ -1,12 +1,12 @@
 # Change Log
 
-## [0.4.6 - 2097-12-14](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.6)
+## [0.4.7 - 2019-12-14](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.6)
 
 ### Fixed
 
-- Missing dependency issue
+- Fix dependency Issue
 
-## [0.4.5 - 2097-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.5)
+## [0.4.5 - 2019-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.5)
 
 ### Changed
 
