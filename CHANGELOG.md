@@ -1,18 +1,24 @@
 # Change Log
 
-## [0.4.5 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.5)
+## [0.4.6 - 2097-12-14](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.6)
+
+### Fixed
+
+- Missing dependency issue
+
+## [0.4.5 - 2097-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.5)
 
 ### Changed
 
 - Removed icon from context menu entry
 
-## [0.4.4 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.4)
+## [0.4.4 - 2019-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.4)
 
 ### Added
 
 - Add ability to add CLI Options to run Jest command with jestrunner.runOptions
 
-## [0.4.3 - 2017-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.3)
+## [0.4.3 - 2019-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.3)
 
 ### Fixed
 
@@ -20,13 +26,13 @@
 - Overlapping Test Names
 - Escape Special Characters
 
-## [0.4.2 - 2017-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.2)
+## [0.4.2 - 2019-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.2)
  
 ### Changed 
 
 - Extended Readme.
 
-## [0.4.0 - 2017-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.0)
+## [0.4.0 - 2019-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.0)
 
 ### Added
 

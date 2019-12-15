@@ -1,8 +1,7 @@
+import escapeStringRegexp = require('escape-string-regexp');
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { exactRegexMatch, normalizePath, pushMany, quote, unquote } from './util';
-// tslint:disable-next-line: no-var-requires
-const escapeStringRegexp = require('escape-string-regexp');
 
 export class JestRunner {
   private static readonly TEST_NAME_REGEX = /(it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;

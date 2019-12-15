@@ -108,13 +108,15 @@
 	},
 	"devDependencies": {
 		"@types/node": "^12.12.17",
-		"escape-string-regexp": "^2.0.0",
 		"prettier": "^1.19.1",
 		"tslint": "^5.20.1",
 		"tslint-config-prettier": "^1.18.0",
 		"tslint-plugin-prettier": "^2.0.1",
 		"typescript": "^3.7.3",
 		"vscode": "^1.1.36"
+	},
+	"dependencies": {
+		"escape-string-regexp": "^2.0.0"
 	},
 	"__metadata": {
 		"id": "13cd6cd6-3da6-4eb8-8d81-b47e6e710e59",
