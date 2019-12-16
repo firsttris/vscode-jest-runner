@@ -1,10 +1,9 @@
+import { parse } from 'jest-editor-support';
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { escapeRegExp, exactRegexMatch, normalizePath, pushMany, quote, unquote } from './util';
 
 export class JestRunner {
-  private static readonly TEST_NAME_REGEX = /(it|test)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
-  private static readonly DESCRIBE_NAME_REGEX = /(describe)\(("([^"]+)"|`([^`]+)`|'([^']+)'),/;
 
   private previousCommand: string;
 
@@ -98,6 +97,23 @@ export class JestRunner {
   // private methods
   //
 
+  private findFullTestName(selectedLine: number, children: any[]): string {
+    if (!children) {
+      return;
+    }
+    for (const element of children) {
+      if (element.start.line === selectedLine) {
+        return element.name;
+      }
+    }
+    for (const element of children) {
+      const result = this.findFullTestName(selectedLine, element.children);
+      if (result) {
+        return element.name + ' ' + result;
+      }
+    }
+  }
+
   private findCurrentTestName(editor: vscode.TextEditor): string {
     // from selection
     const { selection, document } = editor;
@@ -105,29 +121,11 @@ export class JestRunner {
       return unquote(document.getText(selection));
     }
 
-    let testName = '';
-    let testFound = false;
-    // from cursor position
-    for (let currentLine = selection.active.line; currentLine >= 0; currentLine--) {
-      const text = document.getText(new vscode.Range(currentLine, 0, currentLine, 100000));
-      const matchTest = JestRunner.TEST_NAME_REGEX.exec(text);
-      const matchDescribe = JestRunner.DESCRIBE_NAME_REGEX.exec(text);
-      if (matchDescribe) {
-        if (testName) {
-          return exactRegexMatch(escapeRegExp(unquote(matchDescribe[2]) + ' ' + testName));
-        }
-        return escapeRegExp(unquote(matchDescribe[2]));
-      }
-      if (matchTest && !testFound) {
-        testFound = true;
-        testName = unquote(matchTest[2]);
-      }
-      if (testFound && currentLine === 0) {
-        return exactRegexMatch(escapeRegExp(testName));
-      }
-    }
+    const selectedLine = selection.active.line + 1;
+    const filePath = editor.document.fileName;
+    const testFile = parse(filePath);
 
-    return '';
+    return exactRegexMatch(escapeRegExp(this.findFullTestName(selectedLine, testFile.root.children)));
   }
 
   private buildJestCommand(filePath: string, testName?: string): string {
