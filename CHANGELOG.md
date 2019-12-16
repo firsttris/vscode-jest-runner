@@ -5,6 +5,7 @@
 ### Added
 
 - integrated jest parser of jest-editor-support
+- Warning about incorrect config
 
 ## [0.4.7 - 2019-12-14](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.7)
 

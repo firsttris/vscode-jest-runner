@@ -51,7 +51,13 @@ export class JestRunnerConfig {
   public get runOptions(): any {
     const runOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
     if (runOptions) {
-      return runOptions;
+      if (Array.isArray(runOptions)) {
+        return runOptions;
+      } else {
+        vscode.window.showWarningMessage(
+          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. '
+        );
+      }
     }
     return null;
   }

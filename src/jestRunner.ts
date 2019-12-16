@@ -4,7 +4,6 @@ import { JestRunnerConfig } from './jestRunnerConfig';
 import { escapeRegExp, exactRegexMatch, normalizePath, pushMany, quote, unquote } from './util';
 
 export class JestRunner {
-
   private previousCommand: string;
 
   private terminal: vscode.Terminal;
