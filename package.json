@@ -99,7 +99,9 @@
 		}
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
+		"vscode:prepublish": "webpack --mode production",
+		"webpack": "webpack --mode development",
+		"webpack-dev": "webpack --mode development --watch",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"postinstall": "node ./node_modules/vscode/bin/install",
@@ -113,7 +115,10 @@
 		"tslint-config-prettier": "^1.18.0",
 		"tslint-plugin-prettier": "^2.0.1",
 		"typescript": "^3.7.3",
-		"vscode": "^1.1.36"
+		"vscode": "^1.1.36",
+		"webpack": "^4.41.3",
+		"webpack-cli": "^3.3.10",
+		"ts-loader": "^6.2.1"
 	},
 	"__metadata": {
 		"id": "13cd6cd6-3da6-4eb8-8d81-b47e6e710e59",
