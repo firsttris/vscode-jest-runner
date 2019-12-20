@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.4.11 - 2019-12-20](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.11)
+## 0.4.11 - 2019-12-20
 
 ### Fixed
 
@@ -10,32 +10,32 @@
 
 - Changed build to Webpack bundle
 
-## [0.4.9 - 2019-12-16](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.9)
+## 0.4.9 - 2019-12-16
 
 ### Added
 
 - integrated jest parser of jest-editor-support
 - Warning about incorrect config
 
-## [0.4.7 - 2019-12-14](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.7)
+## 0.4.7 - 2019-12-14
 
 ### Fixed
 
 - Fix dependency Issue
 
-## [0.4.5 - 2019-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.5)
+## 0.4.5 - 2019-12-13
 
 ### Changed
 
 - Removed icon from context menu entry
 
-## [0.4.4 - 2019-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.4)
+## 0.4.4 - 2019-12-13
 
 ### Added
 
 - Add ability to add CLI Options to run Jest command with jestrunner.runOptions
 
-## [0.4.3 - 2019-12-13](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.3)
+## 0.4.3 - 2019-12-13
 
 ### Fixed
 
@@ -43,13 +43,13 @@
 - Overlapping Test Names
 - Escape Special Characters
 
-## [0.4.2 - 2019-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.2)
+## 0.4.2 - 2019-10-19
  
 ### Changed 
 
 - Extended Readme.
 
-## [0.4.0 - 2019-10-19](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.0)
+## 0.4.0 - 2019-10-19
 
 ### Added
 
@@ -63,7 +63,7 @@
 
 - Debug Jest fails for CMD and GIT bash ([#38](https://github.com/firsttris/vscode-jest-runner/issues/38)).
 
-## [0.0.1 - 2017-12-29](https://github.com/firsttris/vscode-jest-runner/tree/v0.0.1)
+## 0.0.1 - 2017-12-29
 
 - Initial release
 
