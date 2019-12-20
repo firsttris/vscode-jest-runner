@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.5.0 - 2019-12-20](https://github.com/firsttris/vscode-jest-runner/tree/v0.5.0)
+## [0.4.10 - 2019-12-20](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.10)
 
 ### Fixed
 
