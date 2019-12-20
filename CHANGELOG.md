@@ -6,7 +6,7 @@
 
 - Ability to start Test by clicking anywhere inside the line-range
 
-## [0.4.8 - 2019-12-16](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.8)
+## [0.4.9 - 2019-12-16](https://github.com/firsttris/vscode-jest-runner/tree/v0.4.9)
 
 ### Added
 
