@@ -1,5 +1,5 @@
 import { parse } from 'jest-editor-support';
-import { findFullTestName } from './../src/util';
+import { findFullTestName } from '../util';
 const path = require('path');
 const children = parse(path.resolve(__dirname, 'test2.test.ts')).root.children;
 
