@@ -109,16 +109,19 @@
 		"publish": "vsce publish patch"
 	},
 	"devDependencies": {
+		"@types/jest": "^24.0.24",
 		"@types/node": "^12.12.17",
+		"jest": "^24.9.0",
 		"prettier": "^1.19.1",
+		"ts-jest": "^24.2.0",
+		"ts-loader": "^6.2.1",
 		"tslint": "^5.20.1",
 		"tslint-config-prettier": "^1.18.0",
 		"tslint-plugin-prettier": "^2.0.1",
 		"typescript": "^3.7.3",
 		"vscode": "^1.1.36",
 		"webpack": "^4.41.3",
-		"webpack-cli": "^3.3.10",
-		"ts-loader": "^6.2.1"
+		"webpack-cli": "^3.3.10"
 	},
 	"__metadata": {
 		"id": "13cd6cd6-3da6-4eb8-8d81-b47e6e710e59",

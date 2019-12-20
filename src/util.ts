@@ -10,6 +10,26 @@ export function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
+export const findFullTestName = (selectedLine: number, children: any[]) => {
+  if (!children) {
+    return;
+  }
+  for (const element of children) {
+    if (element.type === 'describe' && selectedLine === element.start.line) {
+      return element.name;
+    }
+    if (element.type !== 'describe' && selectedLine >= element.start.line && selectedLine <= element.end.line) {
+      return element.name;
+    }
+  }
+  for (const element of children) {
+    const result = this.findFullTestName(selectedLine, element.children);
+    if (result) {
+      return element.name + ' ' + result;
+    }
+  }
+};
+
 const QUOTES = {
   '"': true,
   // tslint:disable-next-line:prettier

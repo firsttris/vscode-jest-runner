@@ -1,7 +1,7 @@
 import { parse } from 'jest-editor-support';
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
-import { escapeRegExp, exactRegexMatch, normalizePath, pushMany, quote, unquote } from './util';
+import { escapeRegExp, exactRegexMatch, findFullTestName, normalizePath, pushMany, quote, unquote } from './util';
 
 export class JestRunner {
   private previousCommand: string;
@@ -96,23 +96,6 @@ export class JestRunner {
   // private methods
   //
 
-  private findFullTestName(selectedLine: number, children: any[]): string {
-    if (!children) {
-      return;
-    }
-    for (const element of children) {
-      if (element.start.line === selectedLine) {
-        return element.name;
-      }
-    }
-    for (const element of children) {
-      const result = this.findFullTestName(selectedLine, element.children);
-      if (result) {
-        return element.name + ' ' + result;
-      }
-    }
-  }
-
   private findCurrentTestName(editor: vscode.TextEditor): string {
     // from selection
     const { selection, document } = editor;
@@ -124,7 +107,7 @@ export class JestRunner {
     const filePath = editor.document.fileName;
     const testFile = parse(filePath);
 
-    return exactRegexMatch(escapeRegExp(this.findFullTestName(selectedLine, testFile.root.children)));
+    return exactRegexMatch(escapeRegExp(findFullTestName(selectedLine, testFile.root.children)));
   }
 
   private buildJestCommand(filePath: string, testName?: string): string {
