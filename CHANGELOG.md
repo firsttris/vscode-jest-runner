@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.4.12 - 2020-01-20
+
+- remove ExactRegexMatch approach due to to many issues
+- fix Commandline on Windows10
+
 ## 0.4.11 - 2019-12-20
 
 ### Fixed

@@ -1,7 +1,7 @@
 import { parse } from 'jest-editor-support';
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
-import { escapeRegExp, exactRegexMatch, findFullTestName, normalizePath, pushMany, quote, unquote } from './util';
+import { escapeRegExp, findFullTestName, normalizePath, pushMany, quote, unquote } from './util';
 
 export class JestRunner {
   private previousCommand: string;
@@ -107,12 +107,12 @@ export class JestRunner {
     const filePath = editor.document.fileName;
     const testFile = parse(filePath);
 
-    return exactRegexMatch(escapeRegExp(findFullTestName(selectedLine, testFile.root.children)));
+    return escapeRegExp(findFullTestName(selectedLine, testFile.root.children));
   }
 
   private buildJestCommand(filePath: string, testName?: string): string {
     const args = this.buildJestArgs(filePath, testName, true);
-    return `cd ${quote(this.config.currentWorkspaceFolderPath)}; ${this.config.jestCommand} ${args.join(' ')}`;
+    return `cd ${quote(this.config.currentWorkspaceFolderPath)} && ${this.config.jestCommand} ${args.join(' ')}`;
   }
 
   private buildJestArgs(filePath: string, testName: string, withQuotes: boolean): string[] {
