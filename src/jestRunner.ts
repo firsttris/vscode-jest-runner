@@ -74,7 +74,7 @@ export class JestRunner {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'Debug Jest Tests',
-      program: this.config.jestBinPath,
+      program: this.config.jestCommand,
       request: 'launch',
       type: 'node',
       ...this.config.debugOptions
