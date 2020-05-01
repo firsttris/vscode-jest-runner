@@ -3,8 +3,13 @@ import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { escapeRegExp, findFullTestName, normalizePath, pushMany, quote, unquote } from './util';
 
+interface DebugCommand {
+  documentUri: vscode.Uri;
+  config: vscode.DebugConfiguration;
+}
+
 export class JestRunner {
-  private previousCommand: string;
+  private previousCommand: string | DebugCommand;
 
   private terminal: vscode.Terminal;
 
@@ -59,7 +64,11 @@ export class JestRunner {
 
     await editor.document.save();
 
-    await this.runTerminalCommand(this.previousCommand);
+    if (typeof this.previousCommand === 'string') {
+      await this.runTerminalCommand(this.previousCommand);
+    } else {
+      await this.executeDebugCommand(this.previousCommand);
+    }
   }
 
   public async debugCurrentTest() {
@@ -70,6 +79,22 @@ export class JestRunner {
 
     await editor.document.save();
 
+    const debugCommand = this.getDebugCommand(editor);
+
+    this.executeDebugCommand(debugCommand);
+  }
+
+  //
+  // private methods
+  //
+
+  private executeDebugCommand(debugCommand: DebugCommand) {
+    vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(debugCommand.documentUri), debugCommand.config);
+
+    this.previousCommand = debugCommand;
+  }
+
+  private getDebugCommand(editor: vscode.TextEditor): DebugCommand {
     const config: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -89,12 +114,11 @@ export class JestRunner {
 
     config.args.push('--runInBand');
 
-    vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(editor.document.uri), config);
+    return {
+      config,
+      documentUri: editor.document.uri
+    };
   }
-
-  //
-  // private methods
-  //
 
   private findCurrentTestName(editor: vscode.TextEditor): string {
     // from selection
