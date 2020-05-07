@@ -1,16 +1,16 @@
 # Change Log
 
+## 0.4.17 - 2020-05-07
+
+### Fixed
+
+- powershell not working due to &&
+
 ## 0.4.16 - 2020-05-07
 
 ### Fixed
 
 - run previous test is just cd-ing when last run was debug
-
-## 0.4.15 - 2020-01-21
-
-### Fixed
-
-- powershell not working due to &&
 
 ## 0.4.12 - 2020-01-20
 
