@@ -123,7 +123,7 @@ export class JestRunner {
     };
   }
 
-  private findCurrentTestName(editor: vscode.TextEditor): string {
+  private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
     // from selection
     const { selection, document } = editor;
     if (!selection.isEmpty) {
@@ -134,7 +134,8 @@ export class JestRunner {
     const filePath = editor.document.fileName;
     const testFile = parse(filePath);
 
-    return escapeRegExp(findFullTestName(selectedLine, testFile.root.children));
+    const fullTestName = findFullTestName(selectedLine, testFile.root.children);
+    return fullTestName ? escapeRegExp(fullTestName) : undefined;
   }
 
   private buildJestCommand(filePath: string, testName?: string): string {
