@@ -58,6 +58,25 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
+  public async runCurrentFileWithCoverage() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+
+    await editor.document.save();
+
+    const filePath = editor.document.fileName;
+    const testName = undefined;
+    const options = ['--coverage'];
+    const command = this.buildJestCommand(filePath, testName, options);
+
+    this.previousCommand = command;
+
+    await this.goToWorkspaceDirectory();
+    await this.runTerminalCommand(command);
+  }
+
   public async runPreviousTest() {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -137,12 +156,12 @@ export class JestRunner {
     return escapeRegExp(findFullTestName(selectedLine, testFile.root.children));
   }
 
-  private buildJestCommand(filePath: string, testName?: string): string {
-    const args = this.buildJestArgs(filePath, testName, true);
+  private buildJestCommand(filePath: string, testName?: string, options?: string[]): string {
+    const args = this.buildJestArgs(filePath, testName, true, options);
     return `${this.config.jestCommand} ${args.join(' ')}`;
   }
 
-  private buildJestArgs(filePath: string, testName: string, withQuotes: boolean): string[] {
+  private buildJestArgs(filePath: string, testName: string, withQuotes: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : str => str;
 
@@ -158,9 +177,13 @@ export class JestRunner {
       args.push(quoter(testName));
     }
 
+    const setOptions = new Set(options);
+
     if (this.config.runOptions) {
-      args.push(...this.config.runOptions);
+      this.config.runOptions.forEach(option => setOptions.add(option));
     }
+
+    args.push(...setOptions);
 
     return args;
   }
