@@ -6,11 +6,11 @@ export function normalizePath(path: string): string {
   return isWindows() ? path.replace(/\\/g, '/') : path;
 }
 
-export function escapeRegExp(s: string) {
+export function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
-export const findFullTestName = (selectedLine: number, children: any[]) => {
+export function findFullTestName(selectedLine: number, children: any[]): string | undefined {
   if (!children) {
     return;
   }
@@ -23,12 +23,12 @@ export const findFullTestName = (selectedLine: number, children: any[]) => {
     }
   }
   for (const element of children) {
-    const result = this.findFullTestName(selectedLine, element.children);
+    const result = findFullTestName(selectedLine, element.children);
     if (result) {
       return element.name + ' ' + result;
     }
   }
-};
+}
 
 const QUOTES = {
   '"': true,
