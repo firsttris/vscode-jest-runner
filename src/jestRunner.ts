@@ -41,7 +41,7 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
-  public async runCurrentFile() {
+  public async runCurrentFile(options?: string[]) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -50,26 +50,14 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const command = this.buildJestCommand(filePath);
+    let command: string;
 
-    this.previousCommand = command;
-
-    await this.goToWorkspaceDirectory();
-    await this.runTerminalCommand(command);
-  }
-
-  public async runCurrentFileWithCoverage() {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
+    if (options) {
+      const testName = undefined;
+      command = this.buildJestCommand(filePath, testName, options);
+    } else {
+      command = this.buildJestCommand(filePath);
     }
-
-    await editor.document.save();
-
-    const filePath = editor.document.fileName;
-    const testName = undefined;
-    const options = ['--coverage'];
-    const command = this.buildJestCommand(filePath, testName, options);
 
     this.previousCommand = command;
 

@@ -10,7 +10,7 @@ export function activate(context: vscode.ExtensionContext) {
   const debugJest = vscode.commands.registerCommand('extension.debugJest', async () => jestRunner.debugCurrentTest());
   const runPrev = vscode.commands.registerCommand('extension.runPrevJest', async () => jestRunner.runPreviousTest());
   const runJestFileWithCoverage = vscode.commands.registerCommand('extension.runJestFileWithCoverage', async () =>
-    jestRunner.runCurrentFileWithCoverage()
+    jestRunner.runCurrentFile(['--coverage'])
   );
 
   context.subscriptions.push(runJest);
