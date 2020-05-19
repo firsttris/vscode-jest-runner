@@ -20,7 +20,7 @@
 	"activationEvents": [
 		"*"
 	],
-	"main": "./out/extension",
+	"main": "./dist/extension",
 	"contributes": {
 		"configuration": [
 			{
