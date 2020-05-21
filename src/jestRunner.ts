@@ -50,14 +50,7 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    let command: string;
-
-    if (options) {
-      const testName = undefined;
-      command = this.buildJestCommand(filePath, testName, options);
-    } else {
-      command = this.buildJestCommand(filePath);
-    }
+    const command = this.buildJestCommand(filePath, undefined, options);
 
     this.previousCommand = command;
 
