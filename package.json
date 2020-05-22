@@ -79,6 +79,10 @@
 			{
 				"command": "extension.debugJest",
 				"title": "Debug Jest"
+			},
+			{
+				"command": "extension.runJestFileWithCoverage",
+				"title": "Run Jest File with Coverage"
 			}
 		],
 		"menus": {

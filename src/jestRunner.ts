@@ -41,7 +41,7 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
-  public async runCurrentFile() {
+  public async runCurrentFile(options?: string[]) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -50,7 +50,7 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const command = this.buildJestCommand(filePath);
+    const command = this.buildJestCommand(filePath, undefined, options);
 
     this.previousCommand = command;
 
@@ -138,12 +138,12 @@ export class JestRunner {
     return fullTestName ? escapeRegExp(fullTestName) : undefined;
   }
 
-  private buildJestCommand(filePath: string, testName?: string): string {
-    const args = this.buildJestArgs(filePath, testName, true);
+  private buildJestCommand(filePath: string, testName?: string, options?: string[]): string {
+    const args = this.buildJestArgs(filePath, testName, true, options);
     return `${this.config.jestCommand} ${args.join(' ')}`;
   }
 
-  private buildJestArgs(filePath: string, testName: string, withQuotes: boolean): string[] {
+  private buildJestArgs(filePath: string, testName: string, withQuotes: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : str => str;
 
@@ -159,9 +159,13 @@ export class JestRunner {
       args.push(quoter(testName));
     }
 
+    const setOptions = new Set(options);
+
     if (this.config.runOptions) {
-      args.push(...this.config.runOptions);
+      this.config.runOptions.forEach(option => setOptions.add(option));
     }
+
+    args.push(...setOptions);
 
     return args;
   }
