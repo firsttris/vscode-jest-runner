@@ -23,7 +23,7 @@ export class JestRunner {
   // public methods
   //
 
-  public async runCurrentTest() {
+  public async runCurrentTest(currentTestName?: string) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -32,7 +32,7 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const testName = this.findCurrentTestName(editor);
+    const testName = currentTestName || this.findCurrentTestName(editor);
     const command = this.buildJestCommand(filePath, testName);
 
     this.previousCommand = command;
