@@ -1,11 +1,12 @@
 import { parse, ParsedNode } from 'jest-editor-support';
 import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
+import { findFullTestName } from './util';
 
-function getTestsBlocks(parsedNode: ParsedNode): CodeLens[] {
+function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): CodeLens[] {
   const codeLens: CodeLens[] = [];
 
   parsedNode.children?.forEach(subNode => {
-    codeLens.push(...getTestsBlocks(subNode));
+    codeLens.push(...getTestsBlocks(subNode, parseResults));
   });
 
   const range = new Range(
@@ -19,9 +20,11 @@ function getTestsBlocks(parsedNode: ParsedNode): CodeLens[] {
     return [];
   }
 
+  const fullTestName = findFullTestName(parsedNode.start.line, parseResults);
+
   codeLens.push(
     new CodeLens(range, {
-      arguments: [parsedNode['name']],
+      arguments: [fullTestName],
       command: 'extension.runJest',
       title: 'Run test'
     })
@@ -35,7 +38,7 @@ export default class JestRunnerCodeLensProvider implements CodeLensProvider {
     const parseResults = parse(document.fileName, document.getText()).root.children;
 
     const codeLens = [];
-    parseResults.forEach(parseResult => codeLens.push(...getTestsBlocks(parseResult)));
+    parseResults.forEach(parseResult => codeLens.push(...getTestsBlocks(parseResult, parseResults)));
     return codeLens;
   }
 }
