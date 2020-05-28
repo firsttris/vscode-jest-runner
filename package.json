@@ -109,23 +109,24 @@
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "npm run compile && node ./node_modules/vscode/bin/test",
+		"test": "npm run compile && node ./out/test/runTest.js",
 		"publish": "vsce publish patch"
 	},
 	"devDependencies": {
-		"@types/jest": "^24.0.24",
-		"@types/node": "^12.12.17",
+		"@types/jest": "^24.9.1",
+		"@types/node": "^12.12.42",
+		"@types/vscode": "^1.45.1",
 		"jest": "^24.9.0",
 		"prettier": "^1.19.1",
-		"ts-jest": "^24.2.0",
-		"ts-loader": "^6.2.1",
+		"ts-jest": "^24.3.0",
+		"ts-loader": "^6.2.2",
 		"tslint": "^5.20.1",
 		"tslint-config-prettier": "^1.18.0",
-		"tslint-plugin-prettier": "^2.0.1",
-		"typescript": "^3.7.3",
-		"vscode": "^1.1.36",
-		"webpack": "^4.41.3",
-		"webpack-cli": "^3.3.10"
+		"tslint-plugin-prettier": "^2.3.0",
+		"typescript": "^3.9.3",
+		"vscode-test": "^1.3.0",
+		"webpack": "^4.43.0",
+		"webpack-cli": "^3.3.11"
 	},
 	"__metadata": {
 		"id": "13cd6cd6-3da6-4eb8-8d81-b47e6e710e59",
@@ -133,6 +134,6 @@
 		"publisherId": "d3042740-ad00-46f8-87c9-ee28ad76da0e"
 	},
 	"dependencies": {
-		"jest-editor-support": "^27.1.0"
+		"jest-editor-support": "^27.2.0"
 	}
 }
