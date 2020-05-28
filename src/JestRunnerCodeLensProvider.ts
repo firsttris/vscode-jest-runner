@@ -1,6 +1,6 @@
 import { parse, ParsedNode } from 'jest-editor-support';
 import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
-import { findFullTestName } from './util';
+import { findFullTestName, escapeRegExp } from './util';
 
 function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): CodeLens[] {
   const codeLens: CodeLens[] = [];
@@ -20,7 +20,7 @@ function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): Cod
     return [];
   }
 
-  const fullTestName = findFullTestName(parsedNode.start.line, parseResults);
+  const fullTestName = escapeRegExp(findFullTestName(parsedNode.start.line, parseResults));
 
   codeLens.push(
     new CodeLens(range, {
