@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.4.18 - 2020-05-28
+
+### Added
+
+- CodeLens option to start Tests
+
 ## 0.4.17 - 2020-05-07
 
 ### Fixed

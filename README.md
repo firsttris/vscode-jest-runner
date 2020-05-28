@@ -15,6 +15,7 @@ Run your Jest Tests from context-menu
 
 - right click your test and select **Run Jest** from context menu
 - to run a test in debug mode use **Debug Jest**
+- CodeLens options to start Tests!
 - run previous test from command palette (strg+shift+p)
 - supports yarn & vscode workspaces (monorepo)
 - works with CRA & react-scripts!
@@ -66,6 +67,14 @@ add this:
 ## Want to start contributing features?
 
 [Some open topics get you started](https://github.com/firsttris/vscode-jest-runner/issues)
+
+## Development
+
+- npm install
+- npm run compile
+- run => Start Debugging (Extension)
+
+Another vscode instance will open with the just compiled extension installed.
 
 ## Notes
 
