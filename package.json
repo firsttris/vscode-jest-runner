@@ -109,7 +109,7 @@
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "npm run test-compile && node ./out/test/runTest.js",
 		"test-compile": "tsc -p ./",
-		"publish": "vsce publish patch"
+		"publish": "vsce publish patch && git push"
 	},
 	"devDependencies": {
 		"@types/jest": "^24.9.1",
