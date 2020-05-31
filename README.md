@@ -68,11 +68,11 @@ add this:
 
 [Some open topics get you started](https://github.com/firsttris/vscode-jest-runner/issues)
 
-## Development
+## Steps to run in development mode
 
 - npm install
 - npm run compile
-- run => Start Debugging (Extension)
+- Go to Menu "Run" => "Start Debugging"
 
 Another vscode instance will open with the just compiled extension installed.
 
