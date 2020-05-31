@@ -71,7 +71,6 @@ add this:
 ## Steps to run in development mode
 
 - npm install
-- npm run compile
 - Go to Menu "Run" => "Start Debugging"
 
 Another vscode instance will open with the just compiled extension installed.
