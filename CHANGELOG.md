@@ -1,10 +1,20 @@
 # Change Log
 
-## 0.4.18 - 2020-05-28
+## 0.4.19 - 2020-05-28
 
 ### Added
 
 - CodeLens option to start Tests
+
+## 0.4.18 - 2020-05-22
+
+### Added
+
+- Added option to run jest file with coverage to the command palette
+
+### Fixed
+- Reduced bundle size
+- Run test outside a describe block
 
 ## 0.4.17 - 2020-05-07
 
