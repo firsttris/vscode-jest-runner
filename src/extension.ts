@@ -2,31 +2,27 @@
 import * as vscode from 'vscode';
 import { JestRunner } from './jestRunner';
 import JestRunnerCodeLensProvider from './JestRunnerCodeLensProvider';
+import { JestRunnerConfig } from './jestRunnerConfig';
 
 const docSelectors: vscode.DocumentFilter[] = [
   {
-    language: 'javascript',
-    scheme: 'file'
+    pattern: '**/*.test.tsx' 
   },
   {
-    language: 'javascript',
-    scheme: 'untitled'
+    pattern: '**/*.test.ts' 
   },
   {
-    language: 'typescript',
-    scheme: 'file'
+    pattern: '**/*.test.js' 
   },
   {
-    language: 'typescript',
-    scheme: 'untitled'
+    pattern: '**/*.test.jsx' 
   }
 ];
 
 export function activate(context: vscode.ExtensionContext) {
   const jestRunner = new JestRunner();
   const codeLensProvider = new JestRunnerCodeLensProvider();
-
-  const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
+  const config = new JestRunnerConfig();
 
   const runJest = vscode.commands.registerCommand('extension.runJest', async (argument: object | string) => {
     if (typeof argument === 'string') {
@@ -42,7 +38,10 @@ export function activate(context: vscode.ExtensionContext) {
     jestRunner.runCurrentFile(['--coverage'])
   );
 
-  context.subscriptions.push(codeLensProviderDisposable);
+  if(!config.isCodeLensDisabled) {
+    const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
+    context.subscriptions.push(codeLensProviderDisposable);
+  }
   context.subscriptions.push(runJest);
   context.subscriptions.push(runJestFile);
   context.subscriptions.push(debugJest);

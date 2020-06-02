@@ -59,6 +59,12 @@
 						"default": "",
 						"description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
 						"scope": "window"
+					},
+					"jestrunner.disableCodeLens": {
+						"type": "boolean",
+						"default": false,
+						"description": "Disable CodeLens feature",
+						"scope": "window"
 					}
 				}
 			}

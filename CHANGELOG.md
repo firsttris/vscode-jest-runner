@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.4.19 - 2020-06-02
+
+### Added
+
+- change CodeLens filename pattern to *.test.ts,*.test.js,*.test.tsx,*.test.jsx
+- add Settings to disable CodeLens
+
 ## 0.4.19 - 2020-05-28
 
 ### Added
