@@ -6,16 +6,16 @@ import { JestRunnerConfig } from './jestRunnerConfig';
 
 const docSelectors: vscode.DocumentFilter[] = [
   {
-    pattern: '**/*.test.tsx' 
+    pattern: '**/*.test.tsx'
   },
   {
-    pattern: '**/*.test.ts' 
+    pattern: '**/*.test.ts'
   },
   {
-    pattern: '**/*.test.js' 
+    pattern: '**/*.test.js'
   },
   {
-    pattern: '**/*.test.jsx' 
+    pattern: '**/*.test.jsx'
   }
 ];
 
@@ -32,13 +32,19 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
   const runJestFile = vscode.commands.registerCommand('extension.runJestFile', async () => jestRunner.runCurrentFile());
-  const debugJest = vscode.commands.registerCommand('extension.debugJest', async () => jestRunner.debugCurrentTest());
+  const debugJest = vscode.commands.registerCommand('extension.debugJest', async (argument: object | string) => {
+    if (typeof argument === 'string') {
+      jestRunner.debugCurrentTest(argument)
+    } else {
+      jestRunner.debugCurrentTest()
+    }
+  });
   const runPrev = vscode.commands.registerCommand('extension.runPrevJest', async () => jestRunner.runPreviousTest());
   const runJestFileWithCoverage = vscode.commands.registerCommand('extension.runJestFileWithCoverage', async () =>
     jestRunner.runCurrentFile(['--coverage'])
   );
 
-  if(!config.isCodeLensDisabled) {
+  if (!config.isCodeLensDisabled) {
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
     context.subscriptions.push(codeLensProviderDisposable);
   }

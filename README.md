@@ -6,33 +6,27 @@
 
 ## The Aim
 
-Simple way to run or debug a single or multiple **Jest-Tests** from context menu.  
+Simple way to run or debug [Jest](https://jestjs.io/) test suites   
 *As it is possible in IntelliJ / Webstorm*
 
 ## Features
 
-Run your Jest Tests from context-menu  
+Run & Debug your Jest Tests from
+- Context-Menu
+- CodeLens
+- Command Palette (strg+shift+p)
 
-- right click your test and select **Run Jest** from context menu
-- to run a test in debug mode use **Debug Jest**
-- CodeLens options to start Tests!
-- run previous test from command palette (strg+shift+p)
-- supports yarn & vscode workspaces (monorepo)
-- works with CRA & react-scripts!
+supports yarn & vscode workspaces (monorepo)   
+works with CRA & react-scripts!
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
-## Usage with Create-React-App or React-Scripts
+## Usage with CRA or react-scripts
 
-add this to settings.json
+add the following command to settings, to pass commandline arguments
 ```
 "jestrunner.jestCommand": "npm run test --"
 ```
-
-## Requirements
-
-- Have a valid [Jest](https://github.com/facebook/jest) config
-- Have [Jest](https://github.com/facebook/jest) installed globally or as project dependency
 
 ## Extension Settings
 
@@ -76,7 +70,7 @@ add this:
 
 Another vscode instance will open with the just compiled extension installed.
 
-## Notes
+## Notes from contributors
 
 - By default **Jest** finds its config from the `"jest"` attribute in your `package.json` or if you export an object `module.export = {}` in a `jest.config.js` file in your project root directory.   
 Read More: [Configuring Jest Docs](https://jestjs.io/docs/en/configuration)

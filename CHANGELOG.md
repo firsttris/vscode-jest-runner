@@ -1,6 +1,12 @@
 # Change Log
 
-## 0.4.19 - 2020-06-02
+## 0.4.21 - 2020-06-02
+
+### Added
+
+ - debug Jest CodeLens option
+
+## 0.4.20 - 2020-06-02
 
 ### Added
 

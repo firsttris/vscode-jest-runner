@@ -74,7 +74,7 @@ export class JestRunner {
     }
   }
 
-  public async debugCurrentTest() {
+  public async debugCurrentTest(currentTestName?: string) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -82,7 +82,7 @@ export class JestRunner {
 
     await editor.document.save();
 
-    const debugCommand = this.getDebugCommand(editor);
+    const debugCommand = this.getDebugCommand(editor, currentTestName);
 
     this.executeDebugCommand(debugCommand);
   }
@@ -97,7 +97,7 @@ export class JestRunner {
     this.previousCommand = debugCommand;
   }
 
-  private getDebugCommand(editor: vscode.TextEditor): DebugCommand {
+  private getDebugCommand(editor: vscode.TextEditor, currentTestName?: string): DebugCommand {
     const config: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -110,7 +110,7 @@ export class JestRunner {
     config.args = config.args ? config.args.slice() : [];
 
     const filePath = editor.document.fileName;
-    const testName = this.findCurrentTestName(editor);
+    const testName = currentTestName || this.findCurrentTestName(editor);
 
     const standardArgs = this.buildJestArgs(filePath, testName, false);
     pushMany(config.args, standardArgs);

@@ -26,7 +26,12 @@ function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): Cod
     new CodeLens(range, {
       arguments: [fullTestName],
       command: 'extension.runJest',
-      title: 'Run Jest'
+      title: 'Run'
+    }),
+    new CodeLens(range, {
+      arguments: [fullTestName],
+      command: 'extension.debugJest',
+      title: 'Debug'
     })
   );
 
