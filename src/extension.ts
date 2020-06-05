@@ -4,21 +4,6 @@ import { JestRunner } from './jestRunner';
 import JestRunnerCodeLensProvider from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
 
-const docSelectors: vscode.DocumentFilter[] = [
-  {
-    pattern: '**/*.test.tsx'
-  },
-  {
-    pattern: '**/*.test.ts'
-  },
-  {
-    pattern: '**/*.test.js'
-  },
-  {
-    pattern: '**/*.test.jsx'
-  }
-];
-
 export function activate(context: vscode.ExtensionContext) {
   const jestRunner = new JestRunner();
   const codeLensProvider = new JestRunnerCodeLensProvider();
@@ -45,6 +30,9 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   if (!config.isCodeLensDisabled) {
+    const docSelectors: vscode.DocumentFilter[] = [
+      { pattern: vscode.workspace.getConfiguration().get('jestrunner.codeLensSelector') },
+    ];
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
     context.subscriptions.push(codeLensProviderDisposable);
   }
