@@ -68,7 +68,7 @@
 					},
 					"jestrunner.codeLensSelector": {
 						"type": "string",
-						"default": "**/*.test.{js,jsx,ts,tsx}",
+						"default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
 						"description": "CodeLens will be shown on files matching this pattern"
 					}
 				}
