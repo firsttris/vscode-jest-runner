@@ -41,6 +41,7 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.runOptions | Add CLI Options to the Jest Command (e.g. `"jestrunner.runOptions": ["--coverage", "--colors"]`) https://jestjs.io/docs/en/cli |
 | jestrunner.jestCommand | Define an alternative Jest command (e.g. for Create React App and similar abstractions) |
 | jestrunner.disableCodeLens | Disable CodeLens feature
+| jestrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})
 
 ## Shortcuts
 
