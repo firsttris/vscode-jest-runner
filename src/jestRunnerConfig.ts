@@ -27,7 +27,7 @@ export class JestRunnerConfig {
 
     // default
     const relativeJestBin = isWindows() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
-    jestPath = path.join(this.currentWorkspaceFolderPath, relativeJestBin);
+    jestPath = path.join(this.projectPath, relativeJestBin);
     return normalizePath(jestPath);
   }
 
