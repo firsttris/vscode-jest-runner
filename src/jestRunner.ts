@@ -70,7 +70,6 @@ export class JestRunner {
       await this.goToProjectDirectory();
       await this.runTerminalCommand(this.previousCommand);
     } else {
-      await this.goToProjectDirectory();
       await this.executeDebugCommand(this.previousCommand);
     }
   }
@@ -85,7 +84,6 @@ export class JestRunner {
 
     const debugCommand = this.getDebugCommand(editor, currentTestName);
 
-    await this.goToProjectDirectory();
     this.executeDebugCommand(debugCommand);
   }
 
@@ -107,6 +105,7 @@ export class JestRunner {
       program: this.config.jestBinPath,
       request: 'launch',
       type: 'node',
+      cwd: this.config.projectPath,
       ...this.config.debugOptions
     };
     config.args = config.args ? config.args.slice() : [];
