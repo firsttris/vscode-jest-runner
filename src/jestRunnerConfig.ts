@@ -31,6 +31,10 @@ export class JestRunnerConfig {
     return normalizePath(jestPath);
   }
 
+  public get projectPath(): string {
+    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
+  }
+
   public get currentWorkspaceFolderPath() {
     const editor = vscode.window.activeTextEditor;
     return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;

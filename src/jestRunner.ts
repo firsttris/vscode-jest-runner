@@ -37,7 +37,7 @@ export class JestRunner {
 
     this.previousCommand = command;
 
-    await this.goToWorkspaceDirectory();
+    await this.goToProjectDirectory();
     await this.runTerminalCommand(command);
   }
 
@@ -54,7 +54,7 @@ export class JestRunner {
 
     this.previousCommand = command;
 
-    await this.goToWorkspaceDirectory();
+    await this.goToProjectDirectory();
     await this.runTerminalCommand(command);
   }
 
@@ -67,7 +67,7 @@ export class JestRunner {
     await editor.document.save();
 
     if (typeof this.previousCommand === 'string') {
-      await this.goToWorkspaceDirectory();
+      await this.goToProjectDirectory();
       await this.runTerminalCommand(this.previousCommand);
     } else {
       await this.executeDebugCommand(this.previousCommand);
@@ -170,8 +170,8 @@ export class JestRunner {
     return args;
   }
 
-  private async goToWorkspaceDirectory() {
-    await this.runTerminalCommand(`cd ${quote(this.config.currentWorkspaceFolderPath)}`);
+  private async goToProjectDirectory() {
+    await this.runTerminalCommand(`cd ${quote(this.config.projectPath)}`);
   }
 
   private async runTerminalCommand(command: string) {
