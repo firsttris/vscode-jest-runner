@@ -4,12 +4,14 @@
 
 [Go to Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 
-## The Aim
+## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
 
-Simple way to run or debug [Jest](https://jestjs.io/) test suites   
-*As it is possible in IntelliJ / Webstorm*
+[vscode-jest-runner](https://github.com/firsttris/vscode-jest-runner) is about running or debugging a sepcific test or test-suite, while [vscode-jest](https://github.com/jest-community/vscode-jest) is about running your current test-suite everytime you change it and it's not possible to run or debug a specific test.
 
 ## Features
+
+Simple way to run or debug a specific test
+*As it is possible in IntelliJ / Webstorm*
 
 Run & Debug your Jest Tests from
 - Context-Menu
