@@ -20,7 +20,7 @@ Run & Debug your Jest Tests from
 
 supports yarn & vscode workspaces (monorepo)
 supports yarn 2 pnp
-supports CRA & react-scripts! (currently only Run)
+supports CRA & react-scripts! (currently only supports Run)
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
