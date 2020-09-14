@@ -108,6 +108,15 @@ export class JestRunner {
       cwd: this.config.projectPath,
       ...this.config.debugOptions
     };
+    if (this.config.isYarnPnpSupportEnabled) {
+      config.runtimeArgs = [
+        '--require',
+        '${workspaceFolder}/.pnp.js',
+      ];
+    }
+    if (this.config.isDetectYarnPnpJestBin) {
+      config.program = this.config.yarnPnpJestBinPath;
+    }
     config.args = config.args ? config.args.slice() : [];
 
     const filePath = editor.document.fileName;

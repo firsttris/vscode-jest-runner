@@ -76,6 +76,18 @@
 						"type": "string",
 						"default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
 						"description": "CodeLens will be shown on files matching this pattern"
+					},
+					"jestrunner.enableYarnPnpSupport": {
+						"type": "boolean",
+						"default": false,
+						"description": "Enable if you are using Yarn 2 with Plug'n'Play",
+						"scope": "window"
+					},
+					"jestrunner.detectYarnPnpJestBin": {
+						"type": "boolean",
+						"default": false,
+						"description": "Auto-detect path on Linux/Unix systems to Jest bin (Yarn 2 Pnp)",
+						"scope": "window"
 					}
 				}
 			}

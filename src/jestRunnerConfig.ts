@@ -15,6 +15,10 @@ export class JestRunnerConfig {
     }
 
     // default
+    if (this.isYarnPnpSupportEnabled) {
+      const pnp = `${this.yarnPnpPath}`;
+      return `node ${pnp} "${this.jestBinPath}"`;
+    }
     return `node ${quote(this.jestBinPath)}`;
   }
 
@@ -28,6 +32,10 @@ export class JestRunnerConfig {
     // default
     const relativeJestBin = isWindows() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
     jestPath = path.join(this.projectPath, relativeJestBin);
+    if (this.isDetectYarnPnpJestBin) {
+      jestPath = this.yarnPnpJestBinPath;
+    }
+    
     return normalizePath(jestPath);
   }
 
@@ -80,4 +88,23 @@ export class JestRunnerConfig {
     const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
     return isCodeLensDisabled ? isCodeLensDisabled : false;
   }
+
+  public get isYarnPnpSupportEnabled(): boolean {
+    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
+    return isYarnPnp ? isYarnPnp : false;
+  }
+
+  public get yarnPnpPath(): string {
+    return `--require ${quote(this.currentWorkspaceFolderPath + '/.pnp.js')}`;
+  }
+
+  public get isDetectYarnPnpJestBin(): boolean {
+    const isDetectYarnPnpJestBin: boolean = vscode.workspace.getConfiguration().get('jestrunner.detectYarnPnpJestBin');
+    return isDetectYarnPnpJestBin ? isDetectYarnPnpJestBin : false;
+  }
+
+  public get yarnPnpJestBinPath(): string {
+    return '`yarn bin jest`';
+  }
+
 }
