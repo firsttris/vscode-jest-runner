@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.4.23 - 2020-09-16
+
+### Added
+
+- Yarn 2 Pnp Support
+- Ability to define fixed ProjectPath instead of workspaceFolder (monorepo)
+
 ## 0.4.22 - 2020-06-05
 
 ### Added
