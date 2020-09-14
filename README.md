@@ -43,8 +43,12 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.debugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"jestrunner.debugOptions": { "args": ["--no-cache"] }`) |
 | jestrunner.runOptions | Add CLI Options to the Jest Command (e.g. `"jestrunner.runOptions": ["--coverage", "--colors"]`) https://jestjs.io/docs/en/cli |
 | jestrunner.jestCommand | Define an alternative Jest command (e.g. for Create React App and similar abstractions) |
-| jestrunner.disableCodeLens | Disable CodeLens feature
-| jestrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})
+| jestrunner.disableCodeLens | Disable CodeLens feature |
+| jestrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx}) |
+| jestrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
+| jestrunner.detectYarnPnpJestBin | Auto-detect path on Linux/Unix systems to Jest bin (Yarn 2 Pnp) |
+| jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
+
 
 ## Shortcuts
 
