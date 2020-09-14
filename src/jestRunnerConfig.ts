@@ -31,11 +31,16 @@ export class JestRunnerConfig {
 
     // default
     const relativeJestBin = isWindows() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
-    jestPath = path.join(this.currentWorkspaceFolderPath, relativeJestBin);
+    jestPath = path.join(this.projectPath, relativeJestBin);
     if (this.isDetectYarnPnpJestBin) {
       jestPath = this.yarnPnpJestBinPath;
     }
+    
     return normalizePath(jestPath);
+  }
+
+  public get projectPath(): string {
+    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
   }
 
   public get currentWorkspaceFolderPath() {
