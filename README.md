@@ -18,9 +18,10 @@ Run & Debug your Jest Tests from
 - CodeLens
 - Command Palette (strg+shift+p)
 
-supports yarn & vscode workspaces (monorepo)
-supports yarn 2 pnp
-supports CRA & react-scripts! (currently only supports Run)
+## Supports 
+- yarn & vscode workspaces (monorepo)   
+- yarn 2 pnp   
+- CRA & react-scripts! (currently only run mode)   
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
