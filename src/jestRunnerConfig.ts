@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { isWindows, normalizePath, quote } from './util';
 
@@ -47,17 +48,29 @@ export class JestRunnerConfig {
     const editor = vscode.window.activeTextEditor;
     return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
   }
-
   public get jestConfigPath(): string {
     // custom
     let configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
     if (!configPath) {
-      return '';
+      return this.findConfigPath();
     }
 
     // default
     configPath = path.join(this.currentWorkspaceFolderPath, configPath);
     return normalizePath(configPath);
+  }
+    
+  private findConfigPath(): string {
+    let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
+    let currentFolderConfigPath: string;
+    do {
+      currentFolderConfigPath = path.join(currentFolderPath, 'jest.config.js');
+      if(fs.existsSync(currentFolderConfigPath)) {
+        return currentFolderConfigPath;
+      }
+      currentFolderPath = path.join(currentFolderPath, '..');
+    } while(currentFolderPath !== this.currentWorkspaceFolderPath);
+    return '';
   }
 
   public get runOptions(): any {
