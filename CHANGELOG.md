@@ -1,6 +1,12 @@
 # Change Log
 
-## 0.4.23 - 2020-09-16
+## 0.4.25 - 2020-10-14
+
+### Added
+
+- Dynamic Jest config (jest.config.js) resolution (monorepo)
+
+## 0.4.24 - 2020-09-16
 
 ### Added
 
