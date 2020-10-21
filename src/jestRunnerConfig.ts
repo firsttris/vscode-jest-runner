@@ -41,9 +41,28 @@ export class JestRunnerConfig {
   }
 
   public get projectPath(): string {
-    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
+    // custom
+    let projectPath: string = vscode.workspace.getConfiguration().get('jestrunner.projectPath');
+    if(!projectPath){
+      return this.findProjectPath();
+    }
+    // default
+    projectPath = path.join(this.currentWorkspaceFolderPath, projectPath )
+    return normalizePath(projectPath);
   }
 
+  private findProjectPath(): string {
+    let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
+    let currentFolderProjectPath: string;
+    do {
+      currentFolderProjectPath = path.join(currentFolderPath, 'package.json');
+      if(fs.existsSync(currentFolderProjectPath)) {
+        return currentFolderProjectPath.replace('package.json', '');
+      }
+      currentFolderPath = path.join(currentFolderPath, '..');
+    } while(currentFolderPath !== this.currentWorkspaceFolderPath);
+    return '';
+  }
   public get currentWorkspaceFolderPath() {
     const editor = vscode.window.activeTextEditor;
     return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
