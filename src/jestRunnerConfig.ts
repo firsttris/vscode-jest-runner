@@ -41,32 +41,40 @@ export class JestRunnerConfig {
   }
 
   public get projectPath(): string {
-    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
+    // custom
+    let projectPath: string = vscode.workspace.getConfiguration().get('jestrunner.projectPath');
+    if(!projectPath){
+      return this.findConfigFolderPath();
+    }
+    // default
+    projectPath = path.join(this.currentWorkspaceFolderPath, projectPath )
+    return normalizePath(projectPath);
   }
 
   public get currentWorkspaceFolderPath() {
     const editor = vscode.window.activeTextEditor;
     return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
   }
+
   public get jestConfigPath(): string {
     // custom
     let configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
-    if (!configPath) {
-      return this.findConfigPath();
+    if(!configPath) {
+      const configFolderPath = this.findConfigFolderPath();
+      return configFolderPath === '' ? '' : path.join(configFolderPath, 'jest.config.js');
     }
-
     // default
     configPath = path.join(this.currentWorkspaceFolderPath, configPath);
     return normalizePath(configPath);
   }
     
-  private findConfigPath(): string {
+  private findConfigFolderPath(): string {
     let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
     do {
       currentFolderConfigPath = path.join(currentFolderPath, 'jest.config.js');
       if(fs.existsSync(currentFolderConfigPath)) {
-        return currentFolderConfigPath;
+        return currentFolderPath;
       }
       currentFolderPath = path.join(currentFolderPath, '..');
     } while(currentFolderPath !== this.currentWorkspaceFolderPath);
