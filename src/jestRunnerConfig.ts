@@ -42,13 +42,12 @@ export class JestRunnerConfig {
 
   public get projectPath(): string {
     // custom
-    let projectPath: string = vscode.workspace.getConfiguration().get('jestrunner.projectPath');
+    const projectPath: string = vscode.workspace.getConfiguration().get('jestrunner.projectPath');
     if(!projectPath){
       return this.findConfigFolderPath();
     }
     // default
-    projectPath = path.join(this.currentWorkspaceFolderPath, projectPath )
-    return normalizePath(projectPath);
+    return normalizePath(path.join(this.currentWorkspaceFolderPath, projectPath));
   }
 
   public get currentWorkspaceFolderPath() {
@@ -58,14 +57,13 @@ export class JestRunnerConfig {
 
   public get jestConfigPath(): string {
     // custom
-    let configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
+    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
     if(!configPath) {
       const configFolderPath = this.findConfigFolderPath();
       return configFolderPath === '' ? '' : path.join(configFolderPath, 'jest.config.js');
     }
     // default
-    configPath = path.join(this.currentWorkspaceFolderPath, configPath);
-    return normalizePath(configPath);
+    return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
   }
     
   private findConfigFolderPath(): string {
@@ -81,7 +79,7 @@ export class JestRunnerConfig {
     return '';
   }
 
-  public get runOptions(): any {
+  public get runOptions() {
     const runOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
     if (runOptions) {
       if (Array.isArray(runOptions)) {

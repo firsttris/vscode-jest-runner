@@ -38,7 +38,7 @@ function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): Cod
   return codeLens;
 }
 
-export default class JestRunnerCodeLensProvider implements CodeLensProvider {
+export class JestRunnerCodeLensProvider implements CodeLensProvider {
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     const parseResults = parse(document.fileName, document.getText()).root.children;
 

@@ -70,7 +70,7 @@ export class JestRunner {
       await this.goToProjectDirectory();
       await this.runTerminalCommand(this.previousCommand);
     } else {
-      await this.executeDebugCommand(this.previousCommand);
+      this.executeDebugCommand(this.previousCommand);
     }
   }
 

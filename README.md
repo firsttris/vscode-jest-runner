@@ -6,7 +6,7 @@
 
 ## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
 
-[vscode-jest-runner](https://github.com/firsttris/vscode-jest-runner) is about running or debugging a specific test or test-suite, while [vscode-jest](https://github.com/jest-community/vscode-jest) is about running your current test-suite everytime you change it and it's not possible to run or debug a specific test.
+[vscode-jest-runner](https://github.com/firsttris/vscode-jest-runner) is focused on running or debugging a specific test or test-suite, while [vscode-jest](https://github.com/jest-community/vscode-jest) is running your current test-suite everytime you change it.
 
 ## Features
 
@@ -19,13 +19,14 @@ Run & Debug your Jest Tests from
 - Command Palette (strg+shift+p)
 
 ## Supports 
-- yarn & vscode workspaces (monorepo)   
+- yarn & vscode workspaces (monorepo)
+- dynamic project path & jest config resolution (monorepo)   
 - yarn 2 pnp   
-- CRA & react-scripts! (currently only run mode)   
+- CRA & and similar abstractions   
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
-## Usage with CRA or react-scripts
+## Usage with CRA or similar abstractions
 
 add the following command to settings, to pass commandline arguments
 ```
