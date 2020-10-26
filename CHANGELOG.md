@@ -1,5 +1,17 @@
 # Change Log
 
+## 0.4.29 - 2020-10-26
+
+### Remove
+
+- Dynamic resolution of ProjectPath
+
+## 0.4.28 - 2020-10-24
+
+### Added
+
+- Dynamic resolution of ProjectPath
+
 ## 0.4.27 - 2020-10-14
 
 ### Added
