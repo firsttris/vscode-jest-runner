@@ -20,7 +20,7 @@ Run & Debug your Jest Tests from
 
 ## Supports 
 - yarn & vscode workspaces (monorepo)
-- dynamic project path & jest config resolution (monorepo)   
+- dynamic jest config resolution  
 - yarn 2 pnp   
 - CRA & and similar abstractions   
 
