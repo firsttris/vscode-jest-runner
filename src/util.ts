@@ -41,6 +41,10 @@ export function exactRegexMatch(s: string): string {
   return ['^', s, '$'].join('');
 }
 
+export function escapeSingleQuotes(s: string): string {
+  return isWindows() ? s : s.replace(/'/g, "'\\''");
+}
+
 export function quote(s: string): string {
   const q = isWindows() ? '"' : `'`;
   return [q, s, q].join('');
