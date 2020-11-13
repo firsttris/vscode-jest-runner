@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.4.31 - 2020-10-26
+
+### Fixed
+
+- Escape single quotes on Testnames (Linux)
+
 ## 0.4.29 - 2020-10-26
 
 ### Remove
