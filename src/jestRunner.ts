@@ -105,7 +105,7 @@ export class JestRunner {
       program: this.config.jestBinPath,
       request: 'launch',
       type: 'node',
-      cwd: this.config.projectPath,
+      cwd: this.config.jestConfigParent,
       ...this.config.debugOptions
     };
     if (this.config.isYarnPnpSupportEnabled) {
@@ -181,7 +181,7 @@ export class JestRunner {
   }
 
   private async goToProjectDirectory() {
-    await this.runTerminalCommand(`cd ${quote(this.config.projectPath)}`);
+    await this.runTerminalCommand(`cd ${quote(this.config.jestConfigParent)}`);
   }
 
   private async runTerminalCommand(command: string) {
@@ -190,7 +190,8 @@ export class JestRunner {
     }
     this.terminal.show();
     await vscode.commands.executeCommand('workbench.action.terminal.clear');
-    this.terminal.sendText(command);
+    // prevent command being written to shell history
+    this.terminal.sendText(' ' + command);
   }
 
   private setup() {

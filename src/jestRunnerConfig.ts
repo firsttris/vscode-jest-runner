@@ -52,24 +52,33 @@ export class JestRunnerConfig {
     // custom
     const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
     if (!configPath) {
-      return this.findConfigPath();
+      return this.findConfigPath()[1];
     }
 
     // default
     return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
   }
-    
-  private findConfigPath(): string {
+  public get jestConfigParent(): string {
+    // custom
+    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
+    if (configPath) {
+      return path.dirname(configPath);
+    } else {
+      return this.findConfigPath()[0];
+    }
+
+  }
+  private findConfigPath(): [string, string] {
     let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
     do {
       currentFolderConfigPath = path.join(currentFolderPath, 'jest.config.js');
       if(fs.existsSync(currentFolderConfigPath)) {
-        return currentFolderConfigPath;
+        return [currentFolderPath, currentFolderConfigPath];
       }
       currentFolderPath = path.join(currentFolderPath, '..');
     } while(currentFolderPath !== this.currentWorkspaceFolderPath);
-    return '';
+    return ['', ''];
   }
 
   public get runOptions() {
