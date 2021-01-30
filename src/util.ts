@@ -65,3 +65,7 @@ export function unquote(s: string): string {
 export function pushMany<T>(arr: T[], items: T[]): number {
   return Array.prototype.push.apply(arr, items);
 }
+
+export function escapePlusSign(s: string): string {
+  return s.replace(/[+]/g, '\\$&');
+}
