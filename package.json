@@ -135,7 +135,6 @@
 		"vscode:prepublish": "webpack --mode production",
 		"compile": "webpack --mode development",
 		"watch": "webpack --mode development --watch",
-		"postinstall": "node ./node_modules/vscode/bin/install",
 		"test": "npm run test-compile && node ./out/test/runTest.js",
 		"test-compile": "tsc -p ./",
 		"publish": "vsce publish patch && git push"
@@ -143,6 +142,7 @@
 	"devDependencies": {
 		"@types/jest": "^26.0.13",
 		"@types/node": "^14.10.1",
+		"@types/vscode": "^1.54.0",
 		"jest": "^26.4.2",
 		"prettier": "^2.1.1",
 		"ts-jest": "^26.3.0",
@@ -151,8 +151,7 @@
 		"tslint-config-prettier": "^1.18.0",
 		"tslint-plugin-prettier": "^2.3.0",
 		"typescript": "^3.9.3",
-		"vscode": "^1.1.37",
-		"vscode-test": "^1.4.0",
+		"vscode-test": "^1.5.1",
 		"webpack": "^4.44.1",
 		"webpack-cli": "^3.3.12"
 	},
@@ -162,6 +161,6 @@
 		"publisherId": "d3042740-ad00-46f8-87c9-ee28ad76da0e"
 	},
 	"dependencies": {
-		"jest-editor-support": "^27.2.0"
+		"jest-editor-support": "^28.2.0"
 	}
 }
