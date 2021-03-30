@@ -134,6 +134,16 @@
 					"command": "extension.debugJest",
 					"group": "02_jest"
 				}
+			],
+			"explorer/context": [
+				{
+					"command": "extension.runJest",
+					"group": "02_jest@1"
+				},
+				{
+					"command": "extension.debugJest",
+					"group": "02_jest@2"
+				}
 			]
 		}
 	},

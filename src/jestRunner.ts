@@ -32,6 +32,16 @@ export class JestRunner {
   // public methods
   //
 
+  public async runTestsOnPath(path: string) {
+    
+    const command = this.buildJestCommand(path);
+
+    this.previousCommand = command;
+
+    await this.goToCwd();
+    await this.runTerminalCommand(command);
+  }
+
   public async runCurrentTest(currentTestName?: string, options?: string[]) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -83,6 +93,15 @@ export class JestRunner {
     }
   }
 
+  public async debugTestsOnPath(path: string) {
+    const debugConfig = this.getDebugConfig(path);
+
+    this.executeDebugCommand({
+      config: debugConfig,
+      documentUri: vscode.Uri.file(path)
+    });
+  }
+
   public async debugCurrentTest(currentTestName?: string) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -91,9 +110,14 @@ export class JestRunner {
 
     await editor.document.save();
 
-    const debugCommand = this.getDebugCommand(editor, currentTestName);
+    const filePath = editor.document.fileName;
+    const testName = currentTestName || this.findCurrentTestName(editor)
+    const debugConfig = this.getDebugConfig(filePath, testName);
 
-    this.executeDebugCommand(debugCommand);
+    this.executeDebugCommand({
+      config: debugConfig,
+      documentUri: editor.document.uri
+    });
   }
 
   //
@@ -106,7 +130,7 @@ export class JestRunner {
     this.previousCommand = debugCommand;
   }
 
-  private getDebugCommand(editor: vscode.TextEditor, currentTestName?: string): DebugCommand {
+  private getDebugConfig(filePath: string, currentTestName?: string): vscode.DebugConfiguration {
     const config: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -125,18 +149,12 @@ export class JestRunner {
     }
     config.args = config.args ? config.args.slice() : [];
 
-    const filePath = editor.document.fileName;
-    const testName = currentTestName || this.findCurrentTestName(editor);
-
-    const standardArgs = this.buildJestArgs(filePath, testName, false);
+    const standardArgs = this.buildJestArgs(filePath, currentTestName, false);
     pushMany(config.args, standardArgs);
 
     config.args.push('--runInBand');
 
-    return {
-      config,
-      documentUri: editor.document.uri,
-    };
+    return config;
   }
 
   private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
@@ -165,9 +183,10 @@ export class JestRunner {
 
     args.push(quoter(normalizePath(escapePlusSign(filePath))));
 
-    if (this.config.jestConfigPath) {
+    const jestConfigPath = this.config.getJestConfigPath(filePath);
+    if (jestConfigPath) {
       args.push('-c');
-      args.push(quoter(normalizePath(this.config.jestConfigPath)));
+      args.push(quoter(normalizePath(jestConfigPath)));
     }
 
     if (testName) {
