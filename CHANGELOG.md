@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.4.32 - 2021-04-21
+
+### Fixed
+
+- resolve jest test name string interpolation for test pattern such as test.each #148
+- Parameterised test support and deps cleanup #146
+- Escape plus sign in file path #140
+
 ## 0.4.31 - 2020-10-26
 
 ### Fixed
