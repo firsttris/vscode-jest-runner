@@ -27,3 +27,27 @@ describe('testSuiteB', () => {
     expect(true).toBe(true);
   });
 });
+
+describe.each`
+  a    | b    | expected
+  ${1} | ${1} | ${2}
+`('$a + $b', ({a, b, expected}) => {
+  test(`returned value not be less than ${expected}`, () => {
+    expect(a + b).not.toBeLessThan(expected);
+  });
+});
+
+test.each`
+  a    | b    | expected
+  ${1} | ${1} | ${2}
+`('returns $expected when $a is added $b', ({a, b, expected}) => {
+    expect(a + b).toBe(expected); // will not be ran
+});
+
+describe.each([
+  [1, 1, 2],
+])('.add(%i, %i)', (a, b, expected) => {
+  test(`returns ${expected}`, () => {
+    expect(a + b).toBe(expected);
+  });
+});
