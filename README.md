@@ -82,6 +82,8 @@ Another vscode instance will open with the just compiled extension installed.
 
 ## Notes from contributors
 
+- Experiencing Babel compile issues when starting Debug, check the post of @Dot-H https://github.com/firsttris/vscode-jest-runner/issues/136
+
 - By default **Jest** finds its config from the `"jest"` attribute in your `package.json` or if you export an object `module.export = {}` in a `jest.config.js` file in your project root directory.   
 Read More: [Configuring Jest Docs](https://jestjs.io/docs/en/configuration)
 
