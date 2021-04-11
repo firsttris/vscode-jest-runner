@@ -32,7 +32,7 @@ export class JestRunner {
   // public methods
   //
 
-  public async runCurrentTest(currentTestName?: string) {
+  public async runCurrentTest(currentTestName?: string, options?: string[]) {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -42,7 +42,7 @@ export class JestRunner {
 
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const command = this.buildJestCommand(filePath, testName);
+    const command = this.buildJestCommand(filePath, testName, options);
 
     this.previousCommand = command;
 
@@ -118,10 +118,7 @@ export class JestRunner {
       ...this.config.debugOptions
     };
     if (this.config.isYarnPnpSupportEnabled) {
-      config.runtimeArgs = [
-        '--require',
-        '${workspaceFolder}/.pnp.js',
-      ];
+      config.runtimeArgs = ['--require', '${workspaceFolder}/.pnp.js'];
     }
     if (this.config.isDetectYarnPnpJestBin) {
       config.program = this.config.yarnPnpJestBinPath;
@@ -138,7 +135,7 @@ export class JestRunner {
 
     return {
       config,
-      documentUri: editor.document.uri
+      documentUri: editor.document.uri,
     };
   }
 
@@ -164,7 +161,7 @@ export class JestRunner {
 
   private buildJestArgs(filePath: string, testName: string, withQuotes: boolean, options: string[] = []): string[] {
     const args: string[] = [];
-    const quoter = withQuotes ? quote : str => str;
+    const quoter = withQuotes ? quote : (str) => str;
 
     args.push(quoter(normalizePath(escapePlusSign(filePath))));
 
@@ -181,7 +178,7 @@ export class JestRunner {
     const setOptions = new Set(options);
 
     if (this.config.runOptions) {
-      this.config.runOptions.forEach(option => setOptions.add(option));
+      this.config.runOptions.forEach((option) => setOptions.add(option));
     }
 
     args.push(...setOptions);

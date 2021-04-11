@@ -98,6 +98,10 @@
 				"title": "Run Jest"
 			},
 			{
+				"command": "extension.runJestAndUpdateSnapshots",
+				"title": "Run Jest and Update Snapshots"
+			},
+			{
 				"command": "extension.runPrevJest",
 				"title": "Run Previous Jest"
 			},
@@ -118,6 +122,10 @@
 			"editor/context": [
 				{
 					"command": "extension.runJest",
+					"group": "02_jest"
+				},
+				{
+					"command": "extension.runJestAndUpdateSnapshots",
 					"group": "02_jest"
 				},
 				{
