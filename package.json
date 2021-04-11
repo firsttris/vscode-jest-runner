@@ -88,6 +88,12 @@
 						"default": false,
 						"description": "Auto-detect path on Linux/Unix systems to Jest bin (Yarn 2 Pnp)",
 						"scope": "window"
+					},
+					"jestrunner.changeDirectoryToWorkspaceRoot": {
+						"type": "boolean",
+						"default": true,
+						"description": "Changes directory to workspace root before executing the test",
+						"scope": "window"
 					}
 				}
 			}

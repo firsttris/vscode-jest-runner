@@ -50,7 +50,7 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
 | jestrunner.detectYarnPnpJestBin | Auto-detect path on Linux/Unix systems to Jest bin (Yarn 2 Pnp) |
 | jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
-
+| jestrunner.changeDirectoryToWorkspaceRoot | Changes directory to workspace root before executing the test |
 
 ## Shortcuts
 

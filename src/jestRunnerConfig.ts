@@ -23,6 +23,10 @@ export class JestRunnerConfig {
     return `node ${quote(this.jestBinPath)}`;
   }
 
+  public get changeDirectoryToWorkspaceRoot(): boolean {
+    return vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot')
+  }
+
   public get jestBinPath(): string {
     // custom
     let jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');

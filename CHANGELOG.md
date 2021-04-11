@@ -1,6 +1,15 @@
 # Change Log
 
-## 0.4.33 - 2021-04-21
+## 0.4.34 - 2021-04-11
+
+## Fixed
+
+- auto detect project path with jest binary #156
+- add option to command palette to update snapshots #152
+- remove run jest file from context menu (still available in command palette strg + shift + p)
+- add option changeDirectoryToWorkspaceRoot to enable/disable changing directory to workspace root before executing the test
+
+## 0.4.33 - 2021-04-06
 
 ### Fixed
 

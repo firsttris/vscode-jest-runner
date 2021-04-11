@@ -187,7 +187,9 @@ export class JestRunner {
   }
 
   private async goToCwd() {
-    await this.runTerminalCommand(`cd ${quote(this.config.cwd)}`);
+    if(this.config.changeDirectoryToWorkspaceRoot) {
+      await this.runTerminalCommand(`cd ${quote(this.config.cwd)}`);
+    }
   }
 
   private async runTerminalCommand(command: string) {
