@@ -125,14 +125,6 @@
 					"group": "02_jest"
 				},
 				{
-					"command": "extension.runJestAndUpdateSnapshots",
-					"group": "02_jest"
-				},
-				{
-					"command": "extension.runJestFile",
-					"group": "02_jest"
-				},
-				{
 					"command": "extension.debugJest",
 					"group": "02_jest"
 				}
