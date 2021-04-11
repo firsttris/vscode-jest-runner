@@ -46,7 +46,7 @@ export class JestRunner {
 
     this.previousCommand = command;
 
-    await this.goToProjectDirectory();
+    await this.goToCwd();
     await this.runTerminalCommand(command);
   }
 
@@ -63,7 +63,7 @@ export class JestRunner {
 
     this.previousCommand = command;
 
-    await this.goToProjectDirectory();
+    await this.goToCwd();
     await this.runTerminalCommand(command);
   }
 
@@ -76,7 +76,7 @@ export class JestRunner {
     await editor.document.save();
 
     if (typeof this.previousCommand === 'string') {
-      await this.goToProjectDirectory();
+      await this.goToCwd();
       await this.runTerminalCommand(this.previousCommand);
     } else {
       this.executeDebugCommand(this.previousCommand);
@@ -114,8 +114,8 @@ export class JestRunner {
       program: this.config.jestBinPath,
       request: 'launch',
       type: 'node',
-      cwd: this.config.projectPath,
-      ...this.config.debugOptions,
+      cwd: this.config.cwd,
+      ...this.config.debugOptions
     };
     if (this.config.isYarnPnpSupportEnabled) {
       config.runtimeArgs = ['--require', '${workspaceFolder}/.pnp.js'];
@@ -186,8 +186,8 @@ export class JestRunner {
     return args;
   }
 
-  private async goToProjectDirectory() {
-    await this.runTerminalCommand(`cd ${quote(this.config.projectPath)}`);
+  private async goToCwd() {
+    await this.runTerminalCommand(`cd ${quote(this.config.cwd)}`);
   }
 
   private async runTerminalCommand(command: string) {
