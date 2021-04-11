@@ -2,7 +2,8 @@
 
 ## Visual Studio Code Marketplace
 
-[Go to Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)   
+[Open VSX Registry](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 
 ## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
 
