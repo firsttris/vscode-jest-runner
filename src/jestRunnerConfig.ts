@@ -32,7 +32,9 @@ export class JestRunnerConfig {
 
     // default
     const relativeJestBin = isWindows() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
-    jestPath = path.join(this.projectPath, relativeJestBin);
+    const cwd = this.cwd;
+
+    jestPath = path.join(cwd, relativeJestBin);
     if (this.isDetectYarnPnpJestBin) {
       jestPath = this.yarnPnpJestBinPath;
     }
@@ -42,6 +44,27 @@ export class JestRunnerConfig {
 
   public get projectPath(): string {
     return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
+  }
+
+  public get cwd(): string {
+    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentPackagePath || this.currentWorkspaceFolderPath;
+  }
+
+  private get currentPackagePath() {
+    let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
+    do {
+      // Try to find where jest is installed relatively to the current opened file.
+      // Do not assume that jest is always installed at the root of the opened project, this is not the case
+      // such as in multi-module projects.
+      let pkg = path.join(currentFolderPath, 'package.json');
+      let jest = path.join(currentFolderPath, 'node_modules', 'jest');
+      if (fs.existsSync(pkg) && fs.existsSync(jest)) {
+        return currentFolderPath;
+      }
+      currentFolderPath = path.join(currentFolderPath, '..');
+    } while(currentFolderPath !== this.currentWorkspaceFolderPath);
+
+    return '';
   }
 
   public get currentWorkspaceFolderPath() {
