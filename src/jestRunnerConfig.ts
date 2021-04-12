@@ -143,7 +143,16 @@ export class JestRunnerConfig {
   }
 
   public get yarnPnpJestBinPath(): string {
-    return '`yarn bin jest`';
+    const { execSync } = require('child_process');
+    const stdout = execSync('yarn bin jest', (err, stdout, stderr) => {
+      if (err) {
+        throw err;
+      }
+      if (stderr) {
+        throw stderr;
+      }
+    }).toString();
+    return stdout.replace(/\r?\n|\r/g, '');
   }
 
 }
