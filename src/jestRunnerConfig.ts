@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { isWindows, normalizePath, quote } from './util';
+import { existsSync } from 'fs';
 
 export class JestRunnerConfig {
   /**
@@ -134,7 +135,17 @@ export class JestRunnerConfig {
   }
 
   public get yarnPnpPath(): string {
-    return `--require ${quote(this.currentWorkspaceFolderPath + '/.pnp.js')}`;
+    const pnp = {
+      'v2': this.currentWorkspaceFolderPath + '/' + '.pnp.js',
+      'v3': this.currentWorkspaceFolderPath + '/' + '.pnp.cjs',
+    };
+    if (existsSync(pnp.v2)) {
+      return `--require ${quote(pnp.v2)}`;
+    }
+    if (existsSync(pnp.v3)) {
+      return `--require ${quote(pnp.v3)}`;
+    }
+    throw 'Yarn 2 PnP file not found (.pnp.js or .pnp.cjs)!';
   }
 
   public get isDetectYarnPnpJestBin(): boolean {
