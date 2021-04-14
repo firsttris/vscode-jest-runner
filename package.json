@@ -138,10 +138,12 @@
 			"explorer/context": [
 				{
 					"command": "extension.runJest",
+					"when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
 					"group": "02_jest@1"
 				},
 				{
 					"command": "extension.debugJest",
+					"when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
 					"group": "02_jest@2"
 				}
 			]
