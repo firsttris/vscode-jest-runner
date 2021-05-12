@@ -163,7 +163,7 @@ export class JestRunner {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str) => str;
 
-    args.push(quoter(normalizePath(escapePlusSign(filePath))));
+    args.push(quoter(normalizePath(escapeRegExp(filePath))));
 
     if (this.config.jestConfigPath) {
       args.push('-c');
