@@ -2,7 +2,6 @@ import { parse } from 'jest-editor-support';
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import {
-  escapePlusSign,
   escapeRegExp,
   escapeSingleQuotes,
   findFullTestName,
