@@ -2,7 +2,7 @@ import { parse } from 'jest-editor-support';
 import * as path from 'path';
 import { findFullTestName } from '../../util';
 
-const children = parse(path.resolve(__dirname, 'test2.test.ts')).root.children;
+const children = parse(path.resolve('./src/test/suite/test2.test.ts')).root.children;
 
 it('should find line 1', () => {
   expect(findFullTestName(1, children)).toBe('testSuiteA');
