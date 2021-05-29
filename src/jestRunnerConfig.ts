@@ -25,7 +25,7 @@ export class JestRunnerConfig {
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
-    return vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot')
+    return vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot');
   }
 
   public get jestBinPath(): string {
@@ -43,7 +43,7 @@ export class JestRunnerConfig {
     if (this.isDetectYarnPnpJestBin) {
       jestPath = this.yarnPnpJestBinPath;
     }
-    
+
     return normalizePath(jestPath);
   }
 
@@ -52,7 +52,11 @@ export class JestRunnerConfig {
   }
 
   public get cwd(): string {
-    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentPackagePath || this.currentWorkspaceFolderPath;
+    return (
+      vscode.workspace.getConfiguration().get('jestrunner.projectPath') ||
+      this.currentPackagePath ||
+      this.currentWorkspaceFolderPath
+    );
   }
 
   private get currentPackagePath() {
@@ -61,21 +65,22 @@ export class JestRunnerConfig {
       // Try to find where jest is installed relatively to the current opened file.
       // Do not assume that jest is always installed at the root of the opened project, this is not the case
       // such as in multi-module projects.
-      let pkg = path.join(currentFolderPath, 'package.json');
-      let jest = path.join(currentFolderPath, 'node_modules', 'jest');
+      const pkg = path.join(currentFolderPath, 'package.json');
+      const jest = path.join(currentFolderPath, 'node_modules', 'jest');
       if (fs.existsSync(pkg) && fs.existsSync(jest)) {
         return currentFolderPath;
       }
       currentFolderPath = path.join(currentFolderPath, '..');
-    } while(currentFolderPath !== this.currentWorkspaceFolderPath);
+    } while (currentFolderPath !== this.currentWorkspaceFolderPath);
 
     return '';
   }
 
-  public get currentWorkspaceFolderPath() {
+  public get currentWorkspaceFolderPath(): string {
     const editor = vscode.window.activeTextEditor;
     return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
   }
+
   public get jestConfigPath(): string {
     // custom
     const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
@@ -86,21 +91,21 @@ export class JestRunnerConfig {
     // default
     return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
   }
-    
+
   private findConfigPath(): string {
     let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
     do {
       currentFolderConfigPath = path.join(currentFolderPath, 'jest.config.js');
-      if(fs.existsSync(currentFolderConfigPath)) {
+      if (fs.existsSync(currentFolderConfigPath)) {
         return currentFolderConfigPath;
       }
       currentFolderPath = path.join(currentFolderPath, '..');
-    } while(currentFolderPath !== this.currentWorkspaceFolderPath);
+    } while (currentFolderPath !== this.currentWorkspaceFolderPath);
     return '';
   }
 
-  public get runOptions() {
+  public get runOptions(): string[] | null {
     const runOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
     if (runOptions) {
       if (Array.isArray(runOptions)) {
@@ -136,8 +141,8 @@ export class JestRunnerConfig {
 
   public get yarnPnpPath(): string {
     const pnp = {
-      'v2': this.currentWorkspaceFolderPath + '/' + '.pnp.js',
-      'v3': this.currentWorkspaceFolderPath + '/' + '.pnp.cjs',
+      v2: this.currentWorkspaceFolderPath + '/' + '.pnp.js',
+      v3: this.currentWorkspaceFolderPath + '/' + '.pnp.cjs',
     };
     if (existsSync(pnp.v2)) {
       return `--require ${quote(pnp.v2)}`;
@@ -154,7 +159,11 @@ export class JestRunnerConfig {
   }
 
   public get yarnPnpJestBinPath(): string {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { execSync } = require('child_process');
+    // TODO: this callback signature is only valid for `exec` - not `execSync`. If you don't
+    // disable eslint and `import { execSync } from 'child_process'` above, the type checker will
+    // error.
     const stdout = execSync('yarn bin jest', (err, stdout, stderr) => {
       if (err) {
         throw err;
@@ -165,5 +174,4 @@ export class JestRunnerConfig {
     }).toString();
     return stdout.replace(/\r?\n|\r/g, '');
   }
-
 }

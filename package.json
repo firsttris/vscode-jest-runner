@@ -1,168 +1,175 @@
 {
-	"name": "vscode-jest-runner",
-	"displayName": "Jest Runner",
-	"description": "Simple way to run or debug a single (or multiple) tests from context-menu",
-	"version": "0.4.34",
-	"publisher": "firsttris",
-	"author": "Tristan Teufel",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/firsttris/vscode-jest-runner.git"
-	},
-	"license": "MIT",
-	"icon": "public/icon.png",
-	"engines": {
-		"vscode": "^1.55.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"*"
-	],
-	"main": "./dist/extension",
-	"contributes": {
-		"configuration": [
-			{
-				"title": "Jest-Runner Config",
-				"properties": {
-					"jestrunner.configPath": {
-						"type": "string",
-						"default": "",
-						"description": "Jest config path (relative to ${workFolder} e.g. jest-config.json)",
-						"scope": "window"
-					},
-					"jestrunner.jestPath": {
-						"type": "string",
-						"default": "",
-						"description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
-						"scope": "window"
-					},
-					"jestrunner.projectPath": {
-						"type": "string",
-						"default": "",
-						"description": "Absolute path to project directory (e.g. /home/me/project/sub-folder)",
-						"scope": "window"
-					},
-					"jestrunner.debugOptions": {
-						"type": "object",
-						"default": {},
-						"description": "Add or overwrite vscode debug configurations (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
-						"scope": "window"
-					},
-					"jestrunner.runOptions": {
-						"type": "array",
-						"default": [],
-						"items": {
-							"type": "string",
-							"description": "CLI Option e.g. --coverage"
-						},
-						"description": "Add CLI Options to the Jest Command e.g. https://jestjs.io/docs/en/cli",
-						"scope": "window"
-					},
-					"jestrunner.jestCommand": {
-						"type": "string",
-						"default": "",
-						"description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
-						"scope": "window"
-					},
-					"jestrunner.disableCodeLens": {
-						"type": "boolean",
-						"default": false,
-						"description": "Disable CodeLens feature",
-						"scope": "window"
-					},
-					"jestrunner.codeLensSelector": {
-						"type": "string",
-						"default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
-						"description": "CodeLens will be shown on files matching this pattern"
-					},
-					"jestrunner.enableYarnPnpSupport": {
-						"type": "boolean",
-						"default": false,
-						"description": "Enable if you are using Yarn 2 with Plug'n'Play",
-						"scope": "window"
-					},
-					"jestrunner.detectYarnPnpJestBin": {
-						"type": "boolean",
-						"default": false,
-						"description": "Auto-detect path on Linux/Unix systems to Jest bin (Yarn 2 Pnp)",
-						"scope": "window"
-					},
-					"jestrunner.changeDirectoryToWorkspaceRoot": {
-						"type": "boolean",
-						"default": true,
-						"description": "Changes directory to workspace root before executing the test",
-						"scope": "window"
-					}
-				}
-			}
-		],
-		"commands": [
-			{
-				"command": "extension.runJest",
-				"title": "Run Jest"
-			},
-			{
-				"command": "extension.runJestAndUpdateSnapshots",
-				"title": "Run Jest and Update Snapshots"
-			},
-			{
-				"command": "extension.runPrevJest",
-				"title": "Run Previous Jest"
-			},
-			{
-				"command": "extension.runJestFile",
-				"title": "Run Jest File"
-			},
-			{
-				"command": "extension.debugJest",
-				"title": "Debug Jest"
-			},
-			{
-				"command": "extension.runJestFileWithCoverage",
-				"title": "Run Jest File with Coverage"
-			}
-		],
-		"menus": {
-			"editor/context": [
-				{
-					"command": "extension.runJest",
-					"group": "02_jest"
-				},
-				{
-					"command": "extension.debugJest",
-					"group": "02_jest"
-				}
-			]
-		}
-	},
-	"scripts": {
-		"vscode:prepublish": "webpack --mode production",
-		"compile": "webpack --mode development",
-		"watch": "webpack --mode development --watch",
-		"test": "npm run test-compile && node ./out/test/runTest.js",
-		"test-compile": "tsc -p ./",
-		"publish": "vsce publish patch && git push"
-	},
-	"devDependencies": {
-		"@types/jest": "^26.0.22",
-		"@types/node": "^14.14.37",
-		"@types/vscode": "^1.55.0",
-		"babylon": "^6.18.0",
-		"jest": "^26.6.3",
-		"prettier": "^2.2.1",
-		"ts-jest": "^26.5.4",
-		"ts-loader": "^8.1.0",
-		"tslint": "^6.1.3",
-		"tslint-config-prettier": "^1.18.0",
-		"tslint-plugin-prettier": "^2.3.0",
-		"typescript": "^4.2.4",
-		"vscode-test": "^1.5.2",
-		"webpack": "^5.31.0",
-		"webpack-cli": "^4.6.0"
-	},
-	"dependencies": {
-		"jest-editor-support": "^28.2.0"
-	}
+  "name": "vscode-jest-runner",
+  "displayName": "Jest Runner",
+  "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
+  "version": "0.4.34",
+  "publisher": "firsttris",
+  "author": "Tristan Teufel",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/firsttris/vscode-jest-runner.git"
+  },
+  "license": "MIT",
+  "icon": "public/icon.png",
+  "engines": {
+    "vscode": "^1.55.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension",
+  "contributes": {
+    "configuration": [
+      {
+        "title": "Jest-Runner Config",
+        "properties": {
+          "jestrunner.configPath": {
+            "type": "string",
+            "default": "",
+            "description": "Jest config path (relative to ${workFolder} e.g. jest-config.json)",
+            "scope": "window"
+          },
+          "jestrunner.jestPath": {
+            "type": "string",
+            "default": "",
+            "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
+            "scope": "window"
+          },
+          "jestrunner.projectPath": {
+            "type": "string",
+            "default": "",
+            "description": "Absolute path to project directory (e.g. /home/me/project/sub-folder)",
+            "scope": "window"
+          },
+          "jestrunner.debugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or overwrite vscode debug configurations (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
+            "scope": "window"
+          },
+          "jestrunner.runOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --coverage"
+            },
+            "description": "Add CLI Options to the Jest Command e.g. https://jestjs.io/docs/en/cli",
+            "scope": "window"
+          },
+          "jestrunner.jestCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
+            "scope": "window"
+          },
+          "jestrunner.disableCodeLens": {
+            "type": "boolean",
+            "default": false,
+            "description": "Disable CodeLens feature",
+            "scope": "window"
+          },
+          "jestrunner.codeLensSelector": {
+            "type": "string",
+            "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
+            "description": "CodeLens will be shown on files matching this pattern"
+          },
+          "jestrunner.enableYarnPnpSupport": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable if you are using Yarn 2 with Plug'n'Play",
+            "scope": "window"
+          },
+          "jestrunner.detectYarnPnpJestBin": {
+            "type": "boolean",
+            "default": false,
+            "description": "Auto-detect path on Linux/Unix systems to Jest bin (Yarn 2 Pnp)",
+            "scope": "window"
+          },
+          "jestrunner.changeDirectoryToWorkspaceRoot": {
+            "type": "boolean",
+            "default": true,
+            "description": "Changes directory to workspace root before executing the test",
+            "scope": "window"
+          }
+        }
+      }
+    ],
+    "commands": [
+      {
+        "command": "extension.runJest",
+        "title": "Run Jest"
+      },
+      {
+        "command": "extension.runJestAndUpdateSnapshots",
+        "title": "Run Jest and Update Snapshots"
+      },
+      {
+        "command": "extension.runPrevJest",
+        "title": "Run Previous Jest"
+      },
+      {
+        "command": "extension.runJestFile",
+        "title": "Run Jest File"
+      },
+      {
+        "command": "extension.debugJest",
+        "title": "Debug Jest"
+      },
+      {
+        "command": "extension.runJestFileWithCoverage",
+        "title": "Run Jest File with Coverage"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "extension.runJest",
+          "group": "02_jest"
+        },
+        {
+          "command": "extension.debugJest",
+          "group": "02_jest"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "webpack --mode production",
+    "compile": "webpack --mode development",
+    "watch": "webpack --mode development --watch",
+    "test": "npm run test-compile && node ./out/test/runTest.js",
+    "test-compile": "tsc -p ./",
+    "publish": "vsce publish patch && git push",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@jest/types": "^26.6.2",
+    "@types/node": "^14.14.37",
+    "@types/vscode": "^1.55.0",
+    "@typescript-eslint/eslint-plugin": "^4.25.0",
+    "@typescript-eslint/parser": "^4.25.0",
+    "babylon": "^6.18.0",
+    "eslint": "^7.27.0",
+    "husky": "^6.0.0",
+    "jest": "^26.6.3",
+    "lint-staged": "^11.0.0",
+    "prettier": "^2.2.1",
+    "ts-jest": "^26.5.4",
+    "ts-loader": "^8.1.0",
+    "typescript": "^4.2.4",
+    "vscode-test": "^1.5.2",
+    "webpack": "^5.31.0",
+    "webpack-cli": "^4.6.0"
+  },
+  "dependencies": {
+    "jest-editor-support": "^28.2.0"
+  },
+  "lint-staged": {
+    "*.{js,ts}": "eslint --cache --fix",
+    "*.{js,css,md}": "prettier --write"
+  }
 }

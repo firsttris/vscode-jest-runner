@@ -4,29 +4,35 @@ import { JestRunner } from './jestRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext): void {
   const jestRunner = new JestRunner();
   const codeLensProvider = new JestRunnerCodeLensProvider();
   const config = new JestRunnerConfig();
 
-  const runJest = vscode.commands.registerCommand('extension.runJest', async (argument: object | string) => {
-    if (typeof argument === 'string') {
-      jestRunner.runCurrentTest(argument);
-    } else {
-      jestRunner.runCurrentTest();
+  const runJest = vscode.commands.registerCommand(
+    'extension.runJest',
+    async (argument: Record<string, unknown> | string) => {
+      if (typeof argument === 'string') {
+        jestRunner.runCurrentTest(argument);
+      } else {
+        jestRunner.runCurrentTest();
+      }
     }
-  });
+  );
   const runJestAndUpdateSnapshots = vscode.commands.registerCommand('extension.runJestAndUpdateSnapshots', async () => {
-      jestRunner.runCurrentTest('', ['-u']);
+    jestRunner.runCurrentTest('', ['-u']);
   });
   const runJestFile = vscode.commands.registerCommand('extension.runJestFile', async () => jestRunner.runCurrentFile());
-  const debugJest = vscode.commands.registerCommand('extension.debugJest', async (argument: object | string) => {
-    if (typeof argument === 'string') {
-      jestRunner.debugCurrentTest(argument)
-    } else {
-      jestRunner.debugCurrentTest()
+  const debugJest = vscode.commands.registerCommand(
+    'extension.debugJest',
+    async (argument: Record<string, unknown> | string) => {
+      if (typeof argument === 'string') {
+        jestRunner.debugCurrentTest(argument);
+      } else {
+        jestRunner.debugCurrentTest();
+      }
     }
-  });
+  );
   const runPrev = vscode.commands.registerCommand('extension.runPrevJest', async () => jestRunner.runPreviousTest());
   const runJestFileWithCoverage = vscode.commands.registerCommand('extension.runJestFileWithCoverage', async () =>
     jestRunner.runCurrentFile(['--coverage'])
@@ -47,6 +53,6 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(runJestFileWithCoverage);
 }
 
-export function deactivate() {
+export function deactivate(): void {
   // deactivate
 }

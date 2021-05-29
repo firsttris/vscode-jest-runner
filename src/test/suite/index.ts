@@ -1,11 +1,11 @@
+import { Config } from '@jest/types';
 import { runCLI } from 'jest';
 import * as path from 'path';
-import { Config } from '@jest/types';
 
 const projectRootPath = path.resolve(__dirname, '../../../');
 const jestConfig: Partial<Config.ProjectConfig> = {
   roots: ['./out/test/suite'],
-  testRegex: ['\\.test\\.js$']
+  testRegex: ['\\.test\\.js$'],
 };
 
 export async function run(): Promise<void> {
