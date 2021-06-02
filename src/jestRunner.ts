@@ -60,7 +60,7 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
-  public async runCurrentFile(options?: string[]) {
+  public async runCurrentFile(options?: string[]): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -77,7 +77,7 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
-  public async runPreviousTest() {
+  public async runPreviousTest(): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -139,7 +139,7 @@ export class JestRunner {
       request: 'launch',
       type: 'node',
       cwd: this.config.cwd,
-      ...this.config.debugOptions
+      ...this.config.debugOptions,
     };
     if (this.config.isYarnPnpSupportEnabled) {
       config.runtimeArgs = ['--require', '${workspaceFolder}/.pnp.js'];
@@ -206,7 +206,7 @@ export class JestRunner {
   }
 
   private async goToCwd() {
-    if(this.config.changeDirectoryToWorkspaceRoot) {
+    if (this.config.changeDirectoryToWorkspaceRoot) {
       await this.runTerminalCommand(`cd ${quote(this.config.cwd)}`);
     }
   }

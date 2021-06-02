@@ -4,7 +4,7 @@ import { JestRunner } from './jestRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext): void {
   const jestRunner = new JestRunner();
   const codeLensProvider = new JestRunnerCodeLensProvider();
   const config = new JestRunnerConfig();
@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
     jestRunner.runTestsOnPath(argument.path)
   );
   const runJestAndUpdateSnapshots = vscode.commands.registerCommand('extension.runJestAndUpdateSnapshots', async () => {
-      jestRunner.runCurrentTest('', ['-u']);
+    jestRunner.runCurrentTest('', ['-u']);
   });
   const runJestFile = vscode.commands.registerCommand('extension.runJestFile', async () => jestRunner.runCurrentFile());
   const debugJest = vscode.commands.registerCommand('extension.debugJest', async (argument: object | string ) => {
@@ -55,6 +55,6 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(runJestFileWithCoverage);
 }
 
-export function deactivate() {
+export function deactivate(): void {
   // deactivate
 }

@@ -5,7 +5,7 @@ import { findFullTestName, escapeRegExp } from './util';
 function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): CodeLens[] {
   const codeLens: CodeLens[] = [];
 
-  parsedNode.children?.forEach(subNode => {
+  parsedNode.children?.forEach((subNode) => {
     codeLens.push(...getTestsBlocks(subNode, parseResults));
   });
 
@@ -26,12 +26,12 @@ function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): Cod
     new CodeLens(range, {
       arguments: [fullTestName],
       command: 'extension.runJest',
-      title: 'Run'
+      title: 'Run',
     }),
     new CodeLens(range, {
       arguments: [fullTestName],
       command: 'extension.debugJest',
-      title: 'Debug'
+      title: 'Debug',
     })
   );
 
