@@ -92,7 +92,7 @@ export class JestRunnerConfig {
     return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
   }
 
-  getJestConfigPath(targetPath: string) {
+  getJestConfigPath(targetPath: string): string {
     // custom
     const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
     if (!configPath) {
@@ -102,7 +102,7 @@ export class JestRunnerConfig {
     // default
     return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
   }
-    
+
   private findConfigPath(targetPath?: string): string {
     let currentFolderPath: string = targetPath || path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;

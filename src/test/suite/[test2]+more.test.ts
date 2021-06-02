@@ -4,9 +4,9 @@
  */
 
 describe('testSuiteWithSpecialCharactersInFilePath', () => {
-    describe('test 1', () => {
-      it('should run this test', () => {
-        expect(true).toBe(true);
-      });
+  describe('test 1', () => {
+    it('should run this test', () => {
+      expect(true).toBe(true);
     });
+  });
 });

@@ -9,7 +9,6 @@
     "dist": true
   },
   "editor.codeActionsOnSave": {
-    "source.fixAll": true
-  },
-  "eslint.enable": true
+    "source.fixAll": true,
+  }
 }
