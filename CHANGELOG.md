@@ -1,8 +1,21 @@
 # Change Log
 
+
+## 0.4.35 - 2021-06-02
+
+### Added
+
+- Add explorer menus to run and debug tests with jest #149
+- chore: use eslint vs. tslint #178
+
+### Fixed 
+
+- escape special characters in test filepath (#114) #162
+- Keep Run/Debug buttons shown when failed to parse document #163
+
 ## 0.4.34 - 2021-04-11
 
-## Fixed
+### Fixed
 
 - auto detect project path with jest binary #156
 - add option to command palette to update snapshots #152
