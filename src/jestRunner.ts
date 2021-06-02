@@ -32,8 +32,7 @@ export class JestRunner {
   // public methods
   //
 
-  public async runTestsOnPath(path: string) {
-    
+  public async runTestsOnPath(path: string): Promise<void> {
     const command = this.buildJestCommand(path);
 
     this.previousCommand = command;
@@ -42,7 +41,7 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
-  public async runCurrentTest(currentTestName?: string, options?: string[]) {
+  public async runCurrentTest(currentTestName?: string, options?: string[]): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -60,7 +59,7 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
-  public async runCurrentFile(options?: string[]) {
+  public async runCurrentFile(options?: string[]): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -77,7 +76,7 @@ export class JestRunner {
     await this.runTerminalCommand(command);
   }
 
-  public async runPreviousTest() {
+  public async runPreviousTest(): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -93,16 +92,16 @@ export class JestRunner {
     }
   }
 
-  public async debugTestsOnPath(path: string) {
+  public async debugTestsOnPath(path: string): Promise<void> {
     const debugConfig = this.getDebugConfig(path);
 
     this.executeDebugCommand({
       config: debugConfig,
-      documentUri: vscode.Uri.file(path)
+      documentUri: vscode.Uri.file(path),
     });
   }
 
-  public async debugCurrentTest(currentTestName?: string) {
+  public async debugCurrentTest(currentTestName?: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -111,12 +110,12 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const testName = currentTestName || this.findCurrentTestName(editor)
+    const testName = currentTestName || this.findCurrentTestName(editor);
     const debugConfig = this.getDebugConfig(filePath, testName);
 
     this.executeDebugCommand({
       config: debugConfig,
-      documentUri: editor.document.uri
+      documentUri: editor.document.uri,
     });
   }
 
@@ -139,7 +138,7 @@ export class JestRunner {
       request: 'launch',
       type: 'node',
       cwd: this.config.cwd,
-      ...this.config.debugOptions
+      ...this.config.debugOptions,
     };
     if (this.config.isYarnPnpSupportEnabled) {
       config.runtimeArgs = ['--require', '${workspaceFolder}/.pnp.js'];
@@ -206,7 +205,7 @@ export class JestRunner {
   }
 
   private async goToCwd() {
-    if(this.config.changeDirectoryToWorkspaceRoot) {
+    if (this.config.changeDirectoryToWorkspaceRoot) {
       await this.runTerminalCommand(`cd ${quote(this.config.cwd)}`);
     }
   }

@@ -7,7 +7,7 @@ export function normalizePath(path: string): string {
 }
 
 export function escapeRegExp(s: string): string {
-  var escapedString =  s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+  const escapedString = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
   return escapedString.replace(/\\\(\\\.\\\*\\\?\\\)/g, '(.*?)'); // should revert the escaping of match all regex patterns.
 }
 
@@ -33,13 +33,12 @@ export function findFullTestName(selectedLine: number, children: any[]): string 
 
 const QUOTES = {
   '"': true,
-  // tslint:disable-next-line:prettier
-  '\'': true,
-  '`': true
+  "'": true,
+  '`': true,
 };
 
 export function resolveTestNameStringInterpolation(s: string): string {
-  const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/ig;
+  const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/gi;
   const matchAny = '(.*?)';
   return s.replace(variableRegex, matchAny);
 }

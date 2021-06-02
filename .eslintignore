@@ -4,4 +4,3 @@ coverage
 .vscode-test/
 .vsix
 dist
-.eslintcache

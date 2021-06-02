@@ -5,7 +5,7 @@ import { findFullTestName, escapeRegExp } from './util';
 function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): CodeLens[] {
   const codeLens: CodeLens[] = [];
 
-  parsedNode.children?.forEach(subNode => {
+  parsedNode.children?.forEach((subNode) => {
     codeLens.push(...getTestsBlocks(subNode, parseResults));
   });
 
@@ -26,12 +26,12 @@ function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): Cod
     new CodeLens(range, {
       arguments: [fullTestName],
       command: 'extension.runJest',
-      title: 'Run'
+      title: 'Run',
     }),
     new CodeLens(range, {
       arguments: [fullTestName],
       command: 'extension.debugJest',
-      title: 'Debug'
+      title: 'Debug',
     })
   );
 
@@ -42,15 +42,15 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
   private prevResults: CodeLens[] | null = null;
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
-      const text = document.getText()
+      const text = document.getText();
       const parseResults = parse(document.fileName, text).root.children;
       const codeLens = [];
-      parseResults.forEach(parseResult => codeLens.push(...getTestsBlocks(parseResult, parseResults)));
+      parseResults.forEach((parseResult) => codeLens.push(...getTestsBlocks(parseResult, parseResults)));
       this.prevResults = codeLens;
       return codeLens;
     } catch (e) {
       // Ignore error and keep showing Run/Debug buttons at same position
-      return this.prevResults ?? []  
+      return this.prevResults ?? [];
     }
   }
 }
