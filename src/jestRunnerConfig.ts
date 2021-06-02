@@ -86,9 +86,20 @@ export class JestRunnerConfig {
     // default
     return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
   }
+
+  getJestConfigPath(targetPath: string) {
+    // custom
+    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
+    if (!configPath) {
+      return this.findConfigPath(targetPath);
+    }
+
+    // default
+    return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
+  }
     
-  private findConfigPath(): string {
-    let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
+  private findConfigPath(targetPath?: string): string {
+    let currentFolderPath: string = targetPath || path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
     do {
       currentFolderConfigPath = path.join(currentFolderPath, 'jest.config.js');
