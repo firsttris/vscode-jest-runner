@@ -34,6 +34,39 @@ add the following command to settings, to pass commandline arguments
 "jestrunner.jestCommand": "npm run test --"
 ```
 
+## Debugging JSX/TSX with CRA
+
+for debugging JST/TSX with CRA you need to have a valid babel and jest config: 
+
+to add a `babel.config.js` with at least the following config
+```
+// babel.config.js
+module.exports = {
+    presets: [
+      ["@babel/preset-env", { targets: { node: "current" } }],
+      "babel-preset-react-app",
+    ],
+  };
+```
+
+add a `jest.config.js` with at least the following config
+
+```
+module.exports = {
+  transform: {
+    '\\.(js|ts|jsx|tsx)$': 'babel-jest',
+    '\\.(jpg|jpeg|png|gif|ico|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga|webmanifest|xml)$':
+      '<rootDir>/jest/fileTransformer.js'
+  },
+  moduleNameMapper: {
+    '\\.(css)$': 'identity-obj-proxy'
+  },
+}
+```
+
+Check that debugger works:
+![image](https://user-images.githubusercontent.com/1709260/120468727-d542ae00-c3a1-11eb-85ac-986c35ac167f.png)
+
 ## Extension Settings
 
 Jest Runner will work out of the box, with a valid Jest config.   
