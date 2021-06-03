@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.4.39 - 2021-06-03
+
+### Added
+
+- extended readme.md with how to debug tsx/jsx
+
 ## 0.4.37 - 2021-06-03
 
 ### Fixed
