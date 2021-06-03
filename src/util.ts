@@ -11,6 +11,11 @@ export function escapeRegExp(s: string): string {
   return escapedString.replace(/\\\(\\\.\\\*\\\?\\\)/g, '(.*?)'); // should revert the escaping of match all regex patterns.
 }
 
+export function escapeRegExpForPath(s: string): string {
+  const escapedString = s.replace(/[*+?^${}<>()|[\]]/g, '\\$&'); // $& means the whole matched string
+  return escapedString.replace(/\\\(\\\.\\\*\\\?\\\)/g, '(.*?)'); // should revert the escaping of match all regex patterns.
+}
+
 export function findFullTestName(selectedLine: number, children: any[]): string | undefined {
   if (!children) {
     return;
