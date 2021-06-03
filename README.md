@@ -90,7 +90,7 @@ Another vscode instance will open with the just compiled extension installed.
 - By default **Jest** finds its config from the `"jest"` attribute in your `package.json` or if you export an object `module.export = {}` in a `jest.config.js` file in your project root directory.   
 Read More: [Configuring Jest Docs](https://jestjs.io/docs/en/configuration)
 
-- If Breakpoints are not working properly, try adding this to vscode config:
+- If Breakspoints are not working properly, try adding this to vscode config:
 
 ```javascript
 "jestrunner.debugOptions": {
