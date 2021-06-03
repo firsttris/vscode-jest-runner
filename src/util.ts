@@ -7,7 +7,7 @@ export function normalizePath(path: string): string {
 }
 
 export function escapeRegExp(s: string): string {
-  const escapedString = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+  const escapedString = s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&'); // $& means the whole matched string
   return escapedString.replace(/\\\(\\\.\\\*\\\?\\\)/g, '(.*?)'); // should revert the escaping of match all regex patterns.
 }
 

@@ -2,7 +2,6 @@ import { parse } from 'jest-editor-support';
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import {
-  escapePlusSign,
   escapeRegExp,
   escapeSingleQuotes,
   findFullTestName,
@@ -180,7 +179,7 @@ export class JestRunner {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str) => str;
 
-    args.push(quoter(normalizePath(escapePlusSign(filePath))));
+    args.push(quoter(normalizePath(escapeRegExp(filePath))));
 
     const jestConfigPath = this.config.getJestConfigPath(filePath);
     if (jestConfigPath) {
