@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.4.36 - 2021-06-03
+
+### Fixed
+
+- wrong escaping of filename
 
 ## 0.4.35 - 2021-06-02
 
