@@ -104,6 +104,10 @@
         "title": "Run Jest"
       },
       {
+				"command": "extension.runJestPath",
+				"title": "Run Jest"
+			},
+      {
         "command": "extension.runJestAndUpdateSnapshots",
         "title": "Run Jest and Update Snapshots"
       },
@@ -120,6 +124,10 @@
         "title": "Debug Jest"
       },
       {
+				"command": "extension.debugJestPath",
+				"title": "Debug Jest"
+			},
+      {
         "command": "extension.runJestFileWithCoverage",
         "title": "Run Jest File with Coverage"
       }
@@ -134,7 +142,19 @@
           "command": "extension.debugJest",
           "group": "02_jest"
         }
-      ]
+      ],
+      "explorer/context": [
+				{
+					"command": "extension.runJestPath",
+					"when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
+					"group": "02_jest@1"
+				},
+				{
+					"command": "extension.debugJestPath",
+					"when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
+					"group": "02_jest@2"
+				}
+			]
     }
   },
   "scripts": {
