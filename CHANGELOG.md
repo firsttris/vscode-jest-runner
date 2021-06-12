@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.4.44 - 2021-06-12
+
+### Fixed
+
+- escape yarn version for pnp
+
 ## 0.4.43 - 2021-06-12
 
 ### Fixed

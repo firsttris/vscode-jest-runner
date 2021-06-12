@@ -145,7 +145,7 @@ export class JestRunner {
 
     if (this.config.isYarnPnpSupportEnabled) {
       config.args = ['jest'];
-      config.program = '.yarn/releases/yarn-berry.cjs';
+      config.program = '.yarn/releases/yarn-*.cjs';
     }
 
     const standardArgs = this.buildJestArgs(filePath, currentTestName, false);
