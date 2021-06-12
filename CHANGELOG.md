@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.4.40 - 2021-06-12
+
+### Fixed
+
+- updated jest-editor-support to v29
+- optimized escaping of filepath
+
 ## 0.4.39 - 2021-06-03
 
 ### Added
