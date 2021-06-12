@@ -140,18 +140,17 @@ export class JestRunner {
       cwd: this.config.cwd,
       ...this.config.debugOptions,
     };
-    if (this.config.isYarnPnpSupportEnabled) {
-      config.runtimeArgs = ['--require', '${workspaceFolder}/.pnp.js'];
-    }
-    if (this.config.isDetectYarnPnpJestBin) {
-      config.program = this.config.yarnPnpJestBinPath;
-    }
+
     config.args = config.args ? config.args.slice() : [];
+
+    if (this.config.isYarnPnpSupportEnabled) {
+      config.args = ['jest'];
+      config.program = '.yarn/releases/yarn-berry.cjs';
+    }
 
     const standardArgs = this.buildJestArgs(filePath, currentTestName, false);
     pushMany(config.args, standardArgs);
-
-    config.args.push('--runInBand');
+    pushMany(config.args, ['test', '--runInBand', '--no-cache', '--env=jsdom']);
 
     return config;
   }

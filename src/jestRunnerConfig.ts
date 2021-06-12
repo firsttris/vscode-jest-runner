@@ -2,7 +2,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { isWindows, normalizePath, quote } from './util';
-import { existsSync } from 'fs';
 
 export class JestRunnerConfig {
   /**
@@ -18,8 +17,7 @@ export class JestRunnerConfig {
 
     // default
     if (this.isYarnPnpSupportEnabled) {
-      const pnp = `${this.yarnPnpPath}`;
-      return `node ${pnp} "${this.jestBinPath}"`;
+      return `yarn jest`;
     }
     return `node ${quote(this.jestBinPath)}`;
   }
@@ -40,9 +38,6 @@ export class JestRunnerConfig {
     const cwd = this.cwd;
 
     jestPath = path.join(cwd, relativeJestBin);
-    if (this.isDetectYarnPnpJestBin) {
-      jestPath = this.yarnPnpJestBinPath;
-    }
 
     return normalizePath(jestPath);
   }
@@ -148,41 +143,5 @@ export class JestRunnerConfig {
   public get isYarnPnpSupportEnabled(): boolean {
     const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
     return isYarnPnp ? isYarnPnp : false;
-  }
-
-  public get yarnPnpPath(): string {
-    const pnp = {
-      v2: this.currentWorkspaceFolderPath + '/' + '.pnp.js',
-      v3: this.currentWorkspaceFolderPath + '/' + '.pnp.cjs',
-    };
-    if (existsSync(pnp.v2)) {
-      return `--require ${quote(pnp.v2)}`;
-    }
-    if (existsSync(pnp.v3)) {
-      return `--require ${quote(pnp.v3)}`;
-    }
-    throw 'Yarn 2 PnP file not found (.pnp.js or .pnp.cjs)!';
-  }
-
-  public get isDetectYarnPnpJestBin(): boolean {
-    const isDetectYarnPnpJestBin: boolean = vscode.workspace.getConfiguration().get('jestrunner.detectYarnPnpJestBin');
-    return isDetectYarnPnpJestBin ? isDetectYarnPnpJestBin : false;
-  }
-
-  public get yarnPnpJestBinPath(): string {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { execSync } = require('child_process');
-    // TODO: this callback signature is only valid for `exec` - not `execSync`. If you don't
-    // disable eslint and `import { execSync } from 'child_process'` above, the type checker will
-    // error.
-    const stdout = execSync('yarn bin jest', (err, stdout, stderr) => {
-      if (err) {
-        throw err;
-      }
-      if (stderr) {
-        throw stderr;
-      }
-    }).toString();
-    return stdout.replace(/\r?\n|\r/g, '');
   }
 }
