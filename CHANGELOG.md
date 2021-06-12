@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.4.41 - 2021-06-12
+
+### Fixed
+
+- simplyfied yarn pnp implementation, removed jestrunner.detectYarnPnpJestBin config option
+
 ## 0.4.40 - 2021-06-12
 
 ### Fixed
