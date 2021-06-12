@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.4.43 - 2021-06-12
+
+### Fixed
+
+- rest debug arguments back to default
+
 ## 0.4.41 - 2021-06-12
 
 ### Fixed

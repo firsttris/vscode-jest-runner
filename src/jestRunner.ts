@@ -150,7 +150,7 @@ export class JestRunner {
 
     const standardArgs = this.buildJestArgs(filePath, currentTestName, false);
     pushMany(config.args, standardArgs);
-    pushMany(config.args, ['test', '--runInBand', '--no-cache', '--env=jsdom']);
+    config.args.push('--runInBand');
 
     return config;
   }
