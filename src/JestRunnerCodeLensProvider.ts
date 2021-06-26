@@ -1,51 +1,41 @@
-import { parse, ParsedNode } from 'jest-editor-support';
 import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
-import { findFullTestName, escapeRegExp } from './util';
 
-function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): CodeLens[] {
+import { isPlaywrightTest, parse } from './playwright-editor-support';
+
+function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
   const codeLens: CodeLens[] = [];
-
-  parsedNode.children?.forEach((subNode) => {
-    codeLens.push(...getTestsBlocks(subNode, parseResults));
+  const is_playwright = isPlaywrightTest(filepath, text);
+  parse(filepath, text).forEach((element) => {
+    const range = new Range(element.start.line - 1, element.start.column, element.end.line - 1, element.end.column);
+    codeLens.push(
+      new CodeLens(range, {
+        arguments: [element.fullname],
+        command: 'extension.runPlaywright',
+        title: 'Run',
+      }),
+      new CodeLens(range, {
+        arguments: [element.fullname],
+        command: 'extension.debugPlaywright',
+        title: 'Debug',
+      })
+    );
+    if (is_playwright) {
+      codeLens.push(
+        new CodeLens(range, {
+          arguments: [element.fullname],
+          command: 'extension.inspectorPlaywright',
+          title: 'Inspector',
+        })
+      );
+    }
   });
-
-  const range = new Range(
-    parsedNode.start.line - 1,
-    parsedNode.start.column,
-    parsedNode.end.line - 1,
-    parsedNode.end.column
-  );
-
-  if (parsedNode.type === 'expect') {
-    return [];
-  }
-
-  const fullTestName = escapeRegExp(findFullTestName(parsedNode.start.line, parseResults));
-
-  codeLens.push(
-    new CodeLens(range, {
-      arguments: [fullTestName],
-      command: 'extension.runJest',
-      title: 'Run',
-    }),
-    new CodeLens(range, {
-      arguments: [fullTestName],
-      command: 'extension.debugJest',
-      title: 'Debug',
-    })
-  );
-
   return codeLens;
 }
-
 export class JestRunnerCodeLensProvider implements CodeLensProvider {
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
       const text = document.getText();
-      const parseResults = parse(document.fileName, text).root.children;
-      const codeLens: CodeLens[] = [];
-      parseResults.forEach((parseResult) => codeLens.push(...getTestsBlocks(parseResult, parseResults)));
-      return codeLens;
+      return getPlaywrightCodeLens(document.fileName, text);
     } catch (e) {
       // Ignore error and keep showing Run/Debug buttons at same position
       console.error('jest-editor-support parser returned error', e);

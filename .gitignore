@@ -2,6 +2,7 @@ out
 node_modules
 coverage
 .vscode-test/
-.vsix
+*.vsix
 dist
 .eslintcache
+testarea/*

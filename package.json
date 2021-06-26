@@ -1,13 +1,16 @@
 {
-  "name": "vscode-jest-runner",
-  "displayName": "Jest Runner",
+  "name": "vscode-jest-playwright-runner",
+  "displayName": "Jest & Playwright Runner",
   "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
-  "version": "0.4.44",
-  "publisher": "firsttris",
-  "author": "Tristan Teufel",
+  "version": "0.1.0",
+  "publisher": "sakamoto66",
+  "author": {
+    "name": "sakamoto66",
+    "email": "sakamoto0322+github@gmail.com"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/firsttris/vscode-jest-runner.git"
+    "url": "https://github.com/sakamoto66/vscode-jest-runner.git"
   },
   "license": "MIT",
   "icon": "public/icon.png",
@@ -24,7 +27,7 @@
   "contributes": {
     "configuration": [
       {
-        "title": "Jest-Runner Config",
+        "title": "Jest and Playwright-Runner Config",
         "properties": {
           "jestrunner.configPath": {
             "type": "string",
@@ -32,10 +35,22 @@
             "description": "Jest config path (relative to ${workFolder} e.g. jest-config.json)",
             "scope": "window"
           },
+          "jestrunner.playwrightConfigPath": {
+            "type": "string",
+            "default": "",
+            "description": "Playwright config path (relative to ${workFolder} e.g. playwright.config.js)",
+            "scope": "window"
+          },
           "jestrunner.jestPath": {
             "type": "string",
             "default": "",
             "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
+            "scope": "window"
+          },
+          "jestrunner.playwrightPath": {
+            "type": "string",
+            "default": "",
+            "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/playwright/lib/cli/cli.js)",
             "scope": "window"
           },
           "jestrunner.projectPath": {
@@ -47,7 +62,13 @@
           "jestrunner.debugOptions": {
             "type": "object",
             "default": {},
-            "description": "Add or overwrite vscode debug configurations (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
+            "description": "Add or overwrite vscode debug configurations for Jest (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
+            "scope": "window"
+          },
+          "jestrunner.playwrightDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or overwrite vscode debug configurations for Playwright (only in debug mode) (e.g. { \"args\": [\"--browser=all\"] })",
             "scope": "window"
           },
           "jestrunner.runOptions": {
@@ -60,10 +81,26 @@
             "description": "Add CLI Options to the Jest Command e.g. https://jestjs.io/docs/en/cli",
             "scope": "window"
           },
+          "jestrunner.playwrightRunOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --browser=all"
+            },
+            "description": "Add CLI Options to the Playwright Command e.g. https://playwright.dev/docs/test-intro",
+            "scope": "window"
+          },
           "jestrunner.jestCommand": {
             "type": "string",
             "default": "",
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
+            "scope": "window"
+          },
+          "jestrunner.playwrightCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative playwright command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
           "jestrunner.disableCodeLens": {
