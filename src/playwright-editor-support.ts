@@ -54,14 +54,18 @@ export const isPlaywrightTest = (filepath: string, data?: string): boolean => {
 function findTestMethods(program: unknown): TestCode[] {
   const ptnName1 = new RegExp(`${escapeRegExp('expression/callee/name')}$`);
   const ptnName2 = new RegExp(`${escapeRegExp('expression/callee/object/name')}$`);
+  const ptnName3 = new RegExp(`${escapeRegExp('expression/callee/tag/object/name')}$`);
+  const ptnName4 = new RegExp(`${escapeRegExp('expression/callee/callee/object/name')}$`);
   const funcNames1 = ['it', 'test', 'describe'];
   const funcNames2 = ['describe', 'only'];
+  const funcNames3 = ['each'];
+  const funcNames4 = ['each'];
 
   // convert
   const items = [];
   node2path(program, (path, value) => items.push([path, value]));
 
-  const names = items.filter((i) => -1 < funcNames1.indexOf(i[1]));
+  const names = items.filter((i) => /\/name$/.test(i[0]) && -1 < funcNames1.indexOf(i[1]));
   // match test(...)
   const pathPrefix1 = names
     .filter((i) => ptnName1.test(i[0]))
@@ -77,24 +81,46 @@ function findTestMethods(program: unknown): TestCode[] {
     })
     .filter((f) => f[1]);
 
-  const all: string[][] = pathPrefix1.concat(pathPrefix2);
+  // match test.each(...)
+  const pathPrefix3 = names
+    .filter((i) => ptnName3.test(i[0]))
+    .map((i) => {
+      const prefix = i[0].replace(ptnName3, 'expression/');
+      const type = items.find((i) => `${prefix}callee/tag/property/name` == i[0] && -1 < funcNames3.indexOf(i[1]));
+      return [prefix, type ? type[1] : null];
+    })
+    .filter((f) => f[1]);
+
+  // match test.each(...)
+  const pathPrefix4 = names
+    .filter((i) => ptnName4.test(i[0]))
+    .map((i) => {
+      const prefix = i[0].replace(ptnName4, 'expression/');
+      const type = items.find((i) => `${prefix}callee/callee/property/name` == i[0] && -1 < funcNames4.indexOf(i[1]));
+      return [prefix, type ? type[1] : null];
+    })
+    .filter((f) => f[1]);
+
+  const all: string[][] = pathPrefix1.concat(pathPrefix2, pathPrefix3, pathPrefix4);
   all.sort((a, b) => (a[0] > b[0] ? 1 : -1));
 
   const elements: TestCode[] = all.map((prefix) => {
-    const ptnPosition = `${prefix[0]}callee/loc`;
-    const ptnTestName = `${prefix[0]}arguments[0]/value`;
+    const ptnPosition = new RegExp(`^${escapeRegExp(prefix[0])}loc/(start|end)/`);
+    const ptnTestName = new RegExp(`^${escapeRegExp(prefix[0] + 'arguments[0]/')}(value|quasis\\[\\d+\\]/value/raw)$`);
     const element: TestCode = new TestCode();
     element.prefix = prefix[0];
     element.type = prefix[1];
     items
-      .filter((i) => 0 == i[0].indexOf(ptnPosition))
+      .filter((i) => ptnPosition.test(i[0]))
       .forEach((i) => {
         const key = /[^/]+\/[^/]+$/.exec(i[0])[0].split('/');
         if (!element[key[0]]) element[key[0]] = {};
         element[key[0]][key[1]] = i[1];
       });
-    const name = items.find((i) => ptnTestName == i[0]);
-    element.name = name ? name[1] : null;
+    element.name = items
+      .filter((i) => ptnTestName.test(i[0]))
+      .map((i) => i[1])
+      .join('${i}');
     element.fullname = element.name;
     return element;
   });

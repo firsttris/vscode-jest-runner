@@ -19,19 +19,13 @@ export function findFullTestName(selectedLine: number, children: any[]): string 
   if (!children) {
     return;
   }
-  for (const element of children) {
-    if (element.type === 'describe' && selectedLine === element.start.line) {
-      return resolveTestNameStringInterpolation(element.name);
-    }
-    if (element.type !== 'describe' && selectedLine >= element.start.line && selectedLine <= element.end.line) {
-      return resolveTestNameStringInterpolation(element.name);
-    }
+  const elm = children.find((elm) => selectedLine === elm.start.line || selectedLine === elm.end.line);
+  if (elm) {
+    return resolveTestNameStringInterpolation(elm.fullname);
   }
-  for (const element of children) {
-    const result = findFullTestName(selectedLine, element.children);
-    if (result) {
-      return resolveTestNameStringInterpolation(element.name) + ' ' + result;
-    }
+  const els = children.filter((elm) => elm.start.line < selectedLine && selectedLine < elm.end.line);
+  if (0 < els.length) {
+    return resolveTestNameStringInterpolation(els[els.length - 1].fullname);
   }
 }
 

@@ -1,8 +1,8 @@
-import { parse } from 'jest-editor-support';
 import * as path from 'path';
 import { findFullTestName } from '../../util';
+import { parse } from '../../playwright-editor-support';
 
-const children = parse(path.resolve('./src/test/suite/test2.test.ts')).root.children;
+const children = parse(path.resolve('./src/test/suite/test2.test.ts'));
 
 it('should find line 1', () => {
   expect(findFullTestName(1, children)).toBe('testSuiteA');

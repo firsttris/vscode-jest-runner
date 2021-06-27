@@ -1,6 +1,6 @@
 {
-  "name": "vscode-jest-playwright-runner",
-  "displayName": "Jest & Playwright Runner",
+  "name": "vscode-playwright-test-runner",
+  "displayName": "Playwright Test Runner",
   "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
   "version": "0.1.0",
   "publisher": "sakamoto66",
@@ -131,39 +131,43 @@
     ],
     "commands": [
       {
-        "command": "extension.runJest",
-        "title": "Run Jest"
+        "command": "playwright.runTest",
+        "title": "Run Playwright Test"
       },
       {
-        "command": "extension.runJestAndUpdateSnapshots",
-        "title": "Run Jest and Update Snapshots"
+        "command": "playwright.runTestAndUpdateSnapshots",
+        "title": "Run Playwright Test and Update Snapshots"
       },
       {
-        "command": "extension.runPrevJest",
-        "title": "Run Previous Jest"
+        "command": "playwright.runPrevTest",
+        "title": "Run Previous Playwright Test"
       },
       {
-        "command": "extension.runJestFile",
-        "title": "Run Jest File"
+        "command": "playwright.runTestFile",
+        "title": "Run Playwright Test File"
       },
       {
-        "command": "extension.debugJest",
-        "title": "Debug Jest"
+        "command": "playwright.debugTest",
+        "title": "Debug Playwright Test"
       },
       {
-        "command": "extension.runJestFileWithCoverage",
-        "title": "Run Jest File with Coverage"
+        "command": "playwright.inspectorTest",
+        "title": "Inspector Playwright Test"
+      },
+      {
+        "command": "playwright.runTestFileWithCoverage",
+        "title": "Run Playwright Test File with Coverage"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "extension.runJest",
-          "group": "02_jest"
+          "command": "playwright.runTest",
+          "group": "02_playwright"
         },
         {
-          "command": "extension.debugJest",
-          "group": "02_jest"
+          "command": "playwright.debugTest",
+          "group": "02_playwright"
         }
       ]
     }
@@ -198,7 +202,5 @@
     "webpack": "^5.38.1",
     "webpack-cli": "^4.7.0"
   },
-  "dependencies": {
-    "jest-editor-support": "^29.0.0"
-  }
+  "dependencies": {}
 }

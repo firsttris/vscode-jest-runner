@@ -1,16 +1,6 @@
 import { isPlaywrightTest, parse } from './playwright-editor-support';
-import * as path from 'path';
 import * as vscode from 'vscode';
-import {
-  escapeRegExpForPath,
-  escapeRegExp,
-  escapeSingleQuotes,
-  findFullTestName,
-  normalizePath,
-  pushMany,
-  quote,
-  unquote,
-} from './util';
+import { escapeRegExp, findFullTestName, quote, unquote } from './util';
 
 import { JestCommandBuilder } from './jestCommandBuilder';
 import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
