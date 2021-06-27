@@ -10,7 +10,7 @@ export class PlaywrightRunnerConfig {
    */
   public get playwrightCommand(): string {
     // custom
-    const playwrightCommand: string = vscode.workspace.getConfiguration().get('jestrunner.playwrightCommand');
+    const playwrightCommand: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightCommand');
     if (playwrightCommand) {
       return playwrightCommand;
     }
@@ -23,12 +23,12 @@ export class PlaywrightRunnerConfig {
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
-    return vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot');
+    return vscode.workspace.getConfiguration().get('playwrightrunner.changeDirectoryToWorkspaceRoot');
   }
 
   public get playwrightBinPath(): string {
     // custom
-    let playwrightPath: string = vscode.workspace.getConfiguration().get('jestrunner.playwrightPath');
+    let playwrightPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightPath');
     if (playwrightPath) {
       return playwrightPath;
     }
@@ -46,12 +46,12 @@ export class PlaywrightRunnerConfig {
   }
 
   public get projectPath(): string {
-    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
+    return vscode.workspace.getConfiguration().get('playwrightrunner.projectPath') || this.currentWorkspaceFolderPath;
   }
 
   public get cwd(): string {
     return (
-      vscode.workspace.getConfiguration().get('jestrunner.projectPath') ||
+      vscode.workspace.getConfiguration().get('playwrightrunner.projectPath') ||
       this.currentPackagePath ||
       this.currentWorkspaceFolderPath
     );
@@ -81,7 +81,7 @@ export class PlaywrightRunnerConfig {
 
   public get playwrightConfigPath(): string {
     // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.playwrightConfigPath');
+    const configPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightConfigPath');
     if (!configPath) {
       return this.findConfigPath();
     }
@@ -92,7 +92,7 @@ export class PlaywrightRunnerConfig {
 
   getPlaywrightConfigPath(targetPath: string): string {
     // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.playwrightConfigPath');
+    const configPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightConfigPath');
     if (!configPath) {
       return this.findConfigPath(targetPath);
     }
@@ -115,13 +115,13 @@ export class PlaywrightRunnerConfig {
   }
 
   public get runOptions(): string[] | null {
-    const runOptions = vscode.workspace.getConfiguration().get('jestrunner.playwrightRunOptions');
+    const runOptions = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightRunOptions');
     if (runOptions) {
       if (Array.isArray(runOptions)) {
         return runOptions;
       } else {
         vscode.window.showWarningMessage(
-          'Please check your vscode settings. "jestrunner.playwrightRunOptions" must be an Array. '
+          'Please check your vscode settings. "playwrightrunner.playwrightRunOptions" must be an Array. '
         );
       }
     }
@@ -129,7 +129,7 @@ export class PlaywrightRunnerConfig {
   }
 
   public get debugOptions(): Partial<vscode.DebugConfiguration> {
-    const debugOptions = vscode.workspace.getConfiguration().get('jestrunner.playwrightDebugOptions');
+    const debugOptions = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightDebugOptions');
     if (debugOptions) {
       return debugOptions;
     }
@@ -139,12 +139,12 @@ export class PlaywrightRunnerConfig {
   }
 
   public get isCodeLensDisabled(): boolean {
-    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
+    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('playwrightrunner.disableCodeLens');
     return isCodeLensDisabled ? isCodeLensDisabled : false;
   }
 
   public get isYarnPnpSupportEnabled(): boolean {
-    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
+    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('playwrightrunner.enableYarnPnpSupport');
     return isYarnPnp ? isYarnPnp : false;
   }
 }

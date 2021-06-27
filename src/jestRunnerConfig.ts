@@ -10,7 +10,7 @@ export class JestRunnerConfig {
    */
   public get jestCommand(): string {
     // custom
-    const jestCommand: string = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
+    const jestCommand: string = vscode.workspace.getConfiguration().get('playwrightrunner.jestCommand');
     if (jestCommand) {
       return jestCommand;
     }
@@ -23,12 +23,12 @@ export class JestRunnerConfig {
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
-    return vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot');
+    return vscode.workspace.getConfiguration().get('playwrightrunner.changeDirectoryToWorkspaceRoot');
   }
 
   public get jestBinPath(): string {
     // custom
-    let jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
+    let jestPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.jestPath');
     if (jestPath) {
       return jestPath;
     }
@@ -43,12 +43,12 @@ export class JestRunnerConfig {
   }
 
   public get projectPath(): string {
-    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
+    return vscode.workspace.getConfiguration().get('playwrightrunner.projectPath') || this.currentWorkspaceFolderPath;
   }
 
   public get cwd(): string {
     return (
-      vscode.workspace.getConfiguration().get('jestrunner.projectPath') ||
+      vscode.workspace.getConfiguration().get('playwrightrunner.projectPath') ||
       this.currentPackagePath ||
       this.currentWorkspaceFolderPath
     );
@@ -78,7 +78,7 @@ export class JestRunnerConfig {
 
   public get jestConfigPath(): string {
     // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
+    const configPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.jestConfigPath');
     if (!configPath) {
       return this.findConfigPath();
     }
@@ -89,7 +89,7 @@ export class JestRunnerConfig {
 
   getJestConfigPath(targetPath: string): string {
     // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
+    const configPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.jestConfigPath');
     if (!configPath) {
       return this.findConfigPath(targetPath);
     }
@@ -112,13 +112,13 @@ export class JestRunnerConfig {
   }
 
   public get runOptions(): string[] | null {
-    const runOptions = vscode.workspace.getConfiguration().get('jestrunner.runOptions');
+    const runOptions = vscode.workspace.getConfiguration().get('playwrightrunner.jestRunOptions');
     if (runOptions) {
       if (Array.isArray(runOptions)) {
         return runOptions;
       } else {
         vscode.window.showWarningMessage(
-          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. '
+          'Please check your vscode settings. "playwrightrunner.jestRunOptions" must be an Array. '
         );
       }
     }
@@ -126,7 +126,7 @@ export class JestRunnerConfig {
   }
 
   public get debugOptions(): Partial<vscode.DebugConfiguration> {
-    const debugOptions = vscode.workspace.getConfiguration().get('jestrunner.debugOptions');
+    const debugOptions = vscode.workspace.getConfiguration().get('playwrightrunner.jestDebugOptions');
     if (debugOptions) {
       return debugOptions;
     }
@@ -136,12 +136,12 @@ export class JestRunnerConfig {
   }
 
   public get isCodeLensDisabled(): boolean {
-    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
+    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('playwrightrunner.disableCodeLens');
     return isCodeLensDisabled ? isCodeLensDisabled : false;
   }
 
   public get isYarnPnpSupportEnabled(): boolean {
-    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
+    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('playwrightrunner.enableYarnPnpSupport');
     return isYarnPnp ? isYarnPnp : false;
   }
 }

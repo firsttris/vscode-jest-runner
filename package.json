@@ -29,7 +29,7 @@
       {
         "title": "Jest and Playwright-Runner Config",
         "properties": {
-          "jestrunner.configPath": {
+          "jestrunner.jestConfigPath": {
             "type": "string",
             "default": "",
             "description": "Jest config path (relative to ${workFolder} e.g. jest-config.json)",
@@ -59,7 +59,7 @@
             "description": "Absolute path to project directory (e.g. /home/me/project/sub-folder)",
             "scope": "window"
           },
-          "jestrunner.debugOptions": {
+          "jestrunner.jestDebugOptions": {
             "type": "object",
             "default": {},
             "description": "Add or overwrite vscode debug configurations for Jest (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
@@ -71,7 +71,7 @@
             "description": "Add or overwrite vscode debug configurations for Playwright (only in debug mode) (e.g. { \"args\": [\"--browser=all\"] })",
             "scope": "window"
           },
-          "jestrunner.runOptions": {
+          "jestrunner.jestRunOptions": {
             "type": "array",
             "default": [],
             "items": {
