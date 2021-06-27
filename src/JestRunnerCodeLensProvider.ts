@@ -10,12 +10,12 @@ function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
     codeLens.push(
       new CodeLens(range, {
         arguments: [element.fullname],
-        command: 'extension.runPlaywright',
+        command: 'playwright.runTest',
         title: 'Run',
       }),
       new CodeLens(range, {
         arguments: [element.fullname],
-        command: 'extension.debugPlaywright',
+        command: 'playwright.debugTest',
         title: 'Debug',
       })
     );
@@ -23,7 +23,7 @@ function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
       codeLens.push(
         new CodeLens(range, {
           arguments: [element.fullname],
-          command: 'extension.inspectorPlaywright',
+          command: 'playwright.inspectorTest',
           title: 'Inspector',
         })
       );

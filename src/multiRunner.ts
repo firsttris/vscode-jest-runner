@@ -1,7 +1,6 @@
 import { isPlaywrightTest, parse } from './playwright-editor-support';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { PlaywrightRunnerConfig } from './playwrightRunnerConfig';
 import {
   escapeRegExpForPath,
   escapeRegExp,
@@ -13,40 +12,38 @@ import {
   unquote,
 } from './util';
 
-import { JestRunner } from './JestRunner';
-import { PlaywrightRunner } from './PlaywrightRunner';
+import { JestCommandBuilder } from './jestCommandBuilder';
+import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
 
+interface RunCommand {
+  cwd: string;
+  command: string;
+}
 interface DebugCommand {
   documentUri: vscode.Uri;
   config: vscode.DebugConfiguration;
 }
 
 export class MultiRunner {
-  private previousCommand: string | DebugCommand;
+  private previousRunCommand: RunCommand;
+  private previousDebugCommand: DebugCommand;
 
   private terminal: vscode.Terminal;
 
-  private readonly config = new PlaywrightRunnerConfig();
-
-  private jestRunner: JestRunner;
-  private playwrightRunner: PlaywrightRunner;
+  private jestCommandBuilder: JestCommandBuilder;
+  private playwrightCommandBuilder: PlaywrightCommandBuilder;
 
   constructor() {
     this.setup();
-    this.jestRunner = new JestRunner();
-    this.playwrightRunner = new PlaywrightRunner();
+    this.jestCommandBuilder = new JestCommandBuilder();
+    this.playwrightCommandBuilder = new PlaywrightCommandBuilder();
   }
 
   public async runTestsOnPath(path: string): Promise<void> {
-    const command = this.buildPlaywrightCommand(path);
-
-    this.previousCommand = command;
-
-    await this.goToCwd();
-    await this.runTerminalCommand(command);
+    await this.runTest(path);
   }
 
-  public async runCurrentTest(currentTestName?: string, options?: string[]): Promise<void> {
+  public async runTestAndUpdateSnapshots(currentTestName?: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -54,21 +51,30 @@ export class MultiRunner {
 
     await editor.document.save();
 
-    if (this.isPlaywrightTest(editor.document)) {
-      this.playwrightRunner.runCurrentTest(currentTestName, options);
+    const filePath = editor.document.fileName;
+    const fileText = editor.document.getText();
+    const testName = currentTestName || this.findCurrentTestName(editor);
+
+    if (isPlaywrightTest(filePath, fileText)) {
+      await this.runTest(filePath, fileText, testName, ['--update-snapshots']);
     } else {
-      this.jestRunner.runCurrentTest(currentTestName, options);
+      await this.runTest(filePath, fileText, testName, ['-u']);
+    }
+  }
+
+  public async runCurrentTest(currentTestName?: string): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return;
     }
 
+    await editor.document.save();
+
     const filePath = editor.document.fileName;
+    const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const command = this.buildPlaywrightCommand(filePath, testName, options);
-    const command = this.buildJestCommand(filePath, testName, options);
 
-    this.previousCommand = command;
-
-    await this.goToCwd();
-    await this.runTerminalCommand(command);
+    await this.runTest(filePath, fileText, testName);
   }
 
   public async runCurrentFile(options?: string[]): Promise<void> {
@@ -80,12 +86,8 @@ export class MultiRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const command = this.buildPlaywrightCommand(filePath, undefined, options);
-
-    this.previousCommand = command;
-
-    await this.goToCwd();
-    await this.runTerminalCommand(command);
+    const fileText = editor.document.getText();
+    await this.runTest(filePath, fileText, undefined, options);
   }
 
   public async runPreviousTest(): Promise<void> {
@@ -96,21 +98,19 @@ export class MultiRunner {
 
     await editor.document.save();
 
-    if (typeof this.previousCommand === 'string') {
-      await this.goToCwd();
-      await this.runTerminalCommand(this.previousCommand);
-    } else {
-      this.executeDebugCommand(this.previousCommand);
+    if (this.previousRunCommand) {
+      await this.executeRunCommand(this.previousRunCommand);
+      return;
+    }
+
+    if (this.previousDebugCommand) {
+      this.executeDebugCommand(this.previousDebugCommand);
+      return;
     }
   }
 
   public async debugTestsOnPath(path: string): Promise<void> {
-    const debugConfig = this.getDebugConfig(path);
-
-    this.executeDebugCommand({
-      config: debugConfig,
-      documentUri: vscode.Uri.file(path),
-    });
+    await this.debugTest(path);
   }
 
   public async debugCurrentTest(currentTestName?: string): Promise<void> {
@@ -122,13 +122,10 @@ export class MultiRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
+    const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const debugConfig = this.getDebugConfig(filePath, testName);
 
-    this.executeDebugCommand({
-      config: debugConfig,
-      documentUri: editor.document.uri,
-    });
+    await this.debugTest(filePath, fileText, testName);
   }
 
   public async inspectorCurrentTest(currentTestName?: string): Promise<void> {
@@ -140,52 +137,58 @@ export class MultiRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
+    const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const debugConfig = this.getDebugConfig(filePath, testName);
 
-    // add PWDEBUG:1
-    if (!debugConfig.env) debugConfig.env = {};
-    debugConfig.env.PWDEBUG = 1;
-
-    this.executeDebugCommand({
-      config: debugConfig,
-      documentUri: editor.document.uri,
-    });
+    await this.debugTest(filePath, fileText, testName, { env: { PWDEBUG: 1 } });
   }
 
   //
   // private methods
   //
 
-  private executeDebugCommand(debugCommand: DebugCommand) {
-    vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(debugCommand.documentUri), debugCommand.config);
-
-    this.previousCommand = debugCommand;
+  private async runTest(path: string, fileText?: string, testName?: string, options?: string[]): Promise<void> {
+    let cwd;
+    let command;
+    if (isPlaywrightTest(path, fileText)) {
+      cwd = this.playwrightCommandBuilder.getCwd();
+      command = this.playwrightCommandBuilder.buildCommand(path, testName, options);
+    } else {
+      cwd = this.jestCommandBuilder.getCwd();
+      command = this.jestCommandBuilder.buildCommand(path, testName, options);
+    }
+    this.executeRunCommand({
+      cwd: cwd,
+      command: command,
+    });
   }
 
-  private getDebugConfig(filePath: string, currentTestName?: string): vscode.DebugConfiguration {
-    const config: vscode.DebugConfiguration = {
-      console: 'integratedTerminal',
-      internalConsoleOptions: 'neverOpen',
-      name: 'Debug Playwright Tests',
-      program: this.config.playwrightBinPath,
-      request: 'launch',
-      type: 'node',
-      cwd: this.config.cwd,
-      ...this.config.debugOptions,
-    };
-
-    config.args = config.args ? config.args.slice() : [];
-
-    if (this.config.isYarnPnpSupportEnabled) {
-      config.args = ['playwright'];
-      config.program = '.yarn/releases/yarn-*.cjs';
+  private async debugTest(path: string, fileText?: string, testName?: string, options?: unknown): Promise<void> {
+    let debugConfig;
+    if (isPlaywrightTest(path, fileText)) {
+      debugConfig = this.playwrightCommandBuilder.getDebugConfig(path, testName, options);
+    } else {
+      debugConfig = this.jestCommandBuilder.getDebugConfig(path, testName, options);
     }
+    this.executeDebugCommand({
+      config: debugConfig,
+      documentUri: vscode.Uri.file(path),
+    });
+  }
 
-    const standardArgs = this.buildPlaywrightArgs(filePath, currentTestName, false);
-    pushMany(config.args, standardArgs);
+  private async executeRunCommand(cmd: RunCommand) {
+    this.previousRunCommand = cmd;
+    this.previousDebugCommand = null;
 
-    return config;
+    await this.goToCwd(cmd.cwd);
+    await this.runTerminalCommand(cmd.command);
+  }
+
+  private executeDebugCommand(cmd: DebugCommand) {
+    this.previousRunCommand = null;
+    this.previousDebugCommand = cmd;
+
+    vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(cmd.documentUri), cmd.config);
   }
 
   private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
@@ -204,51 +207,10 @@ export class MultiRunner {
     return fullTestName ? escapeRegExp(fullTestName) : undefined;
   }
 
-  private buildPlaywrightCommand(filePath: string, testName?: string, options?: string[]): string {
-    const args = this.buildPlaywrightArgs(filePath, testName, true, options);
-    return `${this.config.playwrightCommand} ${args.join(' ')}`;
-  }
-
-  private buildPlaywrightArgs(
-    filePath: string,
-    testName: string,
-    withQuotes: boolean,
-    options: string[] = []
-  ): string[] {
-    const args: string[] = [];
-    const quoter = withQuotes ? quote : (str) => str;
-
-    args.push('test');
-
-    const cwd = vscode.Uri.file(this.config.cwd);
-    const testfile = path.relative(cwd.fsPath + '/tests', filePath).replace(/\\/g, '/');
-
-    args.push(quoter(escapeRegExpForPath(normalizePath(testfile))));
-
-    const playwrightConfigPath = this.config.getPlaywrightConfigPath(filePath);
-    if (playwrightConfigPath) {
-      args.push('--config=' + quoter(normalizePath(playwrightConfigPath)));
-    }
-
-    if (testName) {
-      args.push('-g');
-      args.push(quoter(escapeSingleQuotes(testName)));
-    }
-
-    const setOptions = new Set(options);
-
-    if (this.config.runOptions) {
-      this.config.runOptions.forEach((option) => setOptions.add(option));
-    }
-
-    args.push(...setOptions);
-
-    return args;
-  }
-
-  private async goToCwd() {
-    if (this.config.changeDirectoryToWorkspaceRoot) {
-      await this.runTerminalCommand(`cd ${quote(this.config.cwd)}`);
+  private async goToCwd(cmd: string) {
+    const change = vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot');
+    if (change) {
+      await this.runTerminalCommand(`cd ${quote(cmd)}`);
     }
   }
 
@@ -265,10 +227,5 @@ export class MultiRunner {
     vscode.window.onDidCloseTerminal(() => {
       this.terminal = null;
     });
-  }
-
-  private isPlaywrightTest(document: vscode.TextDocument): boolean {
-    const text = document.getText();
-    return isPlaywrightTest(document.fileName, text);
   }
 }

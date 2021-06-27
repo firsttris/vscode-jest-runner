@@ -1,7 +1,6 @@
 'use strict';
 import * as vscode from 'vscode';
 import { MultiRunner } from './multiRunner';
-import { PlaywrightRunner } from './playwrightRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
 
@@ -10,8 +9,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const codeLensProvider = new JestRunnerCodeLensProvider();
   const config = new JestRunnerConfig();
 
-  const runJest = vscode.commands.registerCommand(
-    'extension.runJest',
+  const runTest = vscode.commands.registerCommand(
+    'playwright.runTest',
     async (argument: Record<string, unknown> | string) => {
       if (typeof argument === 'string') {
         multiRunner.runCurrentTest(argument);
@@ -20,17 +19,20 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }
   );
-  const runJestPath = vscode.commands.registerCommand('extension.runJestPath', async (argument: vscode.Uri) =>
+  const runTestPath = vscode.commands.registerCommand('playwright.runTestPath', async (argument: vscode.Uri) =>
     multiRunner.runTestsOnPath(argument.path)
   );
-  const runJestAndUpdateSnapshots = vscode.commands.registerCommand('extension.runJestAndUpdateSnapshots', async () => {
-    multiRunner.runCurrentTest('', ['-u']);
-  });
-  const runJestFile = vscode.commands.registerCommand('extension.runJestFile', async () =>
+  const runTestAndUpdateSnapshots = vscode.commands.registerCommand(
+    'playwright.runTestAndUpdateSnapshots',
+    async () => {
+      multiRunner.runTestAndUpdateSnapshots('');
+    }
+  );
+  const runTestFile = vscode.commands.registerCommand('playwright.runTestFile', async () =>
     multiRunner.runCurrentFile()
   );
-  const debugJest = vscode.commands.registerCommand(
-    'extension.debugJest',
+  const debugTest = vscode.commands.registerCommand(
+    'playwright.debugTest',
     async (argument: Record<string, unknown> | string) => {
       if (typeof argument === 'string') {
         multiRunner.debugCurrentTest(argument);
@@ -39,11 +41,23 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     }
   );
-  const debugJestPath = vscode.commands.registerCommand('extension.debugJestPath', async (argument: vscode.Uri) =>
+  const debugTestPath = vscode.commands.registerCommand('playwright.debugTestPath', async (argument: vscode.Uri) =>
     multiRunner.debugTestsOnPath(argument.path)
   );
-  const runPrev = vscode.commands.registerCommand('extension.runPrevJest', async () => multiRunner.runPreviousTest());
-  const runJestFileWithCoverage = vscode.commands.registerCommand('extension.runJestFileWithCoverage', async () =>
+  const inspectorTest = vscode.commands.registerCommand(
+    'playwright.inspectorTest',
+    async (argument: Record<string, unknown> | string) => {
+      if (typeof argument === 'string') {
+        multiRunner.inspectorCurrentTest(argument);
+      } else {
+        multiRunner.inspectorCurrentTest();
+      }
+    }
+  );
+  const runPrevTest = vscode.commands.registerCommand('playwright.runPrevTest', async () =>
+    multiRunner.runPreviousTest()
+  );
+  const runTestFileWithCoverage = vscode.commands.registerCommand('playwright.runTestFileWithCoverage', async () =>
     multiRunner.runCurrentFile(['--coverage'])
   );
 
@@ -54,82 +68,15 @@ export function activate(context: vscode.ExtensionContext): void {
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
     context.subscriptions.push(codeLensProviderDisposable);
   }
-  context.subscriptions.push(runJest);
-  context.subscriptions.push(runJestAndUpdateSnapshots);
-  context.subscriptions.push(runJestFile);
-  context.subscriptions.push(runJestPath);
-  context.subscriptions.push(debugJest);
-  context.subscriptions.push(debugJestPath);
-  context.subscriptions.push(runPrev);
-  context.subscriptions.push(runJestFileWithCoverage);
-
-  // playwright
-  const playwrightRunner = new PlaywrightRunner();
-
-  const runPlaywright = vscode.commands.registerCommand(
-    'extension.runPlaywright',
-    async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        playwrightRunner.runCurrentTest(argument);
-      } else {
-        playwrightRunner.runCurrentTest();
-      }
-    }
-  );
-  const runPlaywrightPath = vscode.commands.registerCommand(
-    'extension.runPlaywrightPath',
-    async (argument: vscode.Uri) => playwrightRunner.runTestsOnPath(argument.path)
-  );
-  const runPlaywrightAndUpdateSnapshots = vscode.commands.registerCommand(
-    'extension.runPlaywrightAndUpdateSnapshots',
-    async () => {
-      playwrightRunner.runCurrentTest('', ['--update-snapshots']);
-    }
-  );
-  const runPlaywrightFile = vscode.commands.registerCommand('extension.runPlaywrightFile', async () =>
-    playwrightRunner.runCurrentFile()
-  );
-  const debugPlaywright = vscode.commands.registerCommand(
-    'extension.debugPlaywright',
-    async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        playwrightRunner.debugCurrentTest(argument);
-      } else {
-        playwrightRunner.debugCurrentTest();
-      }
-    }
-  );
-  const inspectorPlaywright = vscode.commands.registerCommand(
-    'extension.inspectorPlaywright',
-    async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        playwrightRunner.inspectorCurrentTest(argument);
-      } else {
-        playwrightRunner.inspectorCurrentTest();
-      }
-    }
-  );
-  const debugPlaywrightPath = vscode.commands.registerCommand(
-    'extension.debugPlaywrightPath',
-    async (argument: vscode.Uri) => playwrightRunner.debugTestsOnPath(argument.path)
-  );
-  const runPrevPlaywright = vscode.commands.registerCommand('extension.runPrevPlaywright', async () =>
-    playwrightRunner.runPreviousTest()
-  );
-  /*const runPlaywrightFileWithCoverage = vscode.commands.registerCommand(
-    'extension.runPlaywrightFileWithCoverage',
-    async () => playwrightRunner.runCurrentFile(['--coverage'])
-  );*/
-
-  context.subscriptions.push(runPlaywright);
-  context.subscriptions.push(runPlaywrightAndUpdateSnapshots);
-  context.subscriptions.push(runPlaywrightFile);
-  context.subscriptions.push(runPlaywrightPath);
-  context.subscriptions.push(debugPlaywright);
-  context.subscriptions.push(inspectorPlaywright);
-  context.subscriptions.push(debugPlaywrightPath);
-  context.subscriptions.push(runPrevPlaywright);
-  //context.subscriptions.push(runPlaywrightFileWithCoverage);
+  context.subscriptions.push(runTest);
+  context.subscriptions.push(runTestAndUpdateSnapshots);
+  context.subscriptions.push(runTestFile);
+  context.subscriptions.push(runTestPath);
+  context.subscriptions.push(debugTest);
+  context.subscriptions.push(debugTestPath);
+  context.subscriptions.push(inspectorTest);
+  context.subscriptions.push(runPrevTest);
+  context.subscriptions.push(runTestFileWithCoverage);
 }
 
 export function deactivate(): void {

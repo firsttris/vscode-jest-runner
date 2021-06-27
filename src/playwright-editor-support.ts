@@ -1,17 +1,46 @@
+/* eslint-disable no-underscore-dangle */
+/* eslint-disable no-param-reassign */
+/**
+ * Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @flow
+ */
+
+import { readFileSync } from 'fs';
 import * as parser from '@babel/parser';
 import { parseOptions } from './helper';
 import { escapeRegExp } from './util';
 
-export const parse = (filepath, text) => {
+export class TestCode {
+  prefix: string;
+  type: string;
+  name: string;
+  fullname: string;
+  start: {
+    line: number;
+    column: number;
+  };
+  end: {
+    line: number;
+    column: number;
+  };
+}
+
+export const parse = (filepath: string, data?: string): TestCode[] => {
+  const _data = data || readFileSync(filepath).toString();
   const fileOption = parseOptions(filepath);
-  const ast = parser.parse(text, fileOption);
+  const ast = parser.parse(_data, fileOption);
   const { program } = ast;
   return findTestMethods(program);
 };
 
-export const isPlaywrightTest = (filepath, text) => {
+export const isPlaywrightTest = (filepath: string, data?: string): boolean => {
+  const _data = data || readFileSync(filepath).toString();
   const fileOption = parseOptions(filepath);
-  const ast = parser.parse(text, fileOption);
+  const ast = parser.parse(_data, fileOption);
   const { program } = ast;
 
   const require = ['@playwright/test', 'playwright/test'];
@@ -22,7 +51,7 @@ export const isPlaywrightTest = (filepath, text) => {
   return !!is_playwright;
 };
 
-function findTestMethods(program) {
+function findTestMethods(program: unknown): TestCode[] {
   const ptnName1 = new RegExp(`${escapeRegExp('expression/callee/name')}$`);
   const ptnName2 = new RegExp(`${escapeRegExp('expression/callee/object/name')}$`);
   const funcNames1 = ['it', 'test', 'describe'];
@@ -48,13 +77,15 @@ function findTestMethods(program) {
     })
     .filter((f) => f[1]);
 
-  const all = pathPrefix1.concat(pathPrefix2);
+  const all: string[][] = pathPrefix1.concat(pathPrefix2);
   all.sort((a, b) => (a[0] > b[0] ? 1 : -1));
 
-  const elements = all.map((prefix) => {
+  const elements: TestCode[] = all.map((prefix) => {
     const ptnPosition = `${prefix[0]}callee/loc`;
     const ptnTestName = `${prefix[0]}arguments[0]/value`;
-    const element = { prefix: prefix[0], type: prefix[1] };
+    const element: TestCode = new TestCode();
+    element.prefix = prefix[0];
+    element.type = prefix[1];
     items
       .filter((i) => 0 == i[0].indexOf(ptnPosition))
       .forEach((i) => {
@@ -80,7 +111,6 @@ function findTestMethods(program) {
       .filter((f) => f)
       .join(' ');
   });
-  elements.forEach((element) => delete element.prefix);
   return elements;
 }
 
