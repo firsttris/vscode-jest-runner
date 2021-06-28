@@ -45,11 +45,7 @@ export class MultiRunner {
     const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
 
-    if (isPlaywrightTest(filePath, fileText)) {
-      await this.runTest(filePath, fileText, testName, ['--update-snapshots']);
-    } else {
-      await this.runTest(filePath, fileText, testName, ['-u']);
-    }
+    await this.runTest(filePath, fileText, testName, ['-u']);
   }
 
   public async runCurrentTest(currentTestName?: string): Promise<void> {
