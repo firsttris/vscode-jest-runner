@@ -48,9 +48,9 @@ export function activate(context: vscode.ExtensionContext): void {
     'playwright.inspectorTest',
     async (argument: Record<string, unknown> | string) => {
       if (typeof argument === 'string') {
-        multiRunner.inspectorCurrentTest(argument);
+        multiRunner.inspectCurrentTest(argument);
       } else {
-        multiRunner.inspectorCurrentTest();
+        multiRunner.inspectCurrentTest();
       }
     }
   );

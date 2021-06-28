@@ -118,7 +118,7 @@ export class MultiRunner {
     await this.debugTest(filePath, fileText, testName);
   }
 
-  public async inspectorCurrentTest(currentTestName?: string): Promise<void> {
+  public async inspectCurrentTest(currentTestName?: string): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
