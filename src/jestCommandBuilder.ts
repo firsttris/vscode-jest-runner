@@ -13,7 +13,7 @@ export class JestCommandBuilder {
     const config: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
-      name: 'Debug Jest Tests',
+      name: 'jest(debug)',
       program: this.config.jestBinPath,
       request: 'launch',
       type: 'node',

@@ -14,10 +14,11 @@ export class PlaywrightCommandBuilder {
     const config: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
-      name: 'Debug Playwright Tests',
+      name: 'playwright(debug)',
       program: this.config.playwrightBinPath,
       request: 'launch',
       type: 'node',
+      env: { PWDEBUG: 'console' },
       cwd: this.config.cwd,
       ...this.config.debugOptions,
     };
