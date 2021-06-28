@@ -1,20 +1,22 @@
 import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
 
 import { isPlaywrightTest, parse } from './playwright-editor-support';
+import { resolveTestNameStringInterpolation } from './util';
 
 function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
   const codeLens: CodeLens[] = [];
   const is_playwright = isPlaywrightTest(filepath, text);
   parse(filepath, text).forEach((element) => {
     const range = new Range(element.start.line - 1, element.start.column, element.end.line - 1, element.end.column);
+    const fullname = resolveTestNameStringInterpolation(element.fullname);
     codeLens.push(
       new CodeLens(range, {
-        arguments: [element.fullname],
+        arguments: [fullname],
         command: 'playwright.runTest',
         title: 'Run',
       }),
       new CodeLens(range, {
-        arguments: [element.fullname],
+        arguments: [fullname],
         command: 'playwright.debugTest',
         title: 'Debug',
       })
@@ -22,7 +24,7 @@ function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
     if (is_playwright) {
       codeLens.push(
         new CodeLens(range, {
-          arguments: [element.fullname],
+          arguments: [fullname],
           command: 'playwright.inspectorTest',
           title: 'Inspect',
         })
