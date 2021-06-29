@@ -15,31 +15,16 @@ export function escapeRegExpForPath(s: string): string {
   return s.replace(/[*+?^${}<>()|[\]]/g, '\\$&'); // $& means the whole matched string
 }
 
-export function findFullTestName(selectedLine: number, children: any[]): string | undefined {
-  if (!children) {
-    return;
-  }
-  const elm = children.find((elm) => selectedLine === elm.start.line || selectedLine === elm.end.line);
-  if (elm) {
-    return resolveTestNameStringInterpolation(elm.fullname);
-  }
-  const els = children.filter((elm) => elm.start.line < selectedLine && selectedLine < elm.end.line);
-  if (0 < els.length) {
-    return resolveTestNameStringInterpolation(els[els.length - 1].fullname);
-  }
-}
-
-const QUOTES = {
-  '"': true,
-  "'": true,
-  '`': true,
-};
-
 export function resolveTestNameStringInterpolation(s: string): string {
   const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/gi;
   const matchAny = '(.*?)';
   return s.replace(variableRegex, matchAny);
 }
+const QUOTES = {
+  '"': true,
+  "'": true,
+  '`': true,
+};
 
 export function exactRegexMatch(s: string): string {
   return ['^', s, '$'].join('');

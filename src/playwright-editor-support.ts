@@ -51,6 +51,20 @@ export const isPlaywrightTest = (filepath: string, data?: string): boolean => {
   return !!is_playwright;
 };
 
+export function findTestCode(tests: TestCode[], line: number): TestCode {
+  if (!tests) {
+    return;
+  }
+  const elm = tests.find((elm) => line === elm.start.line || line === elm.end.line);
+  if (elm) {
+    return elm;
+  }
+  const els = tests.filter((elm) => elm.start.line < line && line < elm.end.line);
+  if (0 < els.length) {
+    return els[els.length - 1];
+  }
+}
+
 function findTestMethods(program: unknown): TestCode[] {
   const ptnName1 = new RegExp(`${escapeRegExp('expression/callee/name')}$`);
   const ptnName2 = new RegExp(`${escapeRegExp('expression/callee/object/name')}$`);

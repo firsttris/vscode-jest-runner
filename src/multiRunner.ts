@@ -1,6 +1,6 @@
-import { isPlaywrightTest, parse } from './playwright-editor-support';
+import { isPlaywrightTest, parse, findTestCode } from './playwright-editor-support';
 import * as vscode from 'vscode';
-import { escapeRegExp, findFullTestName, quote, unquote } from './util';
+import { quote, unquote, resolveTestNameStringInterpolation } from './util';
 
 import { JestCommandBuilder } from './jestCommandBuilder';
 import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
@@ -188,9 +188,9 @@ export class MultiRunner {
     const filePath = editor.document.fileName;
     const text = editor.document.getText();
     const tests = parse(filePath, text);
+    const testcode = findTestCode(tests, selectedLine);
 
-    const fullTestName = findFullTestName(selectedLine, tests);
-    return fullTestName ? escapeRegExp(fullTestName) : undefined;
+    return testcode ? resolveTestNameStringInterpolation(testcode.fullname) : undefined;
   }
 
   private async goToCwd(cmd: string) {
