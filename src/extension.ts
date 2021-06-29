@@ -63,7 +63,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   if (!config.isCodeLensDisabled) {
     const docSelectors: vscode.DocumentFilter[] = [
-      { pattern: vscode.workspace.getConfiguration().get('jestrunner.codeLensSelector') },
+      { pattern: vscode.workspace.getConfiguration().get('playwrightrunner.codeLensSelector') },
     ];
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
     context.subscriptions.push(codeLensProviderDisposable);

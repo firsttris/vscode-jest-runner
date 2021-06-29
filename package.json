@@ -29,49 +29,49 @@
       {
         "title": "Jest and Playwright-Runner Config",
         "properties": {
-          "jestrunner.jestConfigPath": {
+          "playwrightrunner.jestConfigPath": {
             "type": "string",
             "default": "",
             "description": "Jest config path (relative to ${workFolder} e.g. jest-config.json)",
             "scope": "window"
           },
-          "jestrunner.playwrightConfigPath": {
+          "playwrightrunner.playwrightConfigPath": {
             "type": "string",
             "default": "",
             "description": "Playwright config path (relative to ${workFolder} e.g. playwright.config.js)",
             "scope": "window"
           },
-          "jestrunner.jestPath": {
+          "playwrightrunner.jestPath": {
             "type": "string",
             "default": "",
             "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
             "scope": "window"
           },
-          "jestrunner.playwrightPath": {
+          "playwrightrunner.playwrightPath": {
             "type": "string",
             "default": "",
             "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/playwright/lib/cli/cli.js)",
             "scope": "window"
           },
-          "jestrunner.projectPath": {
+          "playwrightrunner.projectPath": {
             "type": "string",
             "default": "",
             "description": "Absolute path to project directory (e.g. /home/me/project/sub-folder)",
             "scope": "window"
           },
-          "jestrunner.jestDebugOptions": {
+          "playwrightrunner.jestDebugOptions": {
             "type": "object",
             "default": {},
             "description": "Add or overwrite vscode debug configurations for Jest (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
             "scope": "window"
           },
-          "jestrunner.playwrightDebugOptions": {
+          "playwrightrunner.playwrightDebugOptions": {
             "type": "object",
             "default": {},
             "description": "Add or overwrite vscode debug configurations for Playwright (only in debug mode) (e.g. { \"args\": [\"--browser=all\"] })",
             "scope": "window"
           },
-          "jestrunner.jestRunOptions": {
+          "playwrightrunner.jestRunOptions": {
             "type": "array",
             "default": [],
             "items": {
@@ -81,7 +81,7 @@
             "description": "Add CLI Options to the Jest Command e.g. https://jestjs.io/docs/en/cli",
             "scope": "window"
           },
-          "jestrunner.playwrightRunOptions": {
+          "playwrightrunner.playwrightRunOptions": {
             "type": "array",
             "default": [],
             "items": {
@@ -91,36 +91,36 @@
             "description": "Add CLI Options to the Playwright Command e.g. https://playwright.dev/docs/test-intro",
             "scope": "window"
           },
-          "jestrunner.jestCommand": {
+          "playwrightrunner.jestCommand": {
             "type": "string",
             "default": "",
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
-          "jestrunner.playwrightCommand": {
+          "playwrightrunner.playwrightCommand": {
             "type": "string",
             "default": "",
             "description": "Define an alternative playwright command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
-          "jestrunner.disableCodeLens": {
+          "playwrightrunner.disableCodeLens": {
             "type": "boolean",
             "default": false,
             "description": "Disable CodeLens feature",
             "scope": "window"
           },
-          "jestrunner.codeLensSelector": {
+          "playwrightrunner.codeLensSelector": {
             "type": "string",
             "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
             "description": "CodeLens will be shown on files matching this pattern"
           },
-          "jestrunner.enableYarnPnpSupport": {
+          "playwrightrunner.enableYarnPnpSupport": {
             "type": "boolean",
             "default": false,
             "description": "Enable if you are using Yarn 2 with Plug'n'Play",
             "scope": "window"
           },
-          "jestrunner.changeDirectoryToWorkspaceRoot": {
+          "playwrightrunner.changeDirectoryToWorkspaceRoot": {
             "type": "boolean",
             "default": true,
             "description": "Changes directory to workspace root before executing the test",

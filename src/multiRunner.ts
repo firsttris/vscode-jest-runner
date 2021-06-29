@@ -194,7 +194,7 @@ export class MultiRunner {
   }
 
   private async goToCwd(cmd: string) {
-    const change = vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot');
+    const change = vscode.workspace.getConfiguration().get('playwrightrunner.changeDirectoryToWorkspaceRoot');
     if (change) {
       await this.runTerminalCommand(`cd ${quote(cmd)}`);
     }
