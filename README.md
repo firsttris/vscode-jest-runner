@@ -33,7 +33,7 @@ Run & Debug your Jest Tests from
 
 add the following command to settings, to pass commandline arguments
 
-```
+```javascript
 "playwrightrunner.jestCommand": "npm run test --"
 ```
 
@@ -43,7 +43,7 @@ for debugging JST/TSX with CRA you need to have a valid babel and jest config:
 
 to add a `babel.config.js` with at least the following config
 
-```
+```javascript
 // babel.config.js
 module.exports = {
     presets: [
@@ -55,7 +55,7 @@ module.exports = {
 
 add a `jest.config.js` with at least the following config
 
-```
+```javascript
 module.exports = {
   transform: {
     '\\.(js|ts|jsx|tsx)$': 'babel-jest',
