@@ -19,6 +19,7 @@
     "ignorePatterns": [
         "out",
         "dist",
+        "testarea",
         "**/*.d.ts"
     ]
 }

@@ -4,3 +4,4 @@ coverage
 .vscode-test/
 .vsix
 dist
+testarea
