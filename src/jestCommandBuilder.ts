@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { RunnerConfig as config} from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
-//import { merge } from 'merge-deep';
+const merge = require('deepmerge');
 
 export class JestCommandBuilder {
   public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
@@ -26,7 +26,7 @@ export class JestCommandBuilder {
     const standardArgs = this.buildArgs(filePath, currentTestName, false);
     pushMany(debugCfg.args, standardArgs);
     debugCfg.args.push('--runInBand');
-    //merge(config, options);
+    merge(config, options);
 
     return debugCfg;
   }

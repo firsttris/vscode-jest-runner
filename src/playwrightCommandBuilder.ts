@@ -2,7 +2,8 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { RunnerConfig as config} from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
-//import { merge } from 'merge-deep';
+const merge = require('deepmerge');
+
 export class PlaywrightCommandBuilder {
   public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
     const debugCfg: vscode.DebugConfiguration = {
@@ -22,7 +23,7 @@ export class PlaywrightCommandBuilder {
 
     const standardArgs = this.buildArgs(filePath, currentTestName, false);
     pushMany(debugCfg.args, standardArgs);
-    //merge(config, options);
+    merge(config, options);
 
     return debugCfg;
   }
