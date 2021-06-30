@@ -1,12 +1,12 @@
 'use strict';
 import * as vscode from 'vscode';
 import { MultiRunner } from './multiRunner';
-import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
+import { PlaywrightRunnerCodeLensProvider } from './codeLensProvider';
 import { RunnerConfig as config } from './runnerConfig';
 
 export function activate(context: vscode.ExtensionContext): void {
   const multiRunner = new MultiRunner();
-  const codeLensProvider = new JestRunnerCodeLensProvider();
+  const codeLensProvider = new PlaywrightRunnerCodeLensProvider();
 
   const runTest = vscode.commands.registerCommand(
     'playwright.runTest',
