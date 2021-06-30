@@ -2,12 +2,11 @@
 import * as vscode from 'vscode';
 import { MultiRunner } from './multiRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
-import { JestRunnerConfig } from './jestRunnerConfig';
+import { JestRunnerConfig as config } from './jestRunnerConfig';
 
 export function activate(context: vscode.ExtensionContext): void {
   const multiRunner = new MultiRunner();
   const codeLensProvider = new JestRunnerCodeLensProvider();
-  const config = new JestRunnerConfig();
 
   const runTest = vscode.commands.registerCommand(
     'playwright.runTest',

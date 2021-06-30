@@ -4,7 +4,7 @@ import { quote, unquote, resolveTestNameStringInterpolation } from './util';
 
 import { JestCommandBuilder } from './jestCommandBuilder';
 import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
-
+import { JestRunnerConfig } from './jestRunnerConfig';
 interface RunCommand {
   cwd: string;
   command: string;
@@ -15,10 +15,10 @@ interface DebugCommand {
 }
 
 export class MultiRunner {
-  private previousRunCommand: RunCommand;
-  private previousDebugCommand: DebugCommand;
+  private previousRunCommand: RunCommand | undefined;
+  private previousDebugCommand: DebugCommand | undefined;
 
-  private terminal: vscode.Terminal;
+  private terminal: vscode.Terminal | undefined;
 
   private jestCommandBuilder: JestCommandBuilder;
   private playwrightCommandBuilder: PlaywrightCommandBuilder;
@@ -126,6 +126,7 @@ export class MultiRunner {
     const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
 
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     await this.debugTest(filePath, fileText, testName, { env: { PWDEBUG: 1 } });
   }
 
@@ -164,14 +165,14 @@ export class MultiRunner {
 
   private async executeRunCommand(cmd: RunCommand) {
     this.previousRunCommand = cmd;
-    this.previousDebugCommand = null;
+    this.previousDebugCommand = undefined;
 
     await this.goToCwd(cmd.cwd);
     await this.runTerminalCommand(cmd.command);
   }
 
   private executeDebugCommand(cmd: DebugCommand) {
-    this.previousRunCommand = null;
+    this.previousRunCommand = undefined;
     this.previousDebugCommand = cmd;
 
     vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(cmd.documentUri), cmd.config);
@@ -194,8 +195,7 @@ export class MultiRunner {
   }
 
   private async goToCwd(cmd: string) {
-    const change = vscode.workspace.getConfiguration().get('playwrightrunner.changeDirectoryToWorkspaceRoot');
-    if (change) {
+    if (JestRunnerConfig.changeDirectoryToWorkspaceRoot) {
       await this.runTerminalCommand(`cd ${quote(cmd)}`);
     }
   }
@@ -211,7 +211,7 @@ export class MultiRunner {
 
   private setup() {
     vscode.window.onDidCloseTerminal(() => {
-      this.terminal = null;
+      this.terminal = undefined;
     });
   }
 }

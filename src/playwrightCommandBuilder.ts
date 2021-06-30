@@ -1,13 +1,13 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { PlaywrightRunnerConfig } from './playwrightRunnerConfig';
-import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote, mergeDeep } from './util';
-
+import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
+//import { merge } from 'merge-deep';
 export class PlaywrightCommandBuilder {
   private readonly config = new PlaywrightRunnerConfig();
 
   public getCwd(): string {
-    return this.config.cwd;
+    return PlaywrightRunnerConfig.projectPath;
   }
 
   public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
@@ -15,47 +15,44 @@ export class PlaywrightCommandBuilder {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'playwright(debug)',
-      program: this.config.playwrightBinPath,
+      program: PlaywrightRunnerConfig.playwrightBinPath,
       request: 'launch',
       type: 'node',
+      // eslint-disable-next-line @typescript-eslint/naming-convention
       env: { PWDEBUG: 'console' },
-      cwd: this.config.cwd,
-      ...this.config.debugOptions,
+      cwd: PlaywrightRunnerConfig.projectPath,
+      ...PlaywrightRunnerConfig.debugOptions,
     };
 
     config.args = config.args ? config.args.slice() : [];
 
-    if (this.config.isYarnPnpSupportEnabled) {
-      config.args = ['playwright'];
-      config.program = '.yarn/releases/yarn-*.cjs';
-    }
-
     const standardArgs = this.buildArgs(filePath, currentTestName, false);
     pushMany(config.args, standardArgs);
-    mergeDeep(config, options);
+    //merge(config, options);
 
     return config;
   }
 
   public buildCommand(filePath: string, testName?: string, options?: string[]): string {
     const args = this.buildArgs(filePath, testName, true, options);
-    return `${this.config.playwrightCommand} ${args.join(' ')}`;
+    return `${PlaywrightRunnerConfig.playwrightCommand} ${args.join(' ')}`;
   }
 
-  private buildArgs(filePath: string, testName: string, withQuotes: boolean, options: string[] = []): string[] {
+  private buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
-    const quoter = withQuotes ? quote : (str) => str;
+    const quoter = withQuotes ? quote : (str:string) => str;
 
     args.push('test');
 
-    const cwd = vscode.Uri.file(this.config.cwd);
+    const cwd = vscode.Uri.file(PlaywrightRunnerConfig.projectPath);
     const testfile = path.relative(cwd.fsPath + '/tests', filePath).replace(/\\/g, '/');
 
     args.push(quoter(escapeRegExpForPath(normalizePath(testfile))));
 
-    const playwrightConfigPath = this.config.getPlaywrightConfigPath(filePath);
-    if (playwrightConfigPath) {
-      args.push('--config=' + quoter(normalizePath(playwrightConfigPath)));
+    const config = PlaywrightRunnerConfig.playwrightConfigPath;
+    if (config) {
+      args.push('--config=');
+      args.push(quoter(normalizePath(config)));
     }
 
     if (testName) {
@@ -65,8 +62,8 @@ export class PlaywrightCommandBuilder {
 
     const setOptions = new Set(options);
 
-    if (this.config.runOptions) {
-      this.config.runOptions.forEach((option) => setOptions.add(option));
+    if (PlaywrightRunnerConfig.runOptions) {
+      PlaywrightRunnerConfig.runOptions.forEach((option) => setOptions.add(option));
     }
 
     args.push(...setOptions);

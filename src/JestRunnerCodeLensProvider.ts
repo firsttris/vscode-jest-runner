@@ -5,9 +5,9 @@ import { resolveTestNameStringInterpolation } from './util';
 
 function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
   const codeLens: CodeLens[] = [];
-  const is_playwright = isPlaywrightTest(filepath, text);
+  const isPlaywright = isPlaywrightTest(filepath, text);
   parse(filepath, text).forEach((element) => {
-    const range = new Range(element.start.line - 1, element.start.column, element.end.line - 1, element.end.column);
+    const range = new Range(element.startline - 1, element.startcolumn, element.endline - 1, element.endcolumn);
     const fullname = resolveTestNameStringInterpolation(element.fullname);
     codeLens.push(
       new CodeLens(range, {
@@ -21,7 +21,7 @@ function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
         title: 'Debug',
       })
     );
-    if (is_playwright) {
+    if (isPlaywright) {
       codeLens.push(
         new CodeLens(range, {
           arguments: [fullname],
@@ -42,5 +42,6 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
       // Ignore error and keep showing Run/Debug buttons at same position
       console.error('jest-editor-support parser returned error', e);
     }
+    return [];
   }
 }

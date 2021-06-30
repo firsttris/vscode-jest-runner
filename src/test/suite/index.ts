@@ -1,25 +1,38 @@
-import { Config } from '@jest/types';
-import { runCLI } from 'jest';
 import * as path from 'path';
+import * as Mocha from 'mocha';
+import * as glob from 'glob';
 
-const projectRootPath = path.resolve(__dirname, '../../../');
-const jestConfig: Partial<Config.ProjectConfig> = {
-  roots: ['./out/test/suite'],
-  testRegex: ['\\.test\\.js$'],
-};
+export function run(): Promise<void> {
+  // Create the mocha test
+  const mocha = new Mocha({
+    ui: 'tdd',
+    color: true
+  });
 
-export async function run(): Promise<void> {
-  try {
-    const result = await runCLI(jestConfig as any, [projectRootPath]);
+  const testsRoot = path.resolve(__dirname, '..');
 
-    if (result.results.success) {
-      console.log('Tests completed');
-    } else {
-      console.error('Tests failed', result.results);
-      throw new Error('Tests failed');
-    }
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
+  return new Promise((c, e) => {
+    glob('**/**.test.js', { cwd: testsRoot }, (err, files) => {
+      if (err) {
+        return e(err);
+      }
+
+      // Add files to the test suite
+      files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+
+      try {
+        // Run the mocha test
+        mocha.run(failures => {
+          if (failures > 0) {
+            e(new Error(`${failures} tests failed.`));
+          } else {
+            c();
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        e(err);
+      }
+    });
+  });
 }

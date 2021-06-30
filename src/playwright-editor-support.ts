@@ -15,18 +15,14 @@ import { parseOptions } from './helper';
 import { escapeRegExp } from './util';
 
 export class TestCode {
-  prefix: string;
-  type: string;
-  name: string;
-  fullname: string;
-  start: {
-    line: number;
-    column: number;
-  };
-  end: {
-    line: number;
-    column: number;
-  };
+  public prefix: string = '';
+  public type: string = '';
+  public name: string = '';
+  public fullname: string = '';
+  public startline: number = -1;
+  public startcolumn: number = -1;
+  public endline: number = -1;
+  public endcolumn: number = -1;
 }
 
 export const parse = (filepath: string, data?: string): TestCode[] => {
@@ -44,26 +40,26 @@ export const isPlaywrightTest = (filepath: string, data?: string): boolean => {
   const { program } = ast;
 
   const require = ['@playwright/test', 'playwright/test'];
-  const items = [];
-  node2path(program, (path, value) => items.push([path, value]));
+  const items:any[] = [];
+  node2path(program, (path:any, value:any) => items.push([path, value]));
   // check playwright mode
-  const is_playwright = items.find((i) => -1 < i[0].indexOf('/init/arguments[0]/') && -1 < require.indexOf(i[1]));
-  return !!is_playwright;
+  return Boolean(items.find((i) => -1 < i[0].indexOf('/init/arguments[0]/') && -1 < require.indexOf(i[1])));
 };
 
-export function findTestCode(tests: TestCode[], line: number): TestCode {
+export function findTestCode(tests: TestCode[], line: number): TestCode | undefined {
   if (!tests) {
     return;
   }
-  const elm = tests.find((elm) => line === elm.start.line || line === elm.end.line);
+  const elm = tests.find((elm) => line === elm.startline || line === elm.endline);
   if (elm) {
     return elm;
   }
-  const els = tests.filter((elm) => elm.start.line < line && line < elm.end.line);
+  const els = tests.filter((elm) => elm.startline < line && line < elm.endline);
   if (0 < els.length) {
     return els[els.length - 1];
   }
 }
+
 
 function findTestMethods(program: unknown): TestCode[] {
   const ptnName1 = new RegExp(`${escapeRegExp('expression/callee/name')}$`);
@@ -76,8 +72,8 @@ function findTestMethods(program: unknown): TestCode[] {
   const funcNames4 = ['each'];
 
   // convert
-  const items = [];
-  node2path(program, (path, value) => items.push([path, value]));
+  const items:any[] = [];
+  node2path(program, (path:any, value:any) => items.push([path, value]));
 
   const names = items.filter((i) => /\/name$/.test(i[0]) && -1 < funcNames1.indexOf(i[1]));
   // match test(...)
@@ -90,7 +86,7 @@ function findTestMethods(program: unknown): TestCode[] {
     .filter((i) => ptnName2.test(i[0]))
     .map((i) => {
       const prefix = i[0].replace(ptnName2, 'expression/');
-      const type = items.find((i) => `${prefix}callee/property/name` == i[0] && -1 < funcNames2.indexOf(i[1]));
+      const type = items.find((i) => `${prefix}callee/property/name` === i[0] && -1 < funcNames2.indexOf(i[1]));
       return [prefix, type ? type[1] : null];
     })
     .filter((f) => f[1]);
@@ -100,7 +96,7 @@ function findTestMethods(program: unknown): TestCode[] {
     .filter((i) => ptnName3.test(i[0]))
     .map((i) => {
       const prefix = i[0].replace(ptnName3, 'expression/');
-      const type = items.find((i) => `${prefix}callee/tag/property/name` == i[0] && -1 < funcNames3.indexOf(i[1]));
+      const type = items.find((i) => `${prefix}callee/tag/property/name` === i[0] && -1 < funcNames3.indexOf(i[1]));
       return [prefix, type ? type[1] : null];
     })
     .filter((f) => f[1]);
@@ -110,7 +106,7 @@ function findTestMethods(program: unknown): TestCode[] {
     .filter((i) => ptnName4.test(i[0]))
     .map((i) => {
       const prefix = i[0].replace(ptnName4, 'expression/');
-      const type = items.find((i) => `${prefix}callee/callee/property/name` == i[0] && -1 < funcNames4.indexOf(i[1]));
+      const type = items.find((i) => `${prefix}callee/callee/property/name` === i[0] && -1 < funcNames4.indexOf(i[1]));
       return [prefix, type ? type[1] : null];
     })
     .filter((f) => f[1]);
@@ -127,9 +123,15 @@ function findTestMethods(program: unknown): TestCode[] {
     items
       .filter((i) => ptnPosition.test(i[0]))
       .forEach((i) => {
-        const key = /[^/]+\/[^/]+$/.exec(i[0])[0].split('/');
-        if (!element[key[0]]) element[key[0]] = {};
-        element[key[0]][key[1]] = i[1];
+        const m = /[^/]+\/[^/]+$/.exec(i[0]);
+        if(m){
+          switch(m[0]) {
+            case 'start/line':element.startline = i[1];break;
+            case 'start/column':element.startcolumn = i[1];break;
+            case 'end/line':element.endline = i[1];break;
+            case 'end/column':element.endcolumn = i[1];break;
+          }
+        }
       });
     element.name = items
       .filter((i) => ptnTestName.test(i[0]))
@@ -145,7 +147,7 @@ function findTestMethods(program: unknown): TestCode[] {
       .filter((f) => 0 < f.length)
       .map((p) => {
         head[0] += `${p}/expression/`;
-        const el = elements.find((e) => e.prefix == head[0]);
+        const el = elements.find((e) => e.prefix === head[0]);
         return el ? el.name : null;
       })
       .filter((f) => f)
@@ -154,15 +156,15 @@ function findTestMethods(program: unknown): TestCode[] {
   return elements;
 }
 
-function node2path(node, fn, path = '') {
-  if (node == null || typeof node == 'undefined') return;
+function node2path(node:any, fn:Function, path = '') {
+  if (node === null || typeof node === 'undefined') {return;}
   if (Array.isArray(node)) {
     node.forEach((child, idx) => node2path(child, fn, `${path}[${idx}]`));
     return;
   }
-  if (typeof node == 'object') {
+  if (typeof node === 'object') {
     Object.keys(node).forEach((key) => node2path(node[key], fn, `${path}/${key}`));
     return;
   }
-  fn.call(this, path, node);
+  fn.call(null, path, node);
 }

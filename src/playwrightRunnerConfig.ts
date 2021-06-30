@@ -1,150 +1,60 @@
-import * as path from 'path';
-import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { isWindows, normalizePath, quote } from './util';
+import { isWindows, normalizePath, quote, PredefinedVars } from './util';
 
 export class PlaywrightRunnerConfig {
   /**
    * The command that runs playwright.
    * Defaults to: node "node_modules/.bin/playwright"
    */
-  public get playwrightCommand(): string {
-    // custom
-    const playwrightCommand: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightCommand');
-    if (playwrightCommand) {
-      return playwrightCommand;
-    }
-
-    // default
-    if (this.isYarnPnpSupportEnabled) {
-      return `yarn playwright`;
+  public static get playwrightCommand(): string {
+    const cmd = vscode.workspace.getConfiguration().get<string>('playwrightrunner.playwrightCommand');
+    if (cmd) {
+      const editor = vscode.window.activeTextEditor;
+      if(editor) {
+        return (new PredefinedVars(editor.document.uri)).replace(cmd).trim();
+      }
+      return cmd;
     }
     return `node ${quote(this.playwrightBinPath)}`;
   }
 
-  public get changeDirectoryToWorkspaceRoot(): boolean {
-    return vscode.workspace.getConfiguration().get('playwrightrunner.changeDirectoryToWorkspaceRoot');
-  }
-
-  public get playwrightBinPath(): string {
-    // custom
-    let playwrightPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightPath');
-    if (playwrightPath) {
-      return playwrightPath;
-    }
-
-    // default
-    if (isWindows()) {
-      return normalizePath('./node_modules/playwright/lib/cli/cli.js');
-    }
-
-    const relativePlaywrightBin = 'node_modules/.bin/playwright';
-    const cwd = this.cwd;
-    playwrightPath = path.join(cwd, relativePlaywrightBin);
-
-    return normalizePath(playwrightPath);
-  }
-
-  public get projectPath(): string {
-    return vscode.workspace.getConfiguration().get('playwrightrunner.projectPath') || this.currentWorkspaceFolderPath;
-  }
-
-  public get cwd(): string {
-    return (
-      vscode.workspace.getConfiguration().get('playwrightrunner.projectPath') ||
-      this.currentPackagePath ||
-      this.currentWorkspaceFolderPath
-    );
-  }
-
-  private get currentPackagePath() {
-    let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
-    do {
-      // Try to find where playwright is installed relatively to the current opened file.
-      // Do not assume that playwright is always installed at the root of the opened project, this is not the case
-      // such as in multi-module projects.
-      const pkg = path.join(currentFolderPath, 'package.json');
-      const playwright = path.join(currentFolderPath, 'node_modules', 'playwright');
-      if (fs.existsSync(pkg) && fs.existsSync(playwright)) {
-        return currentFolderPath;
-      }
-      currentFolderPath = path.join(currentFolderPath, '..');
-    } while (currentFolderPath !== this.currentWorkspaceFolderPath);
-
-    return '';
-  }
-
-  public get currentWorkspaceFolderPath(): string {
+  public static get playwrightBinPath(): string {
+    const defaultPath = isWindows() ? './node_modules/playwright/lib/cli/cli.js' : './node_modules/.bin/playwright';
+    let playwrightPath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.playwrightPath');
+    const filepath = playwrightPath || defaultPath;
+    
     const editor = vscode.window.activeTextEditor;
-    return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
-  }
-
-  public get playwrightConfigPath(): string {
-    // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightConfigPath');
-    if (!configPath) {
-      return this.findConfigPath();
+    if(editor) {
+      return (new PredefinedVars(editor.document.uri)).replace(filepath).trim();
     }
-
-    // default
-    return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
+    return filepath;
   }
 
-  getPlaywrightConfigPath(targetPath: string): string {
-    // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightConfigPath');
-    if (!configPath) {
-      return this.findConfigPath(targetPath);
+  public static get projectPath(): string {
+    const filepath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.projectPath') || '${packageRoot}';
+    const editor = vscode.window.activeTextEditor;
+    if(editor) {
+      return (new PredefinedVars(editor.document.uri)).replace(filepath).trim();
     }
-
-    // default
-    return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
+    return filepath;
   }
 
-  private findConfigPath(targetPath?: string): string {
-    let currentFolderPath: string = targetPath || path.dirname(vscode.window.activeTextEditor.document.fileName);
-    let currentFolderConfigPath: string;
-    do {
-      currentFolderConfigPath = path.join(currentFolderPath, 'playwright.config.js');
-      if (fs.existsSync(currentFolderConfigPath)) {
-        return currentFolderConfigPath;
-      }
-      currentFolderPath = path.join(currentFolderPath, '..');
-    } while (currentFolderPath !== this.currentWorkspaceFolderPath);
-    return '';
-  }
-
-  public get runOptions(): string[] | null {
-    const runOptions = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightRunOptions');
-    if (runOptions) {
-      if (Array.isArray(runOptions)) {
-        return runOptions;
-      } else {
-        vscode.window.showWarningMessage(
-          'Please check your vscode settings. "playwrightrunner.playwrightRunOptions" must be an Array. '
-        );
-      }
+  public static get playwrightConfigPath(): string | undefined {
+    const filepath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.playwrightConfigPath');
+    if(!filepath) {return;}
+    const editor = vscode.window.activeTextEditor;
+    if(editor) {
+      return (new PredefinedVars(editor.document.uri)).replace(filepath).trim();
     }
-    return null;
+    return filepath;
   }
 
-  public get debugOptions(): Partial<vscode.DebugConfiguration> {
-    const debugOptions = vscode.workspace.getConfiguration().get('playwrightrunner.playwrightDebugOptions');
-    if (debugOptions) {
-      return debugOptions;
-    }
-
-    // default
-    return {};
+  public static get runOptions(): string[] {
+    return vscode.workspace.getConfiguration().get<string[]>('playwrightrunner.playwrightRunOptions') || [];
   }
 
-  public get isCodeLensDisabled(): boolean {
-    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('playwrightrunner.disableCodeLens');
-    return isCodeLensDisabled ? isCodeLensDisabled : false;
-  }
-
-  public get isYarnPnpSupportEnabled(): boolean {
-    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('playwrightrunner.enableYarnPnpSupport');
-    return isYarnPnp ? isYarnPnp : false;
+  public static get debugOptions(): Partial<vscode.DebugConfiguration> {
+    const debugOptions = vscode.workspace.getConfiguration().get<Partial<vscode.DebugConfiguration>>('playwrightrunner.playwrightDebugOptions');
+    return debugOptions || {};
   }
 }

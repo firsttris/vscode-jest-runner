@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
-import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote, mergeDeep } from './util';
+import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
+//import { merge } from 'merge-deep';
 
 export class JestCommandBuilder {
   private readonly config = new JestRunnerConfig();
 
   public getCwd(): string {
-    return this.config.cwd;
+    return JestRunnerConfig.projectPath;
   }
 
   public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
@@ -14,16 +15,16 @@ export class JestCommandBuilder {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
       name: 'jest(debug)',
-      program: this.config.jestBinPath,
+      program: JestRunnerConfig.jestBinPath,
       request: 'launch',
       type: 'node',
-      cwd: this.config.cwd,
-      ...this.config.debugOptions,
+      cwd: JestRunnerConfig.projectPath,
+      ...JestRunnerConfig.debugOptions,
     };
 
     config.args = config.args ? config.args.slice() : [];
 
-    if (this.config.isYarnPnpSupportEnabled) {
+    if (JestRunnerConfig.isYarnPnpSupportEnabled) {
       config.args = ['jest'];
       config.program = '.yarn/releases/yarn-*.cjs';
     }
@@ -31,26 +32,26 @@ export class JestCommandBuilder {
     const standardArgs = this.buildArgs(filePath, currentTestName, false);
     pushMany(config.args, standardArgs);
     config.args.push('--runInBand');
-    mergeDeep(config, options);
+    //merge(config, options);
 
     return config;
   }
 
   public buildCommand(filePath: string, testName?: string, options?: string[]): string {
     const args = this.buildArgs(filePath, testName, true, options);
-    return `${this.config.jestCommand} ${args.join(' ')}`;
+    return `${JestRunnerConfig.jestCommand} ${args.join(' ')}`;
   }
 
-  private buildArgs(filePath: string, testName: string, withQuotes: boolean, options: string[] = []): string[] {
+  private buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
-    const quoter = withQuotes ? quote : (str) => str;
+    const quoter = withQuotes ? quote : (str:string) => str;
 
     args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
 
-    const jestConfigPath = this.config.getJestConfigPath(filePath);
-    if (jestConfigPath) {
+    const config = JestRunnerConfig.jestConfigPath;
+    if (config) {
       args.push('-c');
-      args.push(quoter(normalizePath(jestConfigPath)));
+      args.push(quoter(normalizePath(config)));
     }
 
     if (testName) {
@@ -59,10 +60,7 @@ export class JestCommandBuilder {
     }
 
     const setOptions = new Set(options);
-
-    if (this.config.runOptions) {
-      this.config.runOptions.forEach((option) => setOptions.add(option));
-    }
+    JestRunnerConfig.runOptions.forEach((option) => setOptions.add(option));
 
     args.push(...setOptions);
 
