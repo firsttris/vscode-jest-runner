@@ -55,7 +55,7 @@
           },
           "playwrightrunner.projectPath": {
             "type": "string",
-            "default": "${workspaceRoot}",
+            "default": "${packageRoot}",
             "description": "Absolute path to project directory (e.g. /home/me/project/sub-folder)",
             "scope": "window"
           },

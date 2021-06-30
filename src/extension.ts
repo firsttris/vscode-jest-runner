@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 import { MultiRunner } from './multiRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
-import { JestRunnerConfig as config } from './jestRunnerConfig';
+import { RunnerConfig as config } from './runnerConfig';
 
 export function activate(context: vscode.ExtensionContext): void {
   const multiRunner = new MultiRunner();

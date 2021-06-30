@@ -4,7 +4,7 @@ import { quote, unquote, resolveTestNameStringInterpolation } from './util';
 
 import { JestCommandBuilder } from './jestCommandBuilder';
 import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
-import { JestRunnerConfig } from './jestRunnerConfig';
+import { RunnerConfig } from './runnerConfig';
 interface RunCommand {
   cwd: string;
   command: string;
@@ -195,7 +195,7 @@ export class MultiRunner {
   }
 
   private async goToCwd(cmd: string) {
-    if (JestRunnerConfig.changeDirectoryToWorkspaceRoot) {
+    if (RunnerConfig.changeDirectoryToWorkspaceRoot) {
       await this.runTerminalCommand(`cd ${quote(cmd)}`);
     }
   }
