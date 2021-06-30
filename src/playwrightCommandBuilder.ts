@@ -4,10 +4,6 @@ import { RunnerConfig as config} from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
 //import { merge } from 'merge-deep';
 export class PlaywrightCommandBuilder {
-  public getCwd(): string {
-    return config.projectPath;
-  }
-
   public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',

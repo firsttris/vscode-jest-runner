@@ -4,7 +4,7 @@ import { quote, unquote, resolveTestNameStringInterpolation } from './util';
 
 import { JestCommandBuilder } from './jestCommandBuilder';
 import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
-import { RunnerConfig } from './runnerConfig';
+import { RunnerConfig as config} from './runnerConfig';
 interface RunCommand {
   cwd: string;
   command: string;
@@ -135,13 +135,11 @@ export class MultiRunner {
   //
 
   private async runTest(path: string, fileText?: string, testName?: string, options?: string[]): Promise<void> {
-    let cwd;
+    const cwd = config.projectPath;
     let command;
     if (isPlaywrightTest(path, fileText)) {
-      cwd = this.playwrightCommandBuilder.getCwd();
       command = this.playwrightCommandBuilder.buildCommand(path, testName, options);
     } else {
-      cwd = this.jestCommandBuilder.getCwd();
       command = this.jestCommandBuilder.buildCommand(path, testName, options);
     }
     this.executeRunCommand({
@@ -195,7 +193,7 @@ export class MultiRunner {
   }
 
   private async goToCwd(cmd: string) {
-    if (RunnerConfig.changeDirectoryToWorkspaceRoot) {
+    if (config.changeDirectoryToWorkspaceRoot) {
       await this.runTerminalCommand(`cd ${quote(cmd)}`);
     }
   }

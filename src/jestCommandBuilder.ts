@@ -4,10 +4,6 @@ import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote
 //import { merge } from 'merge-deep';
 
 export class JestCommandBuilder {
-  public getCwd(): string {
-    return config.projectPath;
-  }
-
   public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
