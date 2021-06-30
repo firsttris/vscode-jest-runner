@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import { describe, it } from 'mocha';
 import { PredefinedVars, resolveTestNameStringInterpolation } from '../../util';
 
-describe('Extension Test Suite (util)', () => {
+describe('util', () => {
 	vscode.window.showInformationMessage('Start config tests.');
 	const conf = vscode.workspace.getConfiguration('playwrightrunner');
 	let rootDir:vscode.Uri = vscode.Uri.file('.'); 

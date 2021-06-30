@@ -20,13 +20,8 @@ export class MultiRunner {
 
   private terminal: vscode.Terminal | undefined;
 
-  private jestCommandBuilder: JestCommandBuilder;
-  private playwrightCommandBuilder: PlaywrightCommandBuilder;
-
   constructor() {
     this.setup();
-    this.jestCommandBuilder = new JestCommandBuilder();
-    this.playwrightCommandBuilder = new PlaywrightCommandBuilder();
   }
 
   public async runTestsOnPath(path: string): Promise<void> {
@@ -138,9 +133,9 @@ export class MultiRunner {
     const cwd = config.projectPath;
     let command;
     if (isPlaywrightTest(path, fileText)) {
-      command = this.playwrightCommandBuilder.buildCommand(path, testName, options);
+      command = PlaywrightCommandBuilder.buildCommand(path, testName, options);
     } else {
-      command = this.jestCommandBuilder.buildCommand(path, testName, options);
+      command = JestCommandBuilder.buildCommand(path, testName, options);
     }
     this.executeRunCommand({
       cwd: cwd,
@@ -151,9 +146,9 @@ export class MultiRunner {
   private async debugTest(path: string, fileText?: string, testName?: string, options?: unknown): Promise<void> {
     let debugConfig;
     if (isPlaywrightTest(path, fileText)) {
-      debugConfig = this.playwrightCommandBuilder.getDebugConfig(path, testName, options);
+      debugConfig = PlaywrightCommandBuilder.getDebugConfig(path, testName, options);
     } else {
-      debugConfig = this.jestCommandBuilder.getDebugConfig(path, testName, options);
+      debugConfig = JestCommandBuilder.getDebugConfig(path, testName, options);
     }
     this.executeDebugCommand({
       config: debugConfig,

@@ -1,0 +1,152 @@
+import * as path from 'path';
+import * as assert from 'assert';
+
+import * as vscode from 'vscode';
+import { describe, it, before, after } from 'mocha';
+import { PlaywrightCommandBuilder } from '../../playwrightCommandBuilder';
+
+describe('playwrightCommandBuilder', () => {
+	vscode.window.showInformationMessage('Start config tests.');
+	const conf = vscode.workspace.getConfiguration('playwrightrunner');
+	let rootDir:vscode.Uri = vscode.Uri.file('.'); 
+	if(undefined !== vscode.workspace.workspaceFolders && 0 < vscode.workspace.workspaceFolders.length){
+		rootDir = vscode.workspace.workspaceFolders[0] && vscode.workspace.workspaceFolders[0].uri;
+	}
+	const assetRootDir = rootDir.fsPath.replace(/\\/g, '/');
+	const command = 'sample';
+	const file = vscode.Uri.joinPath(rootDir, "tests/mainpackage.spec.js");
+	const file2 = vscode.Uri.joinPath(rootDir, "packages/subpackage/tests/subpackage.spec.js");
+
+	describe('buildCommand', () => {
+		before( async () => {
+			await conf.update('playwrightCommand', command);
+			await conf.update('playwrightConfigPath', undefined);
+			await vscode.workspace.openTextDocument(file).then(doc => vscode.window.showTextDocument(doc));
+		});
+	
+		after( async () => {
+			await conf.update('playwrightCommand', undefined);
+			await conf.update('playwrightConfigPath', undefined);
+		});
+		
+		it('test 1', async () => {
+			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath);
+			assert.deepStrictEqual(`${command} test "mainpackage.spec.js"`, cmd);
+		});	
+
+		it('test 2', async () => {
+			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath, 'testcase');
+			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" -g "testcase"`, cmd);
+		});	
+
+		it('test 3', async () => {
+			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath, 'testcase', ['--a','--b']);
+			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" -g "testcase" --a --b`, cmd);
+		});	
+
+		it('test 4', async () => {
+			await conf.update('playwrightConfigPath', 'playwright.config.js');
+			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath, 'testcase');
+			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" --config="playwright.config.js" -g "testcase"`, cmd);
+			await conf.update('playwrightConfigPath', undefined);
+		});	
+	});
+	describe('getDebugConfig', () => {
+		before( async () => {
+			await conf.update('playwrightCommand', command);
+			await conf.update('playwrightConfigPath', undefined);
+			await vscode.workspace.openTextDocument(file).then(doc => vscode.window.showTextDocument(doc));
+		});
+	
+		after( async () => {
+			await conf.update('playwrightCommand', undefined);
+			await conf.update('playwrightConfigPath', undefined);
+		});
+		
+		it('test 1', async () => {
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file.fsPath);
+			assert.deepStrictEqual(cmd, {
+				args: [
+				  "test",
+				  `mainpackage.spec.js`
+				],
+				console: "integratedTerminal",
+				cwd: assetRootDir,
+				// eslint-disable-next-line @typescript-eslint/naming-convention
+				env: {PWDEBUG: "console"},
+				internalConsoleOptions: "neverOpen",
+				name: "playwright(debug)",
+				program: "./node_modules/playwright/lib/cli/cli.js",
+				request: "launch",
+				type: "node",
+			});
+		});	
+		
+		it('test 2', async () => {
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file.fsPath, 'testcase');
+			assert.deepStrictEqual(cmd, {
+				args: [
+				  "test",
+				  `mainpackage.spec.js`,
+				  "-g",
+				  "testcase"
+				],
+				console: "integratedTerminal",
+				cwd: assetRootDir,
+				// eslint-disable-next-line @typescript-eslint/naming-convention
+				env: {PWDEBUG: "console"},
+				internalConsoleOptions: "neverOpen",
+				name: "playwright(debug)",
+				program: "./node_modules/playwright/lib/cli/cli.js",
+				request: "launch",
+				type: "node",
+			});
+		});	
+		
+		it('test 3', async () => {
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file.fsPath, 'testcase', {args:["--aa"], sampleoption1:"aaa", env:{foo:"123"}});
+			assert.deepStrictEqual(cmd, {
+				args: [
+				  "test",
+				  `mainpackage.spec.js`,
+				  "-g",
+				  "testcase",
+				  "--aa"
+				],
+				console: "integratedTerminal",
+				cwd: assetRootDir,
+				internalConsoleOptions: "neverOpen",
+				name: "playwright(debug)",
+				program: "./node_modules/playwright/lib/cli/cli.js",
+				request: "launch",
+				type: "node",
+				sampleoption1:"aaa",
+				env: {
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					PWDEBUG: "console",
+					foo:"123",
+				}
+			});
+		});	
+		
+		it('test 4', async () => {
+			await vscode.workspace.openTextDocument(file2).then(doc => vscode.window.showTextDocument(doc));
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file2.fsPath);
+			assert.deepStrictEqual(cmd, {
+				args: [
+				  "test",
+				  `subpackage.spec.js`
+				],
+				console: "integratedTerminal",
+				cwd: assetRootDir+'/packages/subpackage',
+				// eslint-disable-next-line @typescript-eslint/naming-convention
+				env: {PWDEBUG: "console"},
+				internalConsoleOptions: "neverOpen",
+				name: "playwright(debug)",
+				program: "./node_modules/playwright/lib/cli/cli.js",
+				request: "launch",
+				type: "node",
+			});
+		});	
+	});
+});

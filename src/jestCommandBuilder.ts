@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { RunnerConfig as config} from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
-const merge = require('deepmerge');
+const merge = require('merge-deep');
 
 export class JestCommandBuilder {
-  public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
+  public static getDebugConfig(filePath: string, currentTestName?: string, options?: any): vscode.DebugConfiguration {
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -18,7 +18,7 @@ export class JestCommandBuilder {
 
     debugCfg.args = debugCfg.args ? debugCfg.args.slice() : [];
 
-    if (debugCfg.isYarnPnpSupportEnabled) {
+    if (config.isYarnPnpSupportEnabled) {
       debugCfg.args = ['jest'];
       debugCfg.program = '.yarn/releases/yarn-*.cjs';
     }
@@ -26,17 +26,15 @@ export class JestCommandBuilder {
     const standardArgs = this.buildArgs(filePath, currentTestName, false);
     pushMany(debugCfg.args, standardArgs);
     debugCfg.args.push('--runInBand');
-    merge(config, options);
-
-    return debugCfg;
+    return options ? merge(debugCfg, options) : debugCfg;
   }
 
-  public buildCommand(filePath: string, testName?: string, options?: string[]): string {
+  public static buildCommand(filePath: string, testName?: string, options?: string[]): string {
     const args = this.buildArgs(filePath, testName, true, options);
     return `${config.jestCommand} ${args.join(' ')}`;
   }
 
-  private buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
+  private static buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str:string) => str;
 

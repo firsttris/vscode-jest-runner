@@ -2,10 +2,10 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { RunnerConfig as config} from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
-const merge = require('deepmerge');
+const merge = require('merge-deep');
 
 export class PlaywrightCommandBuilder {
-  public getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
+  public static getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -23,17 +23,15 @@ export class PlaywrightCommandBuilder {
 
     const standardArgs = this.buildArgs(filePath, currentTestName, false);
     pushMany(debugCfg.args, standardArgs);
-    merge(config, options);
-
-    return debugCfg;
+    return options ? merge(debugCfg, options) : debugCfg;
   }
 
-  public buildCommand(filePath: string, testName?: string, options?: string[]): string {
+  public static buildCommand(filePath: string, testName?: string, options?: string[]): string {
     const args = this.buildArgs(filePath, testName, true, options);
     return `${config.playwrightCommand} ${args.join(' ')}`;
   }
 
-  private buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
+  private static buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str:string) => str;
 
@@ -46,8 +44,7 @@ export class PlaywrightCommandBuilder {
 
     const cfg = config.playwrightConfigPath;
     if (cfg) {
-      args.push('--config=');
-      args.push(quoter(normalizePath(cfg)));
+      args.push('--config='+quoter(normalizePath(cfg)));
     }
 
     if (testName) {
