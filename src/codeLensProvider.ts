@@ -33,7 +33,7 @@ function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
   });
   return codeLens;
 }
-export class JestRunnerCodeLensProvider implements CodeLensProvider {
+export class PlaywrightRunnerCodeLensProvider implements CodeLensProvider {
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
       const text = document.getText();
