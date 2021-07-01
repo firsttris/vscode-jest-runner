@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { RunnerConfig as config} from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
-const merge = require('merge-deep');
+const merge = require('deepmerge');
 
 export class JestCommandBuilder {
   public static getDebugConfig(filePath: string, currentTestName?: string, options?: any): vscode.DebugConfiguration {

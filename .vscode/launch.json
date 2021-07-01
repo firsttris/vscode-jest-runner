@@ -1,33 +1,33 @@
 // A launch configuration that compiles the extension and then opens it inside a new window
 {
-    "version": "0.1.0",
+    "version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension",
+            "name": "Run Extension",
             "type": "extensionHost",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
             "args": [
                 "${workspaceFolder}/testarea",
-                "--extensionDevelopmentPath=${workspaceRoot}"
+                "--extensionDevelopmentPath=${workspaceFolder}"
             ],
-            "stopOnEntry": false,
-            "sourceMaps": true,
-            "outFiles": [ "${workspaceRoot}/dist/*.js" ],
-            "preLaunchTask": "npm: compile"
+			"outFiles": [
+				"${workspaceFolder}/dist/**/*.js"
+			],
+            "preLaunchTask": "${defaultBuildTask}"
         },
         {
             "name": "Extension Tests",
             "type": "extensionHost",
             "request": "launch",
-            "runtimeExecutable": "${execPath}",
             "args": [
                 "${workspaceFolder}/testarea",
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
             ],
-            "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+			"outFiles": [
+				"${workspaceFolder}/out/test/**/*.js"
+			],
+            "preLaunchTask": "npm: test-watch"
         }
     ]
 }
