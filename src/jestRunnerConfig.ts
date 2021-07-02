@@ -101,15 +101,13 @@ export class JestRunnerConfig {
   private findConfigPath(targetPath?: string): string {
     let currentFolderPath: string = targetPath || path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
-    let currentFolderTypescriptConfigPath: string;
     do {
-      currentFolderConfigPath = path.join(currentFolderPath, 'jest.config.js');
-      currentFolderTypescriptConfigPath = path.join(currentFolderPath, 'jest.config.ts');      
-      if (fs.existsSync(currentFolderConfigPath)) {
-        return currentFolderConfigPath;
-      }
-      if (fs.existsSync(currentFolderTypescriptConfigPath)) {
-        return currentFolderTypescriptConfigPath;
+      for (const configFilename of ['jest.config.js', 'jest.config.ts']) {
+        currentFolderConfigPath = path.join(currentFolderPath, configFilename);
+
+        if (fs.existsSync(currentFolderConfigPath)) {
+          return currentFolderConfigPath;
+        }
       }
       currentFolderPath = path.join(currentFolderPath, '..');
     } while (currentFolderPath !== this.currentWorkspaceFolderPath);
