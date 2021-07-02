@@ -30,23 +30,23 @@ describe('playwrightCommandBuilder', () => {
 		});
 		
 		it('test 1', async () => {
-			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath);
+			const cmd = PlaywrightCommandBuilder.buildCommand(file);
 			assert.deepStrictEqual(`${command} test "mainpackage.spec.js"`, cmd);
 		});	
 
 		it('test 2', async () => {
-			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath, 'testcase');
+			const cmd = PlaywrightCommandBuilder.buildCommand(file, 'testcase');
 			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" -g "testcase"`, cmd);
 		});	
 
 		it('test 3', async () => {
-			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath, 'testcase', ['--a','--b']);
+			const cmd = PlaywrightCommandBuilder.buildCommand(file, 'testcase', ['--a','--b']);
 			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" -g "testcase" --a --b`, cmd);
 		});	
 
 		it('test 4', async () => {
 			await conf.update('playwrightConfigPath', 'playwright.config.js');
-			const cmd = PlaywrightCommandBuilder.buildCommand(file.fsPath, 'testcase');
+			const cmd = PlaywrightCommandBuilder.buildCommand(file, 'testcase');
 			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" --config="playwright.config.js" -g "testcase"`, cmd);
 			await conf.update('playwrightConfigPath', undefined);
 		});	
@@ -64,7 +64,7 @@ describe('playwrightCommandBuilder', () => {
 		});
 		
 		it('test 1', async () => {
-			const cmd = PlaywrightCommandBuilder.getDebugConfig(file.fsPath);
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file);
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  "test",
@@ -80,10 +80,10 @@ describe('playwrightCommandBuilder', () => {
 				request: "launch",
 				type: "node",
 			});
-		});	
+		}).timeout(30000);	
 		
 		it('test 2', async () => {
-			const cmd = PlaywrightCommandBuilder.getDebugConfig(file.fsPath, 'testcase');
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file, 'testcase');
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  "test",
@@ -101,10 +101,10 @@ describe('playwrightCommandBuilder', () => {
 				request: "launch",
 				type: "node",
 			});
-		});	
+		}).timeout(30000);
 		
 		it('test 3', async () => {
-			const cmd = PlaywrightCommandBuilder.getDebugConfig(file.fsPath, 'testcase', {args:["--aa"], sampleoption1:"aaa", env:{foo:"123"}});
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file, 'testcase', {args:["--aa"], sampleoption1:"aaa", env:{foo:"123"}});
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  "test",
@@ -127,11 +127,11 @@ describe('playwrightCommandBuilder', () => {
 					foo:"123",
 				}
 			});
-		});	
+		}).timeout(30000);
 		
 		it('test 4', async () => {
 			await vscode.workspace.openTextDocument(file2).then(doc => vscode.window.showTextDocument(doc));
-			const cmd = PlaywrightCommandBuilder.getDebugConfig(file2.fsPath);
+			const cmd = PlaywrightCommandBuilder.getDebugConfig(file2);
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  "test",
@@ -147,6 +147,6 @@ describe('playwrightCommandBuilder', () => {
 				request: "launch",
 				type: "node",
 			});
-		});	
+		}).timeout(30000);
 	});
 });

@@ -4,7 +4,7 @@ import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote
 const merge = require('deepmerge');
 
 export class JestCommandBuilder {
-  public static getDebugConfig(filePath: string, currentTestName?: string, options?: any): vscode.DebugConfiguration {
+  public static getDebugConfig(filePath: vscode.Uri, currentTestName?: string, options?: any): vscode.DebugConfiguration {
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -12,7 +12,7 @@ export class JestCommandBuilder {
       program: config.jestBinPath,
       request: 'launch',
       type: 'node',
-      cwd: config.projectPath,
+      cwd: config.projectPath(filePath),
       ...config.jestDebugOptions,
     };
 
@@ -29,16 +29,16 @@ export class JestCommandBuilder {
     return options ? merge(debugCfg, options) : debugCfg;
   }
 
-  public static buildCommand(filePath: string, testName?: string, options?: string[]): string {
+  public static buildCommand(filePath: vscode.Uri, testName?: string, options?: string[]): string {
     const args = this.buildArgs(filePath, testName, true, options);
     return `${config.jestCommand} ${args.join(' ')}`;
   }
 
-  private static buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
+  private static buildArgs(filePath: vscode.Uri, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str:string) => str;
 
-    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+    args.push(quoter(escapeRegExpForPath(normalizePath(filePath.fsPath))));
 
     const cfg = config.jestConfigPath;
     if (cfg) {

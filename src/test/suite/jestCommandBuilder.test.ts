@@ -30,23 +30,23 @@ describe('jestCommandBuilder', () => {
 		});
 		
 		it('test 1', async () => {
-			const cmd = JestCommandBuilder.buildCommand(file.fsPath);
+			const cmd = JestCommandBuilder.buildCommand(file);
 			assert.deepStrictEqual(`${command} "${assetRootDir}/tests/mainpackage.spec.js"`, cmd);
 		});	
 
 		it('test 2', async () => {
-			const cmd = JestCommandBuilder.buildCommand(file.fsPath, 'testcase');
+			const cmd = JestCommandBuilder.buildCommand(file, 'testcase');
 			assert.deepStrictEqual(`${command} "${assetRootDir}/tests/mainpackage.spec.js" -t "testcase"`, cmd);
 		});	
 
 		it('test 3', async () => {
-			const cmd = JestCommandBuilder.buildCommand(file.fsPath, 'testcase', ['--a','--b']);
+			const cmd = JestCommandBuilder.buildCommand(file, 'testcase', ['--a','--b']);
 			assert.deepStrictEqual(`${command} "${assetRootDir}/tests/mainpackage.spec.js" -t "testcase" --a --b`, cmd);
 		});	
 
 		it('test 4', async () => {
 			await conf.update('jestConfigPath', 'jest.config.js');
-			const cmd = JestCommandBuilder.buildCommand(file.fsPath, 'testcase');
+			const cmd = JestCommandBuilder.buildCommand(file, 'testcase');
 			assert.deepStrictEqual(`${command} "${assetRootDir}/tests/mainpackage.spec.js" -c "jest.config.js" -t "testcase"`, cmd);
 			await conf.update('jestConfigPath', undefined);
 		});	
@@ -64,7 +64,7 @@ describe('jestCommandBuilder', () => {
 		});
 		
 		it('test 1', async () => {
-			const cmd = JestCommandBuilder.getDebugConfig(file.fsPath);
+			const cmd = JestCommandBuilder.getDebugConfig(file);
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  `${assetRootDir}/tests/mainpackage.spec.js`,
@@ -81,7 +81,7 @@ describe('jestCommandBuilder', () => {
 		});	
 		
 		it('test 2', async () => {
-			const cmd = JestCommandBuilder.getDebugConfig(file.fsPath, 'testcase');
+			const cmd = JestCommandBuilder.getDebugConfig(file, 'testcase');
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  `${assetRootDir}/tests/mainpackage.spec.js`,
@@ -100,7 +100,7 @@ describe('jestCommandBuilder', () => {
 		});	
 		
 		it('test 3', async () => {
-			const cmd = JestCommandBuilder.getDebugConfig(file.fsPath, 'testcase', {args:["--aa"], sampleoption1:"aaa", env:{foo:"123"}});
+			const cmd = JestCommandBuilder.getDebugConfig(file, 'testcase', {args:["--aa"], sampleoption1:"aaa", env:{foo:"123"}});
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  `${assetRootDir}/tests/mainpackage.spec.js`,
@@ -125,7 +125,7 @@ describe('jestCommandBuilder', () => {
 		
 		it('test 4', async () => {
 			await vscode.workspace.openTextDocument(file2).then(doc => vscode.window.showTextDocument(doc));
-			const cmd = JestCommandBuilder.getDebugConfig(file2.fsPath);
+			const cmd = JestCommandBuilder.getDebugConfig(file2);
 			assert.deepStrictEqual(cmd, {
 				args: [
 				  `${assetRootDir}/packages/subpackage/tests/subpackage.spec.js`,

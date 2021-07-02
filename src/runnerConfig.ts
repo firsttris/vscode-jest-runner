@@ -34,7 +34,7 @@ export class RunnerConfig {
     return filepath;
   }
 
-  public static get projectPath(): string {
+  public static projectPath(path:vscode.Uri): string {
     const filepath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.projectPath') || '';
     const editor = vscode.window.activeTextEditor;
     if(editor) {

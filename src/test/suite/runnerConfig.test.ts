@@ -155,14 +155,14 @@ describe('runnerConfig', async () => {
 			const file = vscode.Uri.joinPath(rootDir, "tests/mainpackage.spec.js");
 			await vscode.workspace.openTextDocument(file).then(doc => vscode.window.showTextDocument(doc));
 			await conf.update('projectPath', undefined);
-			assert.strictEqual(assetRootDir, RunnerConfig.projectPath);
+			assert.strictEqual(assetRootDir, RunnerConfig.projectPath(file));
 		});
 	
 		it('projectPath test 2', async () => {
 			const file = vscode.Uri.joinPath(rootDir, "packages/subpackage/tests/subpackage.spec.js");
 			await vscode.workspace.openTextDocument(file).then(doc => vscode.window.showTextDocument(doc));
 			await conf.update('projectPath', undefined);
-			assert.strictEqual(assetRootDir+'/packages/subpackage', RunnerConfig.projectPath);
+			assert.strictEqual(assetRootDir+'/packages/subpackage', RunnerConfig.projectPath(file));
 		});
 	
 		it('isYarnPnpSupportEnabled test false', async () => {

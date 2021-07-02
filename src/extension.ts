@@ -19,7 +19,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   );
   const runTestPath = vscode.commands.registerCommand('playwright.runTestPath', async (argument: vscode.Uri) =>
-    multiRunner.runTestsOnPath(argument.path)
+    multiRunner.runTestsOnPath(argument)
   );
   const runTestAndUpdateSnapshots = vscode.commands.registerCommand(
     'playwright.runTestAndUpdateSnapshots',
@@ -41,7 +41,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   );
   const debugTestPath = vscode.commands.registerCommand('playwright.debugTestPath', async (argument: vscode.Uri) =>
-    multiRunner.debugTestsOnPath(argument.path)
+    multiRunner.debugTestsOnPath(argument)
   );
   const inspectorTest = vscode.commands.registerCommand(
     'playwright.inspectorTest',

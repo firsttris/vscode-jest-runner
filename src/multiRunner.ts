@@ -24,7 +24,7 @@ export class MultiRunner {
     this.setup();
   }
 
-  public async runTestsOnPath(path: string): Promise<void> {
+  public async runTestsOnPath(path: vscode.Uri): Promise<void> {
     await this.runTest(path);
   }
 
@@ -36,7 +36,7 @@ export class MultiRunner {
 
     await editor.document.save();
 
-    const filePath = editor.document.fileName;
+    const filePath = editor.document.uri;
     const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
 
@@ -51,7 +51,7 @@ export class MultiRunner {
 
     await editor.document.save();
 
-    const filePath = editor.document.fileName;
+    const filePath = editor.document.uri;
     const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
 
@@ -66,7 +66,7 @@ export class MultiRunner {
 
     await editor.document.save();
 
-    const filePath = editor.document.fileName;
+    const filePath = editor.document.uri;
     const fileText = editor.document.getText();
     await this.runTest(filePath, fileText, undefined, options);
   }
@@ -90,7 +90,7 @@ export class MultiRunner {
     }
   }
 
-  public async debugTestsOnPath(path: string): Promise<void> {
+  public async debugTestsOnPath(path: vscode.Uri): Promise<void> {
     await this.debugTest(path);
   }
 
@@ -102,7 +102,7 @@ export class MultiRunner {
 
     await editor.document.save();
 
-    const filePath = editor.document.fileName;
+    const filePath = editor.document.uri;
     const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
 
@@ -117,7 +117,7 @@ export class MultiRunner {
 
     await editor.document.save();
 
-    const filePath = editor.document.fileName;
+    const filePath = editor.document.uri;
     const fileText = editor.document.getText();
     const testName = currentTestName || this.findCurrentTestName(editor);
 
@@ -129,10 +129,10 @@ export class MultiRunner {
   // private methods
   //
 
-  private async runTest(path: string, fileText?: string, testName?: string, options?: string[]): Promise<void> {
-    const cwd = config.projectPath;
+  private async runTest(path: vscode.Uri, fileText?: string, testName?: string, options?: string[]): Promise<void> {
+    const cwd = config.projectPath(path);
     let command;
-    if (isPlaywrightTest(path, fileText)) {
+    if (isPlaywrightTest(path.fsPath, fileText)) {
       command = PlaywrightCommandBuilder.buildCommand(path, testName, options);
     } else {
       command = JestCommandBuilder.buildCommand(path, testName, options);
@@ -143,16 +143,16 @@ export class MultiRunner {
     });
   }
 
-  private async debugTest(path: string, fileText?: string, testName?: string, options?: unknown): Promise<void> {
+  private async debugTest(path: vscode.Uri, fileText?: string, testName?: string, options?: unknown): Promise<void> {
     let debugConfig;
-    if (isPlaywrightTest(path, fileText)) {
+    if (isPlaywrightTest(path.fsPath, fileText)) {
       debugConfig = PlaywrightCommandBuilder.getDebugConfig(path, testName, options);
     } else {
       debugConfig = JestCommandBuilder.getDebugConfig(path, testName, options);
     }
     this.executeDebugCommand({
       config: debugConfig,
-      documentUri: vscode.Uri.file(path),
+      documentUri: path,
     });
   }
 
@@ -200,7 +200,7 @@ export class MultiRunner {
     this.terminal.show();
     await vscode.commands.executeCommand('workbench.action.terminal.clear');
     this.terminal.sendText(command);
-  }
+}
 
   private setup() {
     vscode.window.onDidCloseTerminal(() => {

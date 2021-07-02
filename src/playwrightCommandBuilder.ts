@@ -5,7 +5,7 @@ import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote
 const merge = require('deepmerge');
 
 export class PlaywrightCommandBuilder {
-  public static getDebugConfig(filePath: string, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
+  public static getDebugConfig(filePath: vscode.Uri, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -15,7 +15,7 @@ export class PlaywrightCommandBuilder {
       type: 'node',
       // eslint-disable-next-line @typescript-eslint/naming-convention
       env: { PWDEBUG: 'console' },
-      cwd: config.projectPath,
+      cwd: config.projectPath(filePath),
       ...config.playwrightDebugOptions,
     };
 
@@ -26,19 +26,19 @@ export class PlaywrightCommandBuilder {
     return options ? merge(debugCfg, options) : debugCfg;
   }
 
-  public static buildCommand(filePath: string, testName?: string, options?: string[]): string {
+  public static buildCommand(filePath: vscode.Uri, testName?: string, options?: string[]): string {
     const args = this.buildArgs(filePath, testName, true, options);
     return `${config.playwrightCommand} ${args.join(' ')}`;
   }
 
-  private static buildArgs(filePath: string, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
+  private static buildArgs(filePath: vscode.Uri, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str:string) => str;
 
     args.push('test');
 
-    const cwd = vscode.Uri.file(config.projectPath);
-    const testfile = path.relative(cwd.fsPath + '/tests', filePath).replace(/\\/g, '/');
+    const cwd = vscode.Uri.file(config.projectPath(filePath));
+    const testfile = path.relative(cwd.fsPath + '/tests', filePath.fsPath).replace(/\\/g, '/');
 
     args.push(quoter(escapeRegExpForPath(normalizePath(testfile))));
 
