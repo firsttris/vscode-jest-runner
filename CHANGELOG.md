@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.2.0 - 2021-07-02
+
+- Feature: refactor
+- Feature: supported varibale ``${workspaceRoot}``,``${packageRoot}``,``${currentFileDir}``,``${fileExtname}``,``${fileBasenameNoExtension}``,``${fileBasename}``,``${fileDirname}``.
+- Fix: bug
+  
 ## 0.1.1 - 2021-06-29
 
 - fix: Fixed an issue where playwrith options were not reflected.

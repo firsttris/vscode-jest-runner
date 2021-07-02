@@ -2,7 +2,7 @@
   "name": "vscode-playwright-test-runner",
   "displayName": "Playwright Test Runner",
   "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "sakamoto66",
   "author": {
     "name": "sakamoto66",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sakamoto66/vscode-jest-runner.git"
+    "url": "https://github.com/sakamoto66/vscode-playwright-test-runner.git"
   },
   "license": "MIT",
   "icon": "public/icon.png",
