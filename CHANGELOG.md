@@ -1,9 +1,14 @@
 # Change Log
 
+## 0.2.1 - 2021-07-03
+
+- Feature: update README.md
+- Fix: rename ${currentFileDir} -> ${currentFile}
+
 ## 0.2.0 - 2021-07-02
 
 - Feature: refactor
-- Feature: supported varibale ``${workspaceRoot}``,``${packageRoot}``,``${currentFileDir}``,``${fileExtname}``,``${fileBasenameNoExtension}``,``${fileBasename}``,``${fileDirname}``.
+- Feature: supported varibale ``${workspaceRoot}``,``${packageRoot}``,``${currentFile}``,``${fileExtname}``,``${fileBasenameNoExtension}``,``${fileBasename}``,``${fileDirname}``.
 - Fix: bug
   
 ## 0.1.1 - 2021-06-29
