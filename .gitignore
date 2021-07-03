@@ -3,4 +3,6 @@ dist
 node_modules
 .vscode-test/
 *.vsix
-testarea
+testarea/coverage
+testarea/reports/*
+testarea/**/package-lock.json
