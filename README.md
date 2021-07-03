@@ -1,24 +1,19 @@
-# vscode-playwright-test-runner
+# Playwright Test Runner
 
-## Visual Studio Code Marketplace
+Running or debugging a specific test or test-suite by playwright.
 
-[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-playwright-test-runner)
-[Open VSX Registry](https://open-vsx.org/extension/sakamoto66/vscode-playwright-test-runner)
-
-## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
-
-[vscode-playwright-test-runner](https://github.com/sakamoto66/vscode-playwright-test-runner) is focused on running or debugging a specific test or test-suite, while [vscode-jest](https://github.com/jest-community/vscode-jest) is running your current test-suite everytime you change it.
+[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=sakamoto66.vscode-playwright-test-runner)
 
 ## Features
 
 Simple way to run or debug a specific test
 *As it is possible in IntelliJ / Webstorm*
 
-Run & Debug your Jest Tests from
+Run, Debug and Inspect your Playwright and Jest Tests from
 
 - Context-Menu
 - CodeLens
-- Command Palette (strg+shift+p)
+- Command Palette [ strg(ctrl) + shift + p ]
 
 ## Supports
 
@@ -32,6 +27,14 @@ Run & Debug your Jest Tests from
 ## Usage with CRA or similar abstractions
 
 add the following command to settings, to pass commandline arguments
+
+- for playwright
+
+```javascript
+"playwrightrunner.playwrightCommand": "npm run test --"
+```
+
+- for jest
 
 ```javascript
 "playwrightrunner.jestCommand": "npm run test --"
@@ -73,21 +76,47 @@ Check that debugger works:
 
 ## Extension Settings
 
-Jest Runner will work out of the box, with a valid Jest config.
-If you have a custom setup use the following options to configure Jest Runner:
+Playwright Test Runner will work out of the box, with a valid Jest config.
+If you have a custom setup use the following options to configure Playwright Test Runner:
+
+### Variable
+
+sample : `/workspace/packages/sample/tests/test.spec.js`
+
+| Variable | Description | sample |
+| --- | --- | --- |
+|`${workspaceRoot}`|the path of the project opened in vscode.| /workspace |
+|`${packageRoot}`|the path of directory with package.json.| /workspace/packages/sample |
+|`${currentFile}`|the current file | /workspace/packages/sample/tests/test.spec.js |
+|`${fileBasename}`|the current file name with ext.| test.spec.js |
+|`${fileBasenameNoExtension}`|the current file name without ext.| test.spec |
+|`${fileExtname}`|the current file name with ext.| .js |
+|`${fileDirname}`|the current file name with ext.| /workspace/packages/sample/tests |
+
+### Command for playwright
 
 | Command | Description |
 | --- | --- |
-| playwrightrunner.playwrightConfigPath | Playwright config path (relative to ${workFolder} e.g. playwright-config.js) |
-| playwrightrunner.playwrightPath | Absolute path to Playwright bin file (e.g. /usr/lib/node_modules/playwright/lib/cli/cli.js) |
-| playwrightrunner.playwrightDebugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"playwrightrunner.playwrightDebugOptions": { "args": ["--no-cache"] }`) |
-| playwrightrunner.playwrightRunOptions | Add CLI Options to the playwright Command (e.g. `"playwrightrunner.playwrightRunOptions": ["--coverage", "--colors"]`) <https://playwright.dev/docs/test-intro> |
 | playwrightrunner.playwrightCommand | Define an alternative playwright command (e.g. for Create React App and similar abstractions) |
-| playwrightrunner.jestConfigPath | Jest config path (relative to ${workFolder} e.g. jest-config.json) |
-| playwrightrunner.jestPath | Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
-| playwrightrunner.jestDebugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"playwrightrunner.jestDebugOptions": { "args": ["--no-cache"] }`) |
-| playwrightrunner.jestRunOptions | Add CLI Options to the Jest Command (e.g. `"playwrightrunner.jestRunOptions": ["--coverage", "--colors"]`) <https://jestjs.io/docs/en/cli> |
+| playwrightrunner.playwrightPath | Absolute path to Playwright bin file (e.g. /usr/lib/node_modules/playwright/lib/cli/cli.js) |
+| playwrightrunner.playwrightConfigPath | Playwright config path (relative to ${packageRoot} e.g. playwright-config.js) |
+| playwrightrunner.playwrightRunOptions | Add CLI Options to the playwright Command (e.g. `"playwrightrunner.playwrightRunOptions": ["--coverage", "--colors"]`) <https://playwright.dev/docs/test-intro> |
+| playwrightrunner.playwrightDebugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"playwrightrunner.playwrightDebugOptions": { "args": ["--no-cache"] }`) |
+
+### Command for jest
+
+| Command | Description |
+| --- | --- |
 | playwrightrunner.jestCommand | Define an alternative Jest command (e.g. for Create React App and similar abstractions) |
+| playwrightrunner.jestPath | Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js) |
+| playwrightrunner.jestConfigPath | Jest config path (relative to ${workFolder} e.g. jest-config.json) |
+| playwrightrunner.jestRunOptions | Add CLI Options to the Jest Command (e.g. `"playwrightrunner.jestRunOptions": ["--coverage", "--colors"]`) <https://jestjs.io/docs/en/cli> |
+| playwrightrunner.jestDebugOptions | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"playwrightrunner.jestDebugOptions": { "args": ["--no-cache"] }`) |
+
+### Command for common
+
+| Command | Description |
+| --- | --- |
 | playwrightrunner.disableCodeLens | Disable CodeLens feature |
 | playwrightrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx}) |
 | playwrightrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
@@ -109,11 +138,15 @@ add this:
   "key": "alt+2",
   "command": "playwrightrunner.debugTest"
 },
+{
+  "key": "alt+3",
+  "command": "playwrightrunner.inspectorTest"
+},
 ```
 
 ## Want to start contributing features?
 
-[Some open topics get you started](https://github.com/firsttris/vscode-playwright-test-runner/issues)
+[Some open topics get you started](https://github.com/sakamoto66/vscode-playwright-test-runner/issues)
 
 ## Steps to run in development mode
 
