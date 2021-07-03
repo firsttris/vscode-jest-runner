@@ -25,6 +25,7 @@
                 "--extensionTestsPath=${workspaceFolder}/out/test/suite/index"
             ],
 			"outFiles": [
+				"${workspaceFolder}/dist/**/*.js",
 				"${workspaceFolder}/out/test/**/*.js"
 			],
             "preLaunchTask": "npm: test-watch"
