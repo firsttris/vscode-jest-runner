@@ -14,9 +14,9 @@ describe('util', () => {
 	}
 	const assetRootDir = rootDir.fsPath.replace(/\\/g, '/');
 
-	it('PredefinedVars ${currentFileDir}', () => {
+	it('PredefinedVars ${currentFile}', () => {
 		const file = vscode.Uri.joinPath(rootDir, "tests/mainpackage.spec.js");
-		const output = (new PredefinedVars(file)).replace("${currentFileDir}");	
+		const output = (new PredefinedVars(file)).replace("${currentFile}");	
 		assert.strictEqual(assetRootDir+'/tests/mainpackage.spec.js', output);
 	});
 

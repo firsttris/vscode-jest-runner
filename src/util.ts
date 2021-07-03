@@ -132,7 +132,7 @@ export class PredefinedVars {
       this.set("packageRoot", getPackageRoot(current) || '');
       
       if(currPath) {
-          this.set("currentFileDir", currPath);
+          this.set("currentFile", currPath);
           this.set("fileExtname", path.extname(currPath));
           this.set("fileBasenameNoExtension" ,path.basename(currPath, this.replaceMap.get("${fileExtname}")));
           this.set("fileBasename", path.basename(currPath));
