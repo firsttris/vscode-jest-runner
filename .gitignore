@@ -4,5 +4,6 @@ node_modules
 .vscode-test/
 *.vsix
 testarea/coverage
-testarea/reports/*
+testarea/reports/*.json
+testarea/reports/npm.finish
 testarea/**/package-lock.json
