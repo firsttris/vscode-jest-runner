@@ -67,9 +67,9 @@ describe('Extension Commands', async () => {
 			await vscode.commands.executeCommand("playwright.debugTestPath", fpath);
 		}).timeout(30000);
 
-		it('playwright.inspectorTest', async () => {
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/inspectorTest.jest.result.json']);
-			await vscode.commands.executeCommand("playwright.inspectorTest");
+		it('playwright.inspectTest', async () => {
+			await conf.update('jestRunOptions', ['--json','--outputFile=reports/inspectTest.jest.result.json']);
+			await vscode.commands.executeCommand("playwright.inspectTest");
 		}).timeout(30000);
 
 		it('playwright.runPrevTest', async () => {
@@ -136,9 +136,9 @@ describe('Extension Commands', async () => {
 			await vscode.commands.executeCommand("playwright.debugTestPath", fpath);
 		}).timeout(30000);
 
-		it('playwright.inspectorTest', async () => {
-			await conf.update('playwrightDebugOptions', ['--json','--outputFile=reports/inspectorTest.playwright.result.json']);
-			await vscode.commands.executeCommand("playwright.inspectorTest");
+		it('playwright.inspectTest', async () => {
+			await conf.update('playwrightDebugOptions', ['--json','--outputFile=reports/inspectTest.playwright.result.json']);
+			await vscode.commands.executeCommand("playwright.inspectTest");
 		}).timeout(30000);
 
 		it('playwright.runPrevTest', async () => {

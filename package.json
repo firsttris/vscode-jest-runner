@@ -2,7 +2,7 @@
   "name": "vscode-playwright-test-runner",
   "displayName": "Playwright Test Runner",
   "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "sakamoto66",
   "author": {
     "name": "sakamoto66",
@@ -151,7 +151,7 @@
         "title": "Debug Playwright Test"
       },
       {
-        "command": "playwright.inspectorTest",
+        "command": "playwright.inspectTest",
         "title": "Inspector Playwright Test"
       },
       {

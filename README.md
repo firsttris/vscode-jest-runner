@@ -140,7 +140,7 @@ add this:
 },
 {
   "key": "alt+3",
-  "command": "playwrightrunner.inspectorTest"
+  "command": "playwrightrunner.inspectTest"
 },
 ```
 

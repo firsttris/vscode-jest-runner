@@ -25,7 +25,7 @@ function getPlaywrightCodeLens(filepath: string, text: string): CodeLens[] {
       codeLens.push(
         new CodeLens(range, {
           arguments: [fullname],
-          command: 'playwright.inspectorTest',
+          command: 'playwright.inspectTest',
           title: 'Inspect',
         })
       );

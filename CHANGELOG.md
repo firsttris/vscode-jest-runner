@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.2.2 - 2021-07-04
+
+- Fix: rename inspector to inspect.
+
 ## 0.2.1 - 2021-07-03
 
 - Feature: update README.md

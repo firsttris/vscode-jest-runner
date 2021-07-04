@@ -43,8 +43,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const debugTestPath = vscode.commands.registerCommand('playwright.debugTestPath', async (argument: vscode.Uri) =>
     multiRunner.debugTestsOnPath(argument)
   );
-  const inspectorTest = vscode.commands.registerCommand(
-    'playwright.inspectorTest',
+  const inspectTest = vscode.commands.registerCommand(
+    'playwright.inspectTest',
     async (argument: Record<string, unknown> | string) => {
       if (typeof argument === 'string') {
         multiRunner.inspectCurrentTest(argument);
@@ -73,7 +73,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(runTestPath);
   context.subscriptions.push(debugTest);
   context.subscriptions.push(debugTestPath);
-  context.subscriptions.push(inspectorTest);
+  context.subscriptions.push(inspectTest);
   context.subscriptions.push(runPrevTest);
   context.subscriptions.push(runTestFileWithCoverage);
 }
