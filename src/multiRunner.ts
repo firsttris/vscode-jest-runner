@@ -6,12 +6,75 @@ import { JestCommandBuilder } from './jestCommandBuilder';
 import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
 import { RunnerConfig as config} from './runnerConfig';
 interface RunCommand {
-  cwd: string;
+  cwd: string | undefined;
   command: string;
 }
 interface DebugCommand {
   documentUri: vscode.Uri;
   config: vscode.DebugConfiguration;
+}
+
+export class TestCase {
+  public isplaywright:boolean = false;
+  public filePath:vscode.Uri = vscode.Uri.file('.');
+  public testName:string | undefined = undefined;
+
+  public buildRunCommand(options?: string[]):string {
+    if(this.isplaywright) {
+      return PlaywrightCommandBuilder.buildCommand(this.filePath, this.testName, options);
+    }
+    return JestCommandBuilder.buildCommand(this.filePath, this.testName, options);
+  }
+
+  public buildDebugCommand(options?: unknown):vscode.DebugConfiguration {
+    if(this.isplaywright) {
+      return PlaywrightCommandBuilder.getDebugConfig(this.filePath, this.testName, options);
+    }
+    return JestCommandBuilder.getDebugConfig(this.filePath, this.testName, options);
+  }
+
+  public static toFile(file:vscode.Uri):TestCase {
+    const inst = new TestCase();
+    inst.isplaywright = isPlaywrightTest(file.fsPath);
+    inst.filePath = file;
+    inst.testName = undefined;
+    return inst;
+  }
+
+  public static async toEditor(testcase?: string):Promise<TestCase> {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      throw new Error('not found active text editor');
+    }
+
+    await editor.document.save();
+
+    const filePath = editor.document.uri;
+    const fileText = editor.document.getText();
+    const testName = testcase || this.findCurrentTestName(editor);
+
+    const inst = new TestCase();
+    inst.isplaywright = isPlaywrightTest(filePath.fsPath, fileText);
+    inst.filePath = filePath;
+    inst.testName = testName;
+    return inst;
+  }
+
+  private static findCurrentTestName(editor: vscode.TextEditor): string | undefined {
+    // from selection
+    const { selection, document } = editor;
+    if (!selection.isEmpty) {
+      return unquote(document.getText(selection));
+    }
+
+    const selectedLine = selection.active.line + 1;
+    const filePath = editor.document.fileName;
+    const text = editor.document.getText();
+    const tests = parse(filePath, text);
+    const testcode = findTestCode(tests, selectedLine);
+
+    return testcode ? resolveTestNameStringInterpolation(testcode.fullname) : undefined;
+  }
 }
 
 export class MultiRunner {
@@ -23,54 +86,6 @@ export class MultiRunner {
   constructor() {
     this.setup();
   }
-
-  public async runTestsOnPath(path: vscode.Uri): Promise<void> {
-    await this.runTest(path);
-  }
-
-  public async runTestAndUpdateSnapshots(currentTestName?: string): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    await editor.document.save();
-
-    const filePath = editor.document.uri;
-    const fileText = editor.document.getText();
-    const testName = currentTestName || this.findCurrentTestName(editor);
-
-    await this.runTest(filePath, fileText, testName, ['-u']);
-  }
-
-  public async runCurrentTest(currentTestName?: string): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    await editor.document.save();
-
-    const filePath = editor.document.uri;
-    const fileText = editor.document.getText();
-    const testName = currentTestName || this.findCurrentTestName(editor);
-
-    await this.runTest(filePath, fileText, testName);
-  }
-
-  public async runCurrentFile(options?: string[]): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    await editor.document.save();
-
-    const filePath = editor.document.uri;
-    const fileText = editor.document.getText();
-    await this.runTest(filePath, fileText, undefined, options);
-  }
-
   public async runPreviousTest(): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -90,69 +105,24 @@ export class MultiRunner {
     }
   }
 
-  public async debugTestsOnPath(path: vscode.Uri): Promise<void> {
-    await this.debugTest(path);
-  }
-
-  public async debugCurrentTest(currentTestName?: string): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    await editor.document.save();
-
-    const filePath = editor.document.uri;
-    const fileText = editor.document.getText();
-    const testName = currentTestName || this.findCurrentTestName(editor);
-
-    await this.debugTest(filePath, fileText, testName);
-  }
-
-  public async inspectCurrentTest(currentTestName?: string): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    await editor.document.save();
-
-    const filePath = editor.document.uri;
-    const fileText = editor.document.getText();
-    const testName = currentTestName || this.findCurrentTestName(editor);
-
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    await this.debugTest(filePath, fileText, testName, { env: { PWDEBUG: 1 } });
-  }
-
   //
   // private methods
   //
 
-  private async runTest(path: vscode.Uri, fileText?: string, testName?: string, options?: string[]): Promise<void> {
-    const cwd = config.projectPath(path);
-    let command;
-    if (isPlaywrightTest(path.fsPath, fileText)) {
-      command = PlaywrightCommandBuilder.buildCommand(path, testName, options);
-    } else {
-      command = JestCommandBuilder.buildCommand(path, testName, options);
-    }
+  public async runTest(testcase:TestCase, options?: string[]): Promise<void> {
+    const cwd = config.projectPath(testcase.filePath);
+    let command = testcase.buildRunCommand(options);
     this.executeRunCommand({
-      cwd: cwd,
+      cwd: config.changeDirectoryToWorkspaceRoot ? cwd : undefined,
       command: command,
     });
   }
 
-  private async debugTest(path: vscode.Uri, fileText?: string, testName?: string, options?: unknown): Promise<void> {
-    let debugConfig;
-    if (isPlaywrightTest(path.fsPath, fileText)) {
-      debugConfig = PlaywrightCommandBuilder.getDebugConfig(path, testName, options);
-    } else {
-      debugConfig = JestCommandBuilder.getDebugConfig(path, testName, options);
-    }
+  public async debugTest(testcase:TestCase, options?: unknown): Promise<void> {
+    let debugConfig = testcase.buildDebugCommand(options);
     this.executeDebugCommand({
       config: debugConfig,
-      documentUri: path,
+      documentUri: testcase.filePath,
     });
   }
 
@@ -160,8 +130,11 @@ export class MultiRunner {
     this.previousRunCommand = cmd;
     this.previousDebugCommand = undefined;
 
-    await this.goToCwd(cmd.cwd);
-    await this.runTerminalCommand(cmd.command);
+    if (cmd.cwd) {
+      await this.runTerminalCommand(`cd ${quote(cmd.cwd)}`, cmd.command);
+    } else {
+      await this.runTerminalCommand(cmd.command);
+    }
   }
 
   private executeDebugCommand(cmd: DebugCommand) {
@@ -171,36 +144,15 @@ export class MultiRunner {
     vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(cmd.documentUri), cmd.config);
   }
 
-  private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
-    // from selection
-    const { selection, document } = editor;
-    if (!selection.isEmpty) {
-      return unquote(document.getText(selection));
-    }
-
-    const selectedLine = selection.active.line + 1;
-    const filePath = editor.document.fileName;
-    const text = editor.document.getText();
-    const tests = parse(filePath, text);
-    const testcode = findTestCode(tests, selectedLine);
-
-    return testcode ? resolveTestNameStringInterpolation(testcode.fullname) : undefined;
-  }
-
-  private async goToCwd(cmd: string) {
-    if (config.changeDirectoryToWorkspaceRoot) {
-      await this.runTerminalCommand(`cd ${quote(cmd)}`);
-    }
-  }
-
-  private async runTerminalCommand(command: string) {
+  private async runTerminalCommand(...commands: string[]) {
     if (!this.terminal) {
       this.terminal = vscode.window.createTerminal('playwright');
     }
     this.terminal.show();
     await vscode.commands.executeCommand('workbench.action.terminal.clear');
-    this.terminal.sendText(command);
-}
+    const terminal = this.terminal;
+    commands.forEach( command => terminal.sendText(command) );
+  }
 
   private setup() {
     vscode.window.onDidCloseTerminal(() => {
