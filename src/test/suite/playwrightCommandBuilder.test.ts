@@ -47,7 +47,7 @@ describe('playwrightCommandBuilder', () => {
 		it('test 4', async () => {
 			await conf.update('playwrightConfigPath', 'playwright.config.js');
 			const cmd = PlaywrightCommandBuilder.buildCommand(file, 'testcase');
-			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" --config="playwright.config.js" -g "testcase"`, cmd);
+			assert.deepStrictEqual(`${command} test "mainpackage.spec.js" -c "playwright.config.js" -g "testcase"`, cmd);
 			await conf.update('playwrightConfigPath', undefined);
 		});	
 	});
