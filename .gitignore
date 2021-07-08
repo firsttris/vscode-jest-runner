@@ -8,3 +8,4 @@ testarea/reports/*.json
 testarea/reports/npm.finish
 testarea/**/package-lock.json
 testarea/.vscode/settings.json
+testarea/**/test.playwright.config.js

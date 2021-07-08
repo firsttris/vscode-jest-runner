@@ -19,10 +19,17 @@ it('init', async () => {
     terminal.sendText("cd packages/subpackage");
     terminal.sendText("npm i");
 	terminal.sendText(`echo 1 > "${finishflg}"`);
+	return waitExistCheckFile(finishflg);
+}).timeout('120s');
+
+function waitExistCheckFile(checkfile:string ): Promise<void>{
+	if(fs.existsSync(checkfile)) {
+		fs.rmSync(checkfile);
+	}
 	let count = 120;
 	return new Promise((resolve, reject) => {
 		const fn = () => {
-			if(fs.existsSync(finishflg)) {
+			if(fs.existsSync(checkfile)) {
 				resolve();
 			} else if(count--<0) {
 				reject();
@@ -32,4 +39,4 @@ it('init', async () => {
 		};
 		fn();
 	});
-}).timeout('120s');
+}
