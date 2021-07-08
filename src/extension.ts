@@ -3,10 +3,12 @@ import * as vscode from 'vscode';
 import { MultiRunner } from './multiRunner';
 import { PlaywrightRunnerCodeLensProvider } from './codeLensProvider';
 import { RunnerConfig as config } from './runnerConfig';
+import { TestReporter } from './testReporter';
 
 export function activate(context: vscode.ExtensionContext): void {
   const multiRunner = new MultiRunner();
   const codeLensProvider = new PlaywrightRunnerCodeLensProvider();
+  const testReporter = new TestReporter(context);
 
   const runTest = vscode.commands.registerCommand(
     'playwright.runTest',
@@ -76,6 +78,10 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(inspectTest);
   context.subscriptions.push(runPrevTest);
   context.subscriptions.push(runTestFileWithCoverage);
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.showTestReport', (uri:vscode.Uri) => {
+      testReporter.update(uri);
+  }));
 }
 
 export function deactivate(): void {

@@ -157,9 +157,20 @@
       {
         "command": "playwright.runTestFileWithCoverage",
         "title": "Run Playwright Test File with Coverage"
+      },
+      {
+        "command": "playwright.showTestReport",
+        "title": "Show Playwright Test Suite Report"
       }
     ],
     "menus": {
+      "explorer/context": [
+        {
+          "command": "playwright.showTestReport",
+          "when": "resourceLangId == json",
+          "group": "02_playwright"
+        }
+      ],
       "editor/context": [
         {
           "command": "playwright.runTest",
@@ -167,6 +178,10 @@
         },
         {
           "command": "playwright.debugTest",
+        },
+        {
+          "command": "playwright.showTestReport",
+          "when": "resourceLangId == json",
           "group": "02_playwright"
         }
       ]
