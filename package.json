@@ -178,6 +178,7 @@
         },
         {
           "command": "playwright.debugTest",
+          "group": "02_playwright"
         },
         {
           "command": "playwright.showTestReport",
