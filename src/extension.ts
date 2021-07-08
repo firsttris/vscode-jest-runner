@@ -10,57 +10,70 @@ export function activate(context: vscode.ExtensionContext): void {
   const codeLensProvider = new PlaywrightRunnerCodeLensProvider();
   const testReporter = new TestReporter(context);
 
-  const runTest = vscode.commands.registerCommand(
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runTest',
-    async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        multiRunner.runCurrentTest(argument);
-      } else {
-        multiRunner.runCurrentTest();
-      }
+    async (testname: Record<string, unknown> | string) => {
+      multiRunner.runCurrentTest(typeof testname === 'string' ? testname : undefined);
     }
-  );
-  const runTestPath = vscode.commands.registerCommand('playwright.runTestPath', async (argument: vscode.Uri) =>
-    multiRunner.runTestsOnPath(argument)
-  );
-  const runTestAndUpdateSnapshots = vscode.commands.registerCommand(
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.runTestPath',
+    async (file: vscode.Uri) =>
+    multiRunner.runTestsOnPath(file)
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runTestAndUpdateSnapshots',
     async () => {
       multiRunner.runTestAndUpdateSnapshots('');
     }
-  );
-  const runTestFile = vscode.commands.registerCommand('playwright.runTestFile', async () =>
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.runTestFile',
+    async () =>
     multiRunner.runCurrentFile()
-  );
-  const debugTest = vscode.commands.registerCommand(
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.debugTest',
-    async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        multiRunner.debugCurrentTest(argument);
-      } else {
-        multiRunner.debugCurrentTest();
-      }
+    async (testname: Record<string, unknown> | string) => {
+      multiRunner.debugCurrentTest(typeof testname === 'string' ? testname : undefined);
     }
-  );
-  const debugTestPath = vscode.commands.registerCommand('playwright.debugTestPath', async (argument: vscode.Uri) =>
-    multiRunner.debugTestsOnPath(argument)
-  );
-  const inspectTest = vscode.commands.registerCommand(
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.debugTestPath',
+    async (file: vscode.Uri) =>
+    multiRunner.debugTestsOnPath(file)
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.inspectTest',
-    async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        multiRunner.inspectCurrentTest(argument);
-      } else {
-        multiRunner.inspectCurrentTest();
-      }
+    async (testname: Record<string, unknown> | string) => {
+      multiRunner.inspectCurrentTest(typeof testname === 'string' ? testname : undefined);
     }
-  );
-  const runPrevTest = vscode.commands.registerCommand('playwright.runPrevTest', async () =>
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.runPrevTest',
+    async () =>
     multiRunner.runPreviousTest()
-  );
-  const runTestFileWithCoverage = vscode.commands.registerCommand('playwright.runTestFileWithCoverage', async () =>
+  ));
+  //
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.runTestFileWithCoverage',
+    async () =>
     multiRunner.runCurrentFile(['--coverage'])
-  );
+  ));
+
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.showTestReport',
+    (uri:vscode.Uri) => {
+      testReporter.update(uri);
+  }));
 
   if (!config.isCodeLensDisabled) {
     const docSelectors: vscode.DocumentFilter[] = [
@@ -69,19 +82,6 @@ export function activate(context: vscode.ExtensionContext): void {
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
     context.subscriptions.push(codeLensProviderDisposable);
   }
-  context.subscriptions.push(runTest);
-  context.subscriptions.push(runTestAndUpdateSnapshots);
-  context.subscriptions.push(runTestFile);
-  context.subscriptions.push(runTestPath);
-  context.subscriptions.push(debugTest);
-  context.subscriptions.push(debugTestPath);
-  context.subscriptions.push(inspectTest);
-  context.subscriptions.push(runPrevTest);
-  context.subscriptions.push(runTestFileWithCoverage);
-  context.subscriptions.push(vscode.commands.registerCommand(
-    'playwright.showTestReport', (uri:vscode.Uri) => {
-      testReporter.update(uri);
-  }));
 }
 
 export function deactivate(): void {
