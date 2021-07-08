@@ -13,59 +13,59 @@ export function activate(context: vscode.ExtensionContext): void {
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runTest',
-    async (testname: Record<string, unknown> | string) => {
+    (testname: Record<string, unknown> | string) => {
       multiRunner.runCurrentTest(typeof testname === 'string' ? testname : undefined);
     }
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runTestPath',
-    async (file: vscode.Uri) =>
+    (file: vscode.Uri) =>
     multiRunner.runTestsOnPath(file)
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runTestAndUpdateSnapshots',
-    async () => {
+    () => {
       multiRunner.runTestAndUpdateSnapshots('');
     }
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runTestFile',
-    async () =>
+    () =>
     multiRunner.runCurrentFile()
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.debugTest',
-    async (testname: Record<string, unknown> | string) => {
+    (testname: Record<string, unknown> | string) => {
       multiRunner.debugCurrentTest(typeof testname === 'string' ? testname : undefined);
     }
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.debugTestPath',
-    async (file: vscode.Uri) =>
+    (file: vscode.Uri) =>
     multiRunner.debugTestsOnPath(file)
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.inspectTest',
-    async (testname: Record<string, unknown> | string) => {
+    (testname: Record<string, unknown> | string) => {
       multiRunner.inspectCurrentTest(typeof testname === 'string' ? testname : undefined);
     }
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runPrevTest',
-    async () =>
+    () =>
     multiRunner.runPreviousTest()
   ));
   //
   context.subscriptions.push(vscode.commands.registerCommand(
     'playwright.runTestFileWithCoverage',
-    async () =>
+    () =>
     multiRunner.runCurrentFile(['--coverage'])
   ));
 
