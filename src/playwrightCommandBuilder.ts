@@ -44,7 +44,8 @@ export class PlaywrightCommandBuilder {
 
     const cfg = config.playwrightConfigPath;
     if (cfg) {
-      args.push('--config='+quoter(normalizePath(cfg)));
+      args.push('-c');
+      args.push(quoter(normalizePath(cfg)));
     }
 
     if (testName) {
