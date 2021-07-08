@@ -1,0 +1,159 @@
+@media (max-width: 460px) {
+    h1 {
+        display:none;
+    }
+}
+ts-suites, ts-specs, ts-annotations, ts-stdout, ts-stderr, ts-file, ts-column, ts-timeout, ts-status,ts-duration,ts-retry, ts-results, ts-error {
+    display: block;
+}
+ts-config,ts-message {
+    display:none;
+}
+
+ts-title, ts-line {
+    padding:2px;
+}
+
+ts-ok,ts-workerindex {
+    display:none;
+}
+
+/* for file */
+#t > ts-suites {
+    display: block;
+    padding:0;
+    margin:20px 0;
+}
+
+#t > ts-suites > ts-title, #t > ts-suites > ts-line, #t > ts-suites > ts-column {
+    display:none;
+}
+#t > ts-suites > ts-file {
+    display:block;
+    padding:10px;
+    border:1px solid #ccc;
+    font-weight: bold;
+}
+
+/* for describe */
+#t > ts-suites > ts-suites {
+    display:flex;
+    flex-wrap :wrap;
+    border:1px solid #ccc;
+}
+#t > ts-suites > ts-suites > ts-line {
+    display:none;
+    order: 0;
+    padding:10px;
+    flex-basis: 55px;
+}
+@media (min-width: 300px) {
+    #t > ts-suites > ts-suites > ts-line {
+        display:block;
+    }
+}
+#t > ts-suites > ts-suites > ts-title{
+    order: 1;
+    padding:10px;
+}
+#t > ts-suites > ts-suites > ts-specs{
+    order: 3;
+    flex-basis: 100%;
+    margin-left:10px;
+}
+#t > ts-suites > ts-suites > ts-file, #t > ts-suites > ts-suites > ts-column {
+    display:none;
+}
+
+/* for test */
+ts-specs:nth-child(odd) {
+    background-color: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+}
+ts-results {
+    display:flex;
+    border:1px solid var(--vscode-input-foreground);
+    padding:10px;
+}
+
+ts-results > * {
+    display:none;
+}
+ts-results > ts-line {
+    order: 0;
+    flex-basis: 60px;
+}
+ts-results > ts-title {
+    display:block;
+    order: 1;
+    flex-grow: 1;
+    flex-basis: auto;
+}
+ts-results > ts-status {
+    display:block;
+    order: 2;
+    flex-basis: 18px;
+    overflow-x:hidden;
+}
+ts-results > ts-duration {
+    order: 3;
+    text-align: right;
+    flex-basis: 80px;
+}
+ts-results > ts-projectname {
+    order: 4;
+    text-align: right;
+    flex-basis: 80px;
+}
+@media (min-width: 300px) {
+    ts-results > ts-line {
+        display:block;
+    }
+}
+@media (min-width: 400px) {
+    ts-results > ts-status {
+        flex-basis: 60px;
+    }
+}
+
+@media (min-width: 500px) {
+    ts-results > ts-duration {
+        display:block;
+    }
+}
+@media (min-width: 600px) {
+        ts-results > ts-projectname {
+        display:block;
+    }
+}
+
+ts-results ~ ts-error {
+    display:none;
+}
+ts-results.selected ~ ts-error {
+    display:block;
+}
+ts-error {
+    display:block;
+    border:1px solid var(--vscode-input-foreground);
+    padding:10px;
+    padding-left:30px;
+    max-width: calc( 100vw - 94px );
+    overflow-x: hidden;
+}
+ts-error > ts-stack {
+    display: block;
+    white-space:pre-wrap;
+}
+
+ts-timeout, ts-column, ts-retry {
+    display:none;
+}
+ts-line:before {
+    content:'line:';
+}
+
+ts-duration:after {
+    content:'ms';
+}
+

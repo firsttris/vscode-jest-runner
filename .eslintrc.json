@@ -20,6 +20,7 @@
         "out",
         "dist",
         "testarea",
+        "media",
         "**/*.d.ts"
     ]
 }

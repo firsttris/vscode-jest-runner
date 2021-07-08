@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Test Suite Report</title>
+        <link rel="stylesheet" href="./style.css">
+    </head>
+    <body>
+        <h1>&#127917; Playwright Test Suite Report</h1>
+        <div id="size"></div>
+        <div id="t"></div>
+    </body>
+    <script>
+        function report(parent, json, key){
+            if('undefined' == typeof(json) || null === json){return;}
+            if(Array.isArray(json)){
+                json.forEach( child => {
+                    report(parent, child, key);
+                });
+                return;
+            }
+            if('object' == typeof(json)) {
+                if(-1 < ['error'].indexOf(key)){
+                    let el = document.createElement('ts-'+key);
+                    parent.parentNode.appendChild(el);
+                    parent = el;
+                }
+                else if(key){
+                    let el = document.createElement('ts-'+key);
+                    parent.appendChild(el);
+                    parent = el;
+                }
+                
+                if(-1 < ['specs'].indexOf(key)){
+                    json.tests.forEach( child => {
+                        child.results.forEach( result => {
+                            result.title = json.title;
+                            result.line = json.line;
+                            result.projectName = child.projectName;
+                            report(parent, result, 'results');
+                        });
+                        
+                    });
+                } else {
+                    for(let k in json) {
+                        report(parent, json[k], k);
+                    }
+                }
+
+                return;
+            }
+            let el = document.createElement('ts-'+key);
+            switch(key){
+                    case 'status':
+                    el.innerHTML = ('passed'==json? '&#9989;':'&#10060;')+json;
+                    break;
+                    case 'stack':
+                    el.textContent = json.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+                    break;
+                    default:
+                    el.textContent = json;
+                    break;
+            }
+            parent.appendChild(el);
+        }
+        const commands = {};
+        commands.load = function(message) {
+            t.innerHTML = '';
+            report(t, message.json);
+        }
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            const cmd = commands[message.command];
+            cmd && cmd(message);
+        });
+        window.addEventListener('click', event => {
+            const el = findTarget(event.target, 'ts-results');
+            if(el){
+                el.className = '' === el.className ? 'selected' : '';
+            }
+        });
+
+        function findTarget(t, tagName) {
+            if(t) return t.tagName === tagName.toUpperCase() ? t : findTarget(t.parentNode, tagName);
+        }
+    </script>
+</html>
