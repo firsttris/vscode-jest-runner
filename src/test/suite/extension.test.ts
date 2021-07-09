@@ -45,67 +45,74 @@ describe('Extension Commands', async () => {
 
 		it('playwright.runTest', async () => {
 			const output = 'reports/runTest.jest.result.json';
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/runTest.jest.result.json']);
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
 			await vscode.commands.executeCommand("playwright.runTest");
+			await waitExistCheckFile(assetRootDir+'/'+output);
+		}).timeout('120s');
+
+		it('playwright.runCurrentFile', async () => {
+			const output = 'reports/runTestFile.jest.result.json';
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
+			await vscode.commands.executeCommand("playwright.runCurrentFile");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
 		it('playwright.runTestPath', async () => {
 			const output = 'reports/runTestPath.jest.result.json';
 			const fpath = vscode.Uri.joinPath(rootDir, "api-test/test2.test.js");
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/runTestPath.jest.result.json']);
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
 			await vscode.commands.executeCommand("playwright.runTestPath", fpath);
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
 		it('playwright.runTestAndUpdateSnapshots', async () => {
 			const output = 'reports/runTestAndUpdateSnapshots.jest.result.json';
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/runTestAndUpdateSnapshots.jest.result.json']);
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
 			await vscode.commands.executeCommand("playwright.runTestAndUpdateSnapshots");
-			await waitExistCheckFile(assetRootDir+'/'+output);
-		}).timeout('120s');
-
-		it('playwright.runTestFile', async () => {
-			const output = 'reports/runTestFile.jest.result.json';
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/runTestFile.jest.result.json']);
-			await vscode.commands.executeCommand("playwright.runTestFile");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
 		it('playwright.debugTest', async () => {
 			const output = 'reports/debugTest.jest.result.json';
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/debugTest.jest.result.json']);
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
 			await vscode.commands.executeCommand("playwright.debugTest");
+			await waitExistCheckFile(assetRootDir+'/'+output);
+		}).timeout('120s');
+
+		it('playwright.debugCurrentFile', async () => {
+			const output = 'reports/debugCurrentFile.jest.result.json';
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
+			await vscode.commands.executeCommand("playwright.debugCurrentFile");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
 		it('playwright.debugTestPath', async () => {
 			const output = 'reports/debugTestPath.jest.result.json';
 			const fpath = vscode.Uri.joinPath(rootDir, "api-test/test2.test.js");
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/debugTestPath.jest.result.json']);
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
 			await vscode.commands.executeCommand("playwright.debugTestPath", fpath);
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
 		it('playwright.inspectTest', async () => {
 			const output = 'reports/inspectTest.jest.result.json';
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/inspectTest.jest.result.json']);
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
 			await vscode.commands.executeCommand("playwright.inspectTest");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
 		it('playwright.runPrevTest', async () => {
 			const output = 'reports/runPrevTest.jest.result.json';
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/runPrevTest.jest.result.json']);
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
 			await vscode.commands.executeCommand("playwright.runTest");
 			await vscode.commands.executeCommand("playwright.runPrevTest");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
-		it('playwright.runTestFileWithCoverage', async () => {
+		it('playwright.runCurrentFileWithCoverage', async () => {
 			const output = 'reports/runTestFileWithCoverage.jest.result.json';
-			await conf.update('jestRunOptions', ['--json','--outputFile=reports/runTestFileWithCoverage.jest.result.json']);
-			await vscode.commands.executeCommand("playwright.runTestFileWithCoverage");
+			await conf.update('jestRunOptions', ['--json','--outputFile='+output]);
+			await vscode.commands.executeCommand("playwright.runCurrentFileWithCoverage");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 	});
@@ -140,6 +147,13 @@ describe('Extension Commands', async () => {
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
+		it('playwright.runCurrentFile', async () => {
+			const output = 'reports/runTestFile.playwright.result.json';
+			await setAssertFile(output);
+			await vscode.commands.executeCommand("playwright.runCurrentFile");
+			await waitExistCheckFile(assetRootDir+'/'+output);
+		}).timeout('120s');
+
 		it('playwright.runTestPath', async () => {
 			const fpath = vscode.Uri.joinPath(rootDir, "tests/mainpackage.spec.js");
 			const output = 'reports/runTestPath.playwright.result.json';
@@ -155,17 +169,17 @@ describe('Extension Commands', async () => {
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
-		it('playwright.runTestFile', async () => {
-			const output = 'reports/runTestFile.playwright.result.json';
-			await setAssertFile(output);
-			await vscode.commands.executeCommand("playwright.runTestFile");
-			await waitExistCheckFile(assetRootDir+'/'+output);
-		}).timeout('120s');
-
 		it('playwright.debugTest', async () => {
 			const output = 'reports/debugTest.playwright.result.json';
 			await setAssertFile(output);
 			await vscode.commands.executeCommand("playwright.debugTest");
+			await waitExistCheckFile(assetRootDir+'/'+output);
+		}).timeout('120s');
+
+		it('playwright.debugCurrentFile', async () => {
+			const output = 'reports/debugCurrentFile.playwright.result.json';
+			await setAssertFile(output);
+			await vscode.commands.executeCommand("playwright.debugCurrentFile");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
@@ -193,10 +207,10 @@ describe('Extension Commands', async () => {
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
-		/*it('playwright.runTestFileWithCoverage', async () => {
+		/*it('playwright.runCurrentFileWithCoverage', async () => {
 			const output = 'reports/runTestFileWithCoverage.playwright.result.json';
 			await setAssertFile(output);
-			await vscode.commands.executeCommand("playwright.runTestFileWithCoverage");
+			await vscode.commands.executeCommand("playwright.runCurrentFileWithCoverage");
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('10s');*/
 	});
