@@ -173,3 +173,24 @@ Read More: [Configuring Jest Docs](https://jestjs.io/docs/en/configuration)
     "disableOptimisticBPs": true,
 }
 ```
+
+## Show Playwright Test Report
+
+You can check the reporter (json) output by Playwright.
+
+- step 1  
+create playwright.config
+
+```javascript
+module.exports = {
+    reporter:[ ['list'], [ 'json', {  outputFile: 'reports.json' }] ]
+}
+```
+
+- step 2  
+Run playwright
+
+- step 3  
+show playwright test report
+
+![image](public/playwright-test-report.png)

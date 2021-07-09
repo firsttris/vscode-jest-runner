@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.3.0 - 2021-07-09
+
+- Feature: update README.md
+- Feature: support show playwright test report
+- Feature: add shortcut menus on explorer for (*.ts,*.js,*.json)
+- Fix: refactoring
+
 ## 0.2.2 - 2021-07-04
 
 - Fix: rename inspector to inspect.
