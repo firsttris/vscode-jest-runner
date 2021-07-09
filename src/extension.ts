@@ -45,7 +45,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   //現在の編集中のテストをファイル単位で実行する
   context.subscriptions.push(vscode.commands.registerCommand(
-    'playwright.runTestFile',
+    'playwright.runCurrentFile',
     () => {
       TestCase.toEditor('-').then( testcase => {
         testcase.testName = undefined;
@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   ));
   context.subscriptions.push(vscode.commands.registerCommand(
-    'playwright.debugTestFile',
+    'playwright.debugCurrentFile',
     () => {
       TestCase.toEditor('-').then( testcase => {
         testcase.testName = undefined;
@@ -100,7 +100,7 @@ export function activate(context: vscode.ExtensionContext): void {
   ));
   //カバレッジをとる
   context.subscriptions.push(vscode.commands.registerCommand(
-    'playwright.runTestFileWithCoverage',
+    'playwright.runCurrentFileWithCoverage',
     () => {
       TestCase.toEditor('-').then( testcase => {
         testcase.testName = undefined;

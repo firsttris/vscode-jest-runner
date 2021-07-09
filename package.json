@@ -135,28 +135,40 @@
         "title": "Run Playwright Test"
       },
       {
-        "command": "playwright.runTestAndUpdateSnapshots",
-        "title": "Run Playwright Test and Update Snapshots"
+        "command": "playwright.runCurrentFile",
+        "title": "Run Playwright Test on File"
       },
       {
-        "command": "playwright.runPrevTest",
-        "title": "Run Previous Playwright Test"
-      },
-      {
-        "command": "playwright.runTestFile",
-        "title": "Run Playwright Test File"
+        "command": "playwright.runTestPath",
+        "title": "Run Playwright Test on File"
       },
       {
         "command": "playwright.debugTest",
         "title": "Debug Playwright Test"
       },
       {
+        "command": "playwright.debugCurrentFile",
+        "title": "Debug Playwright Test on File"
+      },
+      {
+        "command": "playwright.debugTestPath",
+        "title": "Debug Playwright Test on File"
+      },
+      {
         "command": "playwright.inspectTest",
         "title": "Inspector Playwright Test"
       },
       {
-        "command": "playwright.runTestFileWithCoverage",
-        "title": "Run Playwright Test File with Coverage"
+        "command": "playwright.runPrevTest",
+        "title": "Previous Playwright Test"
+      },
+      {
+        "command": "playwright.runTestAndUpdateSnapshots",
+        "title": "Run Playwright Test and Update Snapshots"
+      },
+      {
+        "command": "playwright.runCurrentFileWithCoverage",
+        "title": "Run Playwright Test with Coverage"
       },
       {
         "command": "playwright.showTestReport",
@@ -166,6 +178,16 @@
     "menus": {
       "explorer/context": [
         {
+          "command": "playwright.runTestPath",
+          "when": "resourceLangId == javascript || resourceLangId == typescript",
+          "group": "02_playwright"
+        },
+        {
+          "command": "playwright.debugTestPath",
+          "when": "resourceLangId == javascript || resourceLangId == typescript",
+          "group": "02_playwright"
+        },
+        {
           "command": "playwright.showTestReport",
           "when": "resourceLangId == json",
           "group": "02_playwright"
@@ -174,10 +196,12 @@
       "editor/context": [
         {
           "command": "playwright.runTest",
+          "when": "resourceLangId == javascript || resourceLangId == typescript",
           "group": "02_playwright"
         },
         {
           "command": "playwright.debugTest",
+          "when": "resourceLangId == javascript || resourceLangId == typescript",
           "group": "02_playwright"
         },
         {
