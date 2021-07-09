@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.3.1 - 2021-07-09
+
+- Fix: update README.md
+
 ## 0.3.0 - 2021-07-09
 
 - Feature: update README.md
