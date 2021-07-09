@@ -1,6 +1,7 @@
 'use strict';
 import * as vscode from 'vscode';
-import { MultiRunner, TestCase } from './multiRunner';
+import { MultiRunner } from './multiRunner';
+import { TestCase } from './testCase';
 import { PlaywrightRunnerCodeLensProvider } from './codeLensProvider';
 import { RunnerConfig as config } from './runnerConfig';
 import { TestReporter } from './testReporter';

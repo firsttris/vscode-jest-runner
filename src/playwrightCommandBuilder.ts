@@ -15,9 +15,11 @@ export class PlaywrightCommandBuilder {
       type: 'node',
       // eslint-disable-next-line @typescript-eslint/naming-convention
       env: { PWDEBUG: 'console' },
-      cwd: config.projectPath(filePath),
       ...config.playwrightDebugOptions,
     };
+    if(config.changeDirectoryToWorkspaceRoot) {
+      debugCfg.cwd = config.projectPath(filePath);
+    }
 
     debugCfg.args = debugCfg.args ? debugCfg.args.slice() : [];
 

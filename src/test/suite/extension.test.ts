@@ -177,12 +177,12 @@ describe('Extension Commands', async () => {
 			await waitExistCheckFile(assetRootDir+'/'+output);
 		}).timeout('120s');
 
-		it('playwright.inspectTest', async () => {
+		/*it('playwright.inspectTest', async () => {
 			const output = 'reports/inspectTest.playwright.result.json';
 			await setAssertFile(output);
 			await vscode.commands.executeCommand("playwright.inspectTest");
 			await waitExistCheckFile(assetRootDir+'/'+output);
-		}).timeout('120s');
+		}).timeout('120s');*/
 
 		it('playwright.runPrevTest', async () => {
 			const output = 'reports/runPrevTest.playwright.result.json';

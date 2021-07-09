@@ -12,9 +12,11 @@ export class JestCommandBuilder {
       program: config.jestBinPath,
       request: 'launch',
       type: 'node',
-      cwd: config.projectPath(filePath),
       ...config.jestDebugOptions,
     };
+    if(config.changeDirectoryToWorkspaceRoot) {
+      debugCfg.cwd = config.projectPath(filePath);
+    }
 
     debugCfg.args = debugCfg.args ? debugCfg.args.slice() : [];
 
