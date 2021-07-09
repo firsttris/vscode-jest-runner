@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { quote } from './util';
-import { RunnerConfig as config} from './runnerConfig';
+import { RunnerConfig } from './runnerConfig';
 import { TestCase } from './testCase';
 
 interface RunCommand {
@@ -23,8 +23,9 @@ export class MultiRunner {
   }
 
   public async runTest(testcase:TestCase, options?: string[]): Promise<void> {
+    const config = new RunnerConfig(testcase.filePath);
     const cmds = [];
-    config.changeDirectoryToWorkspaceRoot && cmds.push(`cd ${quote(config.projectPath(testcase.filePath))}`);
+    RunnerConfig.changeDirectoryToWorkspaceRoot && cmds.push(`cd ${quote(config.projectPath)}`);
     cmds.push(testcase.buildRunCommand(options));
 
     await this.executeRunCommand({

@@ -11,158 +11,159 @@ describe('runnerConfig', async () => {
 		rootDir = vscode.workspace.workspaceFolders[0] && vscode.workspace.workspaceFolders[0].uri;
 	}
 	const assetRootDir = rootDir.fsPath.replace(/\\/g, '/');
+	const config = new RunnerConfig(rootDir);
 
 	describe('jestCommand', async () => {
 		it('jestCommand test 1', async () => {
 			await conf.update('jestCommand', 'sample');
-			assert.strictEqual("sample", RunnerConfig.jestCommand);
+			assert.strictEqual("sample", config.jestCommand);
 		});
 		it('jestCommand test 2', async () => {
 			await conf.update('jestCommand', undefined);
-			assert.strictEqual('node "./node_modules/jest/bin/jest.js"', RunnerConfig.jestCommand);
+			assert.strictEqual('node "./node_modules/jest/bin/jest.js"', config.jestCommand);
 		});
 		it('jestCommand test 3', async () => {
 			await conf.update('jestCommand', undefined);
-			assert.strictEqual('node "./node_modules/jest/bin/jest.js"', RunnerConfig.jestCommand);
+			assert.strictEqual('node "./node_modules/jest/bin/jest.js"', config.jestCommand);
 		});
 	});
 
 	describe('jestBinPath', () => {
 		it('jestBinPath test 1', async () => {
 			await conf.update('jestPath', "abc.js");
-			assert.strictEqual("abc.js", RunnerConfig.jestBinPath);
+			assert.strictEqual("abc.js", config.jestBinPath);
 			await conf.update('jestPath', undefined);
 		});
 	
 		it('jestBinPath test 2', async () => {
 			await conf.update('jestPath', "${workspaceRoot}/abc.js");
-			assert.strictEqual(assetRootDir+"/abc.js", RunnerConfig.jestBinPath);
+			assert.strictEqual(assetRootDir+"/abc.js", config.jestBinPath);
 		});
 		it('jestBinPath test 3', async () => {
 			await conf.update('jestPath', undefined);
-			assert.strictEqual("./node_modules/jest/bin/jest.js", RunnerConfig.jestBinPath);
+			assert.strictEqual("./node_modules/jest/bin/jest.js", config.jestBinPath);
 		});
 	});
 
 	describe('jestBinPath', () => {
 		it('jestConfigPath test 1', async () => {
 			await conf.update('jestConfigPath', "aaa.js");
-			assert.strictEqual("aaa.js", RunnerConfig.jestConfigPath);
+			assert.strictEqual("aaa.js", config.jestConfigPath);
 		});
 		it('jestConfigPath test 2', async () => {
 			await conf.update('jestConfigPath', "${workspaceRoot}/aaa.js");
-			assert.strictEqual(assetRootDir+"/aaa.js", RunnerConfig.jestConfigPath);
+			assert.strictEqual(assetRootDir+"/aaa.js", config.jestConfigPath);
 		});
 		it('jestConfigPath test 3', async () => {
 			await conf.update('jestConfigPath', undefined);
-			assert.strictEqual(undefined, RunnerConfig.jestConfigPath);
+			assert.strictEqual(undefined, config.jestConfigPath);
 		});
 	});
 
 	describe('jestRunOptions', () => {
 		it('jestRunOptions test 1', async () => {
 			await conf.update('jestRunOptions', ['aa','bb']);
-			assert.deepStrictEqual(['aa','bb'], RunnerConfig.jestRunOptions);
+			assert.deepStrictEqual(['aa','bb'], config.jestRunOptions);
 		});
 		it('jestRunOptions test 2', async () => {
 			await conf.update('jestRunOptions', undefined);
-			assert.deepStrictEqual([], RunnerConfig.jestRunOptions);
+			assert.deepStrictEqual([], config.jestRunOptions);
 		});
 	});
 
 	describe('jestDebugOptions', () => {
 		it('jestDebugOptions test 1', async () => {
 			await conf.update('jestDebugOptions', {a:123});
-			assert.deepStrictEqual({a:123}, RunnerConfig.jestDebugOptions);
+			assert.deepStrictEqual({a:123}, config.jestDebugOptions);
 		});
 		it('jestDebugOptions test default', async () => {
 			await conf.update('jestDebugOptions', undefined);
-			assert.deepStrictEqual({}, RunnerConfig.jestDebugOptions);
+			assert.deepStrictEqual({}, config.jestDebugOptions);
 		});
 	});
 
 	describe('playwrightCommand', async () => {
 		it('playwrightCommand test 1', async () => {
 			await conf.update('playwrightCommand', 'sample');
-			assert.strictEqual("sample", RunnerConfig.playwrightCommand);
+			assert.strictEqual("sample", config.playwrightCommand);
 		});
 		it('playwrightCommand test 2', async () => {
 			await conf.update('playwrightCommand', undefined);
-			assert.strictEqual('node "./node_modules/playwright/lib/cli/cli.js"', RunnerConfig.playwrightCommand);
+			assert.strictEqual('node "./node_modules/playwright/lib/cli/cli.js"', config.playwrightCommand);
 		});
 		it('playwrightCommand test 3', async () => {
 			await conf.update('playwrightCommand', undefined);
-			assert.strictEqual('node "./node_modules/playwright/lib/cli/cli.js"', RunnerConfig.playwrightCommand);
+			assert.strictEqual('node "./node_modules/playwright/lib/cli/cli.js"', config.playwrightCommand);
 		});
 	});
 	
 	describe('playwrightBinPath', () => {
 		it('playwrightBinPath test 1', async () => {
 			await conf.update('playwrightPath', "abc.js");
-			assert.strictEqual("abc.js", RunnerConfig.playwrightBinPath);
+			assert.strictEqual("abc.js", config.playwrightBinPath);
 			await conf.update('playwrightPath', undefined);
 		});
 	
 		it('playwrightBinPath test 2', async () => {
 			await conf.update('playwrightPath', "${workspaceRoot}/abc.js");
-			assert.strictEqual(assetRootDir+"/abc.js", RunnerConfig.playwrightBinPath);
+			assert.strictEqual(assetRootDir+"/abc.js", config.playwrightBinPath);
 		});
 		it('playwrightBinPath test 3', async () => {
 			await conf.update('playwrightPath', undefined);
-			assert.strictEqual("./node_modules/playwright/lib/cli/cli.js", RunnerConfig.playwrightBinPath);
+			assert.strictEqual("./node_modules/playwright/lib/cli/cli.js", config.playwrightBinPath);
 		});
 	});
 	
 	describe('playwrightBinPath', () => {
 		it('playwrightConfigPath test 1', async () => {
 			await conf.update('playwrightConfigPath', "aaa.js");
-			assert.strictEqual("aaa.js", RunnerConfig.playwrightConfigPath);
+			assert.strictEqual("aaa.js", config.playwrightConfigPath);
 		});
 		it('playwrightConfigPath test 2', async () => {
 			await conf.update('playwrightConfigPath', "${workspaceRoot}/aaa.js");
-			assert.strictEqual(assetRootDir+"/aaa.js", RunnerConfig.playwrightConfigPath);
+			assert.strictEqual(assetRootDir+"/aaa.js", config.playwrightConfigPath);
 		});
 		it('playwrightConfigPath test 3', async () => {
 			await conf.update('playwrightConfigPath', undefined);
-			assert.strictEqual(undefined, RunnerConfig.playwrightConfigPath);
+			assert.strictEqual(undefined, config.playwrightConfigPath);
 		});
 	});
 	
 	describe('playwrightRunOptions', () => {
 		it('playwrightRunOptions test 1', async () => {
 			await conf.update('playwrightRunOptions', ['aa','bb']);
-			assert.deepStrictEqual(['aa','bb'], RunnerConfig.playwrightRunOptions);
+			assert.deepStrictEqual(['aa','bb'], config.playwrightRunOptions);
 		});
 		it('playwrightRunOptions test 2', async () => {
 			await conf.update('playwrightRunOptions', undefined);
-			assert.deepStrictEqual([], RunnerConfig.playwrightRunOptions);
+			assert.deepStrictEqual([], config.playwrightRunOptions);
 		});
 	});
 	
 	describe('playwrightDebugOptions', () => {
 		it('playwrightDebugOptions test 1', async () => {
 			await conf.update('playwrightDebugOptions', {a:123});
-			assert.deepStrictEqual({a:123}, RunnerConfig.playwrightDebugOptions);
+			assert.deepStrictEqual({a:123}, config.playwrightDebugOptions);
 		});
 		it('playwrightDebugOptions test default', async () => {
 			await conf.update('playwrightDebugOptions', undefined);
-			assert.deepStrictEqual({}, RunnerConfig.playwrightDebugOptions);
+			assert.deepStrictEqual({}, config.playwrightDebugOptions);
 		});
 	});
 	
 	describe('common', () => {
 		it('projectPath test 1', async () => {
 			const file = vscode.Uri.joinPath(rootDir, "tests/mainpackage.spec.js");
-			await vscode.workspace.openTextDocument(file).then(doc => vscode.window.showTextDocument(doc));
+			const config = new RunnerConfig(file);
 			await conf.update('projectPath', undefined);
-			assert.strictEqual(assetRootDir, RunnerConfig.projectPath(file));
+			assert.strictEqual(assetRootDir, config.projectPath);
 		});
 	
 		it('projectPath test 2', async () => {
 			const file = vscode.Uri.joinPath(rootDir, "packages/subpackage/tests/subpackage.spec.js");
-			await vscode.workspace.openTextDocument(file).then(doc => vscode.window.showTextDocument(doc));
+			const config = new RunnerConfig(file);
 			await conf.update('projectPath', undefined);
-			assert.strictEqual(assetRootDir+'/packages/subpackage', RunnerConfig.projectPath(file));
+			assert.strictEqual(assetRootDir+'/packages/subpackage', config.projectPath);
 		});
 	
 		it('isYarnPnpSupportEnabled test false', async () => {

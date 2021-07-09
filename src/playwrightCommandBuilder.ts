@@ -1,11 +1,12 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { RunnerConfig as config} from './runnerConfig';
+import { RunnerConfig } from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
 const merge = require('deepmerge');
 
 export class PlaywrightCommandBuilder {
   public static getDebugConfig(filePath: vscode.Uri, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
+    const config = new RunnerConfig(filePath);
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -17,30 +18,30 @@ export class PlaywrightCommandBuilder {
       env: { PWDEBUG: 'console' },
       ...config.playwrightDebugOptions,
     };
-    if(config.changeDirectoryToWorkspaceRoot) {
-      debugCfg.cwd = config.projectPath(filePath);
+    if(RunnerConfig.changeDirectoryToWorkspaceRoot) {
+      debugCfg.cwd = config.projectPath;
     }
 
     debugCfg.args = debugCfg.args ? debugCfg.args.slice() : [];
 
-    const standardArgs = this.buildArgs(filePath, currentTestName, false);
+    const standardArgs = this.buildArgs(config, filePath, currentTestName, false);
     pushMany(debugCfg.args, standardArgs);
     return options ? merge(debugCfg, options) : debugCfg;
   }
 
   public static buildCommand(filePath: vscode.Uri, testName?: string, options?: string[]): string {
-    const args = this.buildArgs(filePath, testName, true, options);
+    const config = new RunnerConfig(filePath);
+    const args = this.buildArgs(config, filePath, testName, true, options);
     return `${config.playwrightCommand} ${args.join(' ')}`;
   }
 
-  private static buildArgs(filePath: vscode.Uri, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
+  private static buildArgs(config:RunnerConfig, filePath: vscode.Uri, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str:string) => str;
 
     args.push('test');
 
-    const cwd = vscode.Uri.file(config.projectPath(filePath));
-    const testfile = path.relative(cwd.fsPath + '/tests', filePath.fsPath).replace(/\\/g, '/');
+    const testfile = path.relative(config.projectPath + '/tests', filePath.fsPath).replace(/\\/g, '/');
 
     args.push(quoter(escapeRegExpForPath(normalizePath(testfile))));
 

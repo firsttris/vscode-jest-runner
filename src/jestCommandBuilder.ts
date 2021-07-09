@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
-import { RunnerConfig as config} from './runnerConfig';
+import { RunnerConfig } from './runnerConfig';
 import { escapeRegExpForPath, escapeSingleQuotes, normalizePath, pushMany, quote } from './util';
 const merge = require('deepmerge');
 
 export class JestCommandBuilder {
   public static getDebugConfig(filePath: vscode.Uri, currentTestName?: string, options?: any): vscode.DebugConfiguration {
+    const config = new RunnerConfig(filePath);
     const debugCfg: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
@@ -14,29 +15,30 @@ export class JestCommandBuilder {
       type: 'node',
       ...config.jestDebugOptions,
     };
-    if(config.changeDirectoryToWorkspaceRoot) {
-      debugCfg.cwd = config.projectPath(filePath);
+    if(RunnerConfig.changeDirectoryToWorkspaceRoot) {
+      debugCfg.cwd = config.projectPath;
     }
 
     debugCfg.args = debugCfg.args ? debugCfg.args.slice() : [];
 
-    if (config.isYarnPnpSupportEnabled) {
+    if (RunnerConfig.isYarnPnpSupportEnabled) {
       debugCfg.args = ['jest'];
       debugCfg.program = '.yarn/releases/yarn-*.cjs';
     }
 
-    const standardArgs = this.buildArgs(filePath, currentTestName, false);
+    const standardArgs = this.buildArgs(config, filePath, currentTestName, false);
     pushMany(debugCfg.args, standardArgs);
     debugCfg.args.push('--runInBand');
     return options ? merge(debugCfg, options) : debugCfg;
   }
 
   public static buildCommand(filePath: vscode.Uri, testName?: string, options?: string[]): string {
-    const args = this.buildArgs(filePath, testName, true, options);
+    const config = new RunnerConfig(filePath);
+    const args = this.buildArgs(config, filePath, testName, true, options);
     return `${config.jestCommand} ${args.join(' ')}`;
   }
 
-  private static buildArgs(filePath: vscode.Uri, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
+  private static buildArgs(config:RunnerConfig, filePath: vscode.Uri, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str:string) => str;
 
