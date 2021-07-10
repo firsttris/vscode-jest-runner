@@ -34,6 +34,14 @@ export class PlaywrightCommandBuilder {
     const args = this.buildArgs(config, filePath, testName, true, options);
     return `${config.playwrightCommand} ${args.join(' ')}`;
   }
+  
+  public static buildShowTraceCommand(filePath: vscode.Uri): string {
+    const config = new RunnerConfig(filePath);
+    const args: string[] = [];
+    args.push('show-trace');
+    args.push(quote(escapeRegExpForPath(normalizePath(filePath.fsPath))));
+    return `${config.playwrightCommand} ${args.join(' ')}`;
+  }
 
   private static buildArgs(config:RunnerConfig, filePath: vscode.Uri, testName?: string, withQuotes?: boolean, options: string[] = []): string[] {
     const args: string[] = [];

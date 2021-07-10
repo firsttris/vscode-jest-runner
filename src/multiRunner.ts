@@ -73,7 +73,7 @@ export class MultiRunner {
     await vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(cmd.documentUri), cmd.config);
   }
 
-  private async runTerminalCommand(terminalName:string, ...commands: string[]) {
+  public async runTerminalCommand(terminalName:string, ...commands: string[]) {
     if (!this.terminals[terminalName]) {
       this.terminals[terminalName] = vscode.window.createTerminal(terminalName);
     }

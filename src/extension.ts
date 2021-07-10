@@ -5,6 +5,7 @@ import { TestCase } from './testCase';
 import { PlaywrightRunnerCodeLensProvider } from './codeLensProvider';
 import { RunnerConfig as config } from './runnerConfig';
 import { TestReporter } from './testReporter';
+import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
 
 export function activate(context: vscode.ExtensionContext): void {
   const multiRunner = new MultiRunner();
@@ -114,7 +115,14 @@ export function activate(context: vscode.ExtensionContext): void {
     (uri:vscode.Uri) => {
       testReporter.update(uri);
   }));
-
+  //トレースを実行する
+  context.subscriptions.push(vscode.commands.registerCommand(
+    'playwright.showTrace',
+    (uri:vscode.Uri) => {
+      const cmd = PlaywrightCommandBuilder.buildShowTraceCommand(uri);
+      multiRunner.runTerminalCommand('playwright', cmd);
+  }));
+  
   if (!config.isCodeLensDisabled) {
     const docSelectors: vscode.DocumentFilter[] = [
       { pattern: vscode.workspace.getConfiguration().get('playwrightrunner.codeLensSelector') },

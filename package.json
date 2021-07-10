@@ -173,6 +173,10 @@
       {
         "command": "playwright.showTestReport",
         "title": "Show Playwright Test Suite Report"
+      },
+      {
+        "command": "playwright.showTrace",
+        "title": "Show Playwright Trace"
       }
     ],
     "menus": {
@@ -190,6 +194,11 @@
         {
           "command": "playwright.showTestReport",
           "when": "resourceLangId == json",
+          "group": "02_playwright"
+        },
+        {
+          "command": "playwright.showTrace",
+          "when": "resourceExtname == .zip",
           "group": "02_playwright"
         }
       ],
