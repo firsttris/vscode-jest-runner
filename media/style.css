@@ -92,13 +92,14 @@ ts-results > ts-title {
 ts-results > ts-status {
     display:block;
     order: 2;
-    flex-basis: 18px;
-    overflow-x:hidden;
+    flex-basis: 16px;
+    overflow:hidden;
+    white-space:pre;
 }
 ts-results > ts-duration {
     order: 3;
     text-align: right;
-    flex-basis: 80px;
+    flex-basis: 70px;
 }
 ts-results > ts-projectname {
     order: 4;
@@ -112,7 +113,7 @@ ts-results > ts-projectname {
 }
 @media (min-width: 400px) {
     ts-results > ts-status {
-        flex-basis: 60px;
+        flex-basis: 74px;
     }
 }
 

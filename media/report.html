@@ -11,6 +11,11 @@
         <div id="t"></div>
     </body>
     <script>
+        const statusMarks = {
+            passed:'&#9989;',
+            failed:'&#10060;',
+            timedOut:'&#8987; '
+        }
         function report(parent, json, key){
             if('undefined' == typeof(json) || null === json){return;}
             if(Array.isArray(json)){
@@ -52,7 +57,7 @@
             let el = document.createElement('ts-'+key);
             switch(key){
                     case 'status':
-                    el.innerHTML = ('passed'==json? '&#9989;':'&#10060;')+json;
+                    el.innerHTML = (statusMarks[json]||'&#10068;')+json;
                     break;
                     case 'stack':
                     el.textContent = json.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
