@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.4.0 - 2021-07-11
+
+- Feature: support show-trace command from menu of explorer(*.zip).
+- Fix: show icon when status is timedOut on Test Report.
+
 ## 0.3.1 - 2021-07-09
 
 - Fix: update README.md
