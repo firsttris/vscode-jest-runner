@@ -27,30 +27,18 @@
   "contributes": {
     "configuration": [
       {
-        "title": "Jest and Playwright-Runner Config",
+        "title": "Playwright-Test-Runner Config",
         "properties": {
-          "playwrightrunner.jestConfigPath": {
-            "type": "string",
-            "default": "",
-            "description": "Jest config path (relative to ${workFolder} e.g. jest.config.js)",
-            "scope": "window"
-          },
           "playwrightrunner.playwrightConfigPath": {
             "type": "string",
             "default": "",
             "description": "Playwright config path (relative to ${workFolder} e.g. playwright.config.js)",
             "scope": "window"
           },
-          "playwrightrunner.jestPath": {
-            "type": "string",
-            "default": "",
-            "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
-            "scope": "window"
-          },
           "playwrightrunner.playwrightPath": {
             "type": "string",
             "default": "",
-            "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/playwright/lib/cli/cli.js)",
+            "description": "Absolute path to playwright bin file (e.g. /usr/lib/node_modules/playwright/lib/cli/cli.js)",
             "scope": "window"
           },
           "playwrightrunner.projectPath": {
@@ -59,26 +47,10 @@
             "description": "Absolute path to project directory (e.g. /home/me/project/sub-folder)",
             "scope": "window"
           },
-          "playwrightrunner.jestDebugOptions": {
-            "type": "object",
-            "default": {},
-            "description": "Add or overwrite vscode debug configurations for Jest (only in debug mode) (e.g. { \"args\": [\"--no-cache\"] })",
-            "scope": "window"
-          },
           "playwrightrunner.playwrightDebugOptions": {
             "type": "object",
             "default": {},
             "description": "Add or overwrite vscode debug configurations for Playwright (only in debug mode) (e.g. { \"args\": [\"--browser=all\"] })",
-            "scope": "window"
-          },
-          "playwrightrunner.jestRunOptions": {
-            "type": "array",
-            "default": [],
-            "items": {
-              "type": "string",
-              "description": "CLI Option e.g. --coverage"
-            },
-            "description": "Add CLI Options to the Jest Command e.g. https://jestjs.io/docs/en/cli",
             "scope": "window"
           },
           "playwrightrunner.playwrightRunOptions": {
@@ -89,12 +61,6 @@
               "description": "CLI Option e.g. --browser=all"
             },
             "description": "Add CLI Options to the Playwright Command e.g. https://playwright.dev/docs/test-intro",
-            "scope": "window"
-          },
-          "playwrightrunner.jestCommand": {
-            "type": "string",
-            "default": "",
-            "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
           "playwrightrunner.playwrightCommand": {

@@ -29,7 +29,7 @@ export class MultiRunner {
     cmds.push(testcase.buildRunCommand(options));
 
     await this.executeRunCommand({
-      terminal: testcase.isplaywright ? 'playwright' : 'jest',
+      terminal: 'playwright',
       commands: cmds,
     });
   }

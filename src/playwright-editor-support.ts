@@ -33,19 +33,6 @@ export const parse = (filepath: string, data?: string): TestCode[] => {
   return findTestMethods(program);
 };
 
-export const isPlaywrightTest = (filepath: string, data?: string): boolean => {
-  const _data = data || readFileSync(filepath).toString();
-  const fileOption = parseOptions(filepath);
-  const ast = parser.parse(_data, fileOption);
-  const { program } = ast;
-
-  const require = ['@playwright/test', 'playwright/test'];
-  const items:any[] = [];
-  node2path(program, (path:any, value:any) => items.push([path, value]));
-  // check playwright mode
-  return Boolean(items.find((i) => -1 < i[0].indexOf('/init/arguments[0]/') && -1 < require.indexOf(i[1])));
-};
-
 export function findTestCode(tests: TestCode[], line: number): TestCode | undefined {
   if (!tests) {
     return;

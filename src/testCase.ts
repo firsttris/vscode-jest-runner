@@ -1,32 +1,23 @@
 import * as vscode from 'vscode';
-import { isPlaywrightTest, parse, findTestCode } from './playwright-editor-support';
+import { parse, findTestCode } from './playwright-editor-support';
 import { unquote, resolveTestNameStringInterpolation } from './util';
 
-import { JestCommandBuilder } from './jestCommandBuilder';
 import { PlaywrightCommandBuilder } from './playwrightCommandBuilder';
 
 export class TestCase {
-    public isplaywright:boolean = false;
     public filePath:vscode.Uri = vscode.Uri.file('.');
     public testName:string | undefined = undefined;
   
     public buildRunCommand(options?: string[]):string {
-      if(this.isplaywright) {
-        return PlaywrightCommandBuilder.buildCommand(this.filePath, this.testName, options);
-      }
-      return JestCommandBuilder.buildCommand(this.filePath, this.testName, options);
+      return PlaywrightCommandBuilder.buildCommand(this.filePath, this.testName, options);
     }
   
     public buildDebugCommand(options?: unknown):vscode.DebugConfiguration {
-      if(this.isplaywright) {
-        return PlaywrightCommandBuilder.getDebugConfig(this.filePath, this.testName, options);
-      }
-      return JestCommandBuilder.getDebugConfig(this.filePath, this.testName, options);
+      return PlaywrightCommandBuilder.getDebugConfig(this.filePath, this.testName, options);
     }
   
     public static toFile(file:vscode.Uri):TestCase {
       const inst = new TestCase();
-      inst.isplaywright = isPlaywrightTest(file.fsPath);
       inst.filePath = file;
       inst.testName = undefined;
       return inst;
@@ -45,7 +36,6 @@ export class TestCase {
       const testName = testcase || this.findCurrentTestName(editor);
   
       const inst = new TestCase();
-      inst.isplaywright = isPlaywrightTest(filePath.fsPath, fileText);
       inst.filePath = filePath;
       inst.testName = testName;
       return inst;
