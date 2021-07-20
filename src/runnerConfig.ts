@@ -7,49 +7,10 @@ export class RunnerConfig {
     this.base = base;
   }
 
-  /**
-   * The command that runs jest.
-   * Defaults to: node "node_modules/.bin/jest"
-   */
-  public get jestCommand(): string {
-    const cmd = vscode.workspace.getConfiguration().get<string>('playwrightrunner.jestCommand');
-    if (cmd) {
-      return (new PredefinedVars(this.base)).replace(cmd).trim();
-    }
-
-    if (RunnerConfig.isYarnPnpSupportEnabled) {
-      return `yarn jest`;
-    }
-    return `node ${quote(this.jestBinPath)}`;
-  }
-
-  public get jestBinPath(): string {
-    const defaultPath = isWindows() ? './node_modules/jest/bin/jest.js' : './node_modules/.bin/jest';
-    let playwrightPath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.jestPath');
-    const filepath = playwrightPath || defaultPath;
-    
-    return (new PredefinedVars(this.base)).replace(filepath).trim();
-  }
-
   public get projectPath(): string {
     const filepath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.projectPath') || '';
     return (new PredefinedVars(this.base)).replace(filepath).trim();
     return filepath;
-  }
-
-  public get jestConfigPath(): string | undefined {
-    const filepath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.jestConfigPath');
-    if(!filepath) {return;}
-    return (new PredefinedVars(this.base)).replace(filepath).trim();
-  }
-
-  public get jestRunOptions(): string[] {
-    return vscode.workspace.getConfiguration().get<string[]>('playwrightrunner.jestRunOptions') || [];
-  }
-
-  public get jestDebugOptions(): Partial<vscode.DebugConfiguration> {
-    const debugOptions = vscode.workspace.getConfiguration().get<Partial<vscode.DebugConfiguration>>('playwrightrunner.jestDebugOptions');
-    return debugOptions || {};
   }
 
   public static get isYarnPnpSupportEnabled(): boolean {

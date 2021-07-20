@@ -35,7 +35,7 @@ export class PlaywrightRunnerCodeLensProvider implements CodeLensProvider {
       return getPlaywrightCodeLens(document.fileName, text);
     } catch (e) {
       // Ignore error and keep showing Run/Debug buttons at same position
-      console.error('jest-editor-support parser returned error', e);
+      console.error('playwright-editor-support parser returned error', e);
     }
     return [];
   }

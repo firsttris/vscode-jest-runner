@@ -108,8 +108,6 @@ function getPackageRoot(current:vscode.Uri | undefined) {
   if(current) {
     let currentFolderPath: string = path.dirname(current.fsPath);
     do {
-      // Try to find where jest is installed relatively to the current opened file.
-      // Do not assume that jest is always installed at the root of the opened project, this is not the case
       // such as in multi-module projects.
       const pkg = path.join(currentFolderPath, 'package.json');
       const mdls = path.join(currentFolderPath, 'node_modules');
