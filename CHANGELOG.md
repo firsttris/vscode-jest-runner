@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.5.1 - 2021-07-21
+
+- Fix: not show CodeLens on typescript(*.ts).
+
+## 0.5.0 - 2021-07-21
+
+- Fix: diseble jest mode. suported only playwright mode.
+
 ## 0.4.0 - 2021-07-11
 
 - Feature: support show-trace command from menu of explorer(*.zip).
