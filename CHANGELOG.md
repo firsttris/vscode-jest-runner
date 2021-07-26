@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.5.2 - 2021-07-26
+
+- Fix: faild when add option '--headed' on debug mode.
+
 ## 0.5.1 - 2021-07-21
 
 - Fix: not show CodeLens on typescript(*.ts).

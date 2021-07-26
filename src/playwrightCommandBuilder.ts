@@ -25,7 +25,8 @@ export class PlaywrightCommandBuilder {
     debugCfg.args = debugCfg.args ? debugCfg.args.slice() : [];
 
     const standardArgs = this.buildArgs(config, filePath, currentTestName, false);
-    pushMany(debugCfg.args, standardArgs);
+    pushMany(standardArgs, debugCfg.args);
+    debugCfg.args = standardArgs;
     return options ? merge(debugCfg, options) : debugCfg;
   }
 
