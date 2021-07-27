@@ -116,6 +116,14 @@
       {
         "command": "extension.runJestFileWithCoverage",
         "title": "Run Jest File with Coverage"
+      },
+      {
+        "command": "extension.runJestFileWithWatchMode",
+        "title": "Run Jest File in Watch Mode"
+      },
+      {
+        "command": "extension.watchJest",
+        "title": "Watch Jest"
       }
     ],
     "menus": {
@@ -126,6 +134,10 @@
         },
         {
           "command": "extension.debugJest",
+          "group": "02_jest"
+        },
+        {
+          "command": "extension.watchJest",
           "group": "02_jest"
         }
       ]
