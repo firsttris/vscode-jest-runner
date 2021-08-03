@@ -9,7 +9,7 @@ export class TestReporter {
         this.context = context;
     }
 
-    private createPanal():vscode.WebviewPanel {
+    private createPanel():vscode.WebviewPanel {
         const options = {
             localResourceRoots: [vscode.Uri.file(path.join(this.context.extensionPath, 'media'))],
             enableScripts: true,
@@ -36,7 +36,7 @@ export class TestReporter {
         if(this.currentPanel) {
             this.currentPanel.reveal(vscode.ViewColumn.Two);
         } else {
-            this.currentPanel = this.createPanal();       
+            this.currentPanel = this.createPanel();
             this.currentPanel.onDidDispose(() => {
                 this.currentPanel = undefined;
             }, null, this.context.subscriptions);
