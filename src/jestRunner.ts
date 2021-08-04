@@ -213,7 +213,7 @@ export class JestRunner {
     if (!this.terminal) {
       this.terminal = vscode.window.createTerminal('jest');
     }
-    this.terminal.show();
+    this.terminal.show(this.config.preserveEditorFocus);
     await vscode.commands.executeCommand('workbench.action.terminal.clear');
     this.terminal.sendText(command);
   }

@@ -84,6 +84,7 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
 | jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory to workspace root before executing the test |
+| jestrunner.preserveEditorFocus | Preserve focus on your editor instead of focusing the terminal on test run |
 
 ## Shortcuts
 

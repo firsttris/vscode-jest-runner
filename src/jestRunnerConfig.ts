@@ -26,6 +26,10 @@ export class JestRunnerConfig {
     return vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot');
   }
 
+  public get preserveEditorFocus(): boolean {
+    return vscode.workspace.getConfiguration().get('jestrunner.preserveEditorFocus') || false;
+  }
+
   public get jestBinPath(): string {
     // custom
     let jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');

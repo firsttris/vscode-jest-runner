@@ -88,6 +88,12 @@
             "default": true,
             "description": "Changes directory to workspace root before executing the test",
             "scope": "window"
+          },
+          "jestrunner.preserveEditorFocus": {
+            "type": "boolean",
+            "default": false,
+            "description": "Preserve focus on editor when running tests",
+            "scope": "window"
           }
         }
       }
