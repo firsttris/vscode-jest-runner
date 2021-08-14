@@ -9,7 +9,7 @@ describe('playwright-editor-support', () => {
 	if(undefined !== vscode.workspace.workspaceFolders && 0 < vscode.workspace.workspaceFolders.length){
 		rootDir = vscode.workspace.workspaceFolders[0] && vscode.workspace.workspaceFolders[0].uri;
 	}
-  const testcodes = parse(rootDir.fsPath+'/api-test/test2.test.js');
+  const testcodes = parse(rootDir.fsPath+'/parsetest/test.js');
 
   it('should find line 1', () => {
     const hit = findTestCode(testcodes, 1);

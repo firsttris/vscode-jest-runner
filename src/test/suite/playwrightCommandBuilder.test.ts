@@ -13,7 +13,7 @@ describe('playwrightCommandBuilder', () => {
 		rootDir = vscode.workspace.workspaceFolders[0] && vscode.workspace.workspaceFolders[0].uri;
 	}
 	const assetRootDir = rootDir.fsPath.replace(/\\/g, '/');
-	const command = 'sample';
+	const command = 'sample abc';
 	const file = vscode.Uri.joinPath(rootDir, "tests/mainpackage.spec.js");
 	const file2 = vscode.Uri.joinPath(rootDir, "packages/subpackage/tests/subpackage.spec.js");
 
@@ -70,15 +70,17 @@ describe('playwrightCommandBuilder', () => {
 				  "test",
 				  `mainpackage.spec.js`
 				],
-				console: "integratedTerminal",
+				console: "internalConsole",
 				cwd: assetRootDir,
 				// eslint-disable-next-line @typescript-eslint/naming-convention
 				env: {PWDEBUG: "console"},
-				internalConsoleOptions: "neverOpen",
-				name: "playwright(debug)",
-				program: "./node_modules/playwright/lib/cli/cli.js",
+				internalConsoleOptions: "openOnSessionStart",
+				outputCapture:"std",
+				name: "playwright",
+				runtimeExecutable: "sample",
+				runtimeArgs: ["abc"],
 				request: "launch",
-				type: "node",
+				type: "pwa-node",
 			});
 		}).timeout(30000);	
 		
@@ -91,15 +93,17 @@ describe('playwrightCommandBuilder', () => {
 				  "-g",
 				  "testcase"
 				],
-				console: "integratedTerminal",
+				console: "internalConsole",
 				cwd: assetRootDir,
 				// eslint-disable-next-line @typescript-eslint/naming-convention
 				env: {PWDEBUG: "console"},
-				internalConsoleOptions: "neverOpen",
-				name: "playwright(debug)",
-				program: "./node_modules/playwright/lib/cli/cli.js",
+				internalConsoleOptions: "openOnSessionStart",
+				outputCapture:"std",
+				name: "playwright",
+				runtimeExecutable: "sample",
+				runtimeArgs: ["abc"],
 				request: "launch",
-				type: "node",
+				type: "pwa-node",
 			});
 		}).timeout(30000);
 		
@@ -113,13 +117,15 @@ describe('playwrightCommandBuilder', () => {
 				  "testcase",
 				  "--aa"
 				],
-				console: "integratedTerminal",
+				console: "internalConsole",
 				cwd: assetRootDir,
-				internalConsoleOptions: "neverOpen",
-				name: "playwright(debug)",
-				program: "./node_modules/playwright/lib/cli/cli.js",
+				internalConsoleOptions: "openOnSessionStart",
+				outputCapture:"std",
+				name: "playwright",
+				runtimeExecutable: "sample",
+				runtimeArgs: ["abc"],
 				request: "launch",
-				type: "node",
+				type: "pwa-node",
 				sampleoption1:"aaa",
 				env: {
 					// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -137,15 +143,17 @@ describe('playwrightCommandBuilder', () => {
 				  "test",
 				  `subpackage.spec.js`
 				],
-				console: "integratedTerminal",
+				console: "internalConsole",
 				cwd: assetRootDir+'/packages/subpackage',
 				// eslint-disable-next-line @typescript-eslint/naming-convention
 				env: {PWDEBUG: "console"},
-				internalConsoleOptions: "neverOpen",
-				name: "playwright(debug)",
-				program: "./node_modules/playwright/lib/cli/cli.js",
+				internalConsoleOptions: "openOnSessionStart",
+				outputCapture:"std",
+				name: "playwright",
+				runtimeExecutable: "sample",
+				runtimeArgs: ["abc"],
 				request: "launch",
-				type: "node",
+				type: "pwa-node",
 			});
 		}).timeout(30000);
 	});

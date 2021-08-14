@@ -20,28 +20,11 @@ describe('runnerConfig', async () => {
 		});
 		it('playwrightCommand test 2', async () => {
 			await conf.update('playwrightCommand', undefined);
-			assert.strictEqual('node "./node_modules/playwright/lib/cli/cli.js"', config.playwrightCommand);
+			assert.strictEqual('npx playwright', config.playwrightCommand);
 		});
 		it('playwrightCommand test 3', async () => {
 			await conf.update('playwrightCommand', undefined);
-			assert.strictEqual('node "./node_modules/playwright/lib/cli/cli.js"', config.playwrightCommand);
-		});
-	});
-	
-	describe('playwrightBinPath', () => {
-		it('playwrightBinPath test 1', async () => {
-			await conf.update('playwrightPath', "abc.js");
-			assert.strictEqual("abc.js", config.playwrightBinPath);
-			await conf.update('playwrightPath', undefined);
-		});
-	
-		it('playwrightBinPath test 2', async () => {
-			await conf.update('playwrightPath', "${workspaceRoot}/abc.js");
-			assert.strictEqual(assetRootDir+"/abc.js", config.playwrightBinPath);
-		});
-		it('playwrightBinPath test 3', async () => {
-			await conf.update('playwrightPath', undefined);
-			assert.strictEqual("./node_modules/playwright/lib/cli/cli.js", config.playwrightBinPath);
+			assert.strictEqual('npx playwright', config.playwrightCommand);
 		});
 	});
 	
