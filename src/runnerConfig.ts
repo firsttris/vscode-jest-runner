@@ -34,15 +34,7 @@ export class RunnerConfig {
     if (cmd) {
       return (new PredefinedVars(this.base)).replace(cmd).trim();
     }
-    return `node ${quote(this.playwrightBinPath)}`;
-  }
-
-  public get playwrightBinPath(): string {
-    const defaultPath = isWindows() ? './node_modules/playwright/lib/cli/cli.js' : './node_modules/.bin/playwright';
-    let playwrightPath = vscode.workspace.getConfiguration().get<string>('playwrightrunner.playwrightPath');
-    const filepath = playwrightPath || defaultPath;
-    
-    return (new PredefinedVars(this.base)).replace(filepath).trim();
+    return 'npx playwright';
   }
 
   public get playwrightConfigPath(): string | undefined {

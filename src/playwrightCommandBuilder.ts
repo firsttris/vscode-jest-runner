@@ -7,13 +7,17 @@ const merge = require('deepmerge');
 export class PlaywrightCommandBuilder {
   public static getDebugConfig(filePath: vscode.Uri, currentTestName?: string, options?: unknown): vscode.DebugConfiguration {
     const config = new RunnerConfig(filePath);
+    const cmds = config.playwrightCommand.split(/\s+/);
+    const executer = cmds.shift();
     const debugCfg: vscode.DebugConfiguration = {
-      console: 'integratedTerminal',
-      internalConsoleOptions: 'neverOpen',
-      name: 'playwright(debug)',
-      program: config.playwrightBinPath,
+      console: 'internalConsole',
+      internalConsoleOptions: "openOnSessionStart",
+      outputCapture: "std",
+      name: 'playwright',
+      runtimeExecutable:executer,
+      runtimeArgs: cmds,
       request: 'launch',
-      type: 'node',
+      type: 'pwa-node',
       // eslint-disable-next-line @typescript-eslint/naming-convention
       env: { PWDEBUG: 'console' },
       ...config.playwrightDebugOptions,
