@@ -135,10 +135,6 @@
         {
           "command": "extension.debugJest",
           "group": "02_jest"
-        },
-        {
-          "command": "extension.watchJest",
-          "group": "02_jest"
         }
       ]
     }

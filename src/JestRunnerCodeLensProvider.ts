@@ -32,11 +32,6 @@ function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): Cod
       arguments: [fullTestName],
       command: 'extension.debugJest',
       title: 'Debug',
-    }),
-    new CodeLens(range, {
-      arguments: [fullTestName],
-      command: 'extension.watchJest',
-      title: 'Watch',
     })
   );
 
