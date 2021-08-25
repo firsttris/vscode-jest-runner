@@ -58,7 +58,7 @@ export class JestRunner {
     await this.goToCwd();
     await this.runTerminalCommand(command);
   }
-
+  
   public async runCurrentFile(options?: string[]): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
