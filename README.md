@@ -81,6 +81,7 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.jestCommand | Define an alternative Jest command (e.g. for Create React App and similar abstractions) |
 | jestrunner.disableCodeLens | Disable CodeLens feature |
 | jestrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx}) |
+| jestrunner.codeLens | Choose which CodeLens to enable, default to `["run", "debug"]` |
 | jestrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
 | jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory to workspace root before executing the test |
@@ -100,6 +101,10 @@ add this:
 {
   "key": "alt+2",
   "command": "extension.debugJest"
+},
+{
+  "key": "alt+3",
+  "command": "extension.watchJest"
 },
 ```
 

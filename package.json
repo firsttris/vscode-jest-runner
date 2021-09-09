@@ -72,6 +72,19 @@
             "description": "Disable CodeLens feature",
             "scope": "window"
           },
+          "jestrunner.codeLens": {
+            "type": "array",
+            "default": [
+              "run",
+              "debug"
+            ],
+            "description": "Enable desired codeLens, possible value : 'run', 'debug', 'watch'. Defaults to ['run', 'debug'] ",
+            "items": {
+              "type": "string",
+              "description": "Either 'run', 'debug' or 'watch'"
+            },
+            "scope": "window"
+          },
           "jestrunner.codeLensSelector": {
             "type": "string",
             "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
@@ -148,6 +161,10 @@
         },
         {
           "command": "extension.debugJest",
+          "group": "02_jest"
+        },
+        {
+          "command": "extension.watchJest",
           "group": "02_jest"
         }
       ],

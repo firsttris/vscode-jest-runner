@@ -3,6 +3,8 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { isWindows, normalizePath, quote } from './util';
 
+export type CodeLensOption = 'run' | 'debug' | 'watch';
+
 export class JestRunnerConfig {
   /**
    * The command that runs jest.
@@ -145,6 +147,22 @@ export class JestRunnerConfig {
   public get isCodeLensDisabled(): boolean {
     const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
     return isCodeLensDisabled ? isCodeLensDisabled : false;
+  }
+
+  private isCodeLensOption(option: string): option is CodeLensOption {
+    return option === 'run' || option === 'debug' || option === 'watch';
+  }
+
+  private validateCodeLensOptions(maybeCodeLensOptions: string[]): CodeLensOption[] {
+    return [...new Set(maybeCodeLensOptions)].filter((value) => this.isCodeLensOption(value)) as CodeLensOption[];
+  }
+
+  public get codeLensOptions(): CodeLensOption[] {
+    const codeLensOptions = vscode.workspace.getConfiguration().get('jestrunner.codeLens');
+    if (Array.isArray(codeLensOptions)) {
+      return this.validateCodeLensOptions(codeLensOptions);
+    }
+    return [];
   }
 
   public get isYarnPnpSupportEnabled(): boolean {
