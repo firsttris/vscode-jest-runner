@@ -1,9 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { isWindows, normalizePath, quote } from './util';
-
-export type CodeLensOption = 'run' | 'debug' | 'watch';
+import { isWindows, normalizePath, quote, validateCodeLensOptions } from './util';
 
 export class JestRunnerConfig {
   /**
@@ -149,18 +147,10 @@ export class JestRunnerConfig {
     return isCodeLensDisabled ? isCodeLensDisabled : false;
   }
 
-  private isCodeLensOption(option: string): option is CodeLensOption {
-    return option === 'run' || option === 'debug' || option === 'watch';
-  }
-
-  private validateCodeLensOptions(maybeCodeLensOptions: string[]): CodeLensOption[] {
-    return [...new Set(maybeCodeLensOptions)].filter((value) => this.isCodeLensOption(value)) as CodeLensOption[];
-  }
-
   public get codeLensOptions(): CodeLensOption[] {
     const codeLensOptions = vscode.workspace.getConfiguration().get('jestrunner.codeLens');
     if (Array.isArray(codeLensOptions)) {
-      return this.validateCodeLensOptions(codeLensOptions);
+      return validateCodeLensOptions(codeLensOptions);
     }
     return [];
   }

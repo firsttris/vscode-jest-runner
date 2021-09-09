@@ -1,7 +1,6 @@
 import { parse, ParsedNode } from 'jest-editor-support';
 import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
-import { CodeLensOption } from './jestRunnerConfig';
-import { findFullTestName, escapeRegExp } from './util';
+import { findFullTestName, escapeRegExp, CodeLensOption } from './util';
 
 function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
   const titleMap: Record<CodeLensOption, string> = {
