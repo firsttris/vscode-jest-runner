@@ -2,7 +2,7 @@
   "name": "vscode-jest-runner",
   "displayName": "Jest Runner",
   "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
-  "version": "0.4.44",
+  "version": "0.4.45",
   "publisher": "firsttris",
   "author": "Tristan Teufel",
   "repository": {
@@ -104,9 +104,9 @@
         "title": "Run Jest"
       },
       {
-				"command": "extension.runJestPath",
-				"title": "Run Jest"
-			},
+        "command": "extension.runJestPath",
+        "title": "Run Jest"
+      },
       {
         "command": "extension.runJestAndUpdateSnapshots",
         "title": "Run Jest and Update Snapshots"
@@ -124,9 +124,9 @@
         "title": "Debug Jest"
       },
       {
-				"command": "extension.debugJestPath",
-				"title": "Debug Jest"
-			},
+        "command": "extension.debugJestPath",
+        "title": "Debug Jest"
+      },
       {
         "command": "extension.runJestFileWithCoverage",
         "title": "Run Jest File with Coverage"
@@ -152,17 +152,17 @@
         }
       ],
       "explorer/context": [
-				{
-					"command": "extension.runJestPath",
-					"when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
-					"group": "02_jest@1"
-				},
-				{
-					"command": "extension.debugJestPath",
-					"when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
-					"group": "02_jest@2"
-				}
-			]
+        {
+          "command": "extension.runJestPath",
+          "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
+          "group": "02_jest@1"
+        },
+        {
+          "command": "extension.debugJestPath",
+          "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
+          "group": "02_jest@2"
+        }
+      ]
     }
   },
   "scripts": {
