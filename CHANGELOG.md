@@ -1,5 +1,18 @@
 # Change Log
 
+## 0.4.45 - 2021-09-09
+
+### Added
+
+- add watch mode on codelens (#204)
+- Support searching for Typescript configuration files in monorepo environments (#195)
+- Add config option to preserve editor focus on test run (#205)
+
+### Fixed
+
+- Fix path for yarn 2 release file (#197)
+- Fix explorer menus not showing (#184)
+
 ## 0.4.44 - 2021-06-12
 
 ### Fixed
