@@ -79,3 +79,13 @@ export function pushMany<T>(arr: T[], items: T[]): number {
 export function escapePlusSign(s: string): string {
   return s.replace(/[+]/g, '\\$&');
 }
+
+export type CodeLensOption = 'run' | 'debug' | 'watch';
+
+function isCodeLensOption(option: string): option is CodeLensOption {
+  return option === 'run' || option === 'debug' || option === 'watch';
+}
+
+export function validateCodeLensOptions(maybeCodeLensOptions: string[]): CodeLensOption[] {
+  return [...new Set(maybeCodeLensOptions)].filter((value) => isCodeLensOption(value)) as CodeLensOption[];
+}

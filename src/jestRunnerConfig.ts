@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { isWindows, normalizePath, quote } from './util';
+import { isWindows, normalizePath, quote, validateCodeLensOptions } from './util';
 
 export class JestRunnerConfig {
   /**
@@ -145,6 +145,14 @@ export class JestRunnerConfig {
   public get isCodeLensDisabled(): boolean {
     const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
     return isCodeLensDisabled ? isCodeLensDisabled : false;
+  }
+
+  public get codeLensOptions(): CodeLensOption[] {
+    const codeLensOptions = vscode.workspace.getConfiguration().get('jestrunner.codeLens');
+    if (Array.isArray(codeLensOptions)) {
+      return validateCodeLensOptions(codeLensOptions);
+    }
+    return [];
   }
 
   public get isYarnPnpSupportEnabled(): boolean {

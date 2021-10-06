@@ -1,12 +1,34 @@
 import { parse, ParsedNode } from 'jest-editor-support';
 import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
-import { findFullTestName, escapeRegExp } from './util';
+import { findFullTestName, escapeRegExp, CodeLensOption } from './util';
 
-function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): CodeLens[] {
+function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
+  const titleMap: Record<CodeLensOption, string> = {
+    run: 'Run',
+    debug: 'Debug',
+    watch: 'Watch',
+  };
+  const commandMap: Record<CodeLensOption, string> = {
+    run: 'extension.runJest',
+    debug: 'extension.debugJest',
+    watch: 'extension.watchJest',
+  };
+  return new CodeLens(range, {
+    arguments: [fullTestName],
+    title: titleMap[codeLensOption],
+    command: commandMap[codeLensOption],
+  });
+}
+
+function getTestsBlocks(
+  parsedNode: ParsedNode,
+  parseResults: ParsedNode[],
+  codeLensOptions: CodeLensOption[]
+): CodeLens[] {
   const codeLens: CodeLens[] = [];
 
   parsedNode.children?.forEach((subNode) => {
-    codeLens.push(...getTestsBlocks(subNode, parseResults));
+    codeLens.push(...getTestsBlocks(subNode, parseResults, codeLensOptions));
   });
 
   const range = new Range(
@@ -22,29 +44,22 @@ function getTestsBlocks(parsedNode: ParsedNode, parseResults: ParsedNode[]): Cod
 
   const fullTestName = escapeRegExp(findFullTestName(parsedNode.start.line, parseResults));
 
-  codeLens.push(
-    new CodeLens(range, {
-      arguments: [fullTestName],
-      command: 'extension.runJest',
-      title: 'Run',
-    }),
-    new CodeLens(range, {
-      arguments: [fullTestName],
-      command: 'extension.debugJest',
-      title: 'Debug',
-    })
-  );
+  codeLens.push(...codeLensOptions.map((option) => getCodeLensForOption(range, option, fullTestName)));
 
   return codeLens;
 }
 
 export class JestRunnerCodeLensProvider implements CodeLensProvider {
+  constructor(private readonly codeLensOptions: CodeLensOption[]) {}
+
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
       const text = document.getText();
       const parseResults = parse(document.fileName, text).root.children;
       const codeLens: CodeLens[] = [];
-      parseResults.forEach((parseResult) => codeLens.push(...getTestsBlocks(parseResult, parseResults)));
+      parseResults.forEach((parseResult) =>
+        codeLens.push(...getTestsBlocks(parseResult, parseResults, this.codeLensOptions))
+      );
       return codeLens;
     } catch (e) {
       // Ignore error and keep showing Run/Debug buttons at same position
