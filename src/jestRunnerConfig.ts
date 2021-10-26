@@ -115,7 +115,25 @@ export class JestRunnerConfig {
       }
       currentFolderPath = path.join(currentFolderPath, '..');
     } while (currentFolderPath !== this.currentWorkspaceFolderPath);
+
+    if(this.currentPackagePathHasJestConfig) {
+      return this.currentPackagePath;
+    }
+
     return '';
+  }
+
+  private get currentPackagePathHasJestConfig(): boolean {
+    let result = false;
+
+    if(this.currentPackagePath) {
+      (async function() {
+        const packageJson = await import(this.currentPackagePath);
+        result = !!packageJson.jest;
+      })();
+    }
+
+    return result;
   }
 
   public get runOptions(): string[] | null {
