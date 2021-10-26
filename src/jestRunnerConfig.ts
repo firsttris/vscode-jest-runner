@@ -127,7 +127,7 @@ export class JestRunnerConfig {
       currentFolderPath = path.join(currentFolderPath, '..');
     } while (currentFolderPath !== this.currentWorkspaceFolderPath);
 
-    if(this.currentPackageJson.jest) {
+    if(this.currentPackageJson && this.currentPackageJson.jest) {
       return this.currentPackagePath;
     }
 
