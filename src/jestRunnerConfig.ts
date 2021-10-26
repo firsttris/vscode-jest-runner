@@ -116,14 +116,14 @@ export class JestRunnerConfig {
       currentFolderPath = path.join(currentFolderPath, '..');
     } while (currentFolderPath !== this.currentWorkspaceFolderPath);
 
-    if(this.currentPackagePathHasJestConfig) {
+    if(this.currentPackageJsonHasJestConfig) {
       return this.currentPackagePath;
     }
 
     return '';
   }
 
-  private get currentPackagePathHasJestConfig(): boolean {
+  private get currentPackageJsonHasJestConfig(): boolean {
     let result = false;
 
     if(this.currentPackagePath) {
