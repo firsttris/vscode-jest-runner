@@ -78,9 +78,7 @@ export class JestRunnerConfig {
   private get currentPackageJson() {
     let packageJson = undefined;
     if(this.currentPackagePath) {
-      (async function() {
-        packageJson = await import(this.currentPackagePath);
-      })();
+      packageJson = JSON.parse(fs.readFileSync(this.currentPackagePath).toString());
     }
 
     return packageJson;
