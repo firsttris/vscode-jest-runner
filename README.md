@@ -82,7 +82,8 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.disableCodeLens | Disable CodeLens feature |
 | jestrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx}) |
 | jestrunner.codeLens | Choose which CodeLens to enable, default to `["run", "debug"]` |
-| jestrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
+| jestrunner.enableYarnPnpSupport Enable if you are using Yarn 2 with Plug'n'Play |  
+| jestrunner.yarnPnpCommand | Command for debugging with Plug'n'Play defaults to yarn-*.*js |
 | jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory to workspace root before executing the test |
 | jestrunner.preserveEditorFocus | Preserve focus on your editor instead of focusing the terminal on test run |

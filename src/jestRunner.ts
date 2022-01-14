@@ -145,7 +145,7 @@ export class JestRunner {
 
     if (this.config.isYarnPnpSupportEnabled) {
       config.args = ['jest'];
-      config.program = '.yarn/releases/yarn-*.*js';
+      config.program = `.yarn/releases/${this.config.getYarnPnpCommand}`;
     }
 
     const standardArgs = this.buildJestArgs(filePath, currentTestName, false);
