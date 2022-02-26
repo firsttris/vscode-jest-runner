@@ -192,7 +192,7 @@
     "vscode:prepublish": "webpack --mode production",
     "compile": "webpack --mode development",
     "watch": "webpack --mode development --watch",
-    "test": "node ./out/test/runTest.js",
+    "test": "npm run test-compile && node ./out/test/runTest.js",
     "test-compile": "tsc -p ./",
     "publish": "vsce publish patch && git push",
     "eslint:fix": "eslint --cache --fix",
