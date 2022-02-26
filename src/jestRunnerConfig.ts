@@ -159,4 +159,8 @@ export class JestRunnerConfig {
     const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
     return isYarnPnp ? isYarnPnp : false;
   }
+  public get getYarnPnpCommand(): string {
+    const yarnPnpCommand: string = vscode.workspace.getConfiguration().get('jestrunner.yarnPnpCommand');
+    return yarnPnpCommand;
+  }
 }
