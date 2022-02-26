@@ -9,7 +9,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     strategy:
       matrix:
@@ -24,7 +24,4 @@ jobs:
       - run: npm ci
       - run: npm run build --if-present
       - run: npm run test-compile
-      - name: Run tests
-        uses: GabrielBB/xvfb-action@v1
-        with:
-          run: npm test
+      - run: npm run test
