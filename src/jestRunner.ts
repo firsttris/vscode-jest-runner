@@ -95,6 +95,7 @@ export class JestRunner {
   public async debugTestsOnPath(path: string): Promise<void> {
     const debugConfig = this.getDebugConfig(path);
 
+    await this.goToCwd();
     this.executeDebugCommand({
       config: debugConfig,
       documentUri: vscode.Uri.file(path),
@@ -113,6 +114,7 @@ export class JestRunner {
     const testName = currentTestName || this.findCurrentTestName(editor);
     const debugConfig = this.getDebugConfig(filePath, testName);
 
+    await this.goToCwd();
     this.executeDebugCommand({
       config: debugConfig,
       documentUri: editor.document.uri,
@@ -124,7 +126,7 @@ export class JestRunner {
   //
 
   private executeDebugCommand(debugCommand: DebugCommand) {
-    vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(debugCommand.documentUri), debugCommand.config);
+    vscode.debug.startDebugging(undefined, debugCommand.config);
 
     this.previousCommand = debugCommand;
   }

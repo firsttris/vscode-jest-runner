@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { CodeLensOption, isNodeExecuteAbleFile, normalizePath, quote, validateCodeLensOptions } from './util';
+import { normalizePath, quote, validateCodeLensOptions, CodeLensOption, isNodeExecuteAbleFile } from './util';
 
 export class JestRunnerConfig {
   /**
