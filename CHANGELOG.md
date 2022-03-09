@@ -1,5 +1,18 @@
 # Change Log
 
+## 0.4.48 - 2022-03-09
+
+### Added
+
+- Respect "Change Directory To Workspace Root" setting when in Debug mode (#194) #224
+- feat(codelens): add options to display desired codelens #213
+- fix: missing import for CodeLensOption #232
+- Add basic CI using GitHub Actions #236
+- Adds yarnPnpCommand to config #231
+- Update jest-editor-support, fix CI #239
+- fix: valid jestBinPath is js file #244
+- Update jest-editor-support and only import parser #240
+
 ## 0.4.47 - 2021-09-09
 
 ### Added
