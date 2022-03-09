@@ -1,4 +1,4 @@
-import { parse } from 'jest-editor-support';
+import { parse } from './parser';
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import {
@@ -58,7 +58,7 @@ export class JestRunner {
     await this.goToCwd();
     await this.runTerminalCommand(command);
   }
-  
+
   public async runCurrentFile(options?: string[]): Promise<void> {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {

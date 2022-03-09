@@ -1,4 +1,4 @@
-import { parse } from 'jest-editor-support';
+import { parse } from '../../parser';
 import * as path from 'path';
 import { findFullTestName } from '../../util';
 
