@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { CodeLensOption, isWindows, normalizePath, quote, validateCodeLensOptions } from './util';
+import { CodeLensOption, isNodeExecuteAbleFile, normalizePath, quote, validateCodeLensOptions } from './util';
 
 export class JestRunnerConfig {
   /**
@@ -38,10 +38,12 @@ export class JestRunnerConfig {
     }
 
     // default
-    const relativeJestBin = isWindows() ? 'node_modules/jest/bin/jest.js' : 'node_modules/.bin/jest';
+    const fallbackRelativeJestBinPath = 'node_modules/jest/bin/jest.js';
+    const mayRelativeJestBin = ['node_modules/.bin/jest', 'node_modules/jest/bin/jest.js'];
     const cwd = this.cwd;
 
-    jestPath = path.join(cwd, relativeJestBin);
+    jestPath = mayRelativeJestBin.find((relativeJestBin) => isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)));
+    jestPath = jestPath || path.join(cwd, fallbackRelativeJestBinPath);
 
     return normalizePath(jestPath);
   }
