@@ -194,7 +194,7 @@
     "watch": "webpack --mode development --watch",
     "test": "node ./out/test/runTest.js",
     "test-compile": "tsc -p ./",
-    "publish": "vsce publish patch && git push",
+    "publish": "vsce publish patch -m '%s [skip ci]' && git push",
     "eslint:fix": "eslint --cache --fix",
     "prettier": "prettier --write"
   },
