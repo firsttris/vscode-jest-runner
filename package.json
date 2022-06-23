@@ -72,6 +72,12 @@
             "description": "Disable CodeLens feature",
             "scope": "window"
           },
+          "jestrunner.runInExternalNativeTerminal": {
+            "type": "boolean",
+            "default": false,
+            "description": "Run jest runner in external native terminal. Disabled on debug mode",
+            "scope": "window"
+          },
           "jestrunner.codeLens": {
             "type": "array",
             "default": [
@@ -211,6 +217,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "jest": "^27.5.1",
     "prettier": "^2.5.1",
+    "source-map-support": "^0.5.21",
     "ts-jest": "^27.1.3",
     "ts-loader": "^9.2.7",
     "typescript": "^4.6.2",
@@ -219,6 +226,7 @@
     "webpack-cli": "^4.9.2"
   },
   "dependencies": {
-    "jest-editor-support": "^30.0.2"
+    "jest-editor-support": "^30.0.2",
+    "ttab": "^0.7.2"
   }
 }
