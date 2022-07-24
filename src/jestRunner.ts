@@ -1,15 +1,10 @@
-import { parse } from './parser';
 import * as vscode from 'vscode';
+
 import { JestRunnerConfig } from './jestRunnerConfig';
+import { parse } from './parser';
 import {
-  escapeRegExpForPath,
-  escapeRegExp,
-  escapeSingleQuotes,
-  findFullTestName,
-  normalizePath,
-  pushMany,
-  quote,
-  unquote,
+    escapeRegExp, escapeRegExpForPath, escapeSingleQuotes, findFullTestName, normalizePath,
+    pushMany, quote, unquote
 } from './util';
 
 interface DebugCommand {
@@ -22,9 +17,7 @@ export class JestRunner {
 
   private terminal: vscode.Terminal;
 
-  private readonly config = new JestRunnerConfig();
-
-  constructor() {
+  constructor(private readonly config: JestRunnerConfig) {
     this.setup();
   }
 
