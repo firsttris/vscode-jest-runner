@@ -181,7 +181,15 @@ export class JestRunner {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str) => str;
 
-    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+    const useTestPatternAsFileName = this.config.useTestPatternAsFileName;
+    let testReference: string = escapeRegExpForPath(normalizePath(filePath));
+
+    if (useTestPatternAsFileName) {
+      testReference = /([^\\/]*(?=[.][a-zA-Z]+$))/g.exec(testReference)[0];
+      if (!testReference) throw new Error('Could not find test name reference');
+    }
+
+    args.push(quoter(testReference));
 
     const jestConfigPath = this.config.getJestConfigPath(filePath);
     if (jestConfigPath) {

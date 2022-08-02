@@ -66,6 +66,12 @@
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
+          "jestrunner.useTestPatternAsFileName": {
+            "type": "boolean",
+            "default": false,
+            "description": "The test will be referenced as 'my-test.test' instead of '/path/to/my-test.test.ts'.",
+            "scope": "window"
+          },
           "jestrunner.disableCodeLens": {
             "type": "boolean",
             "default": false,

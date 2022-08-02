@@ -22,6 +22,10 @@ export class JestRunnerConfig {
     return `node ${quote(this.jestBinPath)}`;
   }
 
+  public get useTestPatternAsFileName(): boolean {
+    return vscode.workspace.getConfiguration().get('jestrunner.useTestPatternAsFileName');
+  }
+
   public get changeDirectoryToWorkspaceRoot(): boolean {
     return vscode.workspace.getConfiguration().get('jestrunner.changeDirectoryToWorkspaceRoot');
   }
