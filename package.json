@@ -12,7 +12,7 @@
   "license": "MIT",
   "icon": "public/icon.png",
   "engines": {
-    "vscode": "^1.65.0"
+    "vscode": "^1.70.0"
   },
   "categories": [
     "Other"
