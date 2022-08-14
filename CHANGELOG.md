@@ -1,8 +1,13 @@
 # Change Log
 
+## 0.4.52 - 2022-08-14
+
+- Let CI continously publish extension to ovsx 
+- Refactor jestRunner.ts to inject config in constructor #263
+
 ## 0.4.48 - 2022-08-14
 
-- Github Actions CLI building the addon continously for changes on master
+- Github Actions CI building the addon continously for changes on master #246
 - support for external native terminal run #258
 
 ### Added
