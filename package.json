@@ -199,9 +199,9 @@
     "build": "webpack --mode development",
     "watch": "webpack --mode development --watch",
     "test": "jest .src/test",
-    "vsce:publish": "vsce publish patch -m '%s [skip ci]'",
+    "vsce:publish": "vsce publish patch -m '%s [skip ci]' && git push",
     "ovsx:publish": "ovsx publish",
-    "publish": "npm run vsce:publish && npm run ovsx:publish && git push",
+    "publish": "npm run vsce:publish && npm run ovsx:publish",
     "eslint:fix": "eslint --cache --fix",
     "prettier": "prettier --write"
   },
