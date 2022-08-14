@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.4.48 - 2022-08-14
+
+- Github Actions CLI building the addon continously for changes on master
+- support for external native terminal run #258
+
+### Added
+
 ## 0.4.48 - 2022-03-09
 
 ### Added
