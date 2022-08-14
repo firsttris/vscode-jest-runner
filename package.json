@@ -192,34 +192,33 @@
     "vscode:prepublish": "webpack --mode production",
     "build": "webpack --mode development",
     "watch": "webpack --mode development --watch",
-    "test": "node ./out/test/runTest.js",
-    "test-compile": "tsc -p ./",
+    "test": "jest .src/test",
     "publish": "vsce publish patch -m '%s [skip ci]' && git push",
     "eslint:fix": "eslint --cache --fix",
     "prettier": "prettier --write"
   },
   "devDependencies": {
-    "@jest/types": "^27.5.1",
-    "@types/jest": "^27.4.1",
-    "@types/node": "^17.0.21",
-    "@types/vscode": "^1.65.0",
-    "@typescript-eslint/eslint-plugin": "^5.14.0",
-    "@typescript-eslint/parser": "^5.14.0",
+    "@jest/types": "^28.1.3",
+    "@types/jest": "^28.1.6",
+    "@types/node": "^18.7.3",
+    "@types/vscode": "^1.70.0",
+    "@typescript-eslint/eslint-plugin": "^5.33.0",
+    "@typescript-eslint/parser": "^5.33.0",
     "babylon": "^6.18.0",
-    "eslint": "^8.10.0",
+    "eslint": "^8.22.0",
     "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-prettier": "^4.0.0",
-    "jest": "^27.5.1",
-    "prettier": "^2.5.1",
-    "ts-jest": "^27.1.3",
-    "ts-loader": "^9.2.7",
-    "typescript": "^4.6.2",
-    "vsce": "2.7.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "jest": "^28.1.3",
+    "prettier": "^2.7.1",
+    "ts-jest": "^28.0.7",
+    "ts-loader": "^9.3.1",
+    "typescript": "^4.7.4",
+    "vsce": "2.10.0",
     "vscode-test": "^1.6.1",
-    "webpack": "^5.70.0",
-    "webpack-cli": "^4.9.2"
+    "webpack": "^5.74.0",
+    "webpack-cli": "^4.10.0"
   },
   "dependencies": {
-    "jest-editor-support": "^30.0.2"
+    "jest-editor-support": "^30.1.0"
   }
 }

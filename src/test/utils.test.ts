@@ -1,4 +1,4 @@
-import { validateCodeLensOptions } from '../../util';
+import { validateCodeLensOptions } from '../util';
 
 describe('validateCodeLensOptions', () =>
   it.each([
