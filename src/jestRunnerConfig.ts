@@ -77,15 +77,6 @@ export class JestRunnerConfig {
     return '';
   }
 
-  private get currentPackageJson() {
-    let packageJson = undefined;
-    if(this.currentPackagePath) {
-      packageJson = JSON.parse(fs.readFileSync(this.currentPackagePath).toString());
-    }
-
-    return packageJson;
-  }
-
   public get currentWorkspaceFolderPath(): string {
     const editor = vscode.window.activeTextEditor;
     return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
@@ -126,11 +117,6 @@ export class JestRunnerConfig {
       }
       currentFolderPath = path.join(currentFolderPath, '..');
     } while (currentFolderPath !== this.currentWorkspaceFolderPath);
-
-    if(this.currentPackageJson && this.currentPackageJson.jest) {
-      return this.currentPackagePath;
-    }
-
     return '';
   }
 
