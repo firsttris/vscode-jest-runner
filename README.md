@@ -91,7 +91,7 @@ If you have a custom setup use the following options to configure Jest Runner:
 
 ## Shortcuts
 
-click File -> Preferences -> Keyboard Shortcuts -> "{}" (top right)
+Command Pallette -> Preferences: Open Keyboard Shortcuts (JSON)
 the json config file will open
 add this:
 
@@ -108,6 +108,10 @@ add this:
   "key": "alt+3",
   "command": "extension.watchJest"
 },
+{
+  "key": "alt+4",
+  "command": "extension.runPrevJest"
+}
 ```
 
 ## Want to start contributing features?
