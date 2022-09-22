@@ -108,13 +108,10 @@ export class JestRunnerConfig {
     let currentFolderPath: string = targetPath || path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
     do {
-      for (const configFilename of ['jest.config.js', 'jest.config.ts', 'package.json']) {
+      for (const configFilename of ['jest.config.js', 'jest.config.ts']) {
         currentFolderConfigPath = path.join(currentFolderPath, configFilename);
 
-        if (
-          fs.existsSync(currentFolderConfigPath) &&
-          (configFilename !== 'package.json' || JSON.parse(fs.readFileSync(currentFolderConfigPath).toString()).jest)
-        ) {
+        if (fs.existsSync(currentFolderConfigPath)) {
           return currentFolderConfigPath;
         }
       }
@@ -153,9 +150,7 @@ export class JestRunnerConfig {
   }
 
   public get isRunInExternalNativeTerminal(): boolean {
-    const isRunInExternalNativeTerminal: boolean = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.runInOutsideTerminal');
+    const isRunInExternalNativeTerminal: boolean = vscode.workspace.getConfiguration().get('jestrunner.runInOutsideTerminal');
     return isRunInExternalNativeTerminal ? isRunInExternalNativeTerminal : false;
   }
 
