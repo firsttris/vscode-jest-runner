@@ -1,5 +1,7 @@
 # vscode-jest-runner
 
+Looking for collaborators to help me maintain the project. Please contact me at tristanteufel@gmail.com
+
 ## Visual Studio Code Marketplace
 
 [VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)   
