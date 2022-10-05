@@ -24,7 +24,8 @@ export class JestRunner {
   private terminal: vscode.Terminal;
 
   // support for running in a native external terminal
-  // force runTerminalCommand to push to a queue and run in a native external terminal after all commands been pushed
+  // force runTerminalCommand to push to a queue and run in a native external
+  // terminal after all commands been pushed
   private openNativeTerminal: boolean;
   private commands: string[] = [];
 
@@ -48,7 +49,8 @@ export class JestRunner {
     await this.runExternalNativeTerminalCommand(this.commands);
   }
 
-  public async runCurrentTest(currentTestName?: string, options?: string[]): Promise<void> {
+  public async runCurrentTest(argument?: Record<string, unknown> | string, options?: string[]): Promise<void> {
+    const currentTestName = typeof argument === 'string' ? argument : undefined;
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;

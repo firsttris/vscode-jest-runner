@@ -84,10 +84,10 @@
               "run",
               "debug"
             ],
-            "description": "Enable desired codeLens, possible value : 'run', 'debug', 'watch'. Defaults to ['run', 'debug'] ",
+            "description": "Enable desired codeLens, possible value : 'run', 'debug', 'watch', 'coverage'. Defaults to ['run', 'debug'] ",
             "items": {
               "type": "string",
-              "description": "Either 'run', 'debug' or 'watch'"
+              "description": "Either 'run', 'debug', 'watch', 'coverage'"
             },
             "scope": "window"
           },
@@ -127,6 +127,10 @@
       {
         "command": "extension.runJest",
         "title": "Run Jest"
+      },
+      {
+        "command": "extension.runJestCoverage",
+        "title": "Run Jest with coverage"
       },
       {
         "command": "extension.runJestPath",
@@ -177,6 +181,10 @@
         },
         {
           "command": "extension.watchJest",
+          "group": "02_jest"
+        },
+        {
+          "command": "extension.runJestCoverage",
           "group": "02_jest"
         }
       ],

@@ -7,11 +7,13 @@ function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, full
     run: 'Run',
     debug: 'Debug',
     watch: 'Watch',
+    coverage: 'Run coverage',
   };
   const commandMap: Record<CodeLensOption, string> = {
     run: 'extension.runJest',
     debug: 'extension.debugJest',
     watch: 'extension.watchJest',
+    coverage: 'extension.runJestCoverage',
   };
   return new CodeLens(range, {
     arguments: [fullTestName],
