@@ -206,29 +206,29 @@
     "prettier": "prettier --write"
   },
   "devDependencies": {
-    "@jest/types": "^28.1.3",
-    "@types/jest": "^28.1.6",
-    "@types/node": "^18.7.3",
-    "@types/vscode": "^1.70.0",
-    "@typescript-eslint/eslint-plugin": "^5.33.0",
-    "@typescript-eslint/parser": "^5.33.0",
+    "@jest/types": "^29.1.2",
+    "@types/jest": "^29.1.2",
+    "@types/node": "^18.8.5",
+    "@types/vscode": "^1.72.0",
+    "@typescript-eslint/eslint-plugin": "^5.40.0",
+    "@typescript-eslint/parser": "^5.40.0",
     "babylon": "^6.18.0",
-    "eslint": "^8.22.0",
+    "eslint": "^8.25.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "jest": "^28.1.3",
+    "jest": "^29.1.2",
     "ovsx": "^0.5.1",
     "prettier": "^2.7.1",
     "source-map-support": "^0.5.21",
-    "ts-jest": "^28.0.7",
-    "ts-loader": "^9.3.1",
-    "typescript": "^4.7.4",
-    "vsce": "^2.10.0",
+    "ts-jest": "^29.0.3",
+    "ts-loader": "^9.4.1",
+    "typescript": "^4.8.4",
+    "vsce": "^2.11.0",
     "vscode-test": "^1.6.1",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.10.0"
   },
   "dependencies": {
-    "jest-editor-support": "^30.1.0"
+    "jest-editor-support": "^30.2.0"
   }
 }
