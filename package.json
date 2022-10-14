@@ -229,7 +229,6 @@
     "webpack-cli": "^4.10.0"
   },
   "dependencies": {
-    "jest-editor-support": "^30.1.0",
-    "ttab": "^0.7.2"
+    "jest-editor-support": "^30.1.0"
   }
 }
