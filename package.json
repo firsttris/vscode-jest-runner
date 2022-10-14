@@ -129,24 +129,24 @@
         "title": "Run Jest"
       },
       {
-        "command": "extension.runJestCoverage",
-        "title": "Run Jest with coverage"
+        "command": "extension.runJestPath",
+        "title": "Run Jest on Path"
       },
       {
-        "command": "extension.runJestPath",
-        "title": "Run Jest"
+        "command": "extension.runJestCoverage",
+        "title": "Run Jest and generate Coverage"
       },
       {
         "command": "extension.runJestAndUpdateSnapshots",
-        "title": "Run Jest and Update Snapshots"
+        "title": "Run Jest and update Snapshots"
       },
       {
         "command": "extension.runPrevJest",
-        "title": "Run Previous Jest"
+        "title": "Run Jest - Run Previous Test"
       },
       {
         "command": "extension.runJestFile",
-        "title": "Run Jest File"
+        "title": "Run Jest on File"
       },
       {
         "command": "extension.debugJest",
@@ -154,11 +154,11 @@
       },
       {
         "command": "extension.debugJestPath",
-        "title": "Debug Jest"
+        "title": "Debug Jest on Path"
       },
       {
         "command": "extension.runJestFileWithCoverage",
-        "title": "Run Jest File with Coverage"
+        "title": "Run Jest File and generate Coverage"
       },
       {
         "command": "extension.runJestFileWithWatchMode",
@@ -166,7 +166,7 @@
       },
       {
         "command": "extension.watchJest",
-        "title": "Watch Jest"
+        "title": "Run Jest --watch"
       }
     ],
     "menus": {
@@ -177,14 +177,6 @@
         },
         {
           "command": "extension.debugJest",
-          "group": "02_jest"
-        },
-        {
-          "command": "extension.watchJest",
-          "group": "02_jest"
-        },
-        {
-          "command": "extension.runJestCoverage",
           "group": "02_jest"
         }
       ],
