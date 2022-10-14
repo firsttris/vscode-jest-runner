@@ -150,7 +150,9 @@ export class JestRunnerConfig {
   }
 
   public get isRunInExternalNativeTerminal(): boolean {
-    const isRunInExternalNativeTerminal: boolean = vscode.workspace.getConfiguration().get('jestrunner.runInOutsideTerminal');
+    const isRunInExternalNativeTerminal: boolean = vscode.workspace
+      .getConfiguration()
+      .get('jestrunner.runInOutsideTerminal');
     return isRunInExternalNativeTerminal ? isRunInExternalNativeTerminal : false;
   }
 

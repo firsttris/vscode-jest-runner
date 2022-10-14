@@ -13,13 +13,17 @@ export function activate(context: vscode.ExtensionContext): void {
   const runJest = vscode.commands.registerCommand(
     'extension.runJest',
     async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        jestRunner.runCurrentTest(argument);
-      } else {
-        jestRunner.runCurrentTest();
-      }
+      return jestRunner.runCurrentTest(argument);
     }
   );
+
+  const runJestCoverage = vscode.commands.registerCommand(
+    'extension.runJestCoverage',
+    async (argument: Record<string, unknown> | string) => {
+      return jestRunner.runCurrentTest(argument, ['--coverage']);
+    }
+  );
+
   const runJestPath = vscode.commands.registerCommand('extension.runJestPath', async (argument: vscode.Uri) =>
     jestRunner.runTestsOnPath(argument.path)
   );
@@ -31,9 +35,9 @@ export function activate(context: vscode.ExtensionContext): void {
     'extension.debugJest',
     async (argument: Record<string, unknown> | string) => {
       if (typeof argument === 'string') {
-        jestRunner.debugCurrentTest(argument);
+        return jestRunner.debugCurrentTest(argument);
       } else {
-        jestRunner.debugCurrentTest();
+        return jestRunner.debugCurrentTest();
       }
     }
   );
@@ -52,22 +56,21 @@ export function activate(context: vscode.ExtensionContext): void {
   const watchJest = vscode.commands.registerCommand(
     'extension.watchJest',
     async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        jestRunner.runCurrentTest(argument, ['--watch']);
-      } else {
-        jestRunner.runCurrentTest(undefined, ['--watch']);
-      }
+      return jestRunner.runCurrentTest(argument, ['--watch']);
     }
   );
 
   if (!config.isCodeLensDisabled) {
     const docSelectors: vscode.DocumentFilter[] = [
-      { pattern: vscode.workspace.getConfiguration().get('jestrunner.codeLensSelector') },
+      {
+        pattern: vscode.workspace.getConfiguration().get('jestrunner.codeLensSelector'),
+      },
     ];
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
     context.subscriptions.push(codeLensProviderDisposable);
   }
   context.subscriptions.push(runJest);
+  context.subscriptions.push(runJestCoverage);
   context.subscriptions.push(runJestAndUpdateSnapshots);
   context.subscriptions.push(runJestFile);
   context.subscriptions.push(runJestPath);
