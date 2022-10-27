@@ -4,7 +4,7 @@ Looking for collaborators to help me maintain the project. Please contact me at 
 
 ## Visual Studio Code Marketplace
 
-[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)   
+[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 [Open VSX Registry](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 
 ## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
@@ -21,11 +21,11 @@ Run & Debug your Jest Tests from
 - CodeLens
 - Command Palette (strg+shift+p)
 
-## Supports 
+## Supports
 - yarn & vscode workspaces (monorepo)
-- dynamic jest config resolution  
-- yarn 2 pnp   
-- CRA & and similar abstractions   
+- dynamic jest config resolution
+- yarn 2 pnp
+- CRA & and similar abstractions
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
@@ -38,7 +38,7 @@ add the following command to settings, to pass commandline arguments
 
 ## Debugging JSX/TSX with CRA
 
-for debugging JST/TSX with CRA you need to have a valid babel and jest config: 
+for debugging JST/TSX with CRA you need to have a valid babel and jest config:
 
 to add a `babel.config.js` with at least the following config
 ```
@@ -71,7 +71,7 @@ Check that debugger works:
 
 ## Extension Settings
 
-Jest Runner will work out of the box, with a valid Jest config.   
+Jest Runner will work out of the box, with a valid Jest config.
 If you have a custom setup use the following options to configure Jest Runner:
 
 | Command | Description |
@@ -84,12 +84,13 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.disableCodeLens | Disable CodeLens feature |
 | jestrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx}) |
 | jestrunner.codeLens | Choose which CodeLens to enable, default to `["run", "debug"]` |
-| jestrunner.enableYarnPnpSupport Enable if you are using Yarn 2 with Plug'n'Play |  
+| jestrunner.enableYarnPnpSupport Enable if you are using Yarn 2 with Plug'n'Play |
 | jestrunner.yarnPnpCommand | Command for debugging with Plug'n'Play defaults to yarn-*.*js |
 | jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory to workspace root before executing the test |
 | jestrunner.preserveEditorFocus | Preserve focus on your editor instead of focusing the terminal on test run |
 | jestrunner.runInExternalNativeTerminal | run in external terminal (requires: npm install ttab -g) |
+| jestrunner.exactTestName | Strictly match test name, defaults to `false`. By default multiple tests will be run when test names overlap |
 
 ## Shortcuts
 
@@ -129,11 +130,11 @@ Another vscode instance will open with the just compiled extension installed.
 
 ## Notes from contributors
 
-- Babel compile Issue when starting Debug in JSX/TSX, 
+- Babel compile Issue when starting Debug in JSX/TSX,
     - check the post of @Dot-H https://github.com/firsttris/vscode-jest-runner/issues/136
     - https://github.com/firsttris/vscode-jest-runner/issues/174
 
-- By default **Jest** finds its config from the `"jest"` attribute in your `package.json` or if you export an object `module.export = {}` in a `jest.config.js` file in your project root directory.   
+- By default **Jest** finds its config from the `"jest"` attribute in your `package.json` or if you export an object `module.export = {}` in a `jest.config.js` file in your project root directory.
 Read More: [Configuring Jest Docs](https://jestjs.io/docs/en/configuration)
 
 - If Breakspoints are not working properly, try adding this to vscode config:

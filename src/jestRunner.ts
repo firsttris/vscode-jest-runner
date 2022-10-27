@@ -218,7 +218,10 @@ export class JestRunner {
 
     if (testName) {
       args.push('-t');
-      args.push(quoter(escapeSingleQuotes(testName)));
+
+      const escapedTestName = escapeSingleQuotes(testName)
+      const isTestNameExact: boolean = vscode.workspace.getConfiguration().get('jestrunner.exactTestName')
+      args.push(quoter(isTestNameExact ? `^${escapedTestName}$` : escapedTestName));
     }
 
     const setOptions = new Set(options);
