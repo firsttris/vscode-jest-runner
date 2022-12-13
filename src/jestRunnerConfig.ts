@@ -107,8 +107,14 @@ export class JestRunnerConfig {
   private findConfigPath(targetPath?: string): string {
     let currentFolderPath: string = targetPath || path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
+
+    const isIntergrationTests = currentFolderPath.includes('/integration/');
+    const possibleConfigFiles = isIntergrationTests
+      ? ['jest.integration.js', 'jest.integration.ts']
+      : ['jest.config.js', 'jest.config.ts'];
+
     do {
-      for (const configFilename of ['jest.config.js', 'jest.config.ts']) {
+      for (const configFilename of possibleConfigFiles) {
         currentFolderConfigPath = path.join(currentFolderPath, configFilename);
 
         if (fs.existsSync(currentFolderConfigPath)) {
@@ -135,13 +141,19 @@ export class JestRunnerConfig {
   }
 
   public get debugOptions(): Partial<vscode.DebugConfiguration> {
-    const debugOptions = vscode.workspace.getConfiguration().get('jestrunner.debugOptions');
-    if (debugOptions) {
-      return debugOptions;
-    }
+    // const debugOptions = vscode.workspace.getConfiguration().get('jestrunner.debugOptions');
+    // if (debugOptions) {
+    //   return debugOptions;
+    // }
 
     // default
-    return {};
+    return {
+      args: ['--no-cache'],
+      disableOptimisticBPs: true,
+      resolveSourceMapLocations: null,
+      sourceMaps: true,
+      outFiles: [],
+    };
   }
 
   public get isCodeLensDisabled(): boolean {
