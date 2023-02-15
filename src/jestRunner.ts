@@ -278,8 +278,10 @@ export class JestRunner {
   }
 
   private setup() {
-    vscode.window.onDidCloseTerminal(() => {
-      this.terminal = null;
+    vscode.window.onDidCloseTerminal((closedTerminal: vscode.Terminal) => {
+      if (this.terminal === closedTerminal) {
+        this.terminal = null;
+      }
     });
   }
 }
