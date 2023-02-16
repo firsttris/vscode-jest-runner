@@ -57,6 +57,10 @@ export function escapeSingleQuotes(s: string): string {
   return isWindows() ? s : s.replace(/'/g, "'\\''");
 }
 
+export function escapeTestName(s: string): string {
+  return isWindows() ? s.replace(/"/g, "'") : s.replace(/'/g, '"');
+}
+
 export function quote(s: string): string {
   const q = isWindows() ? '"' : `'`;
   return [q, s, q].join('');
