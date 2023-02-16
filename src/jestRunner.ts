@@ -6,6 +6,7 @@ import {
   escapeRegExp,
   escapeRegExpForPath,
   escapeSingleQuotes,
+  escapeTestName,
   findFullTestName,
   normalizePath,
   pushMany,
@@ -59,7 +60,7 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const testName = currentTestName || this.findCurrentTestName(editor);
+    const testName = escapeTestName(currentTestName || this.findCurrentTestName(editor));
     const command = this.buildJestCommand(filePath, testName, options);
 
     this.previousCommand = command;
