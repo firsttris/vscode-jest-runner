@@ -11,6 +11,7 @@ import {
   pushMany,
   quote,
   unquote,
+  updateTestNameIfUsingProperties,
 } from './util';
 
 interface DebugCommand {
@@ -60,7 +61,8 @@ export class JestRunner {
 
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const command = this.buildJestCommand(filePath, testName, options);
+    const resolvedTestName = updateTestNameIfUsingProperties(testName);
+    const command = this.buildJestCommand(filePath, resolvedTestName, options);
 
     this.previousCommand = command;
 
@@ -129,7 +131,8 @@ export class JestRunner {
 
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const debugConfig = this.getDebugConfig(filePath, testName);
+    const resolvedTestName = updateTestNameIfUsingProperties(testName);
+    const debugConfig = this.getDebugConfig(filePath, resolvedTestName);
 
     await this.goToCwd();
     await this.executeDebugCommand({
