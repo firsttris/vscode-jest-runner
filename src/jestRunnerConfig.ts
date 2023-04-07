@@ -57,9 +57,9 @@ export class JestRunnerConfig {
   }
 
   public get projectPathFromConfig(): string | undefined {
-    const projectPathFromConfig = vscode.workspace.getConfiguration().get('jestrunner.projectPath');
+    const projectPathFromConfig = vscode.workspace.getConfiguration().get<string>('jestrunner.projectPath');
     if (projectPathFromConfig) {
-      return path.resolve(this.currentWorkspaceFolderPath, projectPathFromConfig as string);
+      return path.resolve(this.currentWorkspaceFolderPath, projectPathFromConfig);
     }
   }
 
