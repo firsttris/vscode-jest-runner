@@ -57,7 +57,7 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
       const text = document.getText();
-      const parseResults = parse(document.fileName, text).root.children;
+      const parseResults = parse(document.fileName, text, { plugins: { decorators: 'legacy' } }).root.children;
       const codeLens: CodeLens[] = [];
       parseResults.forEach((parseResult) =>
         codeLens.push(...getTestsBlocks(parseResult, parseResults, this.codeLensOptions))
