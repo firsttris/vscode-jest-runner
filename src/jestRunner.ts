@@ -177,7 +177,7 @@ export class JestRunner {
       config.program = `.yarn/releases/${this.config.getYarnPnpCommand}`;
     }
 
-    const standardArgs = this.buildJestArgs(filePath, currentTestName, false);
+    const standardArgs = this.buildJestArgs(filePath, currentTestName, true);
     pushMany(config.args, standardArgs);
     config.args.push('--runInBand');
 
