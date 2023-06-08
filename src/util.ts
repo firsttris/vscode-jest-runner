@@ -17,6 +17,10 @@ export function escapeRegExpForPath(s: string): string {
   return s.replace(/[*+?^${}<>()|[\]]/g, '\\$&'); // $& means the whole matched string
 }
 
+export function escapeRegExpForLineBreaks(s: string): string {
+  return s.replace(/\n/g, '\\n');
+}
+
 export function findFullTestName(selectedLine: number, children: any[]): string | undefined {
   if (!children) {
     return;

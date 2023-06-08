@@ -4,6 +4,7 @@ import { JestRunnerConfig } from './jestRunnerConfig';
 import { parse } from './parser';
 import {
   escapeRegExp,
+  escapeRegExpForLineBreaks,
   escapeRegExpForPath,
   escapeSingleQuotes,
   findFullTestName,
@@ -218,7 +219,7 @@ export class JestRunner {
 
     if (testName) {
       args.push('-t');
-      args.push(quoter(escapeSingleQuotes(testName)));
+      args.push(quoter(escapeRegExpForLineBreaks(escapeSingleQuotes(testName))));
     }
 
     const setOptions = new Set(options);
