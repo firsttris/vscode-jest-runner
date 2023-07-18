@@ -102,6 +102,12 @@
             "description": "Enable if you are using Yarn 2 with Plug'n'Play",
             "scope": "window"
           },
+          "jestrunner.exactTestName": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable strict test name matching",
+            "scope": "window"
+          },
           "jestrunner.changeDirectoryToWorkspaceRoot": {
             "type": "boolean",
             "default": true,
