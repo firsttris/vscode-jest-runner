@@ -4,7 +4,7 @@ Looking for collaborators to help me maintain the project. Please contact me at 
 
 ## Visual Studio Code Marketplace
 
-[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)   
+[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 [Open VSX Registry](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 
 ## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
@@ -21,58 +21,36 @@ Run & Debug your Jest Tests from
 - CodeLens
 - Command Palette (strg+shift+p)
 
-## Supports 
+## Supports
 - yarn & vscode workspaces (monorepo)
-- dynamic jest config resolution  
-- yarn 2 pnp   
-- CRA & and similar abstractions   
+- dynamic jest config resolution
+- yarn 2 pnp
+- CRA & and similar abstractions
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Usage with CRA or similar abstractions
 
-add the following command to settings, to pass commandline arguments
+add the following command to settings:
+```json
+"jestrunner.jestCommand": "npm run test --",
+"jestrunner.debugOptions": {
+    "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/react-scripts",
+    "runtimeArgs": [
+      "test",
+      "${fileBasename}",
+      "--runInBand",
+      "--no-cache",
+      "--watchAll=false",
+      "--color"
+    ]
+},
 ```
-"jestrunner.jestCommand": "npm run test --"
-```
-
-## Debugging JSX/TSX with CRA
-
-for debugging JST/TSX with CRA you need to have a valid babel and jest config: 
-
-to add a `babel.config.js` with at least the following config
-```
-// babel.config.js
-module.exports = {
-    presets: [
-      ["@babel/preset-env", { targets: { node: "current" } }],
-      "babel-preset-react-app",
-    ],
-  };
-```
-
-add a `jest.config.js` with at least the following config
-
-```
-module.exports = {
-  transform: {
-    '\\.(js|ts|jsx|tsx)$': 'babel-jest',
-    '\\.(jpg|jpeg|png|gif|ico|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga|webmanifest|xml)$':
-      '<rootDir>/jest/fileTransformer.js'
-  },
-  moduleNameMapper: {
-    '\\.(css)$': 'identity-obj-proxy'
-  },
-}
-```
-
-Check that debugger works:
-![image](https://user-images.githubusercontent.com/1709260/120468727-d542ae00-c3a1-11eb-85ac-986c35ac167f.png)
 
 ## Extension Settings
 
-Jest Runner will work out of the box, with a valid Jest config.   
-If you have a custom setup use the following options to configure Jest Runner:
+Jest Runner will work out of the box, with a valid Jest config.
+If you have a custom setup use the following options to customize Jest Runner:
 
 | Command | Description |
 | --- | --- |
@@ -84,7 +62,7 @@ If you have a custom setup use the following options to configure Jest Runner:
 | jestrunner.disableCodeLens | Disable CodeLens feature |
 | jestrunner.codeLensSelector | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx}) |
 | jestrunner.codeLens | Choose which CodeLens to enable, default to `["run", "debug"]` |
-| jestrunner.enableYarnPnpSupport Enable if you are using Yarn 2 with Plug'n'Play |  
+| jestrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
 | jestrunner.yarnPnpCommand | Command for debugging with Plug'n'Play defaults to yarn-*.*js |
 | jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory to workspace root before executing the test |
@@ -118,30 +96,12 @@ add this:
 
 ## Want to start contributing features?
 
-[Some open topics get you started](https://github.com/firsttris/vscode-jest-runner/issues)
+[Check some open topics get you started](https://github.com/firsttris/vscode-jest-runner/issues)
 
-## Steps to run in development mode
+### Steps to run Extension in development mode
 
+- Clone Repo
 - npm install
 - Go to Menu "Run" => "Start Debugging"
 
 Another vscode instance will open with the just compiled extension installed.
-
-## Notes from contributors
-
-- Babel compile Issue when starting Debug in JSX/TSX, 
-    - check the post of @Dot-H https://github.com/firsttris/vscode-jest-runner/issues/136
-    - https://github.com/firsttris/vscode-jest-runner/issues/174
-
-- By default **Jest** finds its config from the `"jest"` attribute in your `package.json` or if you export an object `module.export = {}` in a `jest.config.js` file in your project root directory.   
-Read More: [Configuring Jest Docs](https://jestjs.io/docs/en/configuration)
-
-- If Breakspoints are not working properly, try adding this to vscode config:
-
-```javascript
-"jestrunner.debugOptions": {
-    "args": ["--no-cache"],
-    "sourcemaps": "inline",
-    "disableOptimisticBPs": true,
-}
-```
