@@ -101,7 +101,11 @@ export function isNodeExecuteAbleFile(filepath: string): boolean {
   }
 }
 
-export function updateTestNameIfUsingProperties(receivedTestName: string) {
+export function updateTestNameIfUsingProperties(receivedTestName?: string) {
+  if (receivedTestName === undefined) {
+    return undefined;
+  }
+
   const namePropertyRegex = /(?<=\S)\\.name/g;
   const testNameWithoutNameProperty = receivedTestName.replace(namePropertyRegex, '');
 
