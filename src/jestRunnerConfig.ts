@@ -49,15 +49,18 @@ export class JestRunnerConfig {
   }
 
   public get projectPath(): string {
-    return vscode.workspace.getConfiguration().get('jestrunner.projectPath') || this.currentWorkspaceFolderPath;
+    return this.projectPathFromConfig || this.currentWorkspaceFolderPath;
   }
 
   public get cwd(): string {
-    return (
-      vscode.workspace.getConfiguration().get('jestrunner.projectPath') ||
-      this.currentPackagePath ||
-      this.currentWorkspaceFolderPath
-    );
+    return this.projectPathFromConfig || this.currentPackagePath || this.currentWorkspaceFolderPath;
+  }
+
+  public get projectPathFromConfig(): string | undefined {
+    const projectPathFromConfig = vscode.workspace.getConfiguration().get<string>('jestrunner.projectPath');
+    if (projectPathFromConfig) {
+      return path.resolve(this.currentWorkspaceFolderPath, projectPathFromConfig);
+    }
   }
 
   private get currentPackagePath() {

@@ -64,7 +64,7 @@ If you have a custom setup use the following options to customize Jest Runner:
 | jestrunner.codeLens | Choose which CodeLens to enable, default to `["run", "debug"]` |
 | jestrunner.enableYarnPnpSupport | Enable if you are using Yarn 2 with Plug'n'Play |
 | jestrunner.yarnPnpCommand | Command for debugging with Plug'n'Play defaults to yarn-*.*js |
-| jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder) |
+| jestrunner.projectPath | Absolute path to project directory (e.g. /home/me/project/sub-folder), or relative path to workspace root (e.g. ./sub-folder) |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory to workspace root before executing the test |
 | jestrunner.preserveEditorFocus | Preserve focus on your editor instead of focusing the terminal on test run |
 | jestrunner.runInExternalNativeTerminal | run in external terminal (requires: npm install ttab -g) |

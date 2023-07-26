@@ -6,11 +6,12 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.platform }}
 
     strategy:
       matrix:
         node-version: [16.x]
+        platform: [windows-latest, macos-latest, ubuntu-22.04]
 
     steps:
       - uses: actions/checkout@v2
