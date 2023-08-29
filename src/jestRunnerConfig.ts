@@ -31,10 +31,15 @@ export class JestRunnerConfig {
   }
 
   public get jestBinPath(): string {
-    // custom
-    let jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
-    if (jestPath) {
-      return jestPath;
+    const customJestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
+    if (customJestPath) {
+      return customJestPath;
+    }
+
+    // using separate key for possible backwards compatibility issues
+    const customJestPathFromWorkspace: string = vscode.workspace.getConfiguration().get('jestrunner.jestPathFromWorkspace');
+    if (customJestPathFromWorkspace) {
+      return path.join(this.currentWorkspaceFolderPath, customJestPathFromWorkspace);
     }
 
     // default
@@ -42,10 +47,10 @@ export class JestRunnerConfig {
     const mayRelativeJestBin = ['node_modules/.bin/jest', 'node_modules/jest/bin/jest.js'];
     const cwd = this.cwd;
 
-    jestPath = mayRelativeJestBin.find((relativeJestBin) => isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)));
-    jestPath = jestPath || path.join(cwd, fallbackRelativeJestBinPath);
+    const jestPath = mayRelativeJestBin.find((relativeJestBin) => isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)));
+    const defaultJestPath = path.join(cwd, fallbackRelativeJestBinPath);
 
-    return normalizePath(jestPath);
+    return normalizePath(jestPath || defaultJestPath);
   }
 
   public get projectPath(): string {
@@ -65,12 +70,16 @@ export class JestRunnerConfig {
 
   private get currentPackagePath() {
     let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
+    const customJestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
+    const customJestPathFromWorkspace: string = vscode.workspace.getConfiguration().get('jestrunner.jestPathFromWorkspace');
+    const customJestPathFromWorkspaceWithRootPath: string = customJestPathFromWorkspace && path.join(this.currentWorkspaceFolderPath, customJestPathFromWorkspace);
     do {
+      const defaultJestPath: string =  path.join(currentFolderPath, 'node_modules', 'jest');
       // Try to find where jest is installed relatively to the current opened file.
       // Do not assume that jest is always installed at the root of the opened project, this is not the case
       // such as in multi-module projects.
       const pkg = path.join(currentFolderPath, 'package.json');
-      const jest = path.join(currentFolderPath, 'node_modules', 'jest');
+      const jest = customJestPath || customJestPathFromWorkspaceWithRootPath || defaultJestPath;
       if (fs.existsSync(pkg) && fs.existsSync(jest)) {
         return currentFolderPath;
       }
