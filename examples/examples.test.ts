@@ -59,6 +59,14 @@ it.each([1, 2])('test with generated %i', (id) => {
   expect(true);
 });
 
+describe('nested', () => {
+  describe('a', () => {
+    it('b', () => {
+      expect(true);
+    });
+  });
+});
+
 // #299
 class TestClass {
   myFunction() {
