@@ -119,6 +119,12 @@
             "default": "yarn-*.*js",
             "description": "Command for debugging with Plug'n'Play",
             "scope": "window"
+          },
+          "jestrunner.testPathSubstitution": {
+            "type": "string",
+            "default": "",
+            "description": "Replaces the workspace root of the test file path. Useful for docker containers.",
+            "scope": "window"
           }
         }
       }
