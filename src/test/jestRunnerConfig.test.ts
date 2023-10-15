@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import { JestRunnerConfig } from '../jestRunnerConfig';
 import { Uri, WorkspaceConfiguration, WorkspaceFolder } from './__mocks__/vscode';
+import { isWindows } from '../util';
 
 const describes = {
-  windows: process.platform === 'win32' ? describe : describe.skip,
+  windows: isWindows() ? describe : describe.skip,
   linux: ['linux', 'darwin'].includes(process.platform) ? describe : describe.skip,
 };
 
@@ -28,7 +29,7 @@ describe('JestRunnerConfig', () => {
         })
       );
 
-      expect(jestRunnerConfig.projectPath).toBe('C:\\project\\jestProject');
+      expect(jestRunnerConfig.cwd).toBe('C:\\project\\jestProject');
     });
   });
 
@@ -52,7 +53,7 @@ describe('JestRunnerConfig', () => {
         })
       );
 
-      expect(jestRunnerConfig.projectPath).toBe('/home/user/project/jestProject');
+      expect(jestRunnerConfig.cwd).toBe('/home/user/project/jestProject');
     });
   });
 });

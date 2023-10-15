@@ -48,15 +48,11 @@ export class JestRunnerConfig {
     return normalizePath(jestPath);
   }
 
-  public get projectPath(): string {
-    return this.projectPathFromConfig || this.currentWorkspaceFolderPath;
-  }
-
   public get cwd(): string {
     return this.projectPathFromConfig || this.currentPackagePath || this.currentWorkspaceFolderPath;
   }
 
-  public get projectPathFromConfig(): string | undefined {
+  private get projectPathFromConfig(): string | undefined {
     const projectPathFromConfig = vscode.workspace.getConfiguration().get<string>('jestrunner.projectPath');
     if (projectPathFromConfig) {
       return path.resolve(this.currentWorkspaceFolderPath, projectPathFromConfig);
@@ -80,23 +76,12 @@ export class JestRunnerConfig {
     return '';
   }
 
-  public get currentWorkspaceFolderPath(): string {
+  private get currentWorkspaceFolderPath(): string {
     const editor = vscode.window.activeTextEditor;
     return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
   }
 
-  public get jestConfigPath(): string {
-    // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
-    if (!configPath) {
-      return this.findConfigPath();
-    }
-
-    // default
-    return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
-  }
-
-  getJestConfigPath(targetPath: string): string {
+  public getJestConfigPath(targetPath: string): string {
     // custom
     const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
     if (!configPath) {
