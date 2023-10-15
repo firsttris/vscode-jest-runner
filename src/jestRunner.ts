@@ -2,17 +2,9 @@ import * as vscode from 'vscode';
 
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { parse } from './parser';
-import {
-  escapeRegExp,
-  escapeRegExpForPath,
-  escapeSingleQuotes,
-  findFullTestName,
-  normalizePath,
-  pushMany,
-  quote,
-  unquote,
-  updateTestNameIfUsingProperties,
-} from './util';
+import { pushMany, quote, unquote } from './util';
+import { CommandBuilder } from './commandBuilder';
+import { findFullTestName } from './codeLensUtil';
 
 interface DebugCommand {
   documentUri: vscode.Uri;
@@ -29,9 +21,11 @@ export class JestRunner {
   // terminal after all commands been pushed
   private openNativeTerminal: boolean;
   private commands: string[] = [];
+  private readonly commandBuilder: CommandBuilder;
 
   constructor(private readonly config: JestRunnerConfig) {
     this.setup();
+    this.commandBuilder = new CommandBuilder(this.config);
     this.openNativeTerminal = config.isRunInExternalNativeTerminal;
   }
 
@@ -40,7 +34,7 @@ export class JestRunner {
   //
 
   public async runTestsOnPath(path: string): Promise<void> {
-    const command = this.buildJestCommand(path);
+    const command = this.commandBuilder.buildJestCommand(path);
 
     this.previousCommand = command;
 
@@ -61,8 +55,7 @@ export class JestRunner {
 
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const command = this.buildJestCommand(filePath, resolvedTestName, options);
+    const command = this.commandBuilder.buildJestCommand(filePath, testName, options);
 
     this.previousCommand = command;
 
@@ -81,7 +74,7 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const command = this.buildJestCommand(filePath, undefined, options);
+    const command = this.commandBuilder.buildJestCommand(filePath, undefined, options);
 
     this.previousCommand = command;
 
@@ -131,8 +124,7 @@ export class JestRunner {
 
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const debugConfig = this.getDebugConfig(filePath, resolvedTestName);
+    const debugConfig = this.getDebugConfig(filePath, testName);
 
     await this.goToCwd();
     await this.executeDebugCommand({
@@ -180,7 +172,7 @@ export class JestRunner {
       config.program = `.yarn/releases/${this.config.getYarnPnpCommand}`;
     }
 
-    const standardArgs = this.buildJestArgs(filePath, currentTestName, false);
+    const standardArgs = this.commandBuilder.buildJestArgs(filePath, currentTestName);
     pushMany(config.args, standardArgs);
     config.args.push('--runInBand');
 
@@ -199,40 +191,7 @@ export class JestRunner {
     const testFile = parse(filePath);
 
     const fullTestName = findFullTestName(selectedLine, testFile.root.children);
-    return fullTestName ? escapeRegExp(fullTestName) : undefined;
-  }
-
-  private buildJestCommand(filePath: string, testName?: string, options?: string[]): string {
-    const args = this.buildJestArgs(filePath, testName, true, options);
-    return `${this.config.jestCommand} ${args.join(' ')}`;
-  }
-
-  private buildJestArgs(filePath: string, testName: string, withQuotes: boolean, options: string[] = []): string[] {
-    const args: string[] = [];
-    const quoter = withQuotes ? quote : (str) => str;
-
-    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
-
-    const jestConfigPath = this.config.getJestConfigPath(filePath);
-    if (jestConfigPath) {
-      args.push('-c');
-      args.push(quoter(normalizePath(jestConfigPath)));
-    }
-
-    if (testName) {
-      args.push('-t');
-      args.push(quoter(escapeSingleQuotes(testName)));
-    }
-
-    const setOptions = new Set(options);
-
-    if (this.config.runOptions) {
-      this.config.runOptions.forEach((option) => setOptions.add(option));
-    }
-
-    args.push(...setOptions);
-
-    return args;
+    return fullTestName;
   }
 
   private async goToCwd() {

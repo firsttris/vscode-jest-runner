@@ -19,6 +19,7 @@ describe('Example tests', () => {
     expect(true);
   });
 
+  // #319
   it(`test with 
 lf`, () => {
     expect(true);
@@ -51,6 +52,13 @@ lf`, () => {
 
   it('test with regex .*$^|[]', () => {
     expect(true);
+  });
+});
+
+// #295
+describe('a "(name)"', () => {
+  it('mix of paranthesis and double quotes', () => {
+    expect(1).toBe(1);
   });
 });
 

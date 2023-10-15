@@ -1,9 +1,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { normalizePath, quote, validateCodeLensOptions, CodeLensOption, isNodeExecuteAbleFile } from './util';
+import { normalizePath, quote, isNodeExecuteAbleFile } from './util';
+import { CodeLensOption, validateCodeLensOptions } from './codeLensUtil';
 
-export class JestRunnerConfig {
+export class JestRunnerConfig implements IJestRunnerCommandBuilderConfig {
   /**
    * The command that runs jest.
    * Defaults to: node "node_modules/.bin/jest"
@@ -160,4 +161,10 @@ export class JestRunnerConfig {
     const yarnPnpCommand: string = vscode.workspace.getConfiguration().get('jestrunner.yarnPnpCommand');
     return yarnPnpCommand;
   }
+}
+
+export interface IJestRunnerCommandBuilderConfig {
+  jestCommand: string;
+  getJestConfigPath(filePath: string): string;
+  runOptions?: Array<string>;
 }
