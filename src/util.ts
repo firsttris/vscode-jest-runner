@@ -43,14 +43,10 @@ const QUOTES = {
   '`': true,
 };
 
-export function resolveTestNameStringInterpolation(s: string): string {
+function resolveTestNameStringInterpolation(s: string): string {
   const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/gi;
   const matchAny = '(.*?)';
   return s.replace(variableRegex, matchAny);
-}
-
-export function exactRegexMatch(s: string): string {
-  return ['^', s, '$'].join('');
 }
 
 export function escapeSingleQuotes(s: string): string {
@@ -76,10 +72,6 @@ export function unquote(s: string): string {
 
 export function pushMany<T>(arr: T[], items: T[]): number {
   return Array.prototype.push.apply(arr, items);
-}
-
-export function escapePlusSign(s: string): string {
-  return s.replace(/[+]/g, '\\$&');
 }
 
 export type CodeLensOption = 'run' | 'debug' | 'watch' | 'coverage';
