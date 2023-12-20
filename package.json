@@ -225,6 +225,6 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "jest-editor-support": "^31.1.1"
+    "jest-editor-support": "^31.1.2"
   }
 }
