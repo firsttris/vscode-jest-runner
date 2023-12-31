@@ -29,7 +29,7 @@
           "jestrunner.configPath": {
             "type": "string",
             "default": "",
-            "description": "Jest config path (relative to ${workFolder} e.g. jest-config.json)",
+            "description": "Jest config path (relative to `${workspaceFolder}` e.g. jest-config.json)",
             "scope": "window"
           },
           "jestrunner.jestPath": {
@@ -105,9 +105,9 @@
           "jestrunner.changeDirectoryToWorkspaceRoot": {
             "type": "boolean",
             "default": true,
-            "description": "Changes directory to workspace root before executing the test",
+            "description": "Changes directory before execution. The fallback order is:\n1. `jestrunner.projectPath`\n2. the nearest `package.json`\n3. `${workspaceFolder}`",
             "scope": "window"
-          },
+          },          
           "jestrunner.preserveEditorFocus": {
             "type": "boolean",
             "default": false,
