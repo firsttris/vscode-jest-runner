@@ -211,7 +211,7 @@ export class JestRunner {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str) => str;
 
-    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+    args.push(quoter(this.resolveFilePath(filePath)));
 
     const jestConfigPath = this.config.getJestConfigPath(filePath);
     if (jestConfigPath) {
@@ -233,6 +233,16 @@ export class JestRunner {
     args.push(...setOptions);
 
     return args;
+  }
+
+  private resolveFilePath(filePath: string): string {
+    let path = normalizePath(filePath);
+    const testPathSubstitution: string = vscode.workspace.getConfiguration().get('jestrunner.testPathSubstitution');
+    if (testPathSubstitution) {
+      path = path.replace(this.config.currentWorkspaceFolderPath, testPathSubstitution);
+    }
+
+    return escapeRegExpForPath(path);
   }
 
   private async goToCwd() {
