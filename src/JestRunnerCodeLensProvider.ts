@@ -1,6 +1,6 @@
 import { parse, ParsedNode } from './parser';
 import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
-import { findFullTestName, escapeRegExp, CodeLensOption } from './util';
+import { findFullTestName, CodeLensOption } from './codeLensUtil';
 
 function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
   const titleMap: Record<CodeLensOption, string> = {
@@ -44,7 +44,7 @@ function getTestsBlocks(
     return [];
   }
 
-  const fullTestName = escapeRegExp(findFullTestName(parsedNode.start.line, parseResults));
+  const fullTestName = findFullTestName(parsedNode.start.line, parseResults);
 
   codeLens.push(...codeLensOptions.map((option) => getCodeLensForOption(range, option, fullTestName)));
 
@@ -55,9 +55,12 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
   constructor(private readonly codeLensOptions: CodeLensOption[]) {}
 
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
+    return this.getCodeLenses(document.fileName, document.getText());
+  }
+
+  public async getCodeLenses(documentFileName: string, documentText: string): Promise<CodeLens[]> {
     try {
-      const text = document.getText();
-      const parseResults = parse(document.fileName, text, { plugins: { decorators: 'legacy' } }).root.children;
+      const parseResults = parse(documentFileName, documentText, { plugins: { decorators: 'legacy' } }).root.children;
       const codeLens: CodeLens[] = [];
       parseResults.forEach((parseResult) =>
         codeLens.push(...getTestsBlocks(parseResult, parseResults, this.codeLensOptions))

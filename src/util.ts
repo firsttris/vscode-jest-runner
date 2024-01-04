@@ -17,40 +17,23 @@ export function escapeRegExpForPath(s: string): string {
   return s.replace(/[*+?^${}<>()|[\]]/g, '\\$&'); // $& means the whole matched string
 }
 
-export function findFullTestName(selectedLine: number, children: any[]): string | undefined {
-  if (!children) {
-    return;
-  }
-  for (const element of children) {
-    if (element.type === 'describe' && selectedLine === element.start.line) {
-      return resolveTestNameStringInterpolation(element.name);
-    }
-    if (element.type !== 'describe' && selectedLine >= element.start.line && selectedLine <= element.end.line) {
-      return resolveTestNameStringInterpolation(element.name);
-    }
-  }
-  for (const element of children) {
-    const result = findFullTestName(selectedLine, element.children);
-    if (result) {
-      return resolveTestNameStringInterpolation(element.name) + ' ' + result;
-    }
-  }
-}
-
 const QUOTES = {
   '"': true,
   "'": true,
   '`': true,
 };
 
-function resolveTestNameStringInterpolation(s: string): string {
+export function resolveTestNameStringInterpolation(s: string): string {
   const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/gi;
   const matchAny = '(.*?)';
   return s.replace(variableRegex, matchAny);
 }
 
-export function escapeSingleQuotes(s: string): string {
-  return isWindows() ? s : s.replace(/'/g, "'\\''");
+export function escapeQuotesInTestName(s: string): string {
+  if (isWindows()) {
+    return s.replace(/"/g, '\\"');
+  }
+  return s.replace(/'/g, "'\\''");
 }
 
 export function quote(s: string): string {
@@ -93,14 +76,11 @@ export function isNodeExecuteAbleFile(filepath: string): boolean {
   }
 }
 
-export function updateTestNameIfUsingProperties(receivedTestName?: string) {
-  if (receivedTestName === undefined) {
-    return undefined;
+export function updateTestNameIfUsingProperties(receivedTestName: string): string {
+  const prototypePropertyRegex = /^(?:\w*\.prototype)?\.(\w*).name$/;
+  const match = receivedTestName.match(prototypePropertyRegex);
+  if (match) {
+    return match[1];
   }
-
-  const namePropertyRegex = /(?<=\S)\\.name/g;
-  const testNameWithoutNameProperty = receivedTestName.replace(namePropertyRegex, '');
-
-  const prototypePropertyRegex = /\w*\\.prototype\\./g;
-  return testNameWithoutNameProperty.replace(prototypePropertyRegex, '');
+  return receivedTestName;
 }
