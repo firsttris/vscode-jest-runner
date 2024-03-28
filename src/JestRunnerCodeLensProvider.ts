@@ -52,20 +52,20 @@ function getTestsBlocks(
 }
 
 export class JestRunnerCodeLensProvider implements CodeLensProvider {
+  private lastSuccessfulCodeLens: CodeLens[] = [];
+
   constructor(private readonly codeLensOptions: CodeLensOption[]) {}
 
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
-      const text = document.getText();
-      const parseResults = parse(document.fileName, text, { plugins: { decorators: 'legacy' } }).root.children;
-      const codeLens: CodeLens[] = [];
-      parseResults.forEach((parseResult) =>
-        codeLens.push(...getTestsBlocks(parseResult, parseResults, this.codeLensOptions))
+      const parseResults = parse(document.fileName, document.getText(), { plugins: { decorators: 'legacy' } }).root
+        .children;
+      this.lastSuccessfulCodeLens = parseResults.flatMap((parseResult) =>
+        getTestsBlocks(parseResult, parseResults, this.codeLensOptions)
       );
-      return codeLens;
     } catch (e) {
-      // Ignore error and keep showing Run/Debug buttons at same position
       console.error('jest-editor-support parser returned error', e);
     }
+    return this.lastSuccessfulCodeLens;
   }
 }
