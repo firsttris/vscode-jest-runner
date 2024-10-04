@@ -8,12 +8,14 @@ function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, full
     debug: 'Debug',
     watch: 'Run --watch',
     coverage: 'Run --coverage',
+    'current-test-coverage': 'Run --collectCoverageFrom (target file/dir)'
   };
   const commandMap: Record<CodeLensOption, string> = {
     run: 'extension.runJest',
     debug: 'extension.debugJest',
     watch: 'extension.watchJest',
     coverage: 'extension.runJestCoverage',
+    'current-test-coverage': 'extension.runJestCurrentTestCoverage'
   };
   return new CodeLens(range, {
     arguments: [fullTestName],

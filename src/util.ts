@@ -1,4 +1,13 @@
+import * as path from 'path';
 import { execSync } from 'child_process';
+
+export function getDirName(filePath: string): string {
+  return path.dirname(filePath);
+}
+
+export function getFileName(filePath: string): string {
+  return path.basename(filePath);
+}
 
 export function isWindows(): boolean {
   return process.platform.includes('win32');
@@ -74,10 +83,10 @@ export function pushMany<T>(arr: T[], items: T[]): number {
   return Array.prototype.push.apply(arr, items);
 }
 
-export type CodeLensOption = 'run' | 'debug' | 'watch' | 'coverage';
+export type CodeLensOption = 'run' | 'debug' | 'watch' | 'coverage' | 'current-test-coverage';
 
 function isCodeLensOption(option: string): option is CodeLensOption {
-  return ['run', 'debug', 'watch', 'coverage'].includes(option);
+  return ['run', 'debug', 'watch', 'coverage', 'current-test-coverage'].includes(option);
 }
 
 export function validateCodeLensOptions(maybeCodeLensOptions: string[]): CodeLensOption[] {
