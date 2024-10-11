@@ -24,6 +24,13 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   );
 
+  const runJestCurrentTestCoverage = vscode.commands.registerCommand(
+    'extension.runJestCurrentTestCoverage',
+    async (argument: Record<string, unknown> | string) => {
+      return jestRunner.runCurrentTest(argument, ['--coverage'], true);
+    }
+  );
+
   const runJestPath = vscode.commands.registerCommand('extension.runJestPath', async (argument: vscode.Uri) =>
     jestRunner.runTestsOnPath(argument.path)
   );
@@ -71,6 +78,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   context.subscriptions.push(runJest);
   context.subscriptions.push(runJestCoverage);
+  context.subscriptions.push(runJestCurrentTestCoverage);
   context.subscriptions.push(runJestAndUpdateSnapshots);
   context.subscriptions.push(runJestFile);
   context.subscriptions.push(runJestPath);

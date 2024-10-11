@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { parse } from './parser';
@@ -7,6 +8,8 @@ import {
   escapeRegExpForPath,
   escapeSingleQuotes,
   findFullTestName,
+  getFileName,
+  getDirName,
   normalizePath,
   pushMany,
   quote,
@@ -50,7 +53,11 @@ export class JestRunner {
     await this.runExternalNativeTerminalCommand(this.commands);
   }
 
-  public async runCurrentTest(argument?: Record<string, unknown> | string, options?: string[]): Promise<void> {
+  public async runCurrentTest(
+    argument?: Record<string, unknown> | string,
+    options?: string[],
+    collectCoverageFromCurrentFile?: boolean,
+  ): Promise<void> {
     const currentTestName = typeof argument === 'string' ? argument : undefined;
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
@@ -60,9 +67,25 @@ export class JestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
+
+    const finalOptions = options;
+    if (collectCoverageFromCurrentFile) {
+      const targetFileDir = getDirName(filePath);
+      const targetFileName = getFileName(filePath).replace(/\.(test|spec)\./, '.');
+
+      // if a file does not exist with the same name as the test file but without the test/spec part
+      // use test file's directory for coverage target
+      const coverageTarget = fs.existsSync(`${targetFileDir}/${targetFileName}`)
+        ? `**/${targetFileName}`
+        : `**/${getFileName(targetFileDir)}/**`;
+
+      finalOptions.push('--collectCoverageFrom');
+      finalOptions.push(quote(coverageTarget));
+    }
+
     const testName = currentTestName || this.findCurrentTestName(editor);
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const command = this.buildJestCommand(filePath, resolvedTestName, options);
+    const command = this.buildJestCommand(filePath, resolvedTestName, finalOptions);
 
     this.previousCommand = command;
 

@@ -84,10 +84,10 @@
               "run",
               "debug"
             ],
-            "description": "Enable desired codeLens, possible value : 'run', 'debug', 'watch', 'coverage'. Defaults to ['run', 'debug'] ",
+            "description": "Enable desired codeLens, possible value : 'run', 'debug', 'watch', 'coverage', 'current-test-coverage'. Defaults to ['run', 'debug'] ",
             "items": {
               "type": "string",
-              "description": "Either 'run', 'debug', 'watch', 'coverage'"
+              "description": "Either 'run', 'debug', 'watch', 'coverage', 'current-test-coverage'"
             },
             "scope": "window"
           },
