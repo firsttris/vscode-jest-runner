@@ -1,8 +1,10 @@
 import { parse, ParsedNode } from './parser';
-import { CodeLens, CodeLensProvider, Range, TextDocument } from 'vscode';
+import { CodeLens, CodeLensProvider, Range, TextDocument, window, workspace } from 'vscode';
 import { findFullTestName, escapeRegExp, CodeLensOption } from './util';
+import { normalize } from 'path';
+import { sync } from 'fast-glob';
 
-function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
+function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {  
   const titleMap: Record<CodeLensOption, string> = {
     run: 'Run',
     debug: 'Debug',
@@ -58,8 +60,29 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
 
   constructor(private readonly codeLensOptions: CodeLensOption[]) {}
 
+  private get currentWorkspaceFolderPath(): string {
+    const editor = window.activeTextEditor;
+    return workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
+  }
+
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
+      const config = workspace.getConfiguration('jestrunner');
+      const include = config.get<string[]>('include', []);
+      const exclude = config.get<string[]>('exclude', []);
+      
+      const filePath = normalize(document.fileName);
+      const workspaceRoot = normalize(this.currentWorkspaceFolderPath);
+
+      const globOptions = { cwd: workspaceRoot, absolute: true };
+      if (include.length > 0 && !sync(include, globOptions).includes(filePath)) {
+        return [];
+      }
+
+      if (exclude.length > 0 && sync(exclude, globOptions).includes(filePath)) {
+        return [];
+      }
+
       const parseResults = parse(document.fileName, document.getText(), { plugins: { decorators: 'legacy' } }).root
         .children;
       this.lastSuccessfulCodeLens = parseResults.flatMap((parseResult) =>
@@ -71,3 +94,4 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
     return this.lastSuccessfulCodeLens;
   }
 }
+
