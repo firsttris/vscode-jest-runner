@@ -1,7 +1,6 @@
 import { parse, ParsedNode } from './parser';
 import { CodeLens, CodeLensProvider, Range, TextDocument, window, workspace } from 'vscode';
-import { findFullTestName, escapeRegExp, CodeLensOption } from './util';
-import { normalize } from 'path';
+import { findFullTestName, escapeRegExp, CodeLensOption, normalizePath } from './util';
 import { sync } from 'fast-glob';
 
 function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {  
@@ -70,9 +69,9 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
       const config = workspace.getConfiguration('jestrunner');
       const include = config.get<string[]>('include', []);
       const exclude = config.get<string[]>('exclude', []);
-      
-      const filePath = normalize(document.fileName);
-      const workspaceRoot = normalize(this.currentWorkspaceFolderPath);
+
+      const filePath = normalizePath(document.fileName);
+      const workspaceRoot = normalizePath(this.currentWorkspaceFolderPath);
 
       const globOptions = { cwd: workspaceRoot, absolute: true };
       if (include.length > 0 && !sync(include, globOptions).includes(filePath)) {
