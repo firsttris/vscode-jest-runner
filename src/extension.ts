@@ -32,7 +32,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   const runJestPath = vscode.commands.registerCommand('extension.runJestPath', async (argument: vscode.Uri) =>
-    jestRunner.runTestsOnPath(argument.path)
+    jestRunner.runTestsOnPath(argument.fsPath)
   );
   const runJestAndUpdateSnapshots = vscode.commands.registerCommand('extension.runJestAndUpdateSnapshots', async () => {
     jestRunner.runCurrentTest('', ['-u']);
@@ -49,7 +49,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   );
   const debugJestPath = vscode.commands.registerCommand('extension.debugJestPath', async (argument: vscode.Uri) =>
-    jestRunner.debugTestsOnPath(argument.path)
+    jestRunner.debugTestsOnPath(argument.fsPath)
   );
   const runPrev = vscode.commands.registerCommand('extension.runPrevJest', async () => jestRunner.runPreviousTest());
   const runJestFileWithCoverage = vscode.commands.registerCommand('extension.runJestFileWithCoverage', async () =>
