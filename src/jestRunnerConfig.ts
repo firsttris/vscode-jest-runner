@@ -62,9 +62,12 @@ export class JestRunnerConfig {
   private get currentPackagePath() {
     let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
     do {
-      // Find the nearest package.json file, which would be the folder where the user normally runs commands for this file
+      // Try to find where jest is installed relatively to the current opened file.
+      // Do not assume that jest is always installed at the root of the opened project, this is not the case
+      // such as in multi-module projects.
       const pkg = path.join(currentFolderPath, 'package.json');
-      if (fs.existsSync(pkg)) {
+      const jest = path.join(currentFolderPath, 'node_modules', 'jest');
+      if (fs.existsSync(pkg) && fs.existsSync(jest)) {
         return currentFolderPath;
       }
       currentFolderPath = path.join(currentFolderPath, '..');
