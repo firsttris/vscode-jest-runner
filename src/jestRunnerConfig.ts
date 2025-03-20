@@ -61,15 +61,21 @@ export class JestRunnerConfig {
 
   private get currentPackagePath() {
     let currentFolderPath: string = path.dirname(vscode.window.activeTextEditor.document.fileName);
+    const checkRelativePathForJest = vscode.workspace
+      .getConfiguration()
+      .get<boolean>('jestrunner.checkRelativePathForJest');
+
     do {
       // Try to find where jest is installed relatively to the current opened file.
       // Do not assume that jest is always installed at the root of the opened project, this is not the case
       // such as in multi-module projects.
       const pkg = path.join(currentFolderPath, 'package.json');
       const jest = path.join(currentFolderPath, 'node_modules', 'jest');
-      if (fs.existsSync(pkg) && fs.existsSync(jest)) {
+
+      if (fs.existsSync(pkg) && (fs.existsSync(jest) || !checkRelativePathForJest)) {
         return currentFolderPath;
       }
+
       currentFolderPath = path.join(currentFolderPath, '..');
     } while (currentFolderPath !== this.currentWorkspaceFolderPath);
 
@@ -115,7 +121,7 @@ export class JestRunnerConfig {
         return runOptions;
       } else {
         vscode.window.showWarningMessage(
-          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. '
+          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. ',
         );
       }
     }

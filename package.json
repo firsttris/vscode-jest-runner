@@ -102,6 +102,12 @@
             "description": "Enable if you are using Yarn 2 with Plug'n'Play",
             "scope": "window"
           },
+          "jestrunner.checkRelativePathForJest": {
+            "type": "boolean",
+            "default": true,
+            "description": "When looking for the nearest resolution for Jest, only check for package.json files, rather than the `node_modules` folder.",
+            "scope": "window"
+          },
           "jestrunner.changeDirectoryToWorkspaceRoot": {
             "type": "boolean",
             "default": true,
@@ -226,5 +232,6 @@
   },
   "dependencies": {
     "jest-editor-support": "^31.1.2"
-  }
+  },
+  "packageManager": "yarn@4.6.0+sha512.5383cc12567a95f1d668fbe762dfe0075c595b4bfff433be478dbbe24e05251a8e8c3eb992a986667c1d53b6c3a9c85b8398c35a960587fbd9fa3a0915406728"
 }
