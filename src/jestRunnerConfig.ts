@@ -120,7 +120,9 @@ export class JestRunnerConfig {
       if (Array.isArray(runOptions)) {
         return runOptions;
       } else {
-        vscode.window.showWarningMessage('Please check your vscode settings. "jestrunner.runOptions" must be an Array. ');
+        vscode.window.showWarningMessage(
+          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. '
+        );
       }
     }
     return null;
