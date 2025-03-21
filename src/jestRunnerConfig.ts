@@ -1,7 +1,14 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { normalizePath, quote, validateCodeLensOptions, CodeLensOption, isNodeExecuteAbleFile } from './util';
+import {
+  normalizePath,
+  quote,
+  validateCodeLensOptions,
+  CodeLensOption,
+  isNodeExecuteAbleFile,
+  resolveConfigPathOrMapping,
+} from './util';
 
 export class JestRunnerConfig {
   /**
@@ -83,20 +90,30 @@ export class JestRunnerConfig {
 
   public getJestConfigPath(targetPath: string): string {
     // custom
-    const configPath: string = vscode.workspace.getConfiguration().get('jestrunner.configPath');
+    const configPathOrMapping: string | Record<string, string> | undefined = vscode.workspace
+      .getConfiguration()
+      .get('jestrunner.configPath');
+
+    const configPath = resolveConfigPathOrMapping(configPathOrMapping, targetPath);
     if (!configPath) {
       return this.findConfigPath(targetPath);
     }
 
     // default
-    return normalizePath(path.join(this.currentWorkspaceFolderPath, configPath));
+    return normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath));
   }
 
   private findConfigPath(targetPath?: string): string {
     let currentFolderPath: string = targetPath || path.dirname(vscode.window.activeTextEditor.document.fileName);
     let currentFolderConfigPath: string;
     do {
-      for (const configFilename of ['jest.config.js', 'jest.config.ts', 'jest.config.cjs', 'jest.config.mjs', 'jest.config.json']) {
+      for (const configFilename of [
+        'jest.config.js',
+        'jest.config.ts',
+        'jest.config.cjs',
+        'jest.config.mjs',
+        'jest.config.json',
+      ]) {
         currentFolderConfigPath = path.join(currentFolderPath, configFilename);
 
         if (fs.existsSync(currentFolderConfigPath)) {
@@ -115,7 +132,7 @@ export class JestRunnerConfig {
         return runOptions;
       } else {
         vscode.window.showWarningMessage(
-          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. '
+          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. ',
         );
       }
     }

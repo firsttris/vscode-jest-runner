@@ -1,5 +1,7 @@
 import * as path from 'path';
 import { execSync } from 'child_process';
+import * as mm from 'micromatch';
+import * as vscode from 'vscode';
 
 export function getDirName(filePath: string): string {
   return path.dirname(filePath);
@@ -112,4 +114,26 @@ export function updateTestNameIfUsingProperties(receivedTestName?: string) {
 
   const prototypePropertyRegex = /\w*\\.prototype\\./g;
   return testNameWithoutNameProperty.replace(prototypePropertyRegex, '');
+}
+
+export function resolveConfigPathOrMapping(
+  configPathOrMapping: string | Record<string, string> | undefined,
+  targetPath: string,
+): string | undefined {
+  if (['string', 'undefined'].includes(typeof configPathOrMapping)) {
+    return configPathOrMapping as string | undefined;
+  }
+  for (const [key, value] of Object.entries(configPathOrMapping as Record<string, string>)) {
+    const isMatch = mm.matcher(key);
+    if (isMatch(targetPath)) {
+      return value;
+    }
+  }
+  if (Object.keys(configPathOrMapping).length > 0) {
+    vscode.window.showWarningMessage(
+      `None of the glob patterns in the configPath mapping matched the target file. Make sure you're using correct glob pattern syntax. Jest-runner uses the same library (micromatch) for evaluating glob patterns as Jest uses to evaluate it's 'testMatch' configuration.`,
+    );
+  }
+
+  return undefined;
 }

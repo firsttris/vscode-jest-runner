@@ -27,9 +27,25 @@
         "title": "Jest-Runner Config",
         "properties": {
           "jestrunner.configPath": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Jest config path (relative to `${workspaceFolder}` e.g. jest-config.json)"
+              },
+              {
+                "type": "object",
+                "scope": "resource",
+                "description": "A mapping of file globs to jest config paths. Useful when you need to run different jest configurations based on the file naming convention.",
+                "patternProperties": {
+                  ".*": {
+                    "type": "string",
+                    "description": "The target jest config path for the matched file glob."
+                  }
+                },
+                "additionalProperties": false
+              }
+            ],
             "default": "",
-            "description": "Jest config path (relative to `${workspaceFolder}` e.g. jest-config.json)",
             "scope": "window"
           },
           "jestrunner.jestPath": {
@@ -211,6 +227,7 @@
     "@types/vscode": "^1.83.0",
     "@typescript-eslint/eslint-plugin": "^6.7.5",
     "@typescript-eslint/parser": "^6.7.5",
+    "@vscode/vsce": "^2.21.1",
     "eslint": "^8.51.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
@@ -220,11 +237,11 @@
     "ts-jest": "^29.1.1",
     "ts-loader": "^9.5.0",
     "typescript": "^5.2.2",
-    "@vscode/vsce": "^2.21.1",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "jest-editor-support": "^31.1.2"
+    "jest-editor-support": "^31.1.2",
+    "micromatch": "^4.0.8"
   }
 }
