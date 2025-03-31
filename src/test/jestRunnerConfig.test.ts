@@ -514,7 +514,7 @@ describe('JestRunnerConfig', () => {
       [
         'windows',
         'jest dep installed in same path as the opened file',
-        'returns the folder path of the opened file',
+        'returns the (normalized) folder path of the opened file',
         'C:\\workspace',
         'C:\\workspace\\jestProject\\src\\index.it.spec.js',
         'C:\\workspace\\jestProject\\src',
@@ -522,7 +522,7 @@ describe('JestRunnerConfig', () => {
       [
         'windows',
         'jest dep installed in parent path of the opened file',
-        'returns the folder path of the parent of the opened file',
+        'returns the (normalized) folder path of the parent of the opened file',
         'C:\\workspace',
         'C:\\workspace\\jestProject\\src\\index.it.spec.js',
         'C:\\workspace\\jestProject',
@@ -530,7 +530,7 @@ describe('JestRunnerConfig', () => {
       [
         'windows',
         'jest dep installed in an ancestor path of the opened file',
-        'returns the folder path of the ancestor of the opened file',
+        'returns the (normalized) folder path of the ancestor of the opened file',
         'C:\\workspace',
         'C:\\workspace\\jestProject\\deeply\\nested\\package\\src\\index.it.spec.js',
         'C:\\workspace\\jestProject',
@@ -538,7 +538,7 @@ describe('JestRunnerConfig', () => {
       [
         'windows',
         'jest dep installed in the workspace of the opened file',
-        "returns the folder path of the opened file's workspace",
+        "returns the (normalized) folder path of the opened file's workspace",
         'C:\\workspace',
         'C:\\workspace\\jestProject\\src\\index.it.spec.js',
         'C:\\workspace',
@@ -583,7 +583,7 @@ describe('JestRunnerConfig', () => {
 
       its[_os](behavior, async () => {
         if (installedPath) {
-          expect(jestRunnerConfig.currentPackagePath).toBe(installedPath);
+          expect(jestRunnerConfig.currentPackagePath).toBe(normalizePath(installedPath));
         } else {
           expect(jestRunnerConfig.currentPackagePath).toBe('');
         }
@@ -600,7 +600,7 @@ describe('JestRunnerConfig', () => {
 
         its[_os](behavior, async () => {
           if (installedPath) {
-            expect(jestRunnerConfig.currentPackagePath).toBe(installedPath);
+            expect(jestRunnerConfig.currentPackagePath).toBe(normalizePath(installedPath));
           } else {
             expect(jestRunnerConfig.currentPackagePath).toBe('');
           }
