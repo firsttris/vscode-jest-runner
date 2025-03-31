@@ -261,7 +261,7 @@ describe('JestRunnerConfig', () => {
           [
             'windows',
             'matched glob specifies an absolute path (with /)',
-            'returned path is only the specified config path',
+            'returned path is only the specified (normalized) config path',
             'C:/workspace',
             './jestProject',
             { '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js' },
@@ -271,7 +271,7 @@ describe('JestRunnerConfig', () => {
           [
             'windows',
             'matched glob specifies a relative path, projectPath is set',
-            'returned path is resolved against workspace and project path',
+            'returned (normalized) path is resolved against workspace and project path',
             'C:/workspace',
             './jestProject',
             { '**/*.test.js': './jest.config.js' },
@@ -281,7 +281,7 @@ describe('JestRunnerConfig', () => {
           [
             'windows',
             'matched glob specifies a relative path, projectPath is not set',
-            'returned path is resolved against workspace path',
+            'returned (normalized) path is resolved against workspace path',
             'C:/workspace',
             undefined,
             { '**/*.test.js': './jest.config.js' },
@@ -291,7 +291,7 @@ describe('JestRunnerConfig', () => {
           [
             'windows',
             'first matched glob takes precedence, relative path',
-            'returned path is resolved against workspace and project path',
+            'returned(normalized) path is resolved against workspace and project path',
             'C:\\workspace',
             './jestProject',
             {
@@ -305,7 +305,7 @@ describe('JestRunnerConfig', () => {
           [
             'windows',
             'first matched glob takes precedence, absolute path (with \\)',
-            'returned path is only the (normalized) specified config path',
+            'returned (normalized) path is only the (normalized) specified config path',
             'C:/workspace',
             './jestProject',
             {
@@ -319,7 +319,7 @@ describe('JestRunnerConfig', () => {
           [
             'windows',
             'first matched glob takes precedence, absolute path (with /)',
-            'returned path is only the specified config path',
+            'returned (normalized) path is only the specified config path',
             'C:/workspace',
             './jestProject',
             {
@@ -351,7 +351,7 @@ describe('JestRunnerConfig', () => {
                 }),
               );
 
-              expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(expectedPath);
+              expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(normalizePath(expectedPath));
             });
           },
         );
@@ -402,7 +402,7 @@ describe('JestRunnerConfig', () => {
           [
             'windows',
             'projectPath is relative',
-            'returns the found jest config (traversing up from target path)',
+            'returns the (normalized) found jest config (traversing up from target path)',
             'C:\\workspace',
             './jestProject',
             {
@@ -410,12 +410,12 @@ describe('JestRunnerConfig', () => {
             },
             'C:\\workspace\\jestProject\\src\\index.it.spec.js',
             'C:\\workspace\\jestProject\\jest.config.mjs',
-            'C:\\workspace\\jestProject\\jest.config.mjs',
+            'C:/workspace/jestProject/jest.config.mjs',
           ],
           [
             'windows',
             'projectPath is not set',
-            'returns the found jest config path (traversing up from target path)',
+            'returns the (normalized) found jest config path (traversing up from target path)',
             'C:\\workspace',
             undefined,
             {
@@ -423,7 +423,7 @@ describe('JestRunnerConfig', () => {
             },
             'C:\\workspace\\src\\index.it.spec.js',
             'C:\\workspace\\jest.config.mjs',
-            'C:\\workspace\\jest.config.mjs',
+            'C:/workspace/jest.config.mjs',
           ],
         ];
         describe.each(scenarios)(
