@@ -29,10 +29,15 @@ class Workspace {
   }
 }
 
+type JestRunnerConfigProps = {
+  'jestrunner.projectPath'?: string;
+  'jestrunner.configPath'?: string | Record<string, string>;
+  'jestrunner.checkRelativePathForJest'?: boolean;
+};
 class WorkspaceConfiguration {
-  constructor(private dict: { [key: string]: string }) {}
+  constructor(private dict: JestRunnerConfigProps) {}
 
-  get(key: string): string {
+  get<T extends keyof typeof this.dict>(key: T): (typeof this.dict)[T] {
     if (!(key in this.dict)) {
       throw new Error(`unrecognised config key ${key}`);
     }
@@ -53,6 +58,9 @@ class WorkspaceConfiguration {
 class Window {
   get activeTextEditor(): TextEditor {
     return new TextEditor(new Document(new Uri('hi')));
+  }
+  showWarningMessage<T extends string>(message: string, ...items: T[]): Thenable<T | undefined> {
+    return Promise.resolve(undefined);
   }
 }
 

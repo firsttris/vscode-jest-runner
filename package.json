@@ -27,9 +27,25 @@
         "title": "Jest-Runner Config",
         "properties": {
           "jestrunner.configPath": {
-            "type": "string",
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Jest config path (relative to `${workspaceFolder}` e.g. jest-config.json)"
+              },
+              {
+                "type": "object",
+                "scope": "resource",
+                "description": "A mapping of file globs to jest config paths. Useful when you need to run different jest configurations based on the file naming convention.",
+                "patternProperties": {
+                  ".*": {
+                    "type": "string",
+                    "description": "The target jest config path for the matched file glob."
+                  }
+                },
+                "additionalProperties": false
+              }
+            ],
             "default": "",
-            "description": "Jest config path (relative to `${workspaceFolder}` e.g. jest-config.json)",
             "scope": "window"
           },
           "jestrunner.jestPath": {
@@ -244,6 +260,7 @@
   },
   "dependencies": {
     "fast-glob": "^3.3.3",
-    "jest-editor-support": "^31.1.2"
+    "jest-editor-support": "^31.1.2",
+    "micromatch": "^4.0.8"
   }
 }
