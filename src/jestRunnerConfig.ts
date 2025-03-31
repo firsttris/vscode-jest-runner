@@ -85,7 +85,7 @@ export class JestRunnerConfig {
         }
       },
     );
-    return foundPath || '';
+    return foundPath ? normalizePath(foundPath) : '';
   }
 
   private get currentWorkspaceFolderPath(): string {
