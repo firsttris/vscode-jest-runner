@@ -769,7 +769,7 @@ describe('JestRunnerConfig', () => {
 
           its[_os](behavior, async () => {
             if (configPath) {
-              expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBe(configFilePath);
+              expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBe(normalizePath(configFilePath));
             } else {
               expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBe('');
             }
