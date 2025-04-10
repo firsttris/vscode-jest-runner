@@ -31,8 +31,12 @@ export class JestRunnerConfig {
       return `yarn jest`;
     }
 
-    // Default to npx
-    return 'npx --no-install jest';
+    // Default to npx with platform-specific handling
+    if (process.platform === 'win32') {
+      return 'npx.cmd --no-install jest';
+    } else {
+      return 'npx --no-install jest';
+    }
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
@@ -234,6 +238,7 @@ export class JestRunnerConfig {
       request: 'launch',
       type: 'node',
       cwd: this.cwd,
+      args: ['--no-install', 'jest', '--runInBand'],
       ...this.debugOptions,
     };
 
@@ -259,9 +264,6 @@ export class JestRunnerConfig {
     } else {
       debugConfig.runtimeExecutable = 'npx';
     }
-
-    // Set args directly - no shell involvement needed
-    debugConfig.args = ['--no-install', 'jest', '--runInBand'];
 
     return debugConfig;
   }
