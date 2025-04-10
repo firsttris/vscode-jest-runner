@@ -141,7 +141,10 @@ export class JestTestController {
 
   // Find Jest test files in the workspace
   private async findJestTestFiles(folderPath: string): Promise<string[]> {
-    const pattern = new vscode.RelativePattern(folderPath, '**/*.{test,spec}.{js,jsx,ts,tsx}');
+    const pattern = new vscode.RelativePattern(
+      folderPath,
+      vscode.workspace.getConfiguration().get('jestrunner.testFilePattern') as string,
+    );
     const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
 
     return files.map((file) => file.fsPath);
