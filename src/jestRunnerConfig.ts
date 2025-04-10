@@ -5,7 +5,6 @@ import {
   normalizePath,
   validateCodeLensOptions,
   CodeLensOption,
-  isNodeExecuteAbleFile,
   resolveConfigPathOrMapping,
   searchPathToParent,
   resolveTestNameStringInterpolation,
@@ -45,24 +44,6 @@ export class JestRunnerConfig {
 
   public get preserveEditorFocus(): boolean {
     return vscode.workspace.getConfiguration().get('jestrunner.preserveEditorFocus') || false;
-  }
-
-  public get jestBinPath(): string {
-    // custom
-    let jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
-    if (jestPath) {
-      return jestPath;
-    }
-
-    // default
-    const fallbackRelativeJestBinPath = 'node_modules/jest/bin/jest.js';
-    const mayRelativeJestBin = ['node_modules/.bin/jest', 'node_modules/jest/bin/jest.js'];
-    const cwd = this.cwd;
-
-    jestPath = mayRelativeJestBin.find((relativeJestBin) => isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)));
-    jestPath = jestPath || path.join(cwd, fallbackRelativeJestBinPath);
-
-    return normalizePath(jestPath);
   }
 
   public get cwd(): string {
@@ -166,13 +147,6 @@ export class JestRunnerConfig {
 
   public get isCodeLensEnabled(): boolean {
     return vscode.workspace.getConfiguration().get('jestrunner.enableCodeLens') || false;
-  }
-
-  public get isRunInExternalNativeTerminal(): boolean {
-    const isRunInExternalNativeTerminal: boolean = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.runInOutsideTerminal');
-    return isRunInExternalNativeTerminal ? isRunInExternalNativeTerminal : false;
   }
 
   public get codeLensOptions(): CodeLensOption[] {

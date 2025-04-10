@@ -48,12 +48,6 @@
             "default": "",
             "scope": "window"
           },
-          "jestrunner.jestPath": {
-            "type": "string",
-            "default": "",
-            "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
-            "scope": "window"
-          },
           "jestrunner.projectPath": {
             "type": "string",
             "default": "",
@@ -101,7 +95,7 @@
             },
             "scope": "window"
           },
-          "jestrunner.codeLensSelector": {
+          "jestrunner.testFilePattern": {
             "type": "string",
             "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
             "description": "CodeLens will be shown on files matching this pattern"

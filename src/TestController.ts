@@ -277,7 +277,7 @@ export class JestTestController {
   }
 
   private setupFileWatcher() {
-    const pattern = vscode.workspace.getConfiguration().get('jestrunner.codeLensSelector') as string;
+    const pattern = vscode.workspace.getConfiguration().get('jestrunner.testFilePattern') as string;
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
     watcher.onDidChange((uri) => {

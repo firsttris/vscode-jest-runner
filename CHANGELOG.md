@@ -139,7 +139,7 @@
 
 ### Added
 
-- add new settings codeLensSelector which enables CodeLens for files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})
+- add new settings testFilePattern which enables CodeLens for files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})
 
 ## 0.4.21 - 2020-06-02
 

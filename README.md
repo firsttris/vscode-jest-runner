@@ -55,20 +55,20 @@ If you have a custom setup use the following options to customize Jest Runner:
 | Command                                   | Description                                                                                                                                                 |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | jestrunner.configPath                     | Jest config path (string) (relative to `${workspaceFolder}` e.g. jest-config.json). Defaults to blank. Can also be a glob path mapping. See [below](#configpath-as-glob-map) for more details         |
-| jestrunner.jestPath                       | Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)                                                                                |
 | jestrunner.debugOptions                   | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"jestrunner.debugOptions": { "args": ["--no-cache"] }`)                            |
 | jestrunner.runOptions                     | Add CLI Options to the Jest Command (e.g. `"jestrunner.runOptions": ["--coverage", "--colors"]`) https://jestjs.io/docs/en/cli                              |
 | jestrunner.jestCommand                    | Define an alternative Jest command (e.g. for Create React App and similar abstractions)                                                                     |
 | jestrunner.enableCodeLens                | Bring back the old CodeLens feature (Replaced by new VsCode Testing API & Test Explorer)feature                                                                                                                                    |
-| jestrunner.codeLensSelector               | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})                                                            |
-| jestrunner.codeLens                       | Choose which CodeLens to enable, default to `["run", "debug"]`                                                                                              |
+| jestrunner.testFilePattern               | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})                                                            |
+| jestrunner.codeLens                       | Choose which CodeLens to enable, default to `["run", "debug"]` other options: `['watch', 'coverage', 'current-test-coverage'`                                                                                              |
 | jestrunner.enableYarnPnpSupport           | Enable if you are using Yarn 2 with Plug'n'Play                                                                                                             |
 | jestrunner.yarnPnpCommand                 | Command for debugging with Plug'n'Play defaults to yarn-*.*js                                                                                               |
 | jestrunner.projectPath                    | Absolute path to project directory (e.g. /home/me/project/sub-folder), or relative path to workspace root (e.g. ./sub-folder)                               |
 | jestrunner.checkRelativePathForJest       | When looking for the nearest resolution for Jest, only check for package.json files, rather than the `node_modules` folder.                                 |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory before execution. The order is:<ol><li>`jestrunner.projectPath`</li><li>the nearest `package.json`</li><li>`${workspaceFolder}`</li></ol> |
 | jestrunner.preserveEditorFocus            | Preserve focus on your editor instead of focusing the terminal on test run                                                                                  |
-| jestrunner.runInExternalNativeTerminal    | run in external terminal (requires: npm install ttab -g)                                                                                                    |
+| jestrunner.include                        | File globs to include (currently only for codelens) |
+| jestrunner.exclude                        | File globs to exclude (currently only for codelens) |
 
 ### configPath as glob map
 If you've got multiple jest configs for running tests (ie maybe a config for unit tests, integration tests and frontend tests) then this option is for you. You can provide a map of glob matchers to specify which jest config to use based on the name of the file the test is being run for. 

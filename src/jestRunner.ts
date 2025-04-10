@@ -23,15 +23,10 @@ export class JestRunner {
 
   private terminal: vscode.Terminal;
 
-  // support for running in a native external terminal
-  // force runTerminalCommand to push to a queue and run in a native external
-  // terminal after all commands been pushed
-  private openNativeTerminal: boolean;
   private commands: string[] = [];
 
   constructor(private readonly config: JestRunnerConfig) {
     this.setup();
-    this.openNativeTerminal = config.isRunInExternalNativeTerminal;
   }
 
   //
@@ -159,9 +154,6 @@ export class JestRunner {
   //
 
   private async executeDebugCommand(debugCommand: DebugCommand) {
-    // prevent open of external terminal when debug command is executed
-    this.openNativeTerminal = false;
-
     for (const command of this.commands) {
       await this.runTerminalCommand(command);
     }
@@ -199,11 +191,6 @@ export class JestRunner {
   }
 
   private async runTerminalCommand(command: string) {
-    if (this.openNativeTerminal) {
-      this.commands.push(command);
-      return;
-    }
-
     if (!this.terminal) {
       this.terminal = vscode.window.createTerminal('jest');
     }

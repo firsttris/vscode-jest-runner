@@ -102,15 +102,6 @@ export function validateCodeLensOptions(maybeCodeLensOptions: string[]): CodeLen
   return [...new Set(maybeCodeLensOptions)].filter((value) => isCodeLensOption(value)) as CodeLensOption[];
 }
 
-export function isNodeExecuteAbleFile(filepath: string): boolean {
-  try {
-    execSync(`node ${filepath} --help`);
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
-
 export function updateTestNameIfUsingProperties(receivedTestName?: string) {
   if (receivedTestName === undefined) {
     return undefined;
