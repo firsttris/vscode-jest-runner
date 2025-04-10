@@ -2,31 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { parse } from './parser';
-import {
-  escapeRegExp,
-  escapeRegExpForPath,
-  escapeSingleQuotes,
-  normalizePath,
-  quote,
-  updateTestNameIfUsingProperties,
-  resolveTestNameStringInterpolation,
-  pushMany,
-} from './util';
+import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, extractTestNameFromId, TestNode } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
-
-interface TestNode {
-  type: 'describe' | 'it' | 'test' | string; // Type of test block
-  name: string; // Test/describe name
-  start: {
-    line: number;
-    column: number;
-  };
-  end?: {
-    line: number;
-    column: number;
-  };
-  children?: TestNode[]; // Child test nodes (for describe blocks)
-}
 
 export class JestTestController {
   private testController: vscode.TestController;
@@ -35,6 +12,7 @@ export class JestTestController {
 
   constructor(context: vscode.ExtensionContext) {
     this.jestConfig = new JestRunnerConfig();
+
     this.testController = vscode.tests.createTestController('jestTestController', 'Jest Tests');
     context.subscriptions.push(this.testController);
 
@@ -118,25 +96,17 @@ export class JestTestController {
   // Process test nodes (recursively)
   private processTestNodes(nodes: TestNode[], parentItem: vscode.TestItem, filePath: string, namePrefix: string = '') {
     for (const node of nodes) {
-      // Log node details to understand what we're working with
-      console.log(`Processing node: type=${node.type}, name=${node.name}, line=${node.start?.line}`);
-
       // Only process valid nodes
       if (!node.name) {
-        console.log('Skipping node without name');
         continue;
       }
 
       // Get full test name with proper escaping
       const fullName = namePrefix ? `${namePrefix} ${node.name}` : node.name;
-      console.log('Full name:', fullName);
 
       // Clean up property references in the test name
       const cleanTestName = updateTestNameIfUsingProperties(node.name);
       const cleanFullName = updateTestNameIfUsingProperties(fullName);
-
-      console.log('Cleaned name:', cleanTestName);
-      console.log('Cleaned full name:', cleanFullName);
 
       // Create a more reliable ID that avoids special character issues
       const testId = `${filePath}:${node.type}:${node.start?.line || 0}:${escapeRegExp(cleanFullName || fullName)}`;
@@ -258,15 +228,7 @@ export class JestTestController {
 
   private async debugJestTest(test: vscode.TestItem) {
     const filePath = test.uri!.fsPath;
-
-    // Extract the test name from the ID
-    let testName: string | undefined;
-    if (test.id.includes(':')) {
-      const parts = test.id.split(':');
-      if (parts.length > 3) {
-        testName = parts.slice(3).join(':');
-      }
-    }
+    const testName = extractTestNameFromId(test);
 
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!)?.uri.fsPath;
     if (!workspaceFolder) {
@@ -274,74 +236,18 @@ export class JestTestController {
       return;
     }
 
-    // Start with base config, similar to JestRunner implementation
-    const debugConfig: vscode.DebugConfiguration = {
-      console: 'integratedTerminal',
-      internalConsoleOptions: 'neverOpen',
-      name: 'Debug Jest Tests',
-      program: this.jestConfig.jestBinPath,
-      request: 'launch',
-      type: 'node',
-      cwd: this.jestConfig.cwd,
-      ...this.jestConfig.debugOptions, // Include custom debug options from config
-    };
-
-    // Initialize args array with clone if it exists
-    debugConfig.args = debugConfig.args ? debugConfig.args.slice() : [];
-
-    // Handle Yarn PnP support
-    if (this.jestConfig.isYarnPnpSupportEnabled) {
-      debugConfig.args = ['jest'];
-      debugConfig.program = `.yarn/releases/${this.jestConfig.getYarnPnpCommand}`;
-    }
-
-    // Build standard args for the test file and test name
-    const standardArgs: string[] = [];
-
-    // Add the test file path
-    standardArgs.push(escapeRegExpForPath(normalizePath(filePath)));
-
-    const jestConfigPath = this.jestConfig.getJestConfigPath(filePath);
-    if (jestConfigPath) {
-      standardArgs.push('-c');
-      standardArgs.push(normalizePath(jestConfigPath));
-    }
-
-    if (testName) {
-      // Transform any placeholders in the test name
-      if (testName.includes('%')) {
-        testName = resolveTestNameStringInterpolation(testName);
-      }
-
-      standardArgs.push('-t');
-      standardArgs.push(escapeSingleQuotes(testName));
-    }
-
-    // Add all standard args to the debug config
+    // Get the base debug configuration from the unified method
+    const debugConfig = this.jestConfig.getDebugConfiguration();
+    const standardArgs = this.jestConfig.buildJestArgs(filePath, testName, false);
     pushMany(debugConfig.args, standardArgs);
-
-    // Always add --runInBand for debugging
-    debugConfig.args.push('--runInBand');
-
-    // Log the debug configuration for troubleshooting
-    console.log('Debug configuration:', JSON.stringify(debugConfig, null, 2));
 
     // Start debugging with the workspace folder context
     return vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(test.uri!), debugConfig);
   }
 
-  // Then use this improved method
   private executeJestTest(test: vscode.TestItem, additionalArgs: string[] = []): { success: boolean; message: string } {
     const filePath = test.uri!.fsPath;
-
-    // Extract the test name from the ID
-    let testName: string | undefined;
-    if (test.id.includes(':')) {
-      const parts = test.id.split(':');
-      if (parts.length > 3) {
-        testName = parts.slice(3).join(':');
-      }
-    }
+    const testName = extractTestNameFromId(test);
 
     try {
       const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!)?.uri.fsPath;
@@ -349,35 +255,18 @@ export class JestTestController {
         return { success: false, message: 'Could not determine workspace folder' };
       }
 
-      // Build args similar to JestRunner
-      const args: string[] = [];
-      args.push(quote(escapeRegExpForPath(normalizePath(filePath))));
+      // Use the shared buildJestArgs method instead of manually building args
+      const args = this.jestConfig.buildJestArgs(filePath, testName, true, additionalArgs);
 
-      const jestConfigPath = this.jestConfig.getJestConfigPath(filePath);
-      if (jestConfigPath) {
-        args.push('-c');
-        args.push(quote(normalizePath(jestConfigPath)));
-      }
-
-      if (testName) {
-        // Transform any placeholders in the test name using the existing function
-        if (testName.includes('%')) {
-          testName = resolveTestNameStringInterpolation(testName);
-        }
-
-        args.push('-t');
-        args.push(quote(escapeSingleQuotes(testName)));
-      }
-
-      // Add additional arguments if provided
-      if (additionalArgs && additionalArgs.length > 0) {
-        args.push(...additionalArgs);
-      }
-
+      // Use the jestCommand getter to determine the correct command to use
       const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
-      console.log(`Running command: ${command}`);
 
-      const output = execSync(command, { cwd: this.jestConfig.cwd, encoding: 'utf-8' });
+      const output = execSync(command, {
+        cwd: this.jestConfig.cwd,
+        encoding: 'utf-8',
+        env: { ...process.env, FORCE_COLOR: 'true' },
+      });
+
       return { success: true, message: output };
     } catch (error) {
       return {

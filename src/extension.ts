@@ -5,14 +5,19 @@ import { JestRunner } from './jestRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { JestTestController } from './TestController';
+import { isJestUsedIn } from './jestDetection';
 
 export function activate(context: vscode.ExtensionContext): void {
   const config = new JestRunnerConfig();
   const jestRunner = new JestRunner(config);
   const codeLensProvider = new JestRunnerCodeLensProvider(config.codeLensOptions);
 
-  const jestTestController = new JestTestController(context);
-  context.subscriptions.push({ dispose: () => jestTestController.dispose() });
+  const hasJest = vscode.workspace.workspaceFolders?.some((folder) => isJestUsedIn(folder.uri.fsPath)) || false;
+
+  if (!config.isCodeLensEnabled && hasJest) {
+    const jestTestController = new JestTestController(context);
+    context.subscriptions.push({ dispose: () => jestTestController.dispose() });
+  }
 
   const runJest = vscode.commands.registerCommand(
     'extension.runJest',
@@ -71,7 +76,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   );
 
-  if (!config.isCodeLensDisabled) {
+  if (config.isCodeLensEnabled) {
     const docSelectors: vscode.DocumentFilter[] = [
       {
         pattern: vscode.workspace.getConfiguration().get('jestrunner.codeLensSelector'),

@@ -3,6 +3,12 @@ import { execSync } from 'child_process';
 import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import { ParsedNode } from 'jest-editor-support';
+
+export interface TestNode extends ParsedNode {
+  name: string;
+  children?: TestNode[];
+}
 
 export function getDirName(filePath: string): string {
   return path.dirname(filePath);
@@ -29,7 +35,7 @@ export function escapeRegExpForPath(s: string): string {
   return s.replace(/[*+?^${}<>()|[\]]/g, '\\$&'); // $& means the whole matched string
 }
 
-export function findFullTestName(selectedLine: number, children: any[]): string | undefined {
+export function findFullTestName(selectedLine: number, children: TestNode[]): string | undefined {
   if (!children) {
     return;
   }
@@ -174,4 +180,20 @@ export function searchPathToParent<T>(
   } while (currentFolderPath !== endPath && currentFolderPath !== lastPath);
 
   return false;
+}
+
+/**
+ * Extracts the test name from a test item ID
+ * Format: filePath:type:lineNumber:testName
+ * @param test The test item to extract the name from
+ * @returns The extracted test name or undefined
+ */
+export function extractTestNameFromId(test: vscode.TestItem): string | undefined {
+  if (test.id.includes(':')) {
+    const parts = test.id.split(':');
+    if (parts.length > 3) {
+      return parts.slice(3).join(':');
+    }
+  }
+  return undefined;
 }

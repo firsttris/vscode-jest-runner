@@ -3,12 +3,15 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import {
   normalizePath,
-  quote,
   validateCodeLensOptions,
   CodeLensOption,
   isNodeExecuteAbleFile,
   resolveConfigPathOrMapping,
   searchPathToParent,
+  resolveTestNameStringInterpolation,
+  escapeRegExpForPath,
+  quote,
+  escapeSingleQuotes,
 } from './util';
 
 export class JestRunnerConfig {
@@ -17,17 +20,19 @@ export class JestRunnerConfig {
    * Defaults to: node "node_modules/.bin/jest"
    */
   public get jestCommand(): string {
-    // custom
-    const jestCommand: string = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
-    if (jestCommand) {
-      return jestCommand;
+    // Check for custom command first
+    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand') as string | undefined;
+    if (customCommand) {
+      return customCommand;
     }
 
-    // default
+    // Use yarn for PnP support
     if (this.isYarnPnpSupportEnabled) {
       return `yarn jest`;
     }
-    return `node ${quote(this.jestBinPath)}`;
+
+    // Default to npx
+    return 'npx --no-install jest';
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
@@ -155,9 +160,8 @@ export class JestRunnerConfig {
     return {};
   }
 
-  public get isCodeLensDisabled(): boolean {
-    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
-    return isCodeLensDisabled ? isCodeLensDisabled : false;
+  public get isCodeLensEnabled(): boolean {
+    return vscode.workspace.getConfiguration().get('jestrunner.enableCodeLens') || false;
   }
 
   public get isRunInExternalNativeTerminal(): boolean {
@@ -176,11 +180,89 @@ export class JestRunnerConfig {
   }
 
   public get isYarnPnpSupportEnabled(): boolean {
-    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
-    return isYarnPnp ? isYarnPnp : false;
+    return vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport') || false;
   }
   public get getYarnPnpCommand(): string {
     const yarnPnpCommand: string = vscode.workspace.getConfiguration().get('jestrunner.yarnPnpCommand');
     return yarnPnpCommand;
+  }
+
+  public buildJestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const args: string[] = [];
+    const quoter = withQuotes ? quote : (str) => str;
+
+    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+
+    const jestConfigPath = this.getJestConfigPath(filePath);
+    if (jestConfigPath) {
+      args.push('-c');
+      args.push(quoter(normalizePath(jestConfigPath)));
+    }
+
+    if (testName) {
+      // Transform any placeholders in the test name if needed
+      if (testName.includes('%')) {
+        testName = resolveTestNameStringInterpolation(testName);
+      }
+
+      args.push('-t');
+      args.push(quoter(escapeSingleQuotes(testName)));
+    }
+
+    const setOptions = new Set(options);
+
+    if (this.runOptions) {
+      this.runOptions.forEach((option) => setOptions.add(option));
+    }
+
+    args.push(...setOptions);
+
+    return args;
+  }
+
+  public getDebugConfiguration(): vscode.DebugConfiguration {
+    // Base configuration that both implementations share
+    const debugConfig: vscode.DebugConfiguration = {
+      console: 'integratedTerminal',
+      internalConsoleOptions: 'neverOpen',
+      name: 'Debug Jest Tests',
+      request: 'launch',
+      type: 'node',
+      cwd: this.cwd,
+      ...this.debugOptions,
+    };
+
+    // Handle Yarn PnP support first
+    if (this.isYarnPnpSupportEnabled) {
+      debugConfig.program = `.yarn/releases/${this.getYarnPnpCommand}`;
+      debugConfig.args = ['jest'];
+      return debugConfig;
+    }
+
+    // Handle custom Jest command if one is set
+    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
+    if (customCommand && typeof customCommand === 'string') {
+      const parts = customCommand.split(' ');
+      debugConfig.program = parts[0];
+      debugConfig.args = parts.slice(1);
+      return debugConfig;
+    }
+
+    // Use direct executable approach with runtimeExecutable - much more reliable
+    if (process.platform === 'win32') {
+      debugConfig.runtimeExecutable = 'npx.cmd';
+    } else {
+      debugConfig.runtimeExecutable = 'npx';
+    }
+
+    // Set args directly - no shell involvement needed
+    debugConfig.args = ['--no-install', 'jest', '--runInBand'];
+
+    return debugConfig;
   }
 }

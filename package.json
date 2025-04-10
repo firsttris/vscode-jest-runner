@@ -82,16 +82,10 @@
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
-          "jestrunner.disableCodeLens": {
+          "jestrunner.enableCodeLens": {
             "type": "boolean",
             "default": false,
-            "description": "Disable CodeLens feature",
-            "scope": "window"
-          },
-          "jestrunner.runInExternalNativeTerminal": {
-            "type": "boolean",
-            "default": false,
-            "description": "Run jest runner in external native terminal. Disabled on debug mode",
+            "description": "Bring back the old CodeLens feature (Replaced by new VsCode Testing API & Test Explorer)",
             "scope": "window"
           },
           "jestrunner.codeLens": {
