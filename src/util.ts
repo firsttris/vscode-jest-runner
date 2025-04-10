@@ -55,7 +55,7 @@ const QUOTES = {
   '`': true,
 };
 
-function resolveTestNameStringInterpolation(s: string): string {
+export function resolveTestNameStringInterpolation(s: string): string {
   const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/gi;
   const matchAny = '(.*?)';
   return s.replace(variableRegex, matchAny);
