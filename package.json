@@ -48,6 +48,12 @@
             "default": "",
             "scope": "window"
           },
+          "jestrunner.jestPath": {
+            "type": "string",
+            "default": "",
+            "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
+            "scope": "window"
+          },
           "jestrunner.projectPath": {
             "type": "string",
             "default": "",
@@ -76,16 +82,16 @@
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
-          "jestrunner.enableCodeLens": {
+          "jestrunner.disableCodeLens": {
             "type": "boolean",
             "default": false,
-            "description": "Bring back the old CodeLens feature (Replaced by new VsCode Testing API & Test Explorer)",
+            "description": "Disable CodeLens feature",
             "scope": "window"
           },
-          "jestrunner.enableTestExplorer": {
+          "jestrunner.runInExternalNativeTerminal": {
             "type": "boolean",
-            "default": true,
-            "description": "Enable the Test Explorer integration using VS Code's Testing API",
+            "default": false,
+            "description": "Run jest runner in external native terminal. Disabled on debug mode",
             "scope": "window"
           },
           "jestrunner.codeLens": {
@@ -101,7 +107,7 @@
             },
             "scope": "window"
           },
-          "jestrunner.testFilePattern": {
+          "jestrunner.codeLensSelector": {
             "type": "string",
             "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
             "description": "CodeLens will be shown on files matching this pattern"
@@ -201,12 +207,10 @@
       "editor/context": [
         {
           "command": "extension.runJest",
-          "when": "jestrunner.isJestFile",
           "group": "02_jest"
         },
         {
           "command": "extension.debugJest",
-          "when": "jestrunner.isJestFile",
           "group": "02_jest"
         }
       ],
