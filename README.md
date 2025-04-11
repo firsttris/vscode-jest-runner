@@ -4,7 +4,7 @@ Looking for collaborators to help me maintain the project. Please contact me at 
 
 ## Visual Studio Code Marketplace
 
-[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)    
 [Open VSX Registry](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 
 ## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
@@ -13,19 +13,38 @@ Looking for collaborators to help me maintain the project. Please contact me at 
 
 ## Features
 
-Simple way to run or debug a specific test
-*As it is possible in IntelliJ / Webstorm*
+Jest Runner provides a powerful, flexible way to run and debug Jest tests directly from VS Code.
 
-Run & Debug your Jest Tests from
-- Context-Menu
-- CodeLens
-- Command Palette (strg+shift+p)
+### 🚀 Run & Debug Experience
+- **Run individual tests** or entire test suites with a single click
+- **Debug tests** with full breakpoint and variable inspection support
+- **Generate coverage reports** to analyze test coverage
+- **Watch mode** for automatic test re-runs during development
+- **Snapshot updating** with dedicated command
 
-## Supports
-- yarn & vscode workspaces (monorepo)
-- dynamic jest config resolution
-- yarn 2 pnp
-- CRA & and similar abstractions
+### 📋 Multiple Access Points
+- **Context menu** in editor and explorer (right-click on tests)
+- **CodeLens** annotations above test definitions (optional)
+- **Test Explorer** integration showing test hierarchy in dedicated panel
+- **Command palette** (Ctrl+Shift+P) with full command access
+- **Keyboard shortcuts** for quick test execution
+
+### 🔍 Smart Test Detection
+- **Automatic framework detection** distinguishes Jest from Cypress/Playwright/Vitest
+- **Include/exclude patterns** for fine-grained control over which tests appear
+- **Configurable test file patterns** to match your project conventions
+
+### 💼 Project Flexibility
+- **Monorepo support** for yarn & VS Code workspaces
+- **Multiple Jest configurations** with dynamic resolution based on file paths
+- **Yarn 2 Plug'n'Play** compatibility
+- **Create React App** and similar abstraction layers
+- **Custom commands** for specialized test environments
+
+### ⚙️ Highly Configurable
+- Choose between CodeLens, Test Explorer, or both
+- Customize test commands with additional CLI options
+- Configure specialized debug configurations
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
@@ -52,23 +71,30 @@ add the following command to settings:
 Jest Runner will work out of the box, with a valid Jest config.
 If you have a custom setup use the following options to customize Jest Runner:
 
-| Command                                   | Description                                                                                                                                                 |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| jestrunner.configPath                     | Jest config path (string) (relative to `${workspaceFolder}` e.g. jest-config.json). Defaults to blank. Can also be a glob path mapping. See [below](#configpath-as-glob-map) for more details         |
-| jestrunner.jestPath                       | Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)                                                                                |
-| jestrunner.debugOptions                   | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"jestrunner.debugOptions": { "args": ["--no-cache"] }`)                            |
-| jestrunner.runOptions                     | Add CLI Options to the Jest Command (e.g. `"jestrunner.runOptions": ["--coverage", "--colors"]`) https://jestjs.io/docs/en/cli                              |
-| jestrunner.jestCommand                    | Define an alternative Jest command (e.g. for Create React App and similar abstractions)                                                                     |
-| jestrunner.disableCodeLens                | Disable CodeLens feature                                                                                                                                    |
-| jestrunner.codeLensSelector               | CodeLens will be shown on files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})                                                            |
-| jestrunner.codeLens                       | Choose which CodeLens to enable, default to `["run", "debug"]`                                                                                              |
-| jestrunner.enableYarnPnpSupport           | Enable if you are using Yarn 2 with Plug'n'Play                                                                                                             |
-| jestrunner.yarnPnpCommand                 | Command for debugging with Plug'n'Play defaults to yarn-*.*js                                                                                               |
-| jestrunner.projectPath                    | Absolute path to project directory (e.g. /home/me/project/sub-folder), or relative path to workspace root (e.g. ./sub-folder)                               |
-| jestrunner.checkRelativePathForJest       | When looking for the nearest resolution for Jest, only check for package.json files, rather than the `node_modules` folder.                                 |
-| jestrunner.changeDirectoryToWorkspaceRoot | Changes directory before execution. The order is:<ol><li>`jestrunner.projectPath`</li><li>the nearest `package.json`</li><li>`${workspaceFolder}`</li></ol> |
-| jestrunner.preserveEditorFocus            | Preserve focus on your editor instead of focusing the terminal on test run                                                                                  |
-| jestrunner.runInExternalNativeTerminal    | run in external terminal (requires: npm install ttab -g)                                                                                                    |
+| Setting                                 | Default Value                         | Description                                                                                                                                                                                           |
+|----------------------------------------|--------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Core Configuration**                  |                                      |                                                                                                                                                                                                       |
+| `jestrunner.configPath`                 | `""`                                 | Path to Jest config (relative to workspace folder, e.g. `jest-config.json`). Can be a string or a glob mapping object to support multiple Jest configs. See mapping details below. |
+| `jestrunner.projectPath`                | `""`                                 | Path to project directory. Can be absolute (e.g. `/home/me/project/sub-folder`) or relative to workspace root (e.g. `./sub-folder`).                                                                   |
+| `jestrunner.jestCommand`                | `""`                                 | Define an alternative Jest command for projects using abstractions like Create React App (e.g. `npm run test --`).                                                                                      |
+| `jestrunner.runOptions`                 | `[]`                                 | CLI options to add to Jest commands (e.g. `["--coverage", "--colors"]`). See [Jest CLI documentation](https://jestjs.io/docs/en/cli).                                                                  |
+| `jestrunner.debugOptions`               | `{}`                                 | Add or override VS Code debug configurations (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging tests.                                                                                    |
+| **Test Detection & Filtering**          |                                      |                                                                                                                                                                                                       |
+| `jestrunner.testFilePattern`            | `"**/*.{test,spec}.{js,jsx,ts,tsx}"` | Pattern to identify test files. Affects CodeLens, Test Explorer, and test detection.                                                                                                                   |
+| `jestrunner.include`                    | `[]`                                 | Glob patterns for files to include in test detection. When specified, disables automatic Jest detection in favor of explicit inclusion.                                                                 |
+| `jestrunner.exclude`                    | `[]`                                 | Glob patterns for files to exclude from test detection. When specified, disables automatic Jest detection in favor of explicit exclusion.                                                               |
+| **UI Options**                          |                                      |                                                                                                                                                                                                       |
+| `jestrunner.enableCodeLens`             | `false`                              | Enable CodeLens annotations in test files for quick test execution directly from the editor.                                                                                                            |
+| `jestrunner.enableTestExplorer`         | `true`                               | Enable Test Explorer integration using VS Code's Testing API, showing tests in the dedicated Test Explorer view.                                                                                        |
+| `jestrunner.codeLens`                   | `["run", "debug"]`                   | Specify which CodeLens actions to show. Options: `"run"`, `"debug"`, `"watch"`, `"coverage"`, `"current-test-coverage"`.                                                                               |
+| `jestrunner.preserveEditorFocus`        | `false`                              | Keep focus on the editor instead of switching to the terminal when running tests.                                                                                                                      |
+| **Project Management**                  |                                      |                                                                                                                                                                                                       |
+| `jestrunner.checkRelativePathForJest`   | `true`                               | When resolving Jest location, check for package.json files instead of the node_modules folder.                                                                                                     |
+| `jestrunner.changeDirectoryToWorkspaceRoot` | `true`                           | Change directory before running tests. Priority order: 1. `projectPath` 2. nearest package.json location 3. workspace folder.                                                                         |
+| **Yarn PnP Support**                    |                                      |                                                                                                                                                                                                       |
+| `jestrunner.enableYarnPnpSupport`       | `false`                              | Enable support for Yarn 2 with Plug'n'Play package management.                                                                                                                                        |
+| `jestrunner.yarnPnpCommand`             | `"yarn-*.*js"`                       | Command for executing tests when using Yarn Plug'n'Play.                                                                                                                                              
+For advanced topics like configuring multiple Jest configurations with glob mappings, see the configPath as glob map section below.
 
 ### configPath as glob map
 If you've got multiple jest configs for running tests (ie maybe a config for unit tests, integration tests and frontend tests) then this option is for you. You can provide a map of glob matchers to specify which jest config to use based on the name of the file the test is being run for. 

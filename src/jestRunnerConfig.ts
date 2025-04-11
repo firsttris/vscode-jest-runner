@@ -3,12 +3,14 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import {
   normalizePath,
-  quote,
   validateCodeLensOptions,
   CodeLensOption,
-  isNodeExecuteAbleFile,
   resolveConfigPathOrMapping,
   searchPathToParent,
+  resolveTestNameStringInterpolation,
+  escapeRegExpForPath,
+  quote,
+  escapeSingleQuotes,
 } from './util';
 
 export class JestRunnerConfig {
@@ -17,17 +19,19 @@ export class JestRunnerConfig {
    * Defaults to: node "node_modules/.bin/jest"
    */
   public get jestCommand(): string {
-    // custom
-    const jestCommand: string = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
-    if (jestCommand) {
-      return jestCommand;
+    // Check for custom command first
+    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand') as string | undefined;
+    if (customCommand) {
+      return customCommand;
     }
 
-    // default
+    // Use yarn for PnP support
     if (this.isYarnPnpSupportEnabled) {
       return `yarn jest`;
     }
-    return `node ${quote(this.jestBinPath)}`;
+
+    // Use npx for all platforms
+    return 'npx --no-install jest';
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
@@ -36,24 +40,6 @@ export class JestRunnerConfig {
 
   public get preserveEditorFocus(): boolean {
     return vscode.workspace.getConfiguration().get('jestrunner.preserveEditorFocus') || false;
-  }
-
-  public get jestBinPath(): string {
-    // custom
-    let jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
-    if (jestPath) {
-      return jestPath;
-    }
-
-    // default
-    const fallbackRelativeJestBinPath = 'node_modules/jest/bin/jest.js';
-    const mayRelativeJestBin = ['node_modules/.bin/jest', 'node_modules/jest/bin/jest.js'];
-    const cwd = this.cwd;
-
-    jestPath = mayRelativeJestBin.find((relativeJestBin) => isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)));
-    jestPath = jestPath || path.join(cwd, fallbackRelativeJestBinPath);
-
-    return normalizePath(jestPath);
   }
 
   public get cwd(): string {
@@ -155,16 +141,8 @@ export class JestRunnerConfig {
     return {};
   }
 
-  public get isCodeLensDisabled(): boolean {
-    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
-    return isCodeLensDisabled ? isCodeLensDisabled : false;
-  }
-
-  public get isRunInExternalNativeTerminal(): boolean {
-    const isRunInExternalNativeTerminal: boolean = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.runInOutsideTerminal');
-    return isRunInExternalNativeTerminal ? isRunInExternalNativeTerminal : false;
+  public get isCodeLensEnabled(): boolean {
+    return vscode.workspace.getConfiguration().get('jestrunner.enableCodeLens') || false;
   }
 
   public get codeLensOptions(): CodeLensOption[] {
@@ -176,11 +154,81 @@ export class JestRunnerConfig {
   }
 
   public get isYarnPnpSupportEnabled(): boolean {
-    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
-    return isYarnPnp ? isYarnPnp : false;
+    return vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport') || false;
   }
   public get getYarnPnpCommand(): string {
     const yarnPnpCommand: string = vscode.workspace.getConfiguration().get('jestrunner.yarnPnpCommand');
     return yarnPnpCommand;
+  }
+
+  public buildJestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const args: string[] = [];
+    const quoter = withQuotes ? quote : (str) => str;
+
+    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+
+    const jestConfigPath = this.getJestConfigPath(filePath);
+    if (jestConfigPath) {
+      args.push('-c');
+      args.push(quoter(normalizePath(jestConfigPath)));
+    }
+
+    if (testName) {
+      // Transform any placeholders in the test name if needed
+      if (testName.includes('%')) {
+        testName = resolveTestNameStringInterpolation(testName);
+      }
+
+      args.push('-t');
+      args.push(quoter(escapeSingleQuotes(testName)));
+    }
+
+    const setOptions = new Set(options);
+
+    if (this.runOptions) {
+      this.runOptions.forEach((option) => setOptions.add(option));
+    }
+
+    args.push(...setOptions);
+
+    return args;
+  }
+
+  public getDebugConfiguration(): vscode.DebugConfiguration {
+    // Base configuration that both implementations share
+    const debugConfig: vscode.DebugConfiguration = {
+      console: 'integratedTerminal',
+      internalConsoleOptions: 'neverOpen',
+      name: 'Debug Jest Tests',
+      request: 'launch',
+      type: 'node',
+      runtimeExecutable: 'npx',
+      cwd: this.cwd,
+      args: ['--no-install', 'jest', '--runInBand'],
+      ...this.debugOptions,
+    };
+
+    // Handle Yarn PnP support first
+    if (this.isYarnPnpSupportEnabled) {
+      debugConfig.program = `.yarn/releases/${this.getYarnPnpCommand}`;
+      debugConfig.args = ['jest'];
+      return debugConfig;
+    }
+
+    // Handle custom Jest command if one is set
+    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
+    if (customCommand && typeof customCommand === 'string') {
+      const parts = customCommand.split(' ');
+      debugConfig.program = parts[0];
+      debugConfig.args = parts.slice(1);
+      return debugConfig;
+    }
+
+    return debugConfig;
   }
 }
