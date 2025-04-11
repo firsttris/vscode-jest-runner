@@ -261,33 +261,52 @@ export class JestTestController {
     const testName = extractTestNameFromId(test);
 
     try {
-      const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!)?.uri.fsPath;
-      if (!workspaceFolder) {
-        return { success: false, message: 'Could not determine workspace folder' };
-      }
-
-      // Use the shared buildJestArgs method instead of manually building args
-      const args = this.jestConfig.buildJestArgs(filePath, testName, true, additionalArgs);
-
-      // Use the jestCommand getter to determine the correct command to use
+      // Use the shared buildJestArgs method with flags to ensure consistent output
+      const args = this.jestConfig.buildJestArgs(filePath, testName, true, [
+        ...additionalArgs,
+        '--colors',
+        '--verbose', // Always output details
+      ]);
       const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
 
       try {
-        // If this succeeds, the test passed
         const output = execSync(command, {
           cwd: this.jestConfig.cwd,
           encoding: 'utf-8',
-          env: { ...process.env, FORCE_COLOR: 'true' },
+          env: { ...process.env, FORCE_COLOR: '1' },
         });
-        return { success: true, message: output };
+
+        // Check for FAIL first since it's more specific
+        if (output.includes('FAIL')) {
+          return {
+            success: false,
+            message: output,
+          };
+        }
+
+        // If no FAIL and has PASS, it's a success
+        if (output.includes('PASS')) {
+          return {
+            success: true,
+            message: output,
+          };
+        }
+
+        // Default: if it didn't throw an error and has no specific indicators,
+        // consider it a successful execution
+        return {
+          success: true,
+          message: output || 'Test passed with no specific output',
+        };
       } catch (execError) {
-        // This is the normal path for failed tests - Jest returns non-zero exit code
-        // On Windows, we need special handling to capture the error output
-        const errorOutput = execError.stdout || execError.stderr || execError.message || 'Test failed';
-        return { success: false, message: errorOutput };
+        const output = execError.stdout || execError.stderr || execError.message;
+
+        return {
+          success: false,
+          message: output || 'Test failed',
+        };
       }
     } catch (error) {
-      // This is for unexpected errors in our code
       return {
         success: false,
         message: `Error running test: ${error.message}`,
