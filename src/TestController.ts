@@ -8,12 +8,9 @@ import {
   pushMany,
   extractTestNameFromId,
   TestNode,
-  normalizePath,
   shouldIncludeFile,
 } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
-import { isJestTestFile } from './jestDetection';
-import { sync } from 'fast-glob';
 
 export class JestTestController {
   private testController: vscode.TestController;
@@ -275,17 +272,25 @@ export class JestTestController {
       // Use the jestCommand getter to determine the correct command to use
       const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
 
-      const output = execSync(command, {
-        cwd: this.jestConfig.cwd,
-        encoding: 'utf-8',
-        env: { ...process.env, FORCE_COLOR: 'true' },
-      });
-
-      return { success: true, message: output };
+      try {
+        // If this succeeds, the test passed
+        const output = execSync(command, {
+          cwd: this.jestConfig.cwd,
+          encoding: 'utf-8',
+          env: { ...process.env, FORCE_COLOR: 'true' },
+        });
+        return { success: true, message: output };
+      } catch (execError) {
+        // This is the normal path for failed tests - Jest returns non-zero exit code
+        // On Windows, we need special handling to capture the error output
+        const errorOutput = execError.stdout || execError.stderr || execError.message || 'Test failed';
+        return { success: false, message: errorOutput };
+      }
     } catch (error) {
+      // This is for unexpected errors in our code
       return {
         success: false,
-        message: error.stdout || error.message || 'Test failed',
+        message: `Error running test: ${error.message}`,
       };
     }
   }
