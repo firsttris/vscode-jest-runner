@@ -30,7 +30,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Initial update
   updateJestFileContext();
 
-  if (!config.isCodeLensEnabled) {
+  const testExplorerEnabled = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', true);
+
+  if (testExplorerEnabled) {
     const jestTestController = new JestTestController(context);
     context.subscriptions.push({ dispose: () => jestTestController.dispose() });
   }

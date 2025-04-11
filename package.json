@@ -82,6 +82,12 @@
             "description": "Bring back the old CodeLens feature (Replaced by new VsCode Testing API & Test Explorer)",
             "scope": "window"
           },
+          "jestrunner.enableTestExplorer": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable the Test Explorer integration using VS Code's Testing API",
+            "scope": "window"
+          },
           "jestrunner.codeLens": {
             "type": "array",
             "default": [
