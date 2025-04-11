@@ -176,24 +176,6 @@ export function searchPathToParent<T>(
 }
 
 /**
- * Extracts the test name from a test item ID
- * Format: filePath:type:lineNumber:testName
- * @param test The test item to extract the name from
- * @returns The extracted test name or undefined
- */
-export function extractTestNameFromId(test: vscode.TestItem): string | undefined {
-  if (test.id.includes(':')) {
-    const parts = test.id.split(':');
-    if (parts.length > 3) {
-      return parts.slice(3).join(':');
-    }
-  }
-  return undefined;
-}
-
-// ...existing code...
-
-/**
  * Determines if a file should be included based on configuration
  * @param filePath Path to the file being checked
  * @param workspaceFolderPath Root workspace folder path

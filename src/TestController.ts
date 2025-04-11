@@ -2,14 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { parse } from './parser';
-import {
-  escapeRegExp,
-  updateTestNameIfUsingProperties,
-  pushMany,
-  extractTestNameFromId,
-  TestNode,
-  shouldIncludeFile,
-} from './util';
+import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
 
 export class JestTestController {
@@ -239,7 +232,7 @@ export class JestTestController {
 
   private async debugJestTest(test: vscode.TestItem) {
     const filePath = test.uri!.fsPath;
-    const testName = extractTestNameFromId(test);
+    const testName = test.children.size === 0 ? test.label : undefined;
 
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!)?.uri.fsPath;
     if (!workspaceFolder) {
@@ -258,7 +251,7 @@ export class JestTestController {
 
   private executeJestTest(test: vscode.TestItem, additionalArgs: string[] = []): { success: boolean; message: string } {
     const filePath = test.uri!.fsPath;
-    const testName = extractTestNameFromId(test);
+    const testName = test.children.size === 0 ? test.label : undefined;
 
     try {
       const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!)?.uri.fsPath;
