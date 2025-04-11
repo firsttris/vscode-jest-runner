@@ -5,6 +5,31 @@ import * as path from 'path';
 // Cache for Jest detection results
 const jestDetectionCache = new Map<string, boolean>();
 
+// Define test frameworks and their config files
+interface TestFramework {
+  name: string;
+  configFiles: string[];
+}
+
+const testFrameworks: TestFramework[] = [
+  {
+    name: 'jest',
+    configFiles: ['jest.config.js', 'jest.config.ts', 'jest.config.json'],
+  },
+  {
+    name: 'cypress',
+    configFiles: ['cypress.config.js', 'cypress.config.ts', 'cypress.json'],
+  },
+  {
+    name: 'playwright',
+    configFiles: ['playwright.config.js', 'playwright.config.ts'],
+  },
+  {
+    name: 'vitest',
+    configFiles: ['vitest.config.js', 'vitest.config.ts'],
+  },
+];
+
 /**
  * Checks if Jest is used in the specified directory
  */
@@ -29,8 +54,8 @@ export function isJestUsedIn(directoryPath: string): boolean {
     }
 
     // Check for Jest config files
-    const configFiles = ['jest.config.js', 'jest.config.ts', 'jest.config.json'];
-    for (const configFile of configFiles) {
+    const jestFramework = testFrameworks.find((f) => f.name === 'jest')!;
+    for (const configFile of jestFramework.configFiles) {
       if (fs.existsSync(path.join(directoryPath, configFile))) {
         jestDetectionCache.set(directoryPath, true);
         return true;
@@ -63,7 +88,55 @@ export function isJestUsedIn(directoryPath: string): boolean {
 }
 
 /**
+ * Detects which test framework is used in a directory
+ * @returns Framework name or undefined if none detected
+ */
+function detectTestFramework(directoryPath: string): string | undefined {
+  // Check package.json first for any framework
+  const packageJsonPath = path.join(directoryPath, 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    try {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
+      // Check for framework entries in dependencies or config
+      for (const framework of testFrameworks) {
+        if (
+          packageJson.dependencies?.[framework.name] ||
+          packageJson.devDependencies?.[framework.name] ||
+          packageJson.peerDependencies?.[framework.name] ||
+          packageJson[framework.name]
+        ) {
+          return framework.name;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing package.json:', error);
+    }
+  }
+
+  // Check for config files
+  for (const framework of testFrameworks) {
+    for (const configFile of framework.configFiles) {
+      if (fs.existsSync(path.join(directoryPath, configFile))) {
+        return framework.name;
+      }
+    }
+  }
+
+  // Check for binaries
+  if (
+    fs.existsSync(path.join(directoryPath, 'node_modules', '.bin', 'jest')) ||
+    fs.existsSync(path.join(directoryPath, 'node_modules', '.bin', 'jest.cmd'))
+  ) {
+    return 'jest';
+  }
+
+  return undefined;
+}
+
+/**
  * Finds the nearest directory containing Jest (going up the directory tree)
+ * Takes into account other test frameworks that might be closer to the file
  */
 export function findJestDirectory(filePath: string): string | undefined {
   let currentDir = path.dirname(filePath);
@@ -73,10 +146,21 @@ export function findJestDirectory(filePath: string): string | undefined {
 
   const rootPath = workspaceFolder.uri.fsPath;
 
-  // Walk up directories until we find Jest or reach workspace root
+  // Walk up directories until we find a test framework or reach workspace root
   while (currentDir && currentDir.startsWith(rootPath)) {
-    if (isJestUsedIn(currentDir)) {
-      return currentDir;
+    const framework = detectTestFramework(currentDir);
+
+    if (framework) {
+      // If we found a non-Jest framework that's closer to the file than Jest,
+      // then this file is not a Jest test
+      if (framework !== 'jest') {
+        return undefined;
+      }
+
+      // If we found Jest, return this directory
+      if (framework === 'jest') {
+        return currentDir;
+      }
     }
 
     const parentDir = path.dirname(currentDir);

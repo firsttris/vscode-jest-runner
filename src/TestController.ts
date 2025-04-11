@@ -2,8 +2,18 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { parse } from './parser';
-import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, extractTestNameFromId, TestNode } from './util';
+import {
+  escapeRegExp,
+  updateTestNameIfUsingProperties,
+  pushMany,
+  extractTestNameFromId,
+  TestNode,
+  normalizePath,
+  shouldIncludeFile,
+} from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
+import { isJestTestFile } from './jestDetection';
+import { sync } from 'fast-glob';
 
 export class JestTestController {
   private testController: vscode.TestController;
@@ -147,7 +157,8 @@ export class JestTestController {
     );
     const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
 
-    return files.map((file) => file.fsPath);
+    // Filter files using the shared utility
+    return files.map((file) => file.fsPath).filter((filePath) => shouldIncludeFile(filePath, folderPath));
   }
 
   // Modified run handler to accept additional args

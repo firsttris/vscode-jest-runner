@@ -5,16 +5,32 @@ import { JestRunner } from './jestRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { JestTestController } from './TestController';
-import { isJestUsedIn } from './jestDetection';
+import { shouldIncludeFile } from './util';
 
 export function activate(context: vscode.ExtensionContext): void {
   const config = new JestRunnerConfig();
   const jestRunner = new JestRunner(config);
   const codeLensProvider = new JestRunnerCodeLensProvider(config.codeLensOptions);
 
-  const hasJest = vscode.workspace.workspaceFolders?.some((folder) => isJestUsedIn(folder.uri.fsPath)) || false;
+  // Add this function to update the context key
+  const updateJestFileContext = () => {
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+      const filePath = editor.document.uri.fsPath;
+      // Use shouldIncludeFile instead of isJestTestFile to respect user configuration
+      const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri)?.uri.fsPath;
+      const shouldInclude = workspaceFolder ? shouldIncludeFile(filePath, workspaceFolder) : false;
+      vscode.commands.executeCommand('setContext', 'jestrunner.isJestFile', shouldInclude);
+    }
+  };
 
-  if (!config.isCodeLensEnabled && hasJest) {
+  // Update the context when the active editor changes
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => updateJestFileContext()));
+
+  // Initial update
+  updateJestFileContext();
+
+  if (!config.isCodeLensEnabled) {
     const jestTestController = new JestTestController(context);
     context.subscriptions.push({ dispose: () => jestTestController.dispose() });
   }

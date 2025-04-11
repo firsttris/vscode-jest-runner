@@ -1,7 +1,8 @@
 import { parse } from './parser';
 import { CodeLens, CodeLensProvider, Range, TextDocument, window, workspace } from 'vscode';
-import { findFullTestName, escapeRegExp, CodeLensOption, normalizePath, TestNode } from './util';
+import { findFullTestName, escapeRegExp, CodeLensOption, normalizePath, TestNode, shouldIncludeFile } from './util';
 import { sync } from 'fast-glob';
+import { isJestTestFile } from './jestDetection';
 
 function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
   const titleMap: Record<CodeLensOption, string> = {
@@ -62,19 +63,8 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
 
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
-      const config = workspace.getConfiguration('jestrunner');
-      const include = config.get<string[]>('include', []);
-      const exclude = config.get<string[]>('exclude', []);
-
-      const filePath = normalizePath(document.fileName);
-      const workspaceRoot = normalizePath(this.currentWorkspaceFolderPath);
-
-      const globOptions = { cwd: workspaceRoot, absolute: true };
-      if (include.length > 0 && !sync(include, globOptions).includes(filePath)) {
-        return [];
-      }
-
-      if (exclude.length > 0 && sync(exclude, globOptions).includes(filePath)) {
+      // Use the shared utility to determine if we should process this file
+      if (!shouldIncludeFile(document.fileName, this.currentWorkspaceFolderPath)) {
         return [];
       }
 

@@ -195,10 +195,12 @@
       "editor/context": [
         {
           "command": "extension.runJest",
+          "when": "jestrunner.isJestFile",
           "group": "02_jest"
         },
         {
           "command": "extension.debugJest",
+          "when": "jestrunner.isJestFile",
           "group": "02_jest"
         }
       ],

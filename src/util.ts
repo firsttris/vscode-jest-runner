@@ -4,6 +4,8 @@ import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ParsedNode } from 'jest-editor-support';
+import { isJestTestFile } from './jestDetection';
+import { sync } from 'fast-glob';
 
 export interface TestNode extends ParsedNode {
   name: string;
@@ -187,4 +189,41 @@ export function extractTestNameFromId(test: vscode.TestItem): string | undefined
     }
   }
   return undefined;
+}
+
+// ...existing code...
+
+/**
+ * Determines if a file should be included based on configuration
+ * @param filePath Path to the file being checked
+ * @param workspaceFolderPath Root workspace folder path
+ * @returns Boolean indicating if the file should be processed
+ */
+export function shouldIncludeFile(filePath: string, workspaceFolderPath: string): boolean {
+  // Get include/exclude configuration
+  const config = vscode.workspace.getConfiguration('jestrunner');
+  const include = config.get<string[]>('include', []);
+  const exclude = config.get<string[]>('exclude', []);
+
+  // If no include/exclude, check if it's a Jest test file
+  if (include.length === 0 && exclude.length === 0) {
+    return isJestTestFile(filePath);
+  }
+
+  // Normalize paths for glob matching
+  const normalizedPath = normalizePath(filePath);
+  const normalizedFolderPath = normalizePath(workspaceFolderPath);
+  const globOptions = { cwd: normalizedFolderPath, absolute: true };
+
+  // Check include patterns
+  if (include.length > 0 && !sync(include, globOptions).includes(normalizedPath)) {
+    return false;
+  }
+
+  // Check exclude patterns
+  if (exclude.length > 0 && sync(exclude, globOptions).includes(normalizedPath)) {
+    return false;
+  }
+
+  return true;
 }

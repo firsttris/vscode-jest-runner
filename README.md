@@ -67,8 +67,8 @@ If you have a custom setup use the following options to customize Jest Runner:
 | jestrunner.checkRelativePathForJest       | When looking for the nearest resolution for Jest, only check for package.json files, rather than the `node_modules` folder.                                 |
 | jestrunner.changeDirectoryToWorkspaceRoot | Changes directory before execution. The order is:<ol><li>`jestrunner.projectPath`</li><li>the nearest `package.json`</li><li>`${workspaceFolder}`</li></ol> |
 | jestrunner.preserveEditorFocus            | Preserve focus on your editor instead of focusing the terminal on test run                                                                                  |
-| jestrunner.include                        | File globs to include (currently only for codelens) |
-| jestrunner.exclude                        | File globs to exclude (currently only for codelens) |
+| jestrunner.include                        | Provide a glob pattern of files to include (disables automatic jest detection) |
+| jestrunner.exclude                        | Provide a glob pattern of files to exclude (disables automatic jest detection) |
 
 ### configPath as glob map
 If you've got multiple jest configs for running tests (ie maybe a config for unit tests, integration tests and frontend tests) then this option is for you. You can provide a map of glob matchers to specify which jest config to use based on the name of the file the test is being run for. 
