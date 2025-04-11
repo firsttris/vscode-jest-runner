@@ -170,36 +170,30 @@ export class JestRunnerConfig {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str) => str;
 
-    // Instead of using the file path as positional argument, use --testPathPattern
-    // which works consistently across platforms
-    if (filePath) {
-      // Normalize path with forward slashes for all platforms (including Windows)
-      const normalizedPath = normalizePath(filePath).replace(/\\/g, '/');
-      args.push('--testPathPattern');
-      args.push(quoter(escapeRegExpForPath(normalizedPath)));
-    }
+    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
 
-    // Config path handling remains the same
     const jestConfigPath = this.getJestConfigPath(filePath);
     if (jestConfigPath) {
       args.push('-c');
       args.push(quoter(normalizePath(jestConfigPath)));
     }
 
-    // Test name handling remains the same
     if (testName) {
+      // Transform any placeholders in the test name if needed
       if (testName.includes('%')) {
         testName = resolveTestNameStringInterpolation(testName);
       }
+
       args.push('-t');
       args.push(quoter(escapeSingleQuotes(testName)));
     }
 
-    // Option handling remains the same
     const setOptions = new Set(options);
+
     if (this.runOptions) {
       this.runOptions.forEach((option) => setOptions.add(option));
     }
+
     args.push(...setOptions);
 
     return args;
