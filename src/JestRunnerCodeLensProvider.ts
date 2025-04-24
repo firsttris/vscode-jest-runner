@@ -1,22 +1,23 @@
-import { parse, ParsedNode } from './parser';
+import { parse } from './parser';
 import { CodeLens, CodeLensProvider, Range, TextDocument, window, workspace } from 'vscode';
-import { findFullTestName, escapeRegExp, CodeLensOption, normalizePath } from './util';
+import { findFullTestName, escapeRegExp, CodeLensOption, normalizePath, TestNode, shouldIncludeFile } from './util';
 import { sync } from 'fast-glob';
+import { isJestTestFile } from './jestDetection';
 
-function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {  
+function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
   const titleMap: Record<CodeLensOption, string> = {
     run: 'Run',
     debug: 'Debug',
     watch: 'Run --watch',
     coverage: 'Run --coverage',
-    'current-test-coverage': 'Run --collectCoverageFrom (target file/dir)'
+    'current-test-coverage': 'Run --collectCoverageFrom (target file/dir)',
   };
   const commandMap: Record<CodeLensOption, string> = {
     run: 'extension.runJest',
     debug: 'extension.debugJest',
     watch: 'extension.watchJest',
     coverage: 'extension.runJestCoverage',
-    'current-test-coverage': 'extension.runJestCurrentTestCoverage'
+    'current-test-coverage': 'extension.runJestCurrentTestCoverage',
   };
   return new CodeLens(range, {
     arguments: [fullTestName],
@@ -25,11 +26,7 @@ function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, full
   });
 }
 
-function getTestsBlocks(
-  parsedNode: ParsedNode,
-  parseResults: ParsedNode[],
-  codeLensOptions: CodeLensOption[]
-): CodeLens[] {
+function getTestsBlocks(parsedNode: TestNode, parseResults: TestNode[], codeLensOptions: CodeLensOption[]): CodeLens[] {
   const codeLens: CodeLens[] = [];
 
   parsedNode.children?.forEach((subNode) => {
@@ -40,7 +37,7 @@ function getTestsBlocks(
     parsedNode.start.line - 1,
     parsedNode.start.column,
     parsedNode.end.line - 1,
-    parsedNode.end.column
+    parsedNode.end.column,
   );
 
   if (parsedNode.type === 'expect') {
@@ -66,26 +63,15 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
 
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
-      const config = workspace.getConfiguration('jestrunner');
-      const include = config.get<string[]>('include', []);
-      const exclude = config.get<string[]>('exclude', []);
-
-      const filePath = normalizePath(document.fileName);
-      const workspaceRoot = normalizePath(this.currentWorkspaceFolderPath);
-
-      const globOptions = { cwd: workspaceRoot, absolute: true };
-      if (include.length > 0 && !sync(include, globOptions).includes(filePath)) {
-        return [];
-      }
-
-      if (exclude.length > 0 && sync(exclude, globOptions).includes(filePath)) {
+      // Use the shared utility to determine if we should process this file
+      if (!shouldIncludeFile(document.fileName, this.currentWorkspaceFolderPath)) {
         return [];
       }
 
       const parseResults = parse(document.fileName, document.getText(), { plugins: { decorators: 'legacy' } }).root
         .children;
       this.lastSuccessfulCodeLens = parseResults.flatMap((parseResult) =>
-        getTestsBlocks(parseResult, parseResults, this.codeLensOptions)
+        getTestsBlocks(parseResult, parseResults, this.codeLensOptions),
       );
     } catch (e) {
       console.error('jest-editor-support parser returned error', e);
@@ -93,4 +79,3 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
     return this.lastSuccessfulCodeLens;
   }
 }
-
