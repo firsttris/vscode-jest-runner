@@ -428,7 +428,7 @@ export class JestTestController {
     const filePath = test.uri!.fsPath;
     const testName = test.children.size === 0 ? test.label : undefined;
 
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!)?.uri.fsPath;
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!);
     if (!workspaceFolder) {
       vscode.window.showErrorMessage('Could not determine workspace folder');
       return;
@@ -440,39 +440,7 @@ export class JestTestController {
     pushMany(debugConfig.args, standardArgs);
 
     // Start debugging with the workspace folder context
-    return vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(test.uri!), debugConfig);
-  }
-
-  private executeJestTest(test: vscode.TestItem, additionalArgs: string[] = []): { success: boolean; message: string } {
-    const filePath = test.uri!.fsPath;
-    const testName = test.children.size === 0 ? test.label : undefined;
-
-    try {
-      const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!)?.uri.fsPath;
-      if (!workspaceFolder) {
-        return { success: false, message: 'Could not determine workspace folder' };
-      }
-
-      // Use the shared buildJestArgs method instead of manually building args
-      const args = this.jestConfig.buildJestArgs(filePath, testName, true, additionalArgs);
-
-      // Use the jestCommand getter to determine the correct command to use
-      const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
-      console.log('command', command);
-
-      const output = execSync(command, {
-        cwd: this.jestConfig.cwd,
-        encoding: 'utf-8',
-        env: { ...process.env, FORCE_COLOR: 'true' },
-      });
-
-      return { success: true, message: output };
-    } catch (error) {
-      return {
-        success: false,
-        message: error.stdout || error.message || 'Test failed',
-      };
-    }
+    return vscode.debug.startDebugging(workspaceFolder, debugConfig);
   }
 
   private setupFileWatcher() {
