@@ -5,6 +5,45 @@ import { parse } from './parser';
 import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
 
+interface JestAssertionResult {
+  ancestorTitles: string[];
+  title: string;
+  fullName?: string;
+  status: 'passed' | 'failed' | 'skipped' | 'pending' | 'todo';
+  duration?: number;
+  failureMessages?: string[];
+  location?: { line: number; column: number } | null;
+}
+
+/**
+ * Represents a test file result containing multiple test results
+ */
+interface JestFileResult {
+  assertionResults: JestAssertionResult[];
+  name: string;
+  status: string;
+  message: string;
+  startTime: number;
+  endTime: number;
+  summary?: string;
+}
+
+/**
+ * Root Jest results object
+ */
+interface JestResults {
+  numFailedTestSuites: number;
+  numFailedTests: number;
+  numPassedTestSuites: number;
+  numPassedTests: number;
+  numPendingTestSuites: number;
+  numPendingTests: number;
+  numTotalTestSuites: number;
+  numTotalTests: number;
+  success: boolean;
+  testResults: JestFileResult[];
+}
+
 export class JestTestController {
   private testController: vscode.TestController;
   private disposables: vscode.Disposable[] = [];
@@ -151,6 +190,106 @@ export class JestTestController {
     return files.map((file) => file.fsPath).filter((filePath) => shouldIncludeFile(filePath, folderPath));
   }
 
+  /**
+   * Process test results from Jest output
+   */
+  private processTestResults(output: string, tests: vscode.TestItem[], run: vscode.TestRun): void {
+    const results = this.parseJestOutput(output);
+
+    if (results?.testResults?.[0]?.assertionResults) {
+      const testResults = results.testResults[0].assertionResults;
+      console.log(`Processing ${testResults.length} test results for ${tests.length} test items`);
+
+      // Process each test with improved matching
+      tests.forEach((test) => {
+        // Get clean test name without describe blocks
+        const testName = test.label.split(' ').pop() || test.label;
+
+        // Try different matching strategies
+        const matchingResult = testResults.find(
+          (r) =>
+            // Direct title match
+            r.title === test.label ||
+            // Base name match (without describe blocks)
+            r.title === testName ||
+            // Full name match
+            r.fullName === test.label ||
+            // Ancestor titles + title match the label
+            (r.ancestorTitles && r.ancestorTitles.concat(r.title).join(' ') === test.label),
+        );
+
+        if (matchingResult) {
+          console.log(`Found match for "${test.label}": ${matchingResult.status}`);
+          if (matchingResult.status === 'passed') {
+            run.passed(test);
+          } else if (matchingResult.status === 'failed') {
+            const message = new vscode.TestMessage(matchingResult.failureMessages?.join('\n') || 'Test failed');
+            run.failed(test, message);
+          } else {
+            // Handle skipped, todo, pending
+            run.skipped(test);
+          }
+        } else {
+          console.log(`No match found for test "${test.label}"`);
+          // Default to skipped if no match found
+          run.skipped(test);
+        }
+      });
+    } else {
+      console.log('Failed to parse test results, falling back to simple parsing');
+
+      // Instead of using "FAIL" presence to fail all tests,
+      // try to be smarter about individual tests
+      if (output.includes('FAIL')) {
+        const failLines = output.split('\n').filter((line) => line.includes('●'));
+
+        tests.forEach((test) => {
+          // Check if this specific test name is mentioned in a failure line
+          const testFailed = failLines.some(
+            (line) =>
+              line.includes(test.label) ||
+              (test.label.includes(' ') && line.includes(test.label.split(' ').pop() || '')),
+          );
+
+          if (testFailed) {
+            run.failed(test, new vscode.TestMessage('Test failed'));
+          } else {
+            run.passed(test);
+          }
+        });
+      } else {
+        // All passed
+        tests.forEach((test) => run.passed(test));
+      }
+    }
+  }
+
+  /**
+   * Parse Jest JSON output from command output with improved regex
+   */
+  private parseJestOutput(output: string): JestResults | undefined {
+    try {
+      // First try to match complete JSON format - without using the 's' flag
+      const jsonRegex = /({"numFailedTestSuites":[\s\S]*?"wasInterrupted":[\s\S]*?})/;
+      const jsonMatch = output.match(jsonRegex);
+
+      if (jsonMatch && jsonMatch[1]) {
+        return JSON.parse(jsonMatch[1]);
+      }
+
+      // Fallback to more general regex
+      const fallbackMatch = output.match(/(\{[\s\S]*"testResults"[\s\S]*\})/);
+      if (fallbackMatch && fallbackMatch[1]) {
+        return JSON.parse(fallbackMatch[1]);
+      }
+
+      return undefined;
+    } catch (e) {
+      console.log('Failed to parse Jest JSON output:', e);
+      return undefined;
+    }
+  }
+
   // Modified run handler to accept additional args
   private async runHandler(
     request: vscode.TestRunRequest,
@@ -158,40 +297,95 @@ export class JestTestController {
     additionalArgs: string[] = [],
   ) {
     const run = this.testController.createTestRun(request);
-    const queue: vscode.TestItem[] = [];
 
-    if (request.include) {
-      request.include.forEach((test) => queue.push(test));
-    } else {
-      this.testController.items.forEach((test) => queue.push(test));
-    }
+    // Group tests by file
+    const testsByFile = new Map<string, vscode.TestItem[]>();
 
-    while (queue.length > 0 && !token.isCancellationRequested) {
-      const test = queue.shift()!;
-
+    // Collect all tests, grouped by file
+    const collectTests = (test: vscode.TestItem) => {
       if (request.exclude?.includes(test)) {
-        continue;
+        return;
       }
 
       if (test.children.size > 0) {
-        test.children.forEach((child) => queue.push(child));
-        continue;
+        // Process suite children
+        test.children.forEach((child) => collectTests(child));
+      } else if (test.uri) {
+        // Group individual tests by file path
+        const filePath = test.uri.fsPath;
+        if (!testsByFile.has(filePath)) {
+          testsByFile.set(filePath, []);
+        }
+        testsByFile.get(filePath)!.push(test);
+      }
+    };
+
+    // Collect tests from the request
+    if (request.include) {
+      request.include.forEach((test) => collectTests(test));
+    } else {
+      this.testController.items.forEach((test) => collectTests(test));
+    }
+
+    // Process each file's tests with a single Jest process
+    for (const [filePath, tests] of testsByFile.entries()) {
+      if (token.isCancellationRequested) {
+        break;
       }
 
-      // Run the test
-      run.started(test);
+      // Mark all tests in this file as started
+      tests.forEach((test) => run.started(test));
 
       try {
-        // Execute Jest for this specific test with additional args
-        const result = this.executeJestTest(test, additionalArgs);
-
-        if (result.success) {
-          run.passed(test);
-        } else {
-          run.failed(test, new vscode.TestMessage(result.message));
+        // Create test name pattern for multiple tests in the same file
+        let testNamePattern: string | undefined;
+        if (tests.length > 1) {
+          // Create a regex pattern that matches any of the selected tests
+          const escapedNames = tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|');
+          testNamePattern = `(${escapedNames})`;
+        } else if (tests.length === 1) {
+          testNamePattern = tests[0].label;
         }
+
+        // Run all tests in this file with one Jest process
+        const args = this.jestConfig.buildJestArgs(filePath, testNamePattern, true, [...additionalArgs, '--json']);
+
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath;
+        if (!workspaceFolder) {
+          tests.forEach((test) => run.failed(test, new vscode.TestMessage('Could not determine workspace folder')));
+          continue;
+        }
+
+        // Execute Jest for all tests in this file
+        const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
+        console.log('Running batch command:', command);
+
+        let output;
+        try {
+          // Try to run the command normally
+          output = execSync(command, {
+            cwd: this.jestConfig.cwd,
+            encoding: 'utf-8',
+            env: { ...process.env, FORCE_COLOR: 'true' },
+          });
+        } catch (error) {
+          // If Jest fails (non-zero exit code), it still provides output with test results
+          // We need to use this output to determine which tests passed and which failed
+          if (error.stdout) {
+            output = error.stdout;
+          } else {
+            // Only if we couldn't get any output, mark all as failed
+            tests.forEach((test) => run.failed(test, new vscode.TestMessage(error.message || 'Test execution failed')));
+            continue;
+          }
+        }
+
+        // Process results using the output whether Jest succeeded or failed
+        this.processTestResults(output, tests, run);
       } catch (error) {
-        run.failed(test, new vscode.TestMessage(`Error: ${error}`));
+        // This will only happen for other errors, not Jest test failures
+        const errOutput = error.message || 'Test execution failed';
+        tests.forEach((test) => run.failed(test, new vscode.TestMessage(errOutput)));
       }
     }
 
