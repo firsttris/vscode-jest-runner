@@ -2,7 +2,7 @@
   "name": "vscode-jest-runner",
   "displayName": "Jest Runner",
   "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
-  "version": "0.4.82",
+  "version": "0.4.83",
   "publisher": "firsttris",
   "author": "Tristan Teufel",
   "repository": {
