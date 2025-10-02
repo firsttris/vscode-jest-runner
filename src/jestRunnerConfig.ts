@@ -67,6 +67,10 @@ export class JestRunnerConfig {
     }
   }
 
+  private get useNearestConfig(): boolean | undefined {
+    return vscode.workspace.getConfiguration().get<boolean>('jestrunner.useNearestConfig');
+  }
+
   public get currentPackagePath() {
     const checkRelativePathForJest = vscode.workspace
       .getConfiguration()
@@ -100,26 +104,28 @@ export class JestRunnerConfig {
       .get('jestrunner.configPath');
 
     const configPath = resolveConfigPathOrMapping(configPathOrMapping, targetPath);
-    if (!configPath) {
-      return this.findConfigPath(targetPath);
+    if (!configPath || this.useNearestConfig) {
+      const foundPath = this.findConfigPath(targetPath, configPath);
+      if (foundPath) {
+        return foundPath;
+        // Continue to default if no config is found
+      }
     }
 
     // default
-    return normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath));
+    return configPath
+      ? normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath))
+      : '';
   }
 
-  public findConfigPath(targetPath?: string): string {
+  public findConfigPath(targetPath?: string, targetConfigFilename?: string): string | undefined {
     const foundPath = searchPathToParent<string>(
       targetPath || path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
-        for (const configFilename of [
-          'jest.config.js',
-          'jest.config.ts',
-          'jest.config.cjs',
-          'jest.config.mjs',
-          'jest.config.json',
-        ]) {
+        for (const configFilename of targetConfigFilename
+          ? [targetConfigFilename]
+          : ['jest.config.js', 'jest.config.ts', 'jest.config.cjs', 'jest.config.mjs', 'jest.config.json']) {
           const currentFolderConfigPath = path.join(currentFolderPath, configFilename);
 
           if (fs.existsSync(currentFolderConfigPath)) {
@@ -128,7 +134,7 @@ export class JestRunnerConfig {
         }
       },
     );
-    return foundPath ? normalizePath(foundPath) : '';
+    return foundPath ? normalizePath(foundPath) : undefined;
   }
 
   public get runOptions(): string[] | null {

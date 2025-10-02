@@ -48,6 +48,12 @@
             "default": "",
             "scope": "window"
           },
+          "jestrunner.useNearestConfig": {
+            "type": "boolean",
+            "default": false,
+            "description": "If jestrunner.configPath is set and this is true, the nearest matching jest config in the path hierarchy will be used instead of the root path.",
+            "scope": "window"
+          },
           "jestrunner.jestPath": {
             "type": "string",
             "default": "",
@@ -121,7 +127,7 @@
           "jestrunner.checkRelativePathForJest": {
             "type": "boolean",
             "default": true,
-            "description": "When looking for the nearest resolution for Jest, only check for package.json files, rather than the `node_modules` folder.",
+            "description": "When `false`, when looking for the nearest resolution for Jest, only check for package.json files, rather than the `node_modules` folder.",
             "scope": "window"
           },
           "jestrunner.changeDirectoryToWorkspaceRoot": {
