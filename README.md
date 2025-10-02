@@ -47,6 +47,16 @@ add the following command to settings:
 },
 ```
 
+## Usage with nvm
+
+add the following command to settings to help jestrunner find your node:
+```json
+"jestrunner.jestCommand": "nvm use && npm run test --",
+"jestrunner.debugOptions": {
+    runtimeExecutable": "/PATH/TO/YOUR/node"
+},
+```
+
 ## Extension Settings
 
 Jest Runner will work out of the box, with a valid Jest config.
@@ -56,7 +66,7 @@ If you have a custom setup use the following options to customize Jest Runner:
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | jestrunner.configPath                     | Jest config path (string) (relative to `${workspaceFolder}` e.g. jest-config.json). Defaults to blank. Can also be a glob path mapping. See [below](#configpath-as-glob-map) for more details         |
 | jestrunner.jestPath                       | Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)                                                                                |
-| jestrunner.debugOptions                   | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"jestrunner.debugOptions": { "args": ["--no-cache"] }`)                            |
+| jestrunner.debugOptions                   | Add or overwrite vscode debug configurations (only in debug mode) (e.g. `"jestrunner.debugOptions": { "args": ["--no-cache"] }`) See [vscode docs](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_launch-configuration-attributes)                           |
 | jestrunner.runOptions                     | Add CLI Options to the Jest Command (e.g. `"jestrunner.runOptions": ["--coverage", "--colors"]`) https://jestjs.io/docs/en/cli                              |
 | jestrunner.jestCommand                    | Define an alternative Jest command (e.g. for Create React App and similar abstractions)                                                                     |
 | jestrunner.disableCodeLens                | Disable CodeLens feature                                                                                                                                    |
