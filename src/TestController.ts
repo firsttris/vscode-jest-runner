@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { spawn } from 'child_process';
 import { parse } from './parser';
 import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
@@ -314,6 +314,82 @@ export class JestTestController {
   }
 
   /**
+   * Execute Jest command asynchronously with cancellation support
+   */
+  private executeJestCommand(
+    command: string,
+    args: string[],
+    token: vscode.CancellationToken,
+    tests: vscode.TestItem[],
+    run: vscode.TestRun,
+  ): Promise<string | null> {
+    return new Promise((resolve) => {
+      // Get configurable max buffer size (default 50MB)
+      const maxBufferSize = vscode.workspace.getConfiguration('jestrunner').get<number>('maxBufferSize', 50) * 1024 * 1024;
+      
+      const jestProcess = spawn(command, args, {
+        cwd: this.jestConfig.cwd,
+        env: { ...process.env, FORCE_COLOR: 'true' },
+        shell: true,
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      jestProcess.stdout?.on('data', (data) => {
+        stdout += data.toString();
+        
+        // Check buffer size to prevent memory issues
+        if (stdout.length > maxBufferSize) {
+          jestProcess.kill();
+          tests.forEach((test) => run.failed(test, new vscode.TestMessage('Test output exceeded maximum buffer size')));
+          resolve(null);
+        }
+      });
+
+      jestProcess.stderr?.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      jestProcess.on('error', (error) => {
+        tests.forEach((test) => run.failed(test, new vscode.TestMessage(`Failed to execute Jest: ${error.message}`)));
+        resolve(null);
+      });
+
+      jestProcess.on('close', (code) => {
+        if (token.isCancellationRequested) {
+          tests.forEach((test) => run.skipped(test));
+          resolve(null);
+          return;
+        }
+
+        // Jest returns non-zero exit code on test failures, but that's okay
+        if (stdout) {
+          resolve(stdout);
+        } else if (stderr) {
+          // If no stdout but stderr exists, it's likely an error
+          tests.forEach((test) => run.failed(test, new vscode.TestMessage(stderr)));
+          resolve(null);
+        } else {
+          tests.forEach((test) => run.failed(test, new vscode.TestMessage('No output from Jest')));
+          resolve(null);
+        }
+      });
+
+      // Handle cancellation
+      const cancellationListener = token.onCancellationRequested(() => {
+        jestProcess.kill();
+        tests.forEach((test) => run.skipped(test));
+        resolve(null);
+      });
+
+      jestProcess.on('close', () => {
+        cancellationListener.dispose();
+      });
+    });
+  }
+
+  /**
    * Parse Jest JSON output from command output with improved regex
    */
   private parseJestOutput(output: string): JestResults | undefined {
@@ -423,26 +499,19 @@ export class JestTestController {
         ];
       }
 
-      const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
-      console.log('Running batched command:', command, `(${allTests.length} tests across ${allFiles.length} files)`);
+      const commandParts = this.jestConfig.jestCommand.split(' ');
+      const command = commandParts[0];
+      const commandArgs = [...commandParts.slice(1), ...args];
+      
+      console.log('Running batched command:', command, commandArgs.join(' '), `(${allTests.length} tests across ${allFiles.length} files)`);
 
-      let output: string;
-      try {
-        output = execSync(command, {
-          cwd: this.jestConfig.cwd,
-          encoding: 'utf-8',
-          env: { ...process.env, FORCE_COLOR: 'true' },
-          maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large test outputs
-        });
-      } catch (error) {
-        // Jest returns non-zero exit code on test failures
-        if (error.stdout) {
-          output = error.stdout;
-        } else {
-          allTests.forEach((test) => run.failed(test, new vscode.TestMessage(error.message || 'Test execution failed')));
-          run.end();
-          return;
-        }
+      // Execute Jest with spawn for async execution
+      const output = await this.executeJestCommand(command, commandArgs, token, allTests, run);
+      
+      if (output === null) {
+        // Cancelled or failed
+        run.end();
+        return;
       }
 
       // Process all test results

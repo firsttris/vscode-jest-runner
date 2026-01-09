@@ -142,6 +142,12 @@
             "default": [],
             "description": "File globs to exclude",
             "scope": "window"
+          },
+          "jestrunner.maxBufferSize": {
+            "type": "number",
+            "default": 50,
+            "description": "Maximum buffer size in MB for test output (default: 50MB)",
+            "scope": "window"
           }
         }
       }

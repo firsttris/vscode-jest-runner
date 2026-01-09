@@ -33,7 +33,8 @@ export function escapeRegExp(s: string): string {
 }
 
 export function escapeRegExpForPath(s: string): string {
-  return s.replace(/[*+?^${}<>()|[\]]/g, '\\$&'); // $& means the whole matched string
+  // Keep consistent with escapeRegExp but without special handling for (.*?) patterns
+  return s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
 export function findFullTestName(selectedLine: number, children: TestNode[]): string | undefined {
@@ -151,7 +152,15 @@ export function searchPathToParent<T>(
   ancestorPath: string,
   callback: (currentFolderPath: string) => false | undefined | null | 0 | T,
 ) {
-  let currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
+  let currentFolderPath: string;
+  try {
+    currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
+  } catch (error) {
+    // If we can't access the path (permissions, doesn't exist, etc.), use parent directory
+    console.warn(`Could not access ${startingPath}: ${error.message}`);
+    currentFolderPath = path.dirname(startingPath);
+  }
+  
   const endPath = path.dirname(ancestorPath);
   const resolvedStart = path.resolve(currentFolderPath);
   const resolvedEnd = path.resolve(endPath);
