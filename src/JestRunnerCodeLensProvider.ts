@@ -1,8 +1,6 @@
 import { parse } from './parser';
 import { CodeLens, CodeLensProvider, Range, TextDocument, window, workspace } from 'vscode';
-import { findFullTestName, escapeRegExp, CodeLensOption, normalizePath, TestNode, shouldIncludeFile } from './util';
-import { sync } from 'fast-glob';
-import { isJestTestFile } from './jestDetection';
+import { findFullTestName, escapeRegExp, CodeLensOption, TestNode, shouldIncludeFile } from './util';
 
 function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
   const titleMap: Record<CodeLensOption, string> = {

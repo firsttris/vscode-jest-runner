@@ -1,5 +1,4 @@
 import * as path from 'path';
-import { execSync } from 'child_process';
 import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'fs';

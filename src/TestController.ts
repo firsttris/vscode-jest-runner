@@ -327,66 +327,82 @@ export class JestTestController {
       this.testController.items.forEach((test) => collectTests(test));
     }
 
-    // Process each file's tests with a single Jest process
-    for (const [filePath, tests] of testsByFile.entries()) {
-      if (token.isCancellationRequested) {
-        break;
-      }
-
-      // Mark all tests in this file as started
+    // Mark all tests as started
+    testsByFile.forEach((tests) => {
       tests.forEach((test) => run.started(test));
+    });
 
-      try {
-        // Create test name pattern for multiple tests in the same file
-        let testNamePattern: string | undefined;
-        if (tests.length > 1) {
-          // Create a regex pattern that matches any of the selected tests
-          const escapedNames = tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|');
-          testNamePattern = `(${escapedNames})`;
-        } else if (tests.length === 1) {
-          testNamePattern = tests[0].label;
-        }
+    if (token.isCancellationRequested) {
+      run.end();
+      return;
+    }
 
-        // Run all tests in this file with one Jest process
-        const args = this.jestConfig.buildJestArgs(filePath, testNamePattern, true, [...additionalArgs, '--json']);
+    try {
+      // Batch all test files into a single Jest command
+      const allFiles = Array.from(testsByFile.keys());
+      const allTests = Array.from(testsByFile.values()).flat();
 
-        const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath;
-        if (!workspaceFolder) {
-          tests.forEach((test) => run.failed(test, new vscode.TestMessage('Could not determine workspace folder')));
-          continue;
-        }
-
-        // Execute Jest for all tests in this file
-        const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
-        console.log('Running batch command:', command);
-
-        let output;
-        try {
-          // Try to run the command normally
-          output = execSync(command, {
-            cwd: this.jestConfig.cwd,
-            encoding: 'utf-8',
-            env: { ...process.env, FORCE_COLOR: 'true' },
-          });
-        } catch (error) {
-          // If Jest fails (non-zero exit code), it still provides output with test results
-          // We need to use this output to determine which tests passed and which failed
-          if (error.stdout) {
-            output = error.stdout;
-          } else {
-            // Only if we couldn't get any output, mark all as failed
-            tests.forEach((test) => run.failed(test, new vscode.TestMessage(error.message || 'Test execution failed')));
-            continue;
-          }
-        }
-
-        // Process results using the output whether Jest succeeded or failed
-        this.processTestResults(output, tests, run);
-      } catch (error) {
-        // This will only happen for other errors, not Jest test failures
-        const errOutput = error.message || 'Test execution failed';
-        tests.forEach((test) => run.failed(test, new vscode.TestMessage(errOutput)));
+      if (allFiles.length === 0) {
+        run.end();
+        return;
       }
+
+      // Determine workspace folder
+      const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(allFiles[0]))?.uri.fsPath;
+      if (!workspaceFolder) {
+        allTests.forEach((test) => run.failed(test, new vscode.TestMessage('Could not determine workspace folder')));
+        run.end();
+        return;
+      }
+
+      // Build command: run all test files in a single Jest invocation
+      // Use file pattern if multiple files, otherwise specific file with optional test name pattern
+      let args: string[];
+      if (allFiles.length === 1 && testsByFile.get(allFiles[0])!.length < allTests.length) {
+        // Single file with specific tests - use test name pattern
+        const tests = testsByFile.get(allFiles[0])!;
+        const testNamePattern = tests.length > 1
+          ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
+          : tests[0].label;
+        args = this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--json']);
+      } else {
+        // Multiple files or whole file - just pass file paths
+        args = [
+          ...allFiles,
+          '--json',
+          ...additionalArgs,
+        ];
+      }
+
+      const command = `${this.jestConfig.jestCommand} ${args.join(' ')}`;
+      console.log('Running batched command:', command, `(${allTests.length} tests across ${allFiles.length} files)`);
+
+      let output: string;
+      try {
+        output = execSync(command, {
+          cwd: this.jestConfig.cwd,
+          encoding: 'utf-8',
+          env: { ...process.env, FORCE_COLOR: 'true' },
+          maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large test outputs
+        });
+      } catch (error) {
+        // Jest returns non-zero exit code on test failures
+        if (error.stdout) {
+          output = error.stdout;
+        } else {
+          allTests.forEach((test) => run.failed(test, new vscode.TestMessage(error.message || 'Test execution failed')));
+          run.end();
+          return;
+        }
+      }
+
+      // Process all test results
+      this.processTestResults(output, allTests, run);
+    } catch (error) {
+      const errOutput = error.message || 'Test execution failed';
+      testsByFile.forEach((tests) => {
+        tests.forEach((test) => run.failed(test, new vscode.TestMessage(errOutput)));
+      });
     }
 
     run.end();

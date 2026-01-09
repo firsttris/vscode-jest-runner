@@ -742,7 +742,7 @@ describe('JestRunnerConfig', () => {
             } else {
               expect(jestRunnerConfig.findConfigPath()).toBe('');
             }
-            expect(activeTextEditorSpy).toBeCalled();
+            expect(activeTextEditorSpy).toHaveBeenCalled();
           });
         },
       );

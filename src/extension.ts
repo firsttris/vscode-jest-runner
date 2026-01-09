@@ -1,6 +1,5 @@
 'use strict';
 import * as vscode from 'vscode';
-
 import { JestRunner } from './jestRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
@@ -30,9 +29,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Initial update
   updateJestFileContext();
 
-  const testExplorerEnabled = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', true);
+  const testInterface = vscode.workspace.getConfiguration('jestrunner').get('testInterface', 'testExplorer');
 
-  if (testExplorerEnabled) {
+  if (testInterface === 'testExplorer') {
     const jestTestController = new JestTestController(context);
     context.subscriptions.push({ dispose: () => jestTestController.dispose() });
   }
