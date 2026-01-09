@@ -114,6 +114,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(runJestFileWithCoverage);
   context.subscriptions.push(runJestFileWithWatchMode);
   context.subscriptions.push(watchJest);
+  
+  // Register JestRunner for disposal
+  context.subscriptions.push({ dispose: () => jestRunner.dispose() });
 }
 
 export function deactivate(): void {

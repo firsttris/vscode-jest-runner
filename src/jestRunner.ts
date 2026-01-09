@@ -25,6 +25,10 @@ export class JestRunner {
 
   private commands: string[] = [];
 
+  private disposables: vscode.Disposable[] = [];
+
+  private isExecuting: boolean = false;
+
   constructor(private readonly config: JestRunnerConfig) {
     this.setup();
   }
@@ -154,14 +158,24 @@ export class JestRunner {
   //
 
   private async executeDebugCommand(debugCommand: DebugCommand) {
-    for (const command of this.commands) {
-      await this.runTerminalCommand(command);
+    if (this.isExecuting) {
+      vscode.window.showWarningMessage('Another debug session is already starting. Please wait.');
+      return;
     }
-    this.commands = [];
 
-    vscode.debug.startDebugging(undefined, debugCommand.config);
+    this.isExecuting = true;
+    try {
+      for (const command of this.commands) {
+        await this.runTerminalCommand(command);
+      }
+      this.commands = [];
 
-    this.previousCommand = debugCommand;
+      await vscode.debug.startDebugging(undefined, debugCommand.config);
+
+      this.previousCommand = debugCommand;
+    } finally {
+      this.isExecuting = false;
+    }
   }
 
   private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
@@ -200,10 +214,20 @@ export class JestRunner {
   }
 
   private setup() {
-    vscode.window.onDidCloseTerminal((closedTerminal: vscode.Terminal) => {
+    const terminalCloseHandler = vscode.window.onDidCloseTerminal((closedTerminal: vscode.Terminal) => {
       if (this.terminal === closedTerminal) {
         this.terminal = null;
       }
     });
+    this.disposables.push(terminalCloseHandler);
+  }
+
+  public dispose() {
+    this.disposables.forEach((d) => d.dispose());
+    this.disposables = [];
+    if (this.terminal) {
+      this.terminal.dispose();
+      this.terminal = null;
+    }
   }
 }

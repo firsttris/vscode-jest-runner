@@ -54,11 +54,16 @@ export class JestRunnerConfig {
   }
 
   public get currentPackagePath() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return '';
+    }
+    
     const checkRelativePathForJest = vscode.workspace
       .getConfiguration()
       .get<boolean>('jestrunner.checkRelativePathForJest');
     const foundPath = searchPathToParent<string>(
-      path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
+      path.dirname(editor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         // Try to find where jest is installed relatively to the current opened file.
@@ -76,7 +81,18 @@ export class JestRunnerConfig {
 
   private get currentWorkspaceFolderPath(): string {
     const editor = vscode.window.activeTextEditor;
-    return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
+    if (!editor) {
+      // Fallback to first workspace folder if no active editor
+      return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    }
+    
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+    if (!workspaceFolder) {
+      // Fallback to first workspace folder if file is not in workspace
+      return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    }
+    
+    return workspaceFolder.uri.fsPath;
   }
 
   public getJestConfigPath(targetPath: string): string {
@@ -95,8 +111,11 @@ export class JestRunnerConfig {
   }
 
   public findConfigPath(targetPath?: string): string {
+    const editor = vscode.window.activeTextEditor;
+    const defaultPath = editor ? path.dirname(editor.document.uri.fsPath) : this.currentWorkspaceFolderPath;
+    
     const foundPath = searchPathToParent<string>(
-      targetPath || path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
+      targetPath || defaultPath,
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         for (const configFilename of [
