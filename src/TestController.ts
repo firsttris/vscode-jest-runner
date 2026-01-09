@@ -200,26 +200,75 @@ export class JestTestController {
       const testResults = results.testResults[0].assertionResults;
       console.log(`Processing ${testResults.length} test results for ${tests.length} test items`);
 
-      // Process each test with improved matching
+      // Create a map to track which results have been used
+      const usedResults = new Set<number>();
+
+      // Process each test with improved matching including location
       tests.forEach((test) => {
         // Get clean test name without describe blocks
         const testName = test.label.split(' ').pop() || test.label;
+        const testLine = test.range?.start.line;
 
-        // Try different matching strategies
-        const matchingResult = testResults.find(
-          (r) =>
-            // Direct title match
-            r.title === test.label ||
-            // Base name match (without describe blocks)
-            r.title === testName ||
-            // Full name match
-            r.fullName === test.label ||
-            // Ancestor titles + title match the label
-            (r.ancestorTitles && r.ancestorTitles.concat(r.title).join(' ') === test.label),
-        );
+        // Find all potential matches
+        const potentialMatches = testResults
+          .map((r, index) => ({ result: r, index }))
+          .filter(
+            ({ result: r }) =>
+              // Direct title match
+              r.title === test.label ||
+              // Base name match (without describe blocks)
+              r.title === testName ||
+              // Full name match
+              r.fullName === test.label ||
+              // Ancestor titles + title match the label
+              (r.ancestorTitles && r.ancestorTitles.concat(r.title).join(' ') === test.label),
+          );
+
+        let matchingResult: JestAssertionResult | undefined;
+        let matchedIndex = -1;
+
+        if (potentialMatches.length > 0) {
+          if (potentialMatches.length === 1) {
+            // Only one match, use it
+            matchingResult = potentialMatches[0].result;
+            matchedIndex = potentialMatches[0].index;
+          } else {
+            // Multiple matches with same name - use location to disambiguate
+            console.log(`Found ${potentialMatches.length} potential matches for "${test.label}", using location to match`);
+            
+            // First try: match by line number if available
+            if (testLine !== undefined) {
+              const locationMatch = potentialMatches.find(
+                ({ result: r, index }) => 
+                  !usedResults.has(index) && 
+                  r.location?.line !== undefined && 
+                  r.location.line === testLine + 1 // Jest uses 1-based line numbers
+              );
+              
+              if (locationMatch) {
+                matchingResult = locationMatch.result;
+                matchedIndex = locationMatch.index;
+              }
+            }
+            
+            // Second try: use the first unused result
+            if (!matchingResult) {
+              const unusedMatch = potentialMatches.find(({ index }) => !usedResults.has(index));
+              if (unusedMatch) {
+                matchingResult = unusedMatch.result;
+                matchedIndex = unusedMatch.index;
+              }
+            }
+          }
+        }
 
         if (matchingResult) {
-          console.log(`Found match for "${test.label}": ${matchingResult.status}`);
+          // Mark this result as used
+          if (matchedIndex >= 0) {
+            usedResults.add(matchedIndex);
+          }
+          
+          console.log(`Found match for "${test.label}" at line ${testLine}: ${matchingResult.status}`);
           if (matchingResult.status === 'passed') {
             run.passed(test);
           } else if (matchingResult.status === 'failed') {
