@@ -515,7 +515,7 @@ export class JestTestController {
       // Process all test results
       this.processTestResults(output, allTests, run);
     } catch (error) {
-      const errOutput = error.message || 'Test execution failed';
+      const errOutput = error instanceof Error ? error.message : (error ? String(error) : 'Test execution failed');
       testsByFile.forEach((tests) => {
         tests.forEach((test) => run.failed(test, new vscode.TestMessage(errOutput)));
       });
