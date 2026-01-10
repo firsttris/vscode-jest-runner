@@ -18,8 +18,6 @@ jest.mock('child_process');
 describe('JestTestController', () => {
   let controller: JestTestController;
   let mockContext: vscode.ExtensionContext;
-  let mockConfig: JestRunnerConfig;
-  let mockTestController: vscode.TestController;
   let mockWorkspaceFolder: vscode.WorkspaceFolder;
 
   beforeEach(() => {

@@ -66,6 +66,22 @@ add the following command to settings:
 },
 ```
 
+## Migration Notes
+
+### CodeLens Setting Change (v0.4.80+)
+
+The setting `jestrunner.disableCodeLens` has been replaced with `jestrunner.enableCodeLens` for better clarity.
+
+- **Old setting:** `jestrunner.disableCodeLens` (default: `false`)
+- **New setting:** `jestrunner.enableCodeLens` (default: `true`)
+
+**For backwards compatibility**, the old setting is still supported. If you had explicitly set `"jestrunner.disableCodeLens": true`, you have two options:
+
+1. **Keep the old setting** - It will continue to work (though it's deprecated)
+2. **Migrate to the new setting** - Change your settings to use `"jestrunner.enableCodeLens": false`
+
+The extension will show a deprecation notice if you're still using `disableCodeLens`.
+
 ## Usage with nvm
 
 add the following command to settings to help jestrunner find your node:

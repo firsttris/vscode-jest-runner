@@ -17,10 +17,7 @@ import {
   shouldIncludeFile,
 } from '../util';
 import * as fs from 'fs';
-import * as childProcess from 'child_process';
 import * as vscode from 'vscode';
-import * as fastGlob from 'fast-glob';
-import { isJestTestFile } from '../jestDetection';
 
 const its = {
   windows: isWindows() ? it : it.skip,

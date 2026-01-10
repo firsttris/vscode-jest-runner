@@ -219,7 +219,16 @@ export class JestRunnerConfig {
   }
 
   public get isCodeLensEnabled(): boolean {
-    const enableCodeLens = vscode.workspace.getConfiguration().get<boolean>('jestrunner.enableCodeLens', true);
+    const config = vscode.workspace.getConfiguration();
+    
+    // Check for old disableCodeLens setting for backwards compatibility
+    const disableCodeLens = config.get<boolean>('jestrunner.disableCodeLens');
+    if (disableCodeLens !== undefined) {
+      return !disableCodeLens;
+    }
+    
+    // Use new enableCodeLens setting (default: true)
+    const enableCodeLens = config.get<boolean>('jestrunner.enableCodeLens', true);
     return enableCodeLens;
   }
 

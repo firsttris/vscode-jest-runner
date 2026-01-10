@@ -68,6 +68,8 @@ type JestRunnerConfigProps = {
   'jestrunner.jestCommand'?: string;
   'jestrunner.enableYarnPnpSupport'?: boolean;
   'jestrunner.yarnPnpCommand'?: string;
+  'jestrunner.enableCodeLens'?: boolean;
+  'jestrunner.disableCodeLens'?: boolean;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) {}

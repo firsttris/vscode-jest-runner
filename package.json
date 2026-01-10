@@ -88,6 +88,13 @@
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
+          "jestrunner.disableCodeLens": {
+            "type": "boolean",
+            "default": false,
+            "description": "Deprecated: Use 'jestrunner.enableCodeLens' instead. This setting is kept for backwards compatibility.",
+            "scope": "window",
+            "deprecationMessage": "This setting is deprecated. Please use 'jestrunner.enableCodeLens' instead (note: enableCodeLens uses inverted logic)."
+          },
           "jestrunner.enableCodeLens": {
             "type": "boolean",
             "default": true,

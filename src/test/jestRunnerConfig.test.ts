@@ -1300,4 +1300,77 @@ describe('JestRunnerConfig', () => {
       expect(config.args).toEqual(['jest']);
     });
   });
+
+  describe('isCodeLensEnabled - backwards compatibility', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
+    });
+
+    it('should return true by default when no settings are configured', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
+    });
+
+    it('should respect enableCodeLens when set to false', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableCodeLens': false,
+        }),
+      );
+
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
+    });
+
+    it('should respect enableCodeLens when set to true', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableCodeLens': true,
+        }),
+      );
+
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
+    });
+
+    it('should support old disableCodeLens setting (set to true)', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.disableCodeLens': true,
+        }),
+      );
+
+      // disableCodeLens: true means CodeLens should be disabled (return false)
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
+    });
+
+    it('should support old disableCodeLens setting (set to false)', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.disableCodeLens': false,
+        }),
+      );
+
+      // disableCodeLens: false means CodeLens should be enabled (return true)
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
+    });
+
+    it('should prioritize disableCodeLens over enableCodeLens for backwards compatibility', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.disableCodeLens': true,
+          'jestrunner.enableCodeLens': true, // This should be ignored
+        }),
+      );
+
+      // Old setting takes precedence
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
+    });
+  });
 });
