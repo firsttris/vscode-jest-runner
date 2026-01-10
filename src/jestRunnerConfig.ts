@@ -83,7 +83,9 @@ export class JestRunnerConfig {
       return `yarn jest`;
     }
 
-    // Use npx for all platforms
+    // Use npx for all platforms. npx is bundled with npm 5.2.0+ (2017) and works
+    // cross-platform. VS Code's terminal automatically handles .cmd extensions on Windows.
+    // For edge cases or older npm versions, users can set jestrunner.jestCommand.
     return 'npx --no-install jest';
   }
 
