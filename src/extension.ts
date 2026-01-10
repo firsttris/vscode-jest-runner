@@ -47,9 +47,18 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const enableTestExplorer = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', false);
 
-  if (enableTestExplorer && vscode.workspace.workspaceFolders) {
-    const jestTestController = new JestTestController(context);
-    context.subscriptions.push({ dispose: () => jestTestController.dispose() });
+  if (enableTestExplorer) {
+    if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+      try {
+        const jestTestController = new JestTestController(context);
+        context.subscriptions.push({ dispose: () => jestTestController.dispose() });
+      } catch (error) {
+        logError('Failed to initialize Test Explorer', error);
+        vscode.window.showWarningMessage('Jest Runner: Failed to initialize Test Explorer. Check the output for details.');
+      }
+    } else {
+      logError('Test Explorer is enabled but no workspace folders are available', new Error('No workspace folders'));
+    }
   }
 
   const runJest = vscode.commands.registerCommand(
