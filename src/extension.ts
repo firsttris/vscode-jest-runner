@@ -31,7 +31,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const enableTestExplorer = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', false);
 
-  if (enableTestExplorer) {
+  if (enableTestExplorer && vscode.workspace.workspaceFolders) {
     const jestTestController = new JestTestController(context);
     context.subscriptions.push({ dispose: () => jestTestController.dispose() });
   }
