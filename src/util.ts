@@ -157,7 +157,7 @@ export function searchPathToParent<T>(
     currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
   } catch (error) {
     // If we can't access the path (permissions, doesn't exist, etc.), use parent directory
-    console.warn(`Could not access ${startingPath}: ${error.message}`);
+    console.warn(`Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`);
     currentFolderPath = path.dirname(startingPath);
   }
   
