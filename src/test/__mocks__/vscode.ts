@@ -60,6 +60,11 @@ type JestRunnerConfigProps = {
   'jestrunner.checkRelativePathForJest'?: boolean;
   'jestrunner.include'?: string[];
   'jestrunner.exclude'?: string[];
+  'jestrunner.runOptions'?: string[];
+  'jestrunner.debugOptions'?: any;
+  'jestrunner.jestCommand'?: string;
+  'jestrunner.enableYarnPnpSupport'?: boolean;
+  'jestrunner.yarnPnpCommand'?: string;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) {}
