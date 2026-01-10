@@ -1069,7 +1069,13 @@ describe('JestRunnerConfig', () => {
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, "test's name", true);
 
       const testNameIndex = args.indexOf('-t') + 1;
-      expect(args[testNameIndex]).toContain("\\'");
+      // On Windows, we use double quotes and don't escape single quotes
+      // On Unix, we use single quotes and escape them
+      if (isWindows()) {
+        expect(args[testNameIndex]).toBe('"test\'s name"');
+      } else {
+        expect(args[testNameIndex]).toContain("'\\''");
+      }
     });
 
     it('should resolve test name string interpolation', () => {
@@ -1271,7 +1277,11 @@ describe('JestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.cwd).toBe('/home/user/project/packages/app');
+      // On Windows, the path gets converted to Windows-style
+      const expectedPath = isWindows()
+        ? path.resolve('/home/user/project/packages/app').replace(/\//g, '\\')
+        : '/home/user/project/packages/app';
+      expect(config.cwd).toBe(expectedPath);
     });
 
     it('should prioritize Yarn PnP over custom jest command', () => {
