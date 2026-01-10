@@ -1,10 +1,313 @@
-import { isWindows, searchPathToParent, validateCodeLensOptions } from '../util';
+import {
+  isWindows,
+  searchPathToParent,
+  validateCodeLensOptions,
+  getDirName,
+  getFileName,
+  normalizePath,
+  escapeRegExp,
+  escapeRegExpForPath,
+  escapeSingleQuotes,
+  quote,
+  unquote,
+  pushMany,
+  updateTestNameIfUsingProperties,
+  resolveConfigPathOrMapping,
+  findFullTestName,
+  isNodeExecuteAbleFile,
+} from '../util';
 import * as fs from 'fs';
+import * as childProcess from 'child_process';
+import * as vscode from 'vscode';
 
 const its = {
   windows: isWindows() ? it : it.skip,
   linux: ['linux', 'darwin'].includes(process.platform) ? it : it.skip,
 };
+
+describe('getDirName', () => {
+  it('should return the directory name', () => {
+    expect(getDirName('/path/to/file.ts')).toBe('/path/to');
+    expect(getDirName('/path/to/dir/')).toBe('/path/to');
+  });
+});
+
+describe('getFileName', () => {
+  it('should return the file name', () => {
+    expect(getFileName('/path/to/file.ts')).toBe('file.ts');
+    expect(getFileName('/path/to/dir/')).toBe('dir');
+  });
+});
+
+describe('normalizePath', () => {
+  its.windows('should replace backslashes with forward slashes on Windows', () => {
+    expect(normalizePath('C:\\path\\to\\file.ts')).toBe('C:/path/to/file.ts');
+  });
+
+  its.linux('should return the path unchanged on Linux', () => {
+    expect(normalizePath('/path/to/file.ts')).toBe('/path/to/file.ts');
+  });
+});
+
+describe('escapeRegExp', () => {
+  it('should escape special regex characters', () => {
+    expect(escapeRegExp('test.name')).toBe('test\\.name');
+    expect(escapeRegExp('test*name')).toBe('test\\*name');
+    expect(escapeRegExp('test+name')).toBe('test\\+name');
+    expect(escapeRegExp('test?name')).toBe('test\\?name');
+    expect(escapeRegExp('test^name')).toBe('test\\^name');
+    expect(escapeRegExp('test$name')).toBe('test\\$name');
+    expect(escapeRegExp('test{name}')).toBe('test\\{name\\}');
+    expect(escapeRegExp('test[name]')).toBe('test\\[name\\]');
+    expect(escapeRegExp('test(name)')).toBe('test\\(name\\)');
+    expect(escapeRegExp('test|name')).toBe('test\\|name');
+  });
+
+  it('should convert match all patterns (.*?) back to non-escaped form', () => {
+    expect(escapeRegExp('test(.*?)name')).toBe('test(.*?)name');
+  });
+});
+
+describe('escapeRegExpForPath', () => {
+  it('should escape special regex characters but not backslashes', () => {
+    expect(escapeRegExpForPath('test*name')).toBe('test\\*name');
+    expect(escapeRegExpForPath('test+name')).toBe('test\\+name');
+    expect(escapeRegExpForPath('C:\\path\\to\\file')).toBe('C:\\path\\to\\file');
+  });
+});
+
+describe('escapeSingleQuotes', () => {
+  its.linux('should escape single quotes on Linux', () => {
+    expect(escapeSingleQuotes("test'name")).toBe("test'\\''name");
+  });
+
+  its.windows('should not escape single quotes on Windows', () => {
+    expect(escapeSingleQuotes("test'name")).toBe("test'name");
+  });
+});
+
+describe('quote', () => {
+  its.windows('should wrap string with double quotes on Windows', () => {
+    expect(quote('test')).toBe('"test"');
+  });
+
+  its.linux('should wrap string with single quotes on Linux', () => {
+    expect(quote('test')).toBe("'test'");
+  });
+});
+
+describe('unquote', () => {
+  it('should remove quotes from string', () => {
+    expect(unquote('"test"')).toBe('test');
+    expect(unquote("'test'")).toBe('test');
+    expect(unquote('`test`')).toBe('test');
+    expect(unquote('test')).toBe('test');
+  });
+
+  it('should only remove quotes at the beginning and end', () => {
+    expect(unquote('"te"st"')).toBe('te"st');
+    expect(unquote("'te'st'")).toBe("te'st");
+  });
+});
+
+describe('pushMany', () => {
+  it('should push multiple items to an array', () => {
+    const arr = [1, 2, 3];
+    const result = pushMany(arr, [4, 5, 6]);
+    expect(arr).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(result).toBe(6);
+  });
+
+  it('should handle empty arrays', () => {
+    const arr = [1, 2, 3];
+    const result = pushMany(arr, []);
+    expect(arr).toEqual([1, 2, 3]);
+    expect(result).toBe(3);
+  });
+});
+
+describe('updateTestNameIfUsingProperties', () => {
+  it('should return undefined if input is undefined', () => {
+    expect(updateTestNameIfUsingProperties(undefined)).toBeUndefined();
+  });
+
+  it('should remove \\.name property from test name', () => {
+    expect(updateTestNameIfUsingProperties('MyClass\\.name')).toBe('MyClass');
+    expect(updateTestNameIfUsingProperties('test MyClass\\.name')).toBe('test MyClass');
+  });
+
+  it('should remove \\.prototype\\. from test name', () => {
+    expect(updateTestNameIfUsingProperties('MyClass\\.prototype\\.method')).toBe('method');
+    expect(updateTestNameIfUsingProperties('test MyClass\\.prototype\\.method')).toBe('test method');
+  });
+
+  it('should handle combined patterns', () => {
+    expect(updateTestNameIfUsingProperties('MyClass\\.name\\.prototype\\.method')).toBe('method');
+  });
+
+  it('should not modify test names without special patterns', () => {
+    expect(updateTestNameIfUsingProperties('simple test name')).toBe('simple test name');
+  });
+});
+
+describe('findFullTestName', () => {
+  it('should return undefined if children is undefined', () => {
+    expect(findFullTestName(1, undefined)).toBeUndefined();
+  });
+
+  it('should return undefined if children is empty', () => {
+    expect(findFullTestName(1, [])).toBeUndefined();
+  });
+
+  it('should find test name for describe block', () => {
+    const children = [
+      {
+        type: 'describe',
+        name: 'My Test Suite',
+        start: { line: 1, column: 0 },
+        end: { line: 10, column: 0 },
+        children: [],
+      },
+    ];
+    expect(findFullTestName(1, children)).toBe('My Test Suite');
+  });
+
+  it('should find test name for test block', () => {
+    const children = [
+      {
+        type: 'it',
+        name: 'should work',
+        start: { line: 5, column: 2 },
+        end: { line: 7, column: 2 },
+        children: [],
+      },
+    ];
+    expect(findFullTestName(6, children)).toBe('should work');
+  });
+
+  it('should concatenate nested test names', () => {
+    const children = [
+      {
+        type: 'describe',
+        name: 'My Suite',
+        start: { line: 1, column: 0 },
+        end: { line: 10, column: 0 },
+        children: [
+          {
+            type: 'it',
+            name: 'should work',
+            start: { line: 5, column: 2 },
+            end: { line: 7, column: 2 },
+            children: [],
+          },
+        ],
+      },
+    ];
+    expect(findFullTestName(6, children)).toBe('My Suite should work');
+  });
+
+  it('should handle template literals with variables', () => {
+    const children = [
+      {
+        type: 'it',
+        name: 'should work with ${variable}',
+        start: { line: 5, column: 2 },
+        end: { line: 7, column: 2 },
+        children: [],
+      },
+    ];
+    expect(findFullTestName(6, children)).toBe('should work with (.*?)');
+  });
+
+  it('should handle printf-style format strings', () => {
+    const children = [
+      {
+        type: 'it',
+        name: 'should work with %s',
+        start: { line: 5, column: 2 },
+        end: { line: 7, column: 2 },
+        children: [],
+      },
+    ];
+    expect(findFullTestName(6, children)).toBe('should work with (.*?)');
+  });
+});
+
+describe('isNodeExecuteAbleFile', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should return true if file is executable', () => {
+    jest.spyOn(childProcess, 'execSync').mockReturnValue(Buffer.from(''));
+    expect(isNodeExecuteAbleFile('/path/to/jest')).toBe(true);
+  });
+
+  it('should return false if file is not executable', () => {
+    jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
+      throw new Error('Command failed');
+    });
+    expect(isNodeExecuteAbleFile('/path/to/non-executable')).toBe(false);
+  });
+});
+
+describe('resolveConfigPathOrMapping', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('should return string value as-is', () => {
+    expect(resolveConfigPathOrMapping('./jest.config.js', '/path/to/test.ts')).toBe('./jest.config.js');
+  });
+
+  it('should return undefined value as-is', () => {
+    expect(resolveConfigPathOrMapping(undefined, '/path/to/test.ts')).toBeUndefined();
+  });
+
+  it('should match glob pattern and return corresponding value', () => {
+    const mapping = {
+      '**/*.test.ts': './jest.test.config.js',
+      '**/*.spec.ts': './jest.spec.config.js',
+    };
+    expect(resolveConfigPathOrMapping(mapping, '/path/to/my.test.ts')).toBe('./jest.test.config.js');
+    expect(resolveConfigPathOrMapping(mapping, '/path/to/my.spec.ts')).toBe('./jest.spec.config.js');
+  });
+
+  it('should normalize paths in matched values', () => {
+    const mapping = {
+      '**/*.test.ts': 'C:\\\\path\\\\to\\\\jest.config.js',
+    };
+    const result = resolveConfigPathOrMapping(mapping, '/path/to/my.test.ts');
+    // normalizePath is called, so on non-Windows it stays as is, on Windows backslashes are converted
+    expect(result).toBeTruthy();
+    expect(result).toContain('jest.config.js');
+  });
+
+  it('should return undefined if no glob matches', () => {
+    jest.spyOn(vscode.window, 'showWarningMessage').mockReturnValue(undefined);
+    const mapping = {
+      '**/*.test.ts': './jest.test.config.js',
+    };
+    expect(resolveConfigPathOrMapping(mapping, '/path/to/my.spec.ts')).toBeUndefined();
+  });
+
+  it('should show warning message when no glob matches', () => {
+    const showWarning = jest.spyOn(vscode.window, 'showWarningMessage').mockReturnValue(undefined);
+    const mapping = {
+      '**/*.test.ts': './jest.test.config.js',
+    };
+    resolveConfigPathOrMapping(mapping, '/path/to/my.spec.ts');
+    expect(showWarning).toHaveBeenCalledWith(
+      expect.stringContaining('None of the glob patterns in the configPath mapping matched'),
+    );
+  });
+
+  it('should not show warning for empty mapping', () => {
+    const showWarning = jest.spyOn(vscode.window, 'showWarningMessage').mockReturnValue(undefined);
+    resolveConfigPathOrMapping({}, '/path/to/my.spec.ts');
+    expect(showWarning).not.toHaveBeenCalled();
+  });
+});
 
 describe('validateCodeLensOptions', () =>
   it.each([
@@ -13,6 +316,10 @@ describe('validateCodeLensOptions', () =>
       ['run', 'watch', 'debug'],
     ],
     [[], []],
+    [
+      ['coverage', 'current-test-coverage', 'run'],
+      ['coverage', 'current-test-coverage', 'run'],
+    ],
   ])('should turn "jestrunner.codeLens" options  into something valid', (input, expected) => {
     expect(validateCodeLensOptions(input)).toEqual(expected);
   }));
