@@ -481,7 +481,9 @@ export class JestTestController {
       // Build command: run all test files in a single Jest invocation
       // Use file pattern if multiple files, otherwise specific file with optional test name pattern
       let args: string[];
-      if (allFiles.length === 1 && testsByFile.get(allFiles[0])!.length < allTests.length) {
+      const fileItem = allFiles.length === 1 ? this.testController.items.get(allFiles[0]) : undefined;
+      const totalTestsInFile = fileItem?.children.size ?? 0;
+      if (allFiles.length === 1 && testsByFile.get(allFiles[0])!.length < totalTestsInFile) {
         // Single file with specific tests - use test name pattern
         const tests = testsByFile.get(allFiles[0])!;
         const testNamePattern = tests.length > 1
