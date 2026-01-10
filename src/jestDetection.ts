@@ -5,6 +5,13 @@ import * as path from 'path';
 // Cache for Jest detection results
 const jestDetectionCache = new Map<string, boolean>();
 
+/**
+ * Clears the Jest detection cache (useful for testing)
+ */
+export function clearJestDetectionCache(): void {
+  jestDetectionCache.clear();
+}
+
 // Define test frameworks and their config files
 interface TestFramework {
   name: string;
