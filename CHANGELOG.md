@@ -4,7 +4,11 @@
 
 - Automatic Jest Detection and possibility to define Include & Exclude patterns
 - New Vscode Test API & Test Explorer
-- Use NPX to find jest Binrary
+- Use NPX to find jest Binary
+- **Breaking Change:** Renamed `codeLensSelector` setting to `testFilePattern` for clarity
+  - Backward compatibility maintained: old `codeLensSelector` setting still works
+  - Migration: Update your settings from `jestrunner.codeLensSelector` to `jestrunner.testFilePattern`
+  - The old setting is deprecated and will show a warning in VS Code settings
 
 ## 0.4.52 - 2022-08-14
 

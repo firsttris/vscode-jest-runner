@@ -2,6 +2,15 @@
 
 Looking for collaborators to help me maintain the project. Please contact me at tristanteufel@gmail.com
 
+## ⚠️ Migration Notice for v0.4.80+
+
+If you've customized the `jestrunner.codeLensSelector` setting in your VS Code settings, please update it to `jestrunner.testFilePattern`. The old setting name is still supported for backward compatibility but is deprecated.
+
+**Action required:**
+- Open your settings (JSON or UI)
+- Replace `jestrunner.codeLensSelector` with `jestrunner.testFilePattern`
+- The value remains the same (e.g., `**/*.{test,spec}.{js,jsx,ts,tsx}`)
+
 ## Visual Studio Code Marketplace
 
 [VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)    
@@ -106,7 +115,8 @@ If you have a custom setup use the following options to customize Jest Runner:
 | `jestrunner.runOptions`                 | CLI options to add to Jest commands (e.g. `["--coverage", "--colors"]`). See [Jest CLI documentation](https://jestjs.io/docs/en/cli).                                                                  |
 | `jestrunner.debugOptions`               | Add or override VS Code debug configurations (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging tests.                                                                                    |
 | **Test Detection & Filtering**          |                                                                                                                                                                                                       |
-| `jestrunner.testFilePattern`            | Pattern to identify test files. Affects CodeLens, Test Explorer, and test detection.                                                                                                                   |
+| `jestrunner.testFilePattern`            | Pattern to identify test files. Affects CodeLens, Test Explorer, and test detection. Default: `**/*.{test,spec}.{js,jsx,ts,tsx}`                                                                     |
+| `jestrunner.codeLensSelector`           | **Deprecated:** Use `jestrunner.testFilePattern` instead. This setting is kept for backward compatibility with versions prior to 0.4.80.                                                             |
 | `jestrunner.include`                    | Glob patterns for files to include in test detection. When specified, disables automatic Jest detection in favor of explicit inclusion.                                                                 |
 | `jestrunner.exclude`                    | Glob patterns for files to exclude from test detection. When specified, disables automatic Jest detection in favor of explicit exclusion.                                                               |
 | **UI Options**                          |                                                                                                                                                                                                       |

@@ -240,6 +240,26 @@ export class JestRunnerConfig {
     return [];
   }
 
+  /**
+   * Gets the test file pattern for CodeLens and Test Explorer.
+   * Supports both the new 'testFilePattern' and deprecated 'codeLensSelector' settings
+   * for backward compatibility.
+   */
+  public getTestFilePattern(): string {
+    const config = vscode.workspace.getConfiguration();
+    
+    // Check for old codeLensSelector setting for backwards compatibility
+    const codeLensSelector = config.get<string>('jestrunner.codeLensSelector');
+    if (codeLensSelector !== undefined && codeLensSelector !== '**/*.{test,spec}.{js,jsx,ts,tsx}') {
+      // User has customized the old setting, use it
+      return codeLensSelector;
+    }
+    
+    // Use new testFilePattern setting (with default)
+    const testFilePattern = config.get<string>('jestrunner.testFilePattern', '**/*.{test,spec}.{js,jsx,ts,tsx}');
+    return testFilePattern;
+  }
+
   public get isYarnPnpSupportEnabled(): boolean {
     return vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport') || false;
   }

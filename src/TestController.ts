@@ -182,7 +182,7 @@ export class JestTestController {
   private async findJestTestFiles(folderPath: string): Promise<string[]> {
     const pattern = new vscode.RelativePattern(
       folderPath,
-      vscode.workspace.getConfiguration().get('jestrunner.testFilePattern') as string,
+      this.jestConfig.getTestFilePattern(),
     );
     const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
 
@@ -594,7 +594,7 @@ export class JestTestController {
   }
 
   private setupFileWatcher() {
-    const pattern = vscode.workspace.getConfiguration().get('jestrunner.testFilePattern') as string;
+    const pattern = this.jestConfig.getTestFilePattern();
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
     watcher.onDidChange((uri) => {

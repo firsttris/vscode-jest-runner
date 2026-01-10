@@ -120,6 +120,13 @@
             },
             "scope": "window"
           },
+          "jestrunner.codeLensSelector": {
+            "type": "string",
+            "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
+            "description": "Deprecated: Use 'jestrunner.testFilePattern' instead. This setting is kept for backwards compatibility.",
+            "deprecationMessage": "This setting has been renamed to 'jestrunner.testFilePattern'. Please update your settings.",
+            "scope": "window"
+          },
           "jestrunner.testFilePattern": {
             "type": "string",
             "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",

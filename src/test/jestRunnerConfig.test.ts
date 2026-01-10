@@ -1373,4 +1373,65 @@ describe('JestRunnerConfig', () => {
       expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
     });
   });
+
+  describe('getTestFilePattern', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+    });
+
+    it('should return testFilePattern when set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.testFilePattern': '**/*.test.js',
+        }),
+      );
+
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.test.js');
+    });
+
+    it('should return default pattern when testFilePattern not set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.{test,spec}.{js,jsx,ts,tsx}');
+    });
+
+    it('should support old codeLensSelector setting', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.codeLensSelector': '**/*.spec.ts',
+        }),
+      );
+
+      // Old setting should be used
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.spec.ts');
+    });
+
+    it('should prioritize codeLensSelector over testFilePattern for backwards compatibility', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.codeLensSelector': '**/*.spec.ts',
+          'jestrunner.testFilePattern': '**/*.test.js', // This should be ignored
+        }),
+      );
+
+      // Old setting takes precedence when it differs from default
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.spec.ts');
+    });
+
+    it('should use testFilePattern when codeLensSelector is set to default value', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.codeLensSelector': '**/*.{test,spec}.{js,jsx,ts,tsx}',
+          'jestrunner.testFilePattern': '**/*.test.js',
+        }),
+      );
+
+      // When codeLensSelector is at default, use testFilePattern
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.test.js');
+    });
+  });
 });

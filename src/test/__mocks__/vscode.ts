@@ -70,6 +70,8 @@ type JestRunnerConfigProps = {
   'jestrunner.yarnPnpCommand'?: string;
   'jestrunner.enableCodeLens'?: boolean;
   'jestrunner.disableCodeLens'?: boolean;
+  'jestrunner.testFilePattern'?: string;
+  'jestrunner.codeLensSelector'?: string;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) {}
