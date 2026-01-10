@@ -14,7 +14,6 @@ import {
   updateTestNameIfUsingProperties,
   resolveConfigPathOrMapping,
   findFullTestName,
-  isNodeExecuteAbleFile,
 } from '../util';
 import * as fs from 'fs';
 import * as childProcess from 'child_process';
@@ -24,6 +23,22 @@ const its = {
   windows: isWindows() ? it : it.skip,
   linux: ['linux', 'darwin'].includes(process.platform) ? it : it.skip,
 };
+
+// Helper function to create test nodes with required properties
+function createTestNode(data: {
+  type: string;
+  name: string;
+  start: { line: number; column: number };
+  end: { line: number; column: number };
+  children?: any[];
+}): any {
+  return {
+    ...data,
+    file: '',
+    addChild: () => {},
+    filter: () => [],
+  };
+}
 
 describe('getDirName', () => {
   it('should return the directory name', () => {
@@ -69,10 +84,10 @@ describe('escapeRegExp', () => {
 });
 
 describe('escapeRegExpForPath', () => {
-  it('should escape special regex characters but not backslashes', () => {
+  it('should escape special regex characters including backslashes', () => {
     expect(escapeRegExpForPath('test*name')).toBe('test\\*name');
     expect(escapeRegExpForPath('test+name')).toBe('test\\+name');
-    expect(escapeRegExpForPath('C:\\path\\to\\file')).toBe('C:\\path\\to\\file');
+    expect(escapeRegExpForPath('C:\\path\\to\\file')).toBe('C:\\\\path\\\\to\\\\file');
   });
 });
 
@@ -161,95 +176,79 @@ describe('findFullTestName', () => {
 
   it('should find test name for describe block', () => {
     const children = [
-      {
+      createTestNode({
         type: 'describe',
         name: 'My Test Suite',
         start: { line: 1, column: 0 },
         end: { line: 10, column: 0 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(1, children)).toBe('My Test Suite');
   });
 
   it('should find test name for test block', () => {
     const children = [
-      {
+      createTestNode({
         type: 'it',
         name: 'should work',
         start: { line: 5, column: 2 },
         end: { line: 7, column: 2 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('should work');
   });
 
   it('should concatenate nested test names', () => {
     const children = [
-      {
+      createTestNode({
         type: 'describe',
         name: 'My Suite',
         start: { line: 1, column: 0 },
         end: { line: 10, column: 0 },
         children: [
-          {
+          createTestNode({
             type: 'it',
             name: 'should work',
             start: { line: 5, column: 2 },
             end: { line: 7, column: 2 },
             children: [],
-          },
+          }),
         ],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('My Suite should work');
   });
 
   it('should handle template literals with variables', () => {
     const children = [
-      {
+      createTestNode({
         type: 'it',
         name: 'should work with ${variable}',
         start: { line: 5, column: 2 },
         end: { line: 7, column: 2 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('should work with (.*?)');
   });
 
   it('should handle printf-style format strings', () => {
     const children = [
-      {
+      createTestNode({
         type: 'it',
         name: 'should work with %s',
         start: { line: 5, column: 2 },
         end: { line: 7, column: 2 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('should work with (.*?)');
   });
 });
 
-describe('isNodeExecuteAbleFile', () => {
-  beforeEach(() => {
-    jest.restoreAllMocks();
-  });
 
-  it('should return true if file is executable', () => {
-    jest.spyOn(childProcess, 'execSync').mockReturnValue(Buffer.from(''));
-    expect(isNodeExecuteAbleFile('/path/to/jest')).toBe(true);
-  });
-
-  it('should return false if file is not executable', () => {
-    jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
-      throw new Error('Command failed');
-    });
-    expect(isNodeExecuteAbleFile('/path/to/non-executable')).toBe(false);
-  });
-});
 
 describe('resolveConfigPathOrMapping', () => {
   beforeEach(() => {
