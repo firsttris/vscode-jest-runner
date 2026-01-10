@@ -357,6 +357,8 @@ export class JestTestController {
       });
 
       jestProcess.on('close', (code) => {
+        cancellationListener.dispose();
+        
         if (token.isCancellationRequested) {
           tests.forEach((test) => run.skipped(test));
           resolve(null);
@@ -381,10 +383,6 @@ export class JestTestController {
         jestProcess.kill();
         tests.forEach((test) => run.skipped(test));
         resolve(null);
-      });
-
-      jestProcess.on('close', () => {
-        cancellationListener.dispose();
       });
     });
   }
