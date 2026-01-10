@@ -2,15 +2,6 @@
 
 Looking for collaborators to help me maintain the project. Please contact me at tristanteufel@gmail.com
 
-## ⚠️ Migration Notice for v0.4.80+
-
-If you've customized the `jestrunner.codeLensSelector` setting in your VS Code settings, please update it to `jestrunner.testFilePattern`. The old setting name is still supported for backward compatibility but is deprecated.
-
-**Action required:**
-- Open your settings (JSON or UI)
-- Replace `jestrunner.codeLensSelector` with `jestrunner.testFilePattern`
-- The value remains the same (e.g., `**/*.{test,spec}.{js,jsx,ts,tsx}`)
-
 ## Visual Studio Code Marketplace
 
 [VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)    
@@ -74,22 +65,6 @@ add the following command to settings:
     ]
 },
 ```
-
-## Migration Notes
-
-### CodeLens Setting Change (v0.4.80+)
-
-The setting `jestrunner.disableCodeLens` has been replaced with `jestrunner.enableCodeLens` for better clarity.
-
-- **Old setting:** `jestrunner.disableCodeLens` (default: `false`)
-- **New setting:** `jestrunner.enableCodeLens` (default: `true`)
-
-**For backwards compatibility**, the old setting is still supported. If you had explicitly set `"jestrunner.disableCodeLens": true`, you have two options:
-
-1. **Keep the old setting** - It will continue to work (though it's deprecated)
-2. **Migrate to the new setting** - Change your settings to use `"jestrunner.enableCodeLens": false`
-
-The extension will show a deprecation notice if you're still using `disableCodeLens`.
 
 ## Usage with nvm
 
