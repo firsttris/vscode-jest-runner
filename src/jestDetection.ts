@@ -165,9 +165,7 @@ export function findJestDirectory(filePath: string): string | undefined {
       }
 
       // If we found Jest, return this directory
-      if (framework === 'jest') {
-        return currentDir;
-      }
+      return currentDir;
     }
 
     const parentDir = path.dirname(currentDir);
