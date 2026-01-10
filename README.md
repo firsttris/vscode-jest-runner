@@ -13,7 +13,7 @@ Looking for collaborators to help me maintain the project. Please contact me at 
 
 ## Features
 
-Jest Runner provides a powerful, flexible way to run and debug Jest tests directly from VS Code.
+Jest Runner provides a powerful, flexible way to run and debug Jest tests directly from VS Code. 
 
 ### 🚀 Run & Debug Experience
 - **Run individual tests** or entire test suites with a single click
