@@ -488,7 +488,7 @@ export class JestTestController {
         const tests = testsByFile.get(allFiles[0])!;
         const testNamePattern = tests.length > 1
           ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-          : tests[0].label;
+          : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
         args = this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--json']);
       } else {
         // Multiple files or whole file - just pass file paths
