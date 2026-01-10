@@ -121,31 +121,22 @@ export class JestRunnerConfig {
   }
   
   public findConfigPath(targetPath?: string, targetConfigFilename?: string): string | undefined {
-    // If targetConfigFilename is a relative path (e.g., './jest.config.js'), extract just the filename
-    const configFilename = targetConfigFilename ? path.basename(targetConfigFilename) : undefined;
-    
     const foundPath = searchPathToParent<string>(
       targetPath || path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
-        for (const filename of configFilename
-          ? [configFilename]
+        for (const configFilename of targetConfigFilename
+          ? [targetConfigFilename]
           : ['jest.config.js', 'jest.config.ts', 'jest.config.cjs', 'jest.config.mjs', 'jest.config.json']) {
-          const currentFolderConfigPath = path.join(currentFolderPath, filename);
-          // Normalize path for consistent cross-platform fs.existsSync behavior
-          const normalizedConfigPath = normalizePath(currentFolderConfigPath);
+          const currentFolderConfigPath = path.join(currentFolderPath, configFilename);
 
-          // Check both normalized and native paths for cross-platform compatibility
-          if (fs.existsSync(normalizedConfigPath)) {
-            return normalizedConfigPath;
-          }
           if (fs.existsSync(currentFolderConfigPath)) {
             return currentFolderConfigPath;
           }
         }
       },
     );
-    return foundPath || undefined;
+    return foundPath ? normalizePath(foundPath) : undefined;
   }
 
   public get runOptions(): string[] | null {
