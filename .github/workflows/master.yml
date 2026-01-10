@@ -3,6 +3,7 @@ name: master
 on:
   push:
     branches: [master]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,6 +21,20 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
       - run: npm run test
+      - run: npm run build --if-present
+
+  publish:
+    runs-on: macos-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - run: npm ci
       - run: npm run build --if-present
       - run: npm run publish
         env:
