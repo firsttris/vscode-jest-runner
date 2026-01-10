@@ -416,9 +416,9 @@ describe('JestRunnerConfig', () => {
             'C:/workspace',
             './jestProject',
             {
-              '**/*.test.js': '/home/user/notWorkspace/notJestProject/jest.config.js',
-              '**/*.spec.js': '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
-              '**/*.it.spec.js': '/home/user/notWorkspace/notJestProject/jest.it-config.js',
+              '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
+              '**/*.spec.js': 'C:/notWorkspace/notJestProject/jest.unit-config.js',
+              '**/*.it.spec.js': 'C:/notWorkspace/notJestProject/jest.it-config.js',
             },
             'C:/workspace/jestProject/src/index.it.spec.js',
             'C:/notWorkspace/notJestProject/jest.unit-config.js',
@@ -445,14 +445,17 @@ describe('JestRunnerConfig', () => {
               jest
                 .spyOn(vscode.workspace, 'getWorkspaceFolder')
                 .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
-              jest.spyOn(fs, 'statSync').mockImplementation((path): any => {
-                if (path === targetPath) {
+              jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
+                // Check both normalized and non-normalized paths
+                if (p === targetPath || normalizePath(p as string) === normalizePath(targetPath)) {
                   return { isFile: () => true, isDirectory: () => false };
                 }
                 return { isFile: () => false, isDirectory: () => true };
               });
-              // Return true if getJestConfigPath is checking the expected path
-              jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => filePath === expectedPath);
+              // Return true if getJestConfigPath is checking the expected path (check both normalized and non-normalized)
+              jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+                return filePath === expectedPath || normalizePath(filePath as string) === normalizePath(expectedPath);
+              });
             });
 
             its[_os](behavior, async () => {
@@ -625,7 +628,7 @@ describe('JestRunnerConfig', () => {
           'C:\\workspace',
           undefined,
           'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
-          'C:\\workspace\\jestProject\\jest.config.mjs',
+          'C:/workspace/jestProject/jest.config.mjs',
         ],
         [
           'windows',
@@ -634,7 +637,7 @@ describe('JestRunnerConfig', () => {
           'C:\\workspace',
           './anotherProject',
           'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
-          'C:\\workspace\\jestProject\\jest.config.mjs',
+          'C:/workspace/jestProject/jest.config.mjs',
         ],
         [
           'windows',
@@ -643,7 +646,7 @@ describe('JestRunnerConfig', () => {
           'C:\\workspace',
           './anotherProject',
           'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
-          'C:\\workspace\\jest.config.mjs',
+          'C:/workspace/jest.config.mjs',
         ],
         [
           'windows',
@@ -666,14 +669,17 @@ describe('JestRunnerConfig', () => {
               .spyOn(vscode.workspace, 'getWorkspaceFolder')
               .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
 
-            jest.spyOn(fs, 'statSync').mockImplementation((path): any => {
-              if (path === targetPath) {
+            jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
+              // Check both normalized and non-normalized paths
+              if (p === targetPath || normalizePath(p as string) === normalizePath(targetPath)) {
                 return { isFile: () => true, isDirectory: () => false };
               }
               return { isFile: () => false, isDirectory: () => true };
             });
-            // Return true if getJestConfigPath is checking the expected path
-            jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => filePath === expectedPath);
+            // Return true if getJestConfigPath is checking the expected path (check both normalized and non-normalized)
+            jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+              return filePath === expectedPath || normalizePath(filePath as string) === normalizePath(expectedPath);
+            });
           });
 
           its[_os](behavior, async () => {

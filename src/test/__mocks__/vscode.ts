@@ -2,14 +2,22 @@
 
 class Uri {
   constructor(readonly fsPath: string) {}
+  
+  static file(path: string): Uri {
+    return new Uri(path);
+  }
 }
 
 class Document {
   constructor(public readonly uri: Uri) {}
+  fileName: string = '';
+  getText: (range?: any) => string = () => '';
+  save: () => Promise<boolean> = () => Promise.resolve(true);
 }
 
 class TextEditor {
   constructor(public readonly document: Document) {}
+  selection: any;
 }
 
 class WorkspaceFolder {
@@ -17,6 +25,22 @@ class WorkspaceFolder {
 
   name: string;
   index: number;
+}
+
+class Range {
+  constructor(
+    public readonly startLine: number,
+    public readonly startColumn: number,
+    public readonly endLine: number,
+    public readonly endColumn: number,
+  ) {}
+}
+
+class CodeLens {
+  constructor(
+    public readonly range: Range,
+    public readonly command?: any,
+  ) {}
 }
 
 class Workspace {
@@ -34,13 +58,15 @@ type JestRunnerConfigProps = {
   'jestrunner.configPath'?: string | Record<string, string>;
   'jestrunner.useNearestConfig'?: boolean;
   'jestrunner.checkRelativePathForJest'?: boolean;
+  'jestrunner.include'?: string[];
+  'jestrunner.exclude'?: string[];
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) {}
 
-  get<T extends keyof typeof this.dict>(key: T): (typeof this.dict)[T] {
+  get<T extends keyof typeof this.dict>(key: T, defaultValue?: any): (typeof this.dict)[T] {
     if (!(key in this.dict)) {
-      throw new Error(`unrecognised config key ${key}`);
+      return defaultValue;
     }
     return this.dict[key];
   }
@@ -63,9 +89,45 @@ class Window {
   showWarningMessage<T extends string>(message: string, ...items: T[]): Thenable<T | undefined> {
     return Promise.resolve(undefined);
   }
+  createTerminal(name: string): any {
+    return {
+      show: jest.fn(),
+      sendText: jest.fn(),
+      dispose: jest.fn(),
+    };
+  }
+  onDidCloseTerminal: jest.Mock = jest.fn((callback: (terminal: any) => void) => {
+    return { dispose: jest.fn() };
+  });
+}
+
+class Commands {
+  executeCommand(command: string, ...args: any[]): Promise<any> {
+    return Promise.resolve(undefined);
+  }
+}
+
+class Debug {
+  startDebugging(folder: any, nameOrConfig: any): Promise<boolean> {
+    return Promise.resolve(true);
+  }
 }
 
 const workspace = new Workspace();
 const window = new Window();
+const commands = new Commands();
+const debug = new Debug();
 
-export { workspace, window, Uri, Document, TextEditor, WorkspaceFolder, WorkspaceConfiguration };
+export {
+  workspace,
+  window,
+  commands,
+  debug,
+  Uri,
+  Document,
+  TextEditor,
+  WorkspaceFolder,
+  WorkspaceConfiguration,
+  Range,
+  CodeLens,
+};
