@@ -103,7 +103,7 @@ If you have a custom setup use the following options to customize Jest Runner:
 | `jestrunner.changeDirectoryToWorkspaceRoot` | Change directory before running tests. Priority order: 1. `projectPath` 2. nearest package.json location 3. workspace folder.                                                                         |
 | **Yarn PnP Support**                    |                                                                                                                                                                                                       |
 | `jestrunner.enableYarnPnpSupport`       | Enable support for Yarn 2 with Plug'n'Play package management.                                                                                                                                        |
-| `jestrunner.yarnPnpCommand`             | Command for executing tests when using Yarn Plug'n'Play.                                                                                                                                                                                                                                                                                      
+| `jestrunner.yarnPnpCommand`             | Command for executing tests when using Yarn Plug'n'Play.                                                                                                                                              |
 For advanced topics like configuring multiple Jest configurations with glob mappings, see the configPath as glob map section below.
 
 ### configPath as glob map
