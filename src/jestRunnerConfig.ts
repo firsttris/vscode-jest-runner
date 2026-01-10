@@ -109,15 +109,18 @@ export class JestRunnerConfig {
     if (!configPath || this.useNearestConfig) {
       const foundPath = this.findConfigPath(targetPath, configPath);
       if (foundPath) {
-        return foundPath;
-        // Continue to default if no config is found
+        // Normalize when configPath is set (glob mapping), keep native otherwise
+        return configPath ? normalizePath(foundPath) : foundPath;
       }
     }
 
-    // default
-    return configPath
-      ? normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath))
-      : '';
+    // default - if configPath is absolute, return as-is; otherwise resolve against workspace
+    if (configPath) {
+      return path.isAbsolute(configPath)
+        ? normalizePath(configPath)
+        : normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath));
+    }
+    return '';
   }
   
   public findConfigPath(targetPath?: string, targetConfigFilename?: string): string | undefined {
@@ -136,10 +139,7 @@ export class JestRunnerConfig {
           const normalizedConfigPath = normalizePath(currentFolderConfigPath);
 
           // Check both normalized and native paths for cross-platform compatibility
-          if (fs.existsSync(normalizedConfigPath)) {
-            return normalizedConfigPath;
-          }
-          if (fs.existsSync(currentFolderConfigPath)) {
+          if (fs.existsSync(normalizedConfigPath) || fs.existsSync(currentFolderConfigPath)) {
             return currentFolderConfigPath;
           }
         }
