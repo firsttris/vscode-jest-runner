@@ -13,6 +13,59 @@ import {
   escapeSingleQuotes,
 } from './util';
 
+/**
+ * Parses a shell command string into an array of arguments, respecting quotes.
+ * Handles single quotes, double quotes, and escaped characters.
+ */
+function parseShellCommand(command: string): string[] {
+  const args: string[] = [];
+  let current = '';
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let escaped = false;
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\' && !inSingleQuote) {
+      escaped = true;
+      continue;
+    }
+
+    if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+      continue;
+    }
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+      continue;
+    }
+
+    if (char === ' ' && !inSingleQuote && !inDoubleQuote) {
+      if (current) {
+        args.push(current);
+        current = '';
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current) {
+    args.push(current);
+  }
+
+  return args;
+}
+
 export class JestRunnerConfig {
   /**
    * The command that runs jest.
@@ -246,9 +299,11 @@ export class JestRunnerConfig {
     // Handle custom Jest command if one is set
     const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
     if (customCommand && typeof customCommand === 'string') {
-      const parts = customCommand.split(' ');
-      debugConfig.program = parts[0];
-      debugConfig.args = parts.slice(1);
+      const parts = parseShellCommand(customCommand);
+      if (parts.length > 0) {
+        debugConfig.program = parts[0];
+        debugConfig.args = parts.slice(1);
+      }
       return debugConfig;
     }
 
