@@ -66,6 +66,16 @@ add the following command to settings:
 },
 ```
 
+## Usage with nvm
+
+add the following command to settings to help jestrunner find your node:
+```json
+"jestrunner.jestCommand": "nvm use && npm run test --",
+"jestrunner.debugOptions": {
+    runtimeExecutable": "/PATH/TO/YOUR/node"
+},
+```
+
 ## Extension Settings
 
 Jest Runner will work out of the box, with a valid Jest config.
@@ -100,6 +110,7 @@ For advanced topics like configuring multiple Jest configurations with glob mapp
 If you've got multiple jest configs for running tests (ie maybe a config for unit tests, integration tests and frontend tests) then this option is for you. You can provide a map of glob matchers to specify which jest config to use based on the name of the file the test is being run for. 
 
 For instance, supose you're using the naming convention of `*.spec.ts` for unit tests and `*.it.spec.ts` for integration tests. You'd use the following for your configPath setting:
+
 ```json
 {
   "jestrunner.configPath": {
@@ -108,7 +119,12 @@ For instance, supose you're using the naming convention of `*.spec.ts` for unit 
   }
 }
 ```
+
 Note the order we've specified the globs in this example. Because our naming convention has a little overlap, we need to specify the more narrow glob first because jestrunner will return the config path of the first matching glob. With the above order, we make certain that `jest.it.config.js` will be used for any file ending with `.it.spec.ts` and `jest.unit.config.js` will be used for files that only end in `*.spec.ts` (without `.it.`).  If we had reversed the order, `jest.unit.config.js` would be used for both `*.it.spec.ts` and `*.spec.ts` endings the glob matches both. 
+
+By default, the config path is relative to `{jestrunner.projectPath}` if configured, otherwise the workspace root. 
+
+To find the nearest config matching the result from the `jestrunner.configPath` map, set `"jestrunner.useNearestConfig": true`. When `true`, vscode-jest-runner will search up the through directories from the target until it finds the matching file. For instance, running tests in `~/dev/my-repo/packages/project1/__test__/integration/ship-it.it.spec.ts` will use `~/dev/my-repo/packages/project1/jest.it.config.js` rather than the config in the monorepo's root.
 
 ## Shortcuts
 

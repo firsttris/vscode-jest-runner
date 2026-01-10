@@ -152,7 +152,17 @@ describe('JestRunnerConfig', () => {
       ];
       describe.each(scenarios)(
         '%s: %s',
-        (_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, expectedPath) => {
+        (
+          _os,
+          _name,
+          behavior,
+          workspacePath,
+          projectPath,
+          configPath,
+          targetPath,
+          expectedPath,
+          useNearestConfig = undefined,
+        ) => {
           let jestRunnerConfig: JestRunnerConfig;
 
           beforeEach(() => {
@@ -167,6 +177,7 @@ describe('JestRunnerConfig', () => {
               new WorkspaceConfiguration({
                 'jestrunner.projectPath': projectPath,
                 'jestrunner.configPath': configPath,
+                'jestrunner.useNearestConfig': useNearestConfig,
               }),
             );
 
@@ -187,6 +198,7 @@ describe('JestRunnerConfig', () => {
             configPath: Record<string, string>,
             targetPath: string,
             expectedPath: string,
+            useNearestConfig?: boolean,
           ]
         > = [
           [
@@ -221,6 +233,17 @@ describe('JestRunnerConfig', () => {
           ],
           [
             'linux',
+            'matched glob specifies a relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            '/home/user/workspace',
+            undefined,
+            { '**/*.test.js': './jest.config.js' },
+            '/home/user/workspace/jestProject/src/index.test.js',
+            '/home/user/workspace/jestProject/jest.config.js',
+            true,
+          ],
+          [
+            'linux',
             'first matched glob takes precedence, relative path',
             'returned path is resolved against workspace and project path',
             '/home/user/workspace',
@@ -235,6 +258,21 @@ describe('JestRunnerConfig', () => {
           ],
           [
             'linux',
+            'first matched glob takes precedence, relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            '/home/user/workspace',
+            './aDifferentProject',
+            {
+              '**/*.test.js': './jest.config.js',
+              '**/*.spec.js': './jest.unit-config.js',
+              '**/*.it.spec.js': './jest.it-config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.it.spec.js',
+            '/home/user/workspace/jestProject/jest.unit-config.js',
+            true,
+          ],
+          [
+            'linux',
             'first matched glob takes precedence, absolute path',
             'returned path is only the specified config path',
             '/home/user/workspace',
@@ -246,6 +284,21 @@ describe('JestRunnerConfig', () => {
             },
             '/home/user/workspace/jestProject/src/index.it.spec.js',
             '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+          ],
+          [
+            'linux',
+            'first matched glob takes precedence, useNearestConfig falls back to absolute path',
+            'returned path is only the specified config path',
+            '/home/user/workspace',
+            './jestProject',
+            {
+              '**/*.test.js': '/home/user/notWorkspace/notJestProject/jest.config.js',
+              '**/*.spec.js': '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+              '**/*.it.spec.js': '/home/user/notWorkspace/notJestProject/jest.it-config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.it.spec.js',
+            '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+            true,
           ],
           // windows
           [
@@ -290,6 +343,17 @@ describe('JestRunnerConfig', () => {
           ],
           [
             'windows',
+            'matched glob specifies a relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            'C:/workspace',
+            undefined,
+            { '**/*.test.js': './jest.config.js' },
+            'C:/workspace/jestProject/src/index.test.js',
+            'C:/workspace/jestProject/jest.config.js',
+            true,
+          ],
+          [
+            'windows',
             'first matched glob takes precedence, relative path',
             'returned(normalized) path is resolved against workspace and project path',
             'C:\\workspace',
@@ -301,6 +365,21 @@ describe('JestRunnerConfig', () => {
             },
             'C:/workspace/jestProject/src/index.it.spec.js',
             'C:/workspace/jestProject/jest.unit-config.js',
+          ],
+          [
+            'windows',
+            'first matched glob takes precedence, relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            'C:/workspace',
+            './aDifferentProject',
+            {
+              '**/*.test.js': './jest.config.js',
+              '**/*.spec.js': './jest.unit-config.js',
+              '**/*.it.spec.js': './jest.it-config.js',
+            },
+            'C:/workspace/jestProject/src/index.it.spec.js',
+            'C:/workspace/jestProject/jest.unit-config.js',
+            true,
           ],
           [
             'windows',
@@ -330,10 +409,35 @@ describe('JestRunnerConfig', () => {
             'C:/workspace/jestProject/src/index.it.spec.js',
             'C:/notWorkspace/notJestProject/jest.unit-config.js',
           ],
+          [
+            'windows',
+            'first matched glob takes precedence, useNearestConfig falls back to absolute path',
+            'returned path is only the specified config path',
+            'C:/workspace',
+            './jestProject',
+            {
+              '**/*.test.js': '/home/user/notWorkspace/notJestProject/jest.config.js',
+              '**/*.spec.js': '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+              '**/*.it.spec.js': '/home/user/notWorkspace/notJestProject/jest.it-config.js',
+            },
+            'C:/workspace/jestProject/src/index.it.spec.js',
+            'C:/notWorkspace/notJestProject/jest.unit-config.js',
+            true,
+          ],
         ];
         describe.each(scenarios)(
           '%s: %s',
-          (_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, expectedPath) => {
+          (
+            _os,
+            _name,
+            behavior,
+            workspacePath,
+            projectPath,
+            configPath,
+            targetPath,
+            expectedPath,
+            useNearestConfig = undefined,
+          ) => {
             let jestRunnerConfig: JestRunnerConfig;
 
             beforeEach(() => {
@@ -341,6 +445,14 @@ describe('JestRunnerConfig', () => {
               jest
                 .spyOn(vscode.workspace, 'getWorkspaceFolder')
                 .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
+              jest.spyOn(fs, 'statSync').mockImplementation((path): any => {
+                if (path === targetPath) {
+                  return { isFile: () => true, isDirectory: () => false };
+                }
+                return { isFile: () => false, isDirectory: () => true };
+              });
+              // Return true if getJestConfigPath is checking the expected path
+              jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => filePath === expectedPath);
             });
 
             its[_os](behavior, async () => {
@@ -348,6 +460,7 @@ describe('JestRunnerConfig', () => {
                 new WorkspaceConfiguration({
                   'jestrunner.projectPath': projectPath,
                   'jestrunner.configPath': configPath,
+                  'jestrunner.useNearestConfig': useNearestConfig,
                 }),
               );
 
@@ -398,7 +511,6 @@ describe('JestRunnerConfig', () => {
             '/home/user/workspace/jest.config.mjs',
           ],
           // windows
-
           [
             'windows',
             'projectPath is relative',
@@ -456,6 +568,126 @@ describe('JestRunnerConfig', () => {
           },
         );
       });
+    });
+    describe('configPath is not set', () => {
+      const scenarios: Array<
+        [
+          os: 'windows' | 'linux',
+          name: string,
+          behavior: string,
+          workspacePath: string,
+          projectPath: string | undefined,
+          targetPath: string,
+          expectedPath: string,
+        ]
+      > = [
+        [
+          'linux',
+          'without project path',
+          'returns the found jest config path (traversing up from target path)',
+          '/home/user/workspace',
+          undefined,
+          '/home/user/workspace/jestProject/src/index.unit.spec.js',
+          '/home/user/workspace/jestProject/jest.config.mjs',
+        ],
+        [
+          'linux',
+          'with projectPath defined',
+          'returns the found jest config path (traversing up from target path)',
+          '/home/user/workspace',
+          './anotherProject',
+          '/home/user/workspace/jestProject/src/index.unit.spec.js',
+          '/home/user/workspace/jestProject/jest.config.mjs',
+        ],
+        [
+          'linux',
+          'with projectPath defined and no config in project',
+          'returns the found jest config path in workspace (traversing up from target path)',
+          '/home/user/workspace',
+          './anotherProject',
+          '/home/user/workspace/anotherProject/src/index.unit.spec.js',
+          '/home/user/workspace/jest.config.mjs',
+        ],
+        [
+          'linux',
+          'with no configs found',
+          'returns an empty string',
+          '/home/user/workspace',
+          './anotherProject',
+          '/home/user/workspace/anotherProject/src/index.unit.spec.js',
+          '',
+        ],
+        // windows
+        [
+          'windows',
+          'without project path',
+          'returns the found jest config path (traversing up from target path)',
+          'C:\\workspace',
+          undefined,
+          'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
+          'C:\\workspace\\jestProject\\jest.config.mjs',
+        ],
+        [
+          'windows',
+          'with projectPath defined',
+          'returns the found jest config path (traversing up from target path)',
+          'C:\\workspace',
+          './anotherProject',
+          'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
+          'C:\\workspace\\jestProject\\jest.config.mjs',
+        ],
+        [
+          'windows',
+          'with projectPath defined and no config in project',
+          'returns the found jest config path in workspace (traversing up from target path)',
+          'C:\\workspace',
+          './anotherProject',
+          'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
+          'C:\\workspace\\jest.config.mjs',
+        ],
+        [
+          'windows',
+          'with no configs found',
+          'returns an empty string',
+          'C:\\workspace',
+          './anotherProject',
+          'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
+          '',
+        ],
+      ];
+      describe.each(scenarios)(
+        '%s: %s',
+        (_os, _name, behavior, workspacePath, projectPath, targetPath, expectedPath) => {
+          let jestRunnerConfig: JestRunnerConfig;
+
+          beforeEach(() => {
+            jestRunnerConfig = new JestRunnerConfig();
+            jest
+              .spyOn(vscode.workspace, 'getWorkspaceFolder')
+              .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
+
+            jest.spyOn(fs, 'statSync').mockImplementation((path): any => {
+              if (path === targetPath) {
+                return { isFile: () => true, isDirectory: () => false };
+              }
+              return { isFile: () => false, isDirectory: () => true };
+            });
+            // Return true if getJestConfigPath is checking the expected path
+            jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => filePath === expectedPath);
+          });
+
+          its[_os](behavior, async () => {
+            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+              new WorkspaceConfiguration({
+                'jestrunner.projectPath': projectPath,
+                'jestrunner.configPath': undefined,
+              }),
+            );
+
+            expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(expectedPath);
+          });
+        },
+      );
     });
   });
 
@@ -740,7 +972,7 @@ describe('JestRunnerConfig', () => {
             if (configPath) {
               expect(jestRunnerConfig.findConfigPath()).toBe(normalizePath(configFilePath));
             } else {
-              expect(jestRunnerConfig.findConfigPath()).toBe('');
+              expect(jestRunnerConfig.findConfigPath()).toBeUndefined();
             }
             expect(activeTextEditorSpy).toHaveBeenCalled();
           });
@@ -771,7 +1003,7 @@ describe('JestRunnerConfig', () => {
             if (configPath) {
               expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBe(normalizePath(configFilePath));
             } else {
-              expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBe('');
+              expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBeUndefined();
             }
           });
         },
