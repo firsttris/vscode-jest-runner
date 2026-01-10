@@ -3,13 +3,68 @@ import * as fs from 'fs';
 import * as vscode from 'vscode';
 import {
   normalizePath,
-  quote,
   validateCodeLensOptions,
   CodeLensOption,
-  isNodeExecuteAbleFile,
   resolveConfigPathOrMapping,
   searchPathToParent,
+  resolveTestNameStringInterpolation,
+  escapeRegExpForPath,
+  quote,
+  escapeSingleQuotes,
 } from './util';
+
+/**
+ * Parses a shell command string into an array of arguments, respecting quotes.
+ * Handles single quotes, double quotes, and escaped characters.
+ */
+function parseShellCommand(command: string): string[] {
+  const args: string[] = [];
+  let current = '';
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let escaped = false;
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i];
+
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\' && !inSingleQuote) {
+      escaped = true;
+      continue;
+    }
+
+    if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+      continue;
+    }
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+      continue;
+    }
+
+    if (char === ' ' && !inSingleQuote && !inDoubleQuote) {
+      if (current) {
+        args.push(current);
+        current = '';
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (current) {
+    args.push(current);
+  }
+
+  return args;
+}
 
 export class JestRunnerConfig {
   /**
@@ -17,17 +72,21 @@ export class JestRunnerConfig {
    * Defaults to: node "node_modules/.bin/jest"
    */
   public get jestCommand(): string {
-    // custom
-    const jestCommand: string = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
-    if (jestCommand) {
-      return jestCommand;
+    // Check for custom command first
+    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand') as string | undefined;
+    if (customCommand) {
+      return customCommand;
     }
 
-    // default
+    // Use yarn for PnP support
     if (this.isYarnPnpSupportEnabled) {
       return `yarn jest`;
     }
-    return `node ${quote(this.jestBinPath)}`;
+
+    // Use npx for all platforms. npx is bundled with npm 5.2.0+ (2017) and works
+    // cross-platform. VS Code's terminal automatically handles .cmd extensions on Windows.
+    // For edge cases or older npm versions, users can set jestrunner.jestCommand.
+    return 'npx --no-install jest';
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
@@ -36,24 +95,6 @@ export class JestRunnerConfig {
 
   public get preserveEditorFocus(): boolean {
     return vscode.workspace.getConfiguration().get('jestrunner.preserveEditorFocus') || false;
-  }
-
-  public get jestBinPath(): string {
-    // custom
-    let jestPath: string = vscode.workspace.getConfiguration().get('jestrunner.jestPath');
-    if (jestPath) {
-      return jestPath;
-    }
-
-    // default
-    const fallbackRelativeJestBinPath = 'node_modules/jest/bin/jest.js';
-    const mayRelativeJestBin = ['node_modules/.bin/jest', 'node_modules/jest/bin/jest.js'];
-    const cwd = this.cwd;
-
-    jestPath = mayRelativeJestBin.find((relativeJestBin) => isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)));
-    jestPath = jestPath || path.join(cwd, fallbackRelativeJestBinPath);
-
-    return normalizePath(jestPath);
   }
 
   public get cwd(): string {
@@ -72,11 +113,16 @@ export class JestRunnerConfig {
   }
 
   public get currentPackagePath() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return '';
+    }
+    
     const checkRelativePathForJest = vscode.workspace
       .getConfiguration()
       .get<boolean>('jestrunner.checkRelativePathForJest');
     const foundPath = searchPathToParent<string>(
-      path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
+      path.dirname(editor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         // Try to find where jest is installed relatively to the current opened file.
@@ -94,7 +140,18 @@ export class JestRunnerConfig {
 
   private get currentWorkspaceFolderPath(): string {
     const editor = vscode.window.activeTextEditor;
-    return vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
+    if (!editor) {
+      // Fallback to first workspace folder if no active editor
+      return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    }
+    
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+    if (!workspaceFolder) {
+      // Fallback to first workspace folder if file is not in workspace
+      return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    }
+    
+    return workspaceFolder.uri.fsPath;
   }
 
   public getJestConfigPath(targetPath: string): string {
@@ -117,7 +174,7 @@ export class JestRunnerConfig {
       ? normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath))
       : '';
   }
-
+  
   public findConfigPath(targetPath?: string, targetConfigFilename?: string): string | undefined {
     const foundPath = searchPathToParent<string>(
       targetPath || path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
@@ -161,16 +218,18 @@ export class JestRunnerConfig {
     return {};
   }
 
-  public get isCodeLensDisabled(): boolean {
-    const isCodeLensDisabled: boolean = vscode.workspace.getConfiguration().get('jestrunner.disableCodeLens');
-    return isCodeLensDisabled ? isCodeLensDisabled : false;
-  }
-
-  public get isRunInExternalNativeTerminal(): boolean {
-    const isRunInExternalNativeTerminal: boolean = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.runInOutsideTerminal');
-    return isRunInExternalNativeTerminal ? isRunInExternalNativeTerminal : false;
+  public get isCodeLensEnabled(): boolean {
+    const config = vscode.workspace.getConfiguration();
+    
+    // Check for old disableCodeLens setting for backwards compatibility
+    const disableCodeLens = config.get<boolean>('jestrunner.disableCodeLens');
+    if (disableCodeLens !== undefined) {
+      return !disableCodeLens;
+    }
+    
+    // Use new enableCodeLens setting (default: true)
+    const enableCodeLens = config.get<boolean>('jestrunner.enableCodeLens', true);
+    return enableCodeLens;
   }
 
   public get codeLensOptions(): CodeLensOption[] {
@@ -181,12 +240,104 @@ export class JestRunnerConfig {
     return [];
   }
 
+  /**
+   * Gets the test file pattern for CodeLens and Test Explorer.
+   * Supports both the new 'testFilePattern' and deprecated 'codeLensSelector' settings
+   * for backward compatibility.
+   */
+  public getTestFilePattern(): string {
+    const config = vscode.workspace.getConfiguration();
+    
+    // Check for old codeLensSelector setting for backwards compatibility
+    const codeLensSelector = config.get<string>('jestrunner.codeLensSelector');
+    if (codeLensSelector !== undefined && codeLensSelector !== '**/*.{test,spec}.{js,jsx,ts,tsx}') {
+      // User has customized the old setting, use it
+      return codeLensSelector;
+    }
+    
+    // Use new testFilePattern setting (with default)
+    const testFilePattern = config.get<string>('jestrunner.testFilePattern', '**/*.{test,spec}.{js,jsx,ts,tsx}');
+    return testFilePattern;
+  }
+
   public get isYarnPnpSupportEnabled(): boolean {
-    const isYarnPnp: boolean = vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport');
-    return isYarnPnp ? isYarnPnp : false;
+    return vscode.workspace.getConfiguration().get('jestrunner.enableYarnPnpSupport') || false;
   }
   public get getYarnPnpCommand(): string {
     const yarnPnpCommand: string = vscode.workspace.getConfiguration().get('jestrunner.yarnPnpCommand');
     return yarnPnpCommand;
+  }
+
+  public buildJestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const args: string[] = [];
+    const quoter = withQuotes ? quote : (str) => str;
+
+    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+
+    const jestConfigPath = this.getJestConfigPath(filePath);
+    if (jestConfigPath) {
+      args.push('-c');
+      args.push(quoter(normalizePath(jestConfigPath)));
+    }
+
+    if (testName) {
+      // Transform any placeholders in the test name if needed
+      if (testName.includes('%')) {
+        testName = resolveTestNameStringInterpolation(testName);
+      }
+
+      args.push('-t');
+      args.push(withQuotes ? quoter(escapeSingleQuotes(testName)) : testName);
+    }
+
+    const setOptions = new Set(options);
+
+    if (this.runOptions) {
+      this.runOptions.forEach((option) => setOptions.add(option));
+    }
+
+    args.push(...setOptions);
+
+    return args;
+  }
+
+  public getDebugConfiguration(): vscode.DebugConfiguration {
+    // Base configuration that both implementations share
+    const debugConfig: vscode.DebugConfiguration = {
+      console: 'integratedTerminal',
+      internalConsoleOptions: 'neverOpen',
+      name: 'Debug Jest Tests',
+      request: 'launch',
+      type: 'node',
+      runtimeExecutable: 'npx',
+      cwd: this.cwd,
+      args: ['--no-install', 'jest', '--runInBand'],
+      ...this.debugOptions,
+    };
+
+    // Handle Yarn PnP support first
+    if (this.isYarnPnpSupportEnabled) {
+      debugConfig.program = `.yarn/releases/${this.getYarnPnpCommand}`;
+      debugConfig.args = ['jest'];
+      return debugConfig;
+    }
+
+    // Handle custom Jest command if one is set
+    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
+    if (customCommand && typeof customCommand === 'string') {
+      const parts = parseShellCommand(customCommand);
+      if (parts.length > 0) {
+        debugConfig.program = parts[0];
+        debugConfig.args = parts.slice(1);
+      }
+      return debugConfig;
+    }
+
+    return debugConfig;
   }
 }

@@ -14,16 +14,31 @@ import {
   updateTestNameIfUsingProperties,
   resolveConfigPathOrMapping,
   findFullTestName,
-  isNodeExecuteAbleFile,
+  shouldIncludeFile,
 } from '../util';
 import * as fs from 'fs';
-import * as childProcess from 'child_process';
 import * as vscode from 'vscode';
 
 const its = {
   windows: isWindows() ? it : it.skip,
   linux: ['linux', 'darwin'].includes(process.platform) ? it : it.skip,
 };
+
+// Helper function to create test nodes with required properties
+function createTestNode(data: {
+  type: string;
+  name: string;
+  start: { line: number; column: number };
+  end: { line: number; column: number };
+  children?: any[];
+}): any {
+  return {
+    ...data,
+    file: '',
+    addChild: () => {},
+    filter: () => [],
+  };
+}
 
 describe('getDirName', () => {
   it('should return the directory name', () => {
@@ -69,10 +84,10 @@ describe('escapeRegExp', () => {
 });
 
 describe('escapeRegExpForPath', () => {
-  it('should escape special regex characters but not backslashes', () => {
+  it('should escape special regex characters including backslashes', () => {
     expect(escapeRegExpForPath('test*name')).toBe('test\\*name');
     expect(escapeRegExpForPath('test+name')).toBe('test\\+name');
-    expect(escapeRegExpForPath('C:\\path\\to\\file')).toBe('C:\\path\\to\\file');
+    expect(escapeRegExpForPath('C:\\path\\to\\file')).toBe('C:\\\\path\\\\to\\\\file');
   });
 });
 
@@ -161,95 +176,79 @@ describe('findFullTestName', () => {
 
   it('should find test name for describe block', () => {
     const children = [
-      {
+      createTestNode({
         type: 'describe',
         name: 'My Test Suite',
         start: { line: 1, column: 0 },
         end: { line: 10, column: 0 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(1, children)).toBe('My Test Suite');
   });
 
   it('should find test name for test block', () => {
     const children = [
-      {
+      createTestNode({
         type: 'it',
         name: 'should work',
         start: { line: 5, column: 2 },
         end: { line: 7, column: 2 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('should work');
   });
 
   it('should concatenate nested test names', () => {
     const children = [
-      {
+      createTestNode({
         type: 'describe',
         name: 'My Suite',
         start: { line: 1, column: 0 },
         end: { line: 10, column: 0 },
         children: [
-          {
+          createTestNode({
             type: 'it',
             name: 'should work',
             start: { line: 5, column: 2 },
             end: { line: 7, column: 2 },
             children: [],
-          },
+          }),
         ],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('My Suite should work');
   });
 
   it('should handle template literals with variables', () => {
     const children = [
-      {
+      createTestNode({
         type: 'it',
         name: 'should work with ${variable}',
         start: { line: 5, column: 2 },
         end: { line: 7, column: 2 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('should work with (.*?)');
   });
 
   it('should handle printf-style format strings', () => {
     const children = [
-      {
+      createTestNode({
         type: 'it',
         name: 'should work with %s',
         start: { line: 5, column: 2 },
         end: { line: 7, column: 2 },
         children: [],
-      },
+      }),
     ];
     expect(findFullTestName(6, children)).toBe('should work with (.*?)');
   });
 });
 
-describe('isNodeExecuteAbleFile', () => {
-  beforeEach(() => {
-    jest.restoreAllMocks();
-  });
 
-  it('should return true if file is executable', () => {
-    jest.spyOn(childProcess, 'execSync').mockReturnValue(Buffer.from(''));
-    expect(isNodeExecuteAbleFile('/path/to/jest')).toBe(true);
-  });
-
-  it('should return false if file is not executable', () => {
-    jest.spyOn(childProcess, 'execSync').mockImplementation(() => {
-      throw new Error('Command failed');
-    });
-    expect(isNodeExecuteAbleFile('/path/to/non-executable')).toBe(false);
-  });
-});
 
 describe('resolveConfigPathOrMapping', () => {
   beforeEach(() => {
@@ -413,6 +412,269 @@ describe('searchPathToParent', () => {
       const mockCallback = jest.fn().mockReturnValue(false);
       const result = searchPathToParent(fileAsStartPath, workspacePath, mockCallback);
       expect(result).toBe(false);
+    });
+  });
+});
+
+describe('shouldIncludeFile', () => {
+  let getConfigurationMock: jest.Mock;
+  let configMock: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Setup configuration mock
+    configMock = {
+      get: jest.fn((key: string, defaultValue?: any) => defaultValue),
+    };
+    
+    getConfigurationMock = jest.fn().mockReturnValue(configMock);
+    vscode.workspace.getConfiguration = getConfigurationMock;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('when no include/exclude patterns are configured', () => {
+    beforeEach(() => {
+      configMock.get.mockImplementation((key: string, defaultValue: any) => defaultValue);
+    });
+
+    it('should delegate to isJestTestFile when no include/exclude patterns', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      
+      // Mock isJestTestFile to return true
+      jest.spyOn(require('../jestDetection'), 'isJestTestFile').mockReturnValue(true);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+      expect(require('../jestDetection').isJestTestFile).toHaveBeenCalledWith(filePath);
+    });
+
+    it('should return false when isJestTestFile returns false', () => {
+      const filePath = '/workspace/src/regular.ts';
+      const workspacePath = '/workspace';
+      
+      // Mock isJestTestFile to return false
+      jest.spyOn(require('../jestDetection'), 'isJestTestFile').mockReturnValue(false);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('when include patterns are configured', () => {
+    it('should return true when file matches include pattern', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should return false when file does not match include pattern', () => {
+      const filePath = '/workspace/src/test.spec.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should return true when file matches any of multiple include patterns', () => {
+      const filePath = '/workspace/src/test.spec.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts', '**/*.spec.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should handle complex glob patterns', () => {
+      const filePath = '/workspace/src/feature/__tests__/component.test.tsx';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/__tests__/**/*.test.{ts,tsx}'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('when exclude patterns are configured', () => {
+    it('should return false when file matches exclude pattern', () => {
+      const filePath = '/workspace/node_modules/lib/test.test.ts';
+      const workspacePath = '/workspace';
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should return true when file does not match exclude pattern', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should return false when file matches any of multiple exclude patterns', () => {
+      const filePath = '/workspace/build/test.test.ts';
+      const workspacePath = '/workspace';
+      const excludePatterns = ['**/node_modules/**', '**/build/**', '**/dist/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('when both include and exclude patterns are configured', () => {
+    it('should return true when file matches include but not exclude', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should return false when file matches include but also matches exclude', () => {
+      const filePath = '/workspace/node_modules/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should return false when file does not match include pattern', () => {
+      const filePath = '/workspace/src/regular.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should prioritize exclude over include when both match', () => {
+      const filePath = '/workspace/src/__snapshots__/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/__snapshots__/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('path normalization', () => {
+    it('should normalize file paths before matching', () => {
+      const filePath = 'C:\\workspace\\src\\test.test.ts';
+      const workspacePath = 'C:\\workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should handle both relative and absolute path matching', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
     });
   });
 });

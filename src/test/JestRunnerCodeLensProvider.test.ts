@@ -2,6 +2,8 @@ import { JestRunnerCodeLensProvider } from '../JestRunnerCodeLensProvider';
 import * as vscode from 'vscode';
 import { Document, Uri, WorkspaceFolder } from './__mocks__/vscode';
 import * as fastGlob from 'fast-glob';
+import * as parser from '../parser';
+import * as util from '../util';
 
 jest.mock('fast-glob');
 
@@ -40,6 +42,34 @@ describe('JestRunnerCodeLensProvider', () => {
     } as any);
 
     (fastGlob.sync as jest.Mock).mockReturnValue([]);
+    
+    // Mock shouldIncludeFile to return true for test files
+    jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(true);
+    
+    // Mock the parser to return test nodes
+    jest.spyOn(parser, 'parse').mockReturnValue({
+      root: {
+        children: [
+          {
+            type: 'describe',
+            name: 'My Test Suite',
+            start: { line: 2, column: 6 },
+            end: { line: 6, column: 8 },
+            file: '/workspace/test.spec.ts',
+            children: [
+              {
+                type: 'it',
+                name: 'should work',
+                start: { line: 3, column: 8 },
+                end: { line: 5, column: 10 },
+                file: '/workspace/test.spec.ts',
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    } as any);
   });
 
   describe('constructor', () => {
@@ -131,6 +161,7 @@ describe('JestRunnerCodeLensProvider', () => {
       } as any);
 
       (fastGlob.sync as jest.Mock).mockReturnValue([]); // File not in include list
+      jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(false);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses).toEqual([]);
@@ -161,6 +192,7 @@ describe('JestRunnerCodeLensProvider', () => {
       } as any);
 
       (fastGlob.sync as jest.Mock).mockReturnValue(['/workspace/test.spec.ts']);
+      jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(false);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses).toEqual([]);
@@ -226,6 +258,39 @@ describe('JestRunnerCodeLensProvider', () => {
           });
         });
       `);
+      
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'describe',
+              name: 'Outer Suite',
+              start: { line: 2, column: 8 },
+              end: { line: 6, column: 10 },
+              file: '/workspace/test.spec.ts',
+              children: [
+                {
+                  type: 'describe',
+                  name: 'Inner Suite',
+                  start: { line: 3, column: 10 },
+                  end: { line: 5, column: 12 },
+                  file: '/workspace/test.spec.ts',
+                  children: [
+                    {
+                      type: 'it',
+                      name: 'nested test',
+                      start: { line: 4, column: 12 },
+                      end: { line: 4, column: 40 },
+                      file: '/workspace/test.spec.ts',
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      } as any);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses.length).toBeGreaterThan(0);
@@ -240,6 +305,46 @@ describe('JestRunnerCodeLensProvider', () => {
           it('test 3', () => {});
         });
       `);
+      
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'describe',
+              name: 'Suite',
+              start: { line: 2, column: 8 },
+              end: { line: 6, column: 10 },
+              file: '/workspace/test.spec.ts',
+              children: [
+                {
+                  type: 'it',
+                  name: 'test 1',
+                  start: { line: 3, column: 10 },
+                  end: { line: 3, column: 32 },
+                  file: '/workspace/test.spec.ts',
+                  children: [],
+                },
+                {
+                  type: 'it',
+                  name: 'test 2',
+                  start: { line: 4, column: 10 },
+                  end: { line: 4, column: 32 },
+                  file: '/workspace/test.spec.ts',
+                  children: [],
+                },
+                {
+                  type: 'it',
+                  name: 'test 3',
+                  start: { line: 5, column: 10 },
+                  end: { line: 5, column: 32 },
+                  file: '/workspace/test.spec.ts',
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      } as any);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       // Should have lenses for describe + 3 its = 4 * 1 (run) = 4
@@ -258,6 +363,21 @@ describe('JestRunnerCodeLensProvider', () => {
           expect(a + b).toBe(expected);
         });
       `);
+      
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'it',
+              name: 'should add %i + %i = %i',
+              start: { line: 2, column: 8 },
+              end: { line: 6, column: 11 },
+              file: '/workspace/test.spec.ts',
+              children: [],
+            },
+          ],
+        },
+      } as any);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses.length).toBeGreaterThan(0);
@@ -275,6 +395,30 @@ describe('JestRunnerCodeLensProvider', () => {
           });
         });
       `);
+      
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'describe',
+              name: '%s is %s',
+              start: { line: 2, column: 8 },
+              end: { line: 8, column: 10 },
+              file: '/workspace/test.spec.ts',
+              children: [
+                {
+                  type: 'it',
+                  name: 'should match',
+                  start: { line: 5, column: 10 },
+                  end: { line: 7, column: 12 },
+                  file: '/workspace/test.spec.ts',
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      } as any);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses.length).toBeGreaterThan(0);

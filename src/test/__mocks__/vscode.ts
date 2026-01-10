@@ -51,6 +51,9 @@ class Workspace {
   getConfiguration() {
     throw new WorkspaceConfiguration({});
   }
+
+  findFiles = jest.fn();
+  createFileSystemWatcher = jest.fn();
 }
 
 type JestRunnerConfigProps = {
@@ -60,6 +63,15 @@ type JestRunnerConfigProps = {
   'jestrunner.checkRelativePathForJest'?: boolean;
   'jestrunner.include'?: string[];
   'jestrunner.exclude'?: string[];
+  'jestrunner.runOptions'?: string[];
+  'jestrunner.debugOptions'?: any;
+  'jestrunner.jestCommand'?: string;
+  'jestrunner.enableYarnPnpSupport'?: boolean;
+  'jestrunner.yarnPnpCommand'?: string;
+  'jestrunner.enableCodeLens'?: boolean;
+  'jestrunner.disableCodeLens'?: boolean;
+  'jestrunner.testFilePattern'?: string;
+  'jestrunner.codeLensSelector'?: string;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) {}
@@ -82,11 +94,25 @@ class WorkspaceConfiguration {
   }
 }
 
+class OutputChannel {
+  appendLine = jest.fn();
+  append = jest.fn();
+  clear = jest.fn();
+  show = jest.fn();
+  hide = jest.fn();
+  dispose = jest.fn();
+  name = 'Jest Runner';
+  replace = jest.fn();
+}
+
 class Window {
   get activeTextEditor(): TextEditor {
     return new TextEditor(new Document(new Uri('hi')));
   }
   showWarningMessage<T extends string>(message: string, ...items: T[]): Thenable<T | undefined> {
+    return Promise.resolve(undefined);
+  }
+  showErrorMessage<T extends string>(message: string, ...items: T[]): Thenable<T | undefined> {
     return Promise.resolve(undefined);
   }
   createTerminal(name: string): any {
@@ -95,6 +121,9 @@ class Window {
       sendText: jest.fn(),
       dispose: jest.fn(),
     };
+  }
+  createOutputChannel(name: string): OutputChannel {
+    return new OutputChannel();
   }
   onDidCloseTerminal: jest.Mock = jest.fn((callback: (terminal: any) => void) => {
     return { dispose: jest.fn() };
@@ -113,6 +142,152 @@ class Debug {
   }
 }
 
+class Position {
+  constructor(
+    public readonly line: number,
+    public readonly character: number,
+  ) {}
+}
+
+class VscodeRange {
+  constructor(
+    public readonly start: Position,
+    public readonly end: Position,
+  ) {}
+}
+
+class TestTag {
+  constructor(public readonly id: string) {}
+}
+
+class TestMessage {
+  constructor(public readonly message: string) {}
+}
+
+class TestItemCollection {
+  private items = new Map<string, TestItem>();
+
+  add(item: TestItem): void {
+    this.items.set(item.id, item);
+  }
+
+  delete(id: string): void {
+    this.items.delete(id);
+  }
+
+  get(id: string): TestItem | undefined {
+    return this.items.get(id);
+  }
+
+  replace(items: TestItem[]): void {
+    this.items.clear();
+    items.forEach(item => this.add(item));
+  }
+
+  forEach(callback: (item: TestItem) => void): void {
+    this.items.forEach(callback);
+  }
+
+  get size(): number {
+    return this.items.size;
+  }
+}
+
+class TestItem {
+  children: TestItemCollection = new TestItemCollection();
+  tags: TestTag[] = [];
+  range?: VscodeRange;
+  canResolveChildren = false;
+  busy = false;
+  error?: string;
+
+  constructor(
+    public id: string,
+    public label: string,
+    public uri?: Uri,
+  ) {}
+}
+
+class TestRun {
+  started = jest.fn();
+  passed = jest.fn();
+  failed = jest.fn();
+  skipped = jest.fn();
+  errored = jest.fn();
+  enqueued = jest.fn();
+  end = jest.fn();
+}
+
+class TestController {
+  items: TestItemCollection = new TestItemCollection();
+  createRunProfile = jest.fn();
+  createTestRun = jest.fn().mockReturnValue(new TestRun());
+  createTestItem = jest.fn((id: string, label: string, uri?: Uri) => new TestItem(id, label, uri));
+  dispose = jest.fn();
+
+  constructor(
+    public id: string,
+    public label: string,
+  ) {}
+}
+
+enum TestRunProfileKind {
+  Run = 1,
+  Debug = 2,
+  Coverage = 3,
+}
+
+class CancellationTokenSource {
+  token: CancellationToken;
+  
+  constructor() {
+    this.token = new CancellationToken();
+  }
+
+  cancel(): void {
+    this.token.cancel();
+  }
+
+  dispose(): void {}
+}
+
+class CancellationToken {
+  private cancelled = false;
+  private listeners: Array<() => void> = [];
+
+  get isCancellationRequested(): boolean {
+    return this.cancelled;
+  }
+
+  onCancellationRequested(listener: () => void): { dispose: () => void } {
+    this.listeners.push(listener);
+    return {
+      dispose: () => {
+        const index = this.listeners.indexOf(listener);
+        if (index >= 0) {
+          this.listeners.splice(index, 1);
+        }
+      },
+    };
+  }
+
+  cancel(): void {
+    this.cancelled = true;
+    this.listeners.forEach(listener => listener());
+  }
+}
+
+class RelativePattern {
+  constructor(
+    public base: string,
+    public pattern: string,
+  ) {}
+}
+
+const tests = {
+  createTestController: jest.fn((id: string, label: string) => new TestController(id, label)),
+};
+
 const workspace = new Workspace();
 const window = new Window();
 const commands = new Commands();
@@ -123,6 +298,7 @@ export {
   window,
   commands,
   debug,
+  tests,
   Uri,
   Document,
   TextEditor,
@@ -130,4 +306,17 @@ export {
   WorkspaceConfiguration,
   Range,
   CodeLens,
+  Position,
+  VscodeRange,
+  TestTag,
+  TestMessage,
+  TestItem,
+  TestItemCollection,
+  TestRun,
+  TestController,
+  TestRunProfileKind,
+  CancellationToken,
+  CancellationTokenSource,
+  RelativePattern,
+  OutputChannel,
 };

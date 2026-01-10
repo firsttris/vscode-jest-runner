@@ -1,5 +1,15 @@
 # Change Log
 
+## 0.4.80 2025-04-11
+
+- Automatic Jest Detection and possibility to define Include & Exclude patterns
+- New Vscode Test API & Test Explorer
+- Use NPX to find jest Binary
+- **Breaking Change:** Renamed `codeLensSelector` setting to `testFilePattern` for clarity
+  - Backward compatibility maintained: old `codeLensSelector` setting still works
+  - Migration: Update your settings from `jestrunner.codeLensSelector` to `jestrunner.testFilePattern`
+  - The old setting is deprecated and will show a warning in VS Code settings
+
 ## 0.4.52 - 2022-08-14
 
 - Let CI continously publish extension to ovsx 
@@ -139,7 +149,7 @@
 
 ### Added
 
-- add new settings codeLensSelector which enables CodeLens for files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})
+- add new settings testFilePattern which enables CodeLens for files matching this pattern (default **/*.{test,spec}.{js,jsx,ts,tsx})
 
 ## 0.4.21 - 2020-06-02
 

@@ -18,6 +18,24 @@ describe('JestRunner', () => {
       get changeDirectoryToWorkspaceRoot() { return false; },
       get preserveEditorFocus() { return false; },
       getJestConfigPath: jest.fn().mockReturnValue(''),
+      buildJestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
+        const args = [filePath];
+        if (testName) {
+          args.push('-t', testName);
+        }
+        args.push(...options);
+        return args;
+      }),
+      getDebugConfiguration: jest.fn(() => ({
+        console: 'integratedTerminal',
+        internalConsoleOptions: 'neverOpen',
+        name: 'Debug Jest Tests',
+        request: 'launch',
+        type: 'node',
+        runtimeExecutable: 'npx',
+        cwd: '/workspace',
+        args: ['--no-install', 'jest', '--runInBand'],
+      })),
       get runOptions() { return null; },
       get debugOptions() { return {}; },
       get isRunInExternalNativeTerminal() { return false; },
@@ -194,7 +212,7 @@ describe('JestRunner', () => {
       const config = debugCall[1];
       expect(config.type).toBe('node');
       expect(config.request).toBe('launch');
-      expect(config.program).toBe('node_modules/.bin/jest');
+      expect(config.runtimeExecutable).toBe('npx');
       expect(config.args).toContain('--runInBand');
     });
   });
@@ -296,6 +314,16 @@ describe('JestRunner', () => {
         ...mockConfig,
         get isYarnPnpSupportEnabled() { return true; },
         get getYarnPnpCommand() { return 'yarn-3.2.0.cjs'; },
+        getDebugConfiguration: jest.fn(() => ({
+          console: 'integratedTerminal',
+          internalConsoleOptions: 'neverOpen',
+          name: 'Debug Jest Tests',
+          request: 'launch',
+          type: 'node',
+          program: '.yarn/releases/yarn-3.2.0.cjs',
+          cwd: '/workspace',
+          args: ['jest'],
+        })),
       } as any;
       jestRunner = new JestRunner(mockConfig);
 

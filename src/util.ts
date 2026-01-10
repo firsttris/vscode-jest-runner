@@ -1,8 +1,45 @@
 import * as path from 'path';
-import { execSync } from 'child_process';
 import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import { ParsedNode } from 'jest-editor-support';
+import { isJestTestFile } from './jestDetection';
+
+// Centralized output channel for logging
+let outputChannel: vscode.OutputChannel | undefined;
+
+export function getOutputChannel(): vscode.OutputChannel {
+  if (!outputChannel) {
+    outputChannel = vscode.window.createOutputChannel('Jest Runner');
+  }
+  return outputChannel;
+}
+
+export function logInfo(message: string): void {
+  getOutputChannel().appendLine(`[INFO] ${message}`);
+}
+
+export function logError(message: string, error?: unknown): void {
+  const errorDetails = error instanceof Error ? error.stack || error.message : String(error);
+  getOutputChannel().appendLine(`[ERROR] ${message}${error ? ': ' + errorDetails : ''}`);
+}
+
+export function logWarning(message: string): void {
+  getOutputChannel().appendLine(`[WARN] ${message}`);
+}
+
+export function logDebug(message: string): void {
+  const config = vscode.workspace.getConfiguration('jestrunner');
+  const enableDebugLogs = config.get<boolean>('enableDebugLogs', false);
+  if (enableDebugLogs) {
+    getOutputChannel().appendLine(`[DEBUG] ${message}`);
+  }
+}
+
+export interface TestNode extends ParsedNode {
+  name: string;
+  children?: TestNode[];
+}
 
 export function getDirName(filePath: string): string {
   return path.dirname(filePath);
@@ -26,10 +63,11 @@ export function escapeRegExp(s: string): string {
 }
 
 export function escapeRegExpForPath(s: string): string {
-  return s.replace(/[*+?^${}<>()|[\]]/g, '\\$&'); // $& means the whole matched string
+  // Keep consistent with escapeRegExp but without special handling for (.*?) patterns
+  return s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
-export function findFullTestName(selectedLine: number, children: any[]): string | undefined {
+export function findFullTestName(selectedLine: number, children: TestNode[]): string | undefined {
   if (!children) {
     return;
   }
@@ -55,7 +93,7 @@ const QUOTES = {
   '`': true,
 };
 
-function resolveTestNameStringInterpolation(s: string): string {
+export function resolveTestNameStringInterpolation(s: string): string {
   const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/gi;
   const matchAny = '(.*?)';
   return s.replace(variableRegex, matchAny);
@@ -94,15 +132,6 @@ function isCodeLensOption(option: string): option is CodeLensOption {
 
 export function validateCodeLensOptions(maybeCodeLensOptions: string[]): CodeLensOption[] {
   return [...new Set(maybeCodeLensOptions)].filter((value) => isCodeLensOption(value)) as CodeLensOption[];
-}
-
-export function isNodeExecuteAbleFile(filepath: string): boolean {
-  try {
-    execSync(`node ${filepath} --help`);
-    return true;
-  } catch (err) {
-    return false;
-  }
 }
 
 export function updateTestNameIfUsingProperties(receivedTestName?: string) {
@@ -153,7 +182,15 @@ export function searchPathToParent<T>(
   ancestorPath: string,
   callback: (currentFolderPath: string) => false | undefined | null | 0 | T,
 ) {
-  let currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
+  let currentFolderPath: string;
+  try {
+    currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
+  } catch (error) {
+    // If we can't access the path (permissions, doesn't exist, etc.), use parent directory
+    logWarning(`Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`);
+    currentFolderPath = path.dirname(startingPath);
+  }
+  
   const endPath = path.dirname(ancestorPath);
   const resolvedStart = path.resolve(currentFolderPath);
   const resolvedEnd = path.resolve(endPath);
@@ -174,4 +211,47 @@ export function searchPathToParent<T>(
   } while (currentFolderPath !== endPath && currentFolderPath !== lastPath);
 
   return false;
+}
+
+/**
+ * Determines if a file should be included based on configuration
+ * @param filePath Path to the file being checked
+ * @param workspaceFolderPath Root workspace folder path
+ * @returns Boolean indicating if the file should be processed
+ */
+export function shouldIncludeFile(filePath: string, workspaceFolderPath: string): boolean {
+  // Get include/exclude configuration
+  const config = vscode.workspace.getConfiguration('jestrunner');
+  const include = config.get<string[]>('include', []);
+  const exclude = config.get<string[]>('exclude', []);
+
+  // If no include/exclude, check if it's a Jest test file
+  if (include.length === 0 && exclude.length === 0) {
+    return isJestTestFile(filePath);
+  }
+
+  // Normalize paths for pattern matching
+  const normalizedPath = normalizePath(filePath);
+  const normalizedFolderPath = normalizePath(workspaceFolderPath);
+  
+  // Get relative path for pattern matching
+  const relativePath = path.relative(normalizedFolderPath, normalizedPath);
+
+  // Check include patterns using micromatch for efficient pattern matching
+  if (include.length > 0) {
+    const includeMatch = mm.isMatch(relativePath, include) || mm.isMatch(normalizedPath, include);
+    if (!includeMatch) {
+      return false;
+    }
+  }
+
+  // Check exclude patterns using micromatch for efficient pattern matching
+  if (exclude.length > 0) {
+    const excludeMatch = mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude);
+    if (excludeMatch) {
+      return false;
+    }
+  }
+
+  return true;
 }

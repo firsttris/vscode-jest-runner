@@ -1016,4 +1016,422 @@ describe('JestRunnerConfig', () => {
       );
     });
   });
+
+  describe('buildJestArgs', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+    const mockFilePath = '/home/user/project/src/test.spec.ts';
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
+      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
+        new TextEditor(new Document(new Uri(mockFilePath) as any)) as any,
+      );
+    });
+
+    it('should build args with file path only', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false);
+
+      expect(args[0]).toBe('/home/user/project/src/test\\.spec\\.ts');
+      expect(args).not.toContain('-c');
+      expect(args).not.toContain('-t');
+    });
+
+    it('should build args with test name', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, 'my test name', false);
+
+      expect(args[0]).toBe('/home/user/project/src/test\\.spec\\.ts');
+      expect(args).toContain('-t');
+      expect(args).toContain('my test name');
+    });
+
+    it('should escape single quotes in test name when withQuotes is true', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, "test's name", true);
+
+      const testNameIndex = args.indexOf('-t') + 1;
+      // On Windows, we use double quotes and don't escape single quotes
+      // On Unix, we use single quotes and escape them
+      if (isWindows()) {
+        expect(args[testNameIndex]).toBe('"test\'s name"');
+      } else {
+        expect(args[testNameIndex]).toContain("'\\''");
+      }
+    });
+
+    it('should resolve test name string interpolation', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, 'test with %s placeholder', false);
+
+      const testNameIndex = args.indexOf('-t') + 1;
+      expect(args[testNameIndex]).not.toContain('%s');
+    });
+
+    it('should include config path when available', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': './jest.config.js',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false);
+
+      expect(args).toContain('-c');
+      const configIndex = args.indexOf('-c') + 1;
+      expect(args[configIndex]).toContain('jest.config.js');
+    });
+
+    it('should add quotes when withQuotes is true', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': './jest.config.js',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, true);
+
+      // File path should be quoted
+      expect(args[0]).toMatch(/^["'].*["']$/);
+    });
+
+    it('should include additional options', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false, ['--verbose', '--coverage']);
+
+      expect(args).toContain('--verbose');
+      expect(args).toContain('--coverage');
+    });
+
+    it('should merge runOptions from config', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+          'jestrunner.runOptions': ['--silent', '--bail'],
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false);
+
+      expect(args).toContain('--silent');
+      expect(args).toContain('--bail');
+    });
+
+    it('should deduplicate options when runOptions overlap with additional options', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+          'jestrunner.runOptions': ['--verbose', '--bail'],
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false, ['--verbose', '--coverage']);
+
+      // Count occurrences of --verbose
+      const verboseCount = args.filter((arg) => arg === '--verbose').length;
+      expect(verboseCount).toBe(1);
+      expect(args).toContain('--bail');
+      expect(args).toContain('--coverage');
+    });
+
+    it('should build complete args with all parameters', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': './jest.config.js',
+          'jestrunner.runOptions': ['--silent'],
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(mockFilePath, 'complete test', true, ['--coverage']);
+
+      expect(args[0]).toMatch(/^["'].*test\\\.spec\\\.ts["']$/);
+      expect(args).toContain('-c');
+      expect(args).toContain('-t');
+      expect(args).toContain('--silent');
+      expect(args).toContain('--coverage');
+    });
+  });
+
+  describe('getDebugConfiguration', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+    const mockFilePath = '/home/user/project/src/test.spec.ts';
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
+      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
+        new TextEditor(new Document(new Uri(mockFilePath) as any)) as any,
+      );
+    });
+
+    it('should return default debug configuration', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(new WorkspaceConfiguration({}));
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config).toMatchObject({
+        console: 'integratedTerminal',
+        internalConsoleOptions: 'neverOpen',
+        name: 'Debug Jest Tests',
+        request: 'launch',
+        type: 'node',
+        runtimeExecutable: 'npx',
+        cwd: '/home/user/project',
+        args: ['--no-install', 'jest', '--runInBand'],
+      });
+    });
+
+    it('should configure for Yarn PnP when enabled', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableYarnPnpSupport': true,
+          'jestrunner.yarnPnpCommand': 'yarn-3.2.0.cjs',
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
+      expect(config.args).toEqual(['jest']);
+    });
+
+    it('should parse custom jest command', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.jestCommand': 'node ./node_modules/jest/bin/jest.js',
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.program).toBe('node');
+      expect(config.args).toEqual(['./node_modules/jest/bin/jest.js']);
+    });
+
+    it('should parse custom jest command with quoted arguments', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.jestCommand': 'node "node_modules/.bin/jest" --config="jest.config.js"',
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.program).toBe('node');
+      expect(config.args).toEqual(['node_modules/.bin/jest', '--config=jest.config.js']);
+    });
+
+    it('should merge custom debugOptions', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.debugOptions': {
+            env: { NODE_ENV: 'test' },
+            sourceMaps: true,
+          },
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.env).toEqual({ NODE_ENV: 'test' });
+      expect(config.sourceMaps).toBe(true);
+      expect(config.name).toBe('Debug Jest Tests'); // Original properties preserved
+    });
+
+    it('should use projectPath as cwd when configured', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.projectPath': './packages/app',
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      // On Windows, the path gets converted to Windows-style
+      const expectedPath = isWindows()
+        ? path.resolve('/home/user/project/packages/app').replace(/\//g, '\\')
+        : '/home/user/project/packages/app';
+      expect(config.cwd).toBe(expectedPath);
+    });
+
+    it('should prioritize Yarn PnP over custom jest command', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableYarnPnpSupport': true,
+          'jestrunner.yarnPnpCommand': 'yarn-3.2.0.cjs',
+          'jestrunner.jestCommand': 'node ./custom-jest.js',
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      // Should use Yarn PnP config, not custom command
+      expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
+      expect(config.args).toEqual(['jest']);
+    });
+  });
+
+  describe('isCodeLensEnabled - backwards compatibility', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
+    });
+
+    it('should return true by default when no settings are configured', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
+    });
+
+    it('should respect enableCodeLens when set to false', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableCodeLens': false,
+        }),
+      );
+
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
+    });
+
+    it('should respect enableCodeLens when set to true', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableCodeLens': true,
+        }),
+      );
+
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
+    });
+
+    it('should support old disableCodeLens setting (set to true)', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.disableCodeLens': true,
+        }),
+      );
+
+      // disableCodeLens: true means CodeLens should be disabled (return false)
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
+    });
+
+    it('should support old disableCodeLens setting (set to false)', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.disableCodeLens': false,
+        }),
+      );
+
+      // disableCodeLens: false means CodeLens should be enabled (return true)
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
+    });
+
+    it('should prioritize disableCodeLens over enableCodeLens for backwards compatibility', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.disableCodeLens': true,
+          'jestrunner.enableCodeLens': true, // This should be ignored
+        }),
+      );
+
+      // Old setting takes precedence
+      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
+    });
+  });
+
+  describe('getTestFilePattern', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+    });
+
+    it('should return testFilePattern when set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.testFilePattern': '**/*.test.js',
+        }),
+      );
+
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.test.js');
+    });
+
+    it('should return default pattern when testFilePattern not set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.{test,spec}.{js,jsx,ts,tsx}');
+    });
+
+    it('should support old codeLensSelector setting', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.codeLensSelector': '**/*.spec.ts',
+        }),
+      );
+
+      // Old setting should be used
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.spec.ts');
+    });
+
+    it('should prioritize codeLensSelector over testFilePattern for backwards compatibility', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.codeLensSelector': '**/*.spec.ts',
+          'jestrunner.testFilePattern': '**/*.test.js', // This should be ignored
+        }),
+      );
+
+      // Old setting takes precedence when it differs from default
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.spec.ts');
+    });
+
+    it('should use testFilePattern when codeLensSelector is set to default value', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.codeLensSelector': '**/*.{test,spec}.{js,jsx,ts,tsx}',
+          'jestrunner.testFilePattern': '**/*.test.js',
+        }),
+      );
+
+      // When codeLensSelector is at default, use testFilePattern
+      expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.test.js');
+    });
+  });
 });
