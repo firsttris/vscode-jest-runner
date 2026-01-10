@@ -392,8 +392,8 @@ export class JestTestController {
    */
   private parseJestOutput(output: string): JestResults | undefined {
     try {
-      // First try to match complete JSON format - without using the 's' flag
-      const jsonRegex = /({"numFailedTestSuites":[\s\S]*?"wasInterrupted":[\s\S]*?})/;
+      // First try to match complete JSON format
+      const jsonRegex = /({"numFailedTestSuites":.*?"wasInterrupted":.*?})/s;
       const jsonMatch = output.match(jsonRegex);
 
       if (jsonMatch && jsonMatch[1]) {
@@ -401,7 +401,7 @@ export class JestTestController {
       }
 
       // Fallback to more general regex
-      const fallbackMatch = output.match(/(\{[\s\S]*"testResults"[\s\S]*\})/);
+      const fallbackMatch = output.match(/(\{.*"testResults".*\})/s);
       if (fallbackMatch && fallbackMatch[1]) {
         return JSON.parse(fallbackMatch[1]);
       }
