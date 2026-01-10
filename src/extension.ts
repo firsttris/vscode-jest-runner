@@ -29,9 +29,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // Initial update
   updateJestFileContext();
 
-  const testInterface = vscode.workspace.getConfiguration('jestrunner').get('testInterface', 'testExplorer');
+  const enableTestExplorer = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', true);
 
-  if (testInterface === 'testExplorer') {
+  if (enableTestExplorer) {
     const jestTestController = new JestTestController(context);
     context.subscriptions.push({ dispose: () => jestTestController.dispose() });
   }

@@ -76,11 +76,16 @@
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
             "scope": "window"
           },
-          "jestrunner.testInterface": {
-            "type": "string",
-            "enum": ["testExplorer", "codeLens"],
-            "default": "codeLens",
-            "description": "Choose test interface: 'testExplorer' (modern VS Code Testing API & Test Explorer) or 'codeLens' (legacy inline buttons)",
+          "jestrunner.enableCodeLens": {
+            "type": "boolean",
+            "default": false,
+            "description": "Bring back the old CodeLens feature (Replaced by new VsCode Testing API & Test Explorer)",
+            "scope": "window"
+          },
+          "jestrunner.enableTestExplorer": {
+            "type": "boolean",
+            "default": true,
+            "description": "Enable the Test Explorer integration using VS Code's Testing API",
             "scope": "window"
           },
           "jestrunner.codeLens": {

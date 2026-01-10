@@ -161,8 +161,8 @@ export class JestRunnerConfig {
   }
 
   public get isCodeLensEnabled(): boolean {
-    const testInterface = vscode.workspace.getConfiguration().get<string>('jestrunner.testInterface', 'testExplorer');
-    return testInterface === 'codeLens';
+    const enableCodeLens = vscode.workspace.getConfiguration().get<boolean>('jestrunner.enableCodeLens', false);
+    return enableCodeLens;
   }
 
   public get codeLensOptions(): CodeLensOption[] {
