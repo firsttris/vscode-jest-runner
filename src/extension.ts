@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Initial update
   updateJestFileContext();
 
-  const enableTestExplorer = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', true);
+  const enableTestExplorer = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', false);
 
   if (enableTestExplorer) {
     const jestTestController = new JestTestController(context);
