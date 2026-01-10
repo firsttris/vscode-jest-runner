@@ -14,10 +14,13 @@ import {
   updateTestNameIfUsingProperties,
   resolveConfigPathOrMapping,
   findFullTestName,
+  shouldIncludeFile,
 } from '../util';
 import * as fs from 'fs';
 import * as childProcess from 'child_process';
 import * as vscode from 'vscode';
+import * as fastGlob from 'fast-glob';
+import { isJestTestFile } from '../jestDetection';
 
 const its = {
   windows: isWindows() ? it : it.skip,
@@ -412,6 +415,331 @@ describe('searchPathToParent', () => {
       const mockCallback = jest.fn().mockReturnValue(false);
       const result = searchPathToParent(fileAsStartPath, workspacePath, mockCallback);
       expect(result).toBe(false);
+    });
+  });
+});
+
+describe('shouldIncludeFile', () => {
+  let getConfigurationMock: jest.Mock;
+  let configMock: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Setup configuration mock
+    configMock = {
+      get: jest.fn((key: string, defaultValue?: any) => defaultValue),
+    };
+    
+    getConfigurationMock = jest.fn().mockReturnValue(configMock);
+    vscode.workspace.getConfiguration = getConfigurationMock;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('when no include/exclude patterns are configured', () => {
+    beforeEach(() => {
+      configMock.get.mockImplementation((key: string, defaultValue: any) => defaultValue);
+    });
+
+    it('should delegate to isJestTestFile when no include/exclude patterns', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      
+      // Mock isJestTestFile to return true
+      jest.spyOn(require('../jestDetection'), 'isJestTestFile').mockReturnValue(true);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+      expect(require('../jestDetection').isJestTestFile).toHaveBeenCalledWith(filePath);
+    });
+
+    it('should return false when isJestTestFile returns false', () => {
+      const filePath = '/workspace/src/regular.ts';
+      const workspacePath = '/workspace';
+      
+      // Mock isJestTestFile to return false
+      jest.spyOn(require('../jestDetection'), 'isJestTestFile').mockReturnValue(false);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('when include patterns are configured', () => {
+    it('should return true when file matches include pattern', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return our file
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should return false when file does not match include pattern', () => {
+      const filePath = '/workspace/src/test.spec.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return empty array (no matches)
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should return true when file matches any of multiple include patterns', () => {
+      const filePath = '/workspace/src/test.spec.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts', '**/*.spec.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return our file
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should handle complex glob patterns', () => {
+      const filePath = '/workspace/src/feature/__tests__/component.test.tsx';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/__tests__/**/*.test.{ts,tsx}'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return our file
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('when exclude patterns are configured', () => {
+    it('should return false when file matches exclude pattern', () => {
+      const filePath = '/workspace/node_modules/lib/test.test.ts';
+      const workspacePath = '/workspace';
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return our file (it's excluded)
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should return true when file does not match exclude pattern', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return empty array (not excluded)
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should return false when file matches any of multiple exclude patterns', () => {
+      const filePath = '/workspace/build/test.test.ts';
+      const workspacePath = '/workspace';
+      const excludePatterns = ['**/node_modules/**', '**/build/**', '**/dist/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return our file (it's excluded)
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('when both include and exclude patterns are configured', () => {
+    it('should return true when file matches include but not exclude', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob calls
+      const syncSpy = jest.spyOn(fastGlob, 'sync');
+      syncSpy.mockImplementation((patterns: any) => {
+        // First call for include patterns
+        if (Array.isArray(patterns) && patterns.includes('**/*.test.ts')) {
+          return [normalizePath(filePath)];
+        }
+        // Second call for exclude patterns
+        return [];
+      });
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+    });
+
+    it('should return false when file matches include but also matches exclude', () => {
+      const filePath = '/workspace/node_modules/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob calls
+      const syncSpy = jest.spyOn(fastGlob, 'sync');
+      syncSpy.mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should return false when file does not match include pattern', () => {
+      const filePath = '/workspace/src/regular.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/node_modules/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return empty for include
+      const syncSpy = jest.spyOn(fastGlob, 'sync');
+      syncSpy.mockReturnValue([]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+
+    it('should prioritize exclude over include when both match', () => {
+      const filePath = '/workspace/src/__snapshots__/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      const excludePatterns = ['**/__snapshots__/**'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        if (key === 'exclude') return excludePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return the file for both calls
+      const syncSpy = jest.spyOn(fastGlob, 'sync');
+      syncSpy.mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('path normalization', () => {
+    it('should normalize file paths before matching', () => {
+      const filePath = 'C:\\workspace\\src\\test.test.ts';
+      const workspacePath = 'C:\\workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      // Mock fast-glob to return normalized path
+      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
+      
+      const result = shouldIncludeFile(filePath, workspacePath);
+      
+      expect(result).toBe(true);
+      expect(fastGlob.sync).toHaveBeenCalledWith(
+        includePatterns,
+        expect.objectContaining({
+          cwd: normalizePath(workspacePath),
+          absolute: true,
+        })
+      );
+    });
+
+    it('should call fast-glob with absolute and cwd options', () => {
+      const filePath = '/workspace/src/test.test.ts';
+      const workspacePath = '/workspace';
+      const includePatterns = ['**/*.test.ts'];
+      
+      configMock.get.mockImplementation((key: string, defaultValue: any) => {
+        if (key === 'include') return includePatterns;
+        return defaultValue;
+      });
+
+      const syncSpy = jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
+      
+      shouldIncludeFile(filePath, workspacePath);
+      
+      expect(syncSpy).toHaveBeenCalledWith(
+        includePatterns,
+        expect.objectContaining({
+          cwd: normalizePath(workspacePath),
+          absolute: true,
+        })
+      );
     });
   });
 });
