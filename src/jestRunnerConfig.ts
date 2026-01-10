@@ -208,7 +208,7 @@ export class JestRunnerConfig {
       }
 
       args.push('-t');
-      args.push(quoter(escapeSingleQuotes(testName)));
+      args.push(withQuotes ? quoter(escapeSingleQuotes(testName)) : testName);
     }
 
     const setOptions = new Set(options);
