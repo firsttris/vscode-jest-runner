@@ -1,6 +1,6 @@
 import { parse } from './parser';
 import { CodeLens, CodeLensProvider, Range, TextDocument, window, workspace } from 'vscode';
-import { findFullTestName, escapeRegExp, CodeLensOption, TestNode, shouldIncludeFile } from './util';
+import { findFullTestName, escapeRegExp, CodeLensOption, TestNode, shouldIncludeFile, logError } from './util';
 
 function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
   const titleMap: Record<CodeLensOption, string> = {
@@ -54,15 +54,20 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
 
   constructor(private readonly codeLensOptions: CodeLensOption[]) {}
 
-  private get currentWorkspaceFolderPath(): string {
+  private get currentWorkspaceFolderPath(): string | undefined {
     const editor = window.activeTextEditor;
-    return workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
+    if (!editor) {
+      return undefined;
+    }
+    const workspaceFolder = workspace.getWorkspaceFolder(editor.document.uri);
+    return workspaceFolder?.uri.fsPath;
   }
 
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
       // Use the shared utility to determine if we should process this file
-      if (!shouldIncludeFile(document.fileName, this.currentWorkspaceFolderPath)) {
+      const workspaceFolderPath = this.currentWorkspaceFolderPath;
+      if (!workspaceFolderPath || !shouldIncludeFile(document.fileName, workspaceFolderPath)) {
         return [];
       }
 
@@ -72,7 +77,7 @@ export class JestRunnerCodeLensProvider implements CodeLensProvider {
         getTestsBlocks(parseResult, parseResults, this.codeLensOptions),
       );
     } catch (e) {
-      console.error('jest-editor-support parser returned error', e);
+      logError('jest-editor-support parser returned error', e);
     }
     return this.lastSuccessfulCodeLens;
   }

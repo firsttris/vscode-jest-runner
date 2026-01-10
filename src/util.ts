@@ -5,6 +5,37 @@ import * as fs from 'fs';
 import { ParsedNode } from 'jest-editor-support';
 import { isJestTestFile } from './jestDetection';
 
+// Centralized output channel for logging
+let outputChannel: vscode.OutputChannel | undefined;
+
+export function getOutputChannel(): vscode.OutputChannel {
+  if (!outputChannel) {
+    outputChannel = vscode.window.createOutputChannel('Jest Runner');
+  }
+  return outputChannel;
+}
+
+export function logInfo(message: string): void {
+  getOutputChannel().appendLine(`[INFO] ${message}`);
+}
+
+export function logError(message: string, error?: unknown): void {
+  const errorDetails = error instanceof Error ? error.stack || error.message : String(error);
+  getOutputChannel().appendLine(`[ERROR] ${message}${error ? ': ' + errorDetails : ''}`);
+}
+
+export function logWarning(message: string): void {
+  getOutputChannel().appendLine(`[WARN] ${message}`);
+}
+
+export function logDebug(message: string): void {
+  const config = vscode.workspace.getConfiguration('jestrunner');
+  const enableDebugLogs = config.get<boolean>('enableDebugLogs', false);
+  if (enableDebugLogs) {
+    getOutputChannel().appendLine(`[DEBUG] ${message}`);
+  }
+}
+
 export interface TestNode extends ParsedNode {
   name: string;
   children?: TestNode[];
@@ -156,7 +187,7 @@ export function searchPathToParent<T>(
     currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
   } catch (error) {
     // If we can't access the path (permissions, doesn't exist, etc.), use parent directory
-    console.warn(`Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`);
+    logWarning(`Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`);
     currentFolderPath = path.dirname(startingPath);
   }
   

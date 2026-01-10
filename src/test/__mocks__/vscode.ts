@@ -90,6 +90,17 @@ class WorkspaceConfiguration {
   }
 }
 
+class OutputChannel {
+  appendLine = jest.fn();
+  append = jest.fn();
+  clear = jest.fn();
+  show = jest.fn();
+  hide = jest.fn();
+  dispose = jest.fn();
+  name = 'Jest Runner';
+  replace = jest.fn();
+}
+
 class Window {
   get activeTextEditor(): TextEditor {
     return new TextEditor(new Document(new Uri('hi')));
@@ -106,6 +117,9 @@ class Window {
       sendText: jest.fn(),
       dispose: jest.fn(),
     };
+  }
+  createOutputChannel(name: string): OutputChannel {
+    return new OutputChannel();
   }
   onDidCloseTerminal: jest.Mock = jest.fn((callback: (terminal: any) => void) => {
     return { dispose: jest.fn() };
@@ -300,4 +314,5 @@ export {
   CancellationToken,
   CancellationTokenSource,
   RelativePattern,
+  OutputChannel,
 };

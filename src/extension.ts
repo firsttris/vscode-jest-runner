@@ -4,7 +4,23 @@ import { JestRunner } from './jestRunner';
 import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
 import { JestRunnerConfig } from './jestRunnerConfig';
 import { JestTestController } from './TestController';
-import { shouldIncludeFile } from './util';
+import { shouldIncludeFile, logError } from './util';
+
+// Helper function to wrap command handlers with error handling
+function wrapCommandHandler<T extends unknown[]>(
+  handler: (...args: T) => Promise<void> | void,
+  commandName: string
+): (...args: T) => Promise<void> {
+  return async (...args: T) => {
+    try {
+      await handler(...args);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      vscode.window.showErrorMessage(`Jest Runner (${commandName}): ${errorMessage}`);
+      logError(`Error in ${commandName}`, error);
+    }
+  };
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   const config = new JestRunnerConfig();
@@ -38,59 +54,108 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const runJest = vscode.commands.registerCommand(
     'extension.runJest',
-    async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument);
-    },
+    wrapCommandHandler(
+      async (argument: Record<string, unknown> | string) => {
+        return jestRunner.runCurrentTest(argument);
+      },
+      'runJest'
+    ),
   );
 
   const runJestCoverage = vscode.commands.registerCommand(
     'extension.runJestCoverage',
-    async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument, ['--coverage']);
-    },
+    wrapCommandHandler(
+      async (argument: Record<string, unknown> | string) => {
+        return jestRunner.runCurrentTest(argument, ['--coverage']);
+      },
+      'runJestCoverage'
+    ),
   );
 
   const runJestCurrentTestCoverage = vscode.commands.registerCommand(
     'extension.runJestCurrentTestCoverage',
-    async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument, ['--coverage'], true);
-    },
+    wrapCommandHandler(
+      async (argument: Record<string, unknown> | string) => {
+        return jestRunner.runCurrentTest(argument, ['--coverage'], true);
+      },
+      'runJestCurrentTestCoverage'
+    ),
   );
 
-  const runJestPath = vscode.commands.registerCommand('extension.runJestPath', async (argument: vscode.Uri) =>
-    jestRunner.runTestsOnPath(argument.fsPath),
+  const runJestPath = vscode.commands.registerCommand(
+    'extension.runJestPath',
+    wrapCommandHandler(
+      async (argument: vscode.Uri) => jestRunner.runTestsOnPath(argument.fsPath),
+      'runJestPath'
+    ),
   );
-  const runJestAndUpdateSnapshots = vscode.commands.registerCommand('extension.runJestAndUpdateSnapshots', async () => {
-    jestRunner.runCurrentTest('', ['-u']);
-  });
-  const runJestFile = vscode.commands.registerCommand('extension.runJestFile', async () => jestRunner.runCurrentFile());
+  const runJestAndUpdateSnapshots = vscode.commands.registerCommand(
+    'extension.runJestAndUpdateSnapshots',
+    wrapCommandHandler(
+      async () => {
+        jestRunner.runCurrentTest('', ['-u']);
+      },
+      'runJestAndUpdateSnapshots'
+    ),
+  );
+  const runJestFile = vscode.commands.registerCommand(
+    'extension.runJestFile',
+    wrapCommandHandler(
+      async () => jestRunner.runCurrentFile(),
+      'runJestFile'
+    ),
+  );
   const debugJest = vscode.commands.registerCommand(
     'extension.debugJest',
-    async (argument: Record<string, unknown> | string) => {
-      if (typeof argument === 'string') {
-        return jestRunner.debugCurrentTest(argument);
-      } else {
-        return jestRunner.debugCurrentTest();
-      }
-    },
+    wrapCommandHandler(
+      async (argument: Record<string, unknown> | string) => {
+        if (typeof argument === 'string') {
+          return jestRunner.debugCurrentTest(argument);
+        } else {
+          return jestRunner.debugCurrentTest();
+        }
+      },
+      'debugJest'
+    ),
   );
-  const debugJestPath = vscode.commands.registerCommand('extension.debugJestPath', async (argument: vscode.Uri) =>
-    jestRunner.debugTestsOnPath(argument.fsPath),
+  const debugJestPath = vscode.commands.registerCommand(
+    'extension.debugJestPath',
+    wrapCommandHandler(
+      async (argument: vscode.Uri) => jestRunner.debugTestsOnPath(argument.fsPath),
+      'debugJestPath'
+    ),
   );
-  const runPrev = vscode.commands.registerCommand('extension.runPrevJest', async () => jestRunner.runPreviousTest());
-  const runJestFileWithCoverage = vscode.commands.registerCommand('extension.runJestFileWithCoverage', async () =>
-    jestRunner.runCurrentFile(['--coverage']),
+  const runPrev = vscode.commands.registerCommand(
+    'extension.runPrevJest',
+    wrapCommandHandler(
+      async () => jestRunner.runPreviousTest(),
+      'runPrevJest'
+    ),
+  );
+  const runJestFileWithCoverage = vscode.commands.registerCommand(
+    'extension.runJestFileWithCoverage',
+    wrapCommandHandler(
+      async () => jestRunner.runCurrentFile(['--coverage']),
+      'runJestFileWithCoverage'
+    ),
   );
 
-  const runJestFileWithWatchMode = vscode.commands.registerCommand('extension.runJestFileWithWatchMode', async () =>
-    jestRunner.runCurrentFile(['--watch']),
+  const runJestFileWithWatchMode = vscode.commands.registerCommand(
+    'extension.runJestFileWithWatchMode',
+    wrapCommandHandler(
+      async () => jestRunner.runCurrentFile(['--watch']),
+      'runJestFileWithWatchMode'
+    ),
   );
 
   const watchJest = vscode.commands.registerCommand(
     'extension.watchJest',
-    async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument, ['--watch']);
-    },
+    wrapCommandHandler(
+      async (argument: Record<string, unknown> | string) => {
+        return jestRunner.runCurrentTest(argument, ['--watch']);
+      },
+      'watchJest'
+    ),
   );
 
   if (config.isCodeLensEnabled) {

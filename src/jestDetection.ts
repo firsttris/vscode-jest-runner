@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logError, logWarning } from './util';
 
 // Cache for Jest detection results
 const jestDetectionCache = new Map<string, boolean>();
@@ -85,7 +86,7 @@ export function isJestUsedIn(directoryPath: string): boolean {
           return true;
         }
       } catch (error) {
-        console.error('Error parsing package.json:', error);
+        logError('Error parsing package.json', error);
       }
     }
 
@@ -93,7 +94,7 @@ export function isJestUsedIn(directoryPath: string): boolean {
     jestDetectionCache.set(directoryPath, false);
     return false;
   } catch (error) {
-    console.error('Error checking for Jest:', error);
+    logError('Error checking for Jest', error);
     return false;
   }
 }
@@ -121,7 +122,7 @@ function detectTestFramework(directoryPath: string): string | undefined {
         }
       }
     } catch (error) {
-      console.error('Error parsing package.json:', error);
+      logError('Error parsing package.json', error);
     }
   }
 

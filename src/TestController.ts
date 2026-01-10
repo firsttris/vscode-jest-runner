@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { parse } from './parser';
-import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile } from './util';
+import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile, logInfo, logError, logWarning, logDebug } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
 
 interface JestAssertionResult {
@@ -128,7 +128,7 @@ export class JestTestController {
       // Process describe blocks and test cases
       this.processTestNodes(testFile.root.children, parentItem, filePath);
     } catch (error) {
-      console.error(`Error parsing tests in ${filePath}:`, error);
+      logError(`Error parsing tests in ${filePath}`, error);
     }
   }
 
@@ -164,7 +164,7 @@ export class JestTestController {
             new vscode.Position((node.end?.line || node.start.line) - 1, node.end?.column || 100),
           );
         } catch (error) {
-          console.error(`Error setting range for ${node.name}: ${error}`);
+          logError(`Error setting range for ${node.name}`, error);
         }
       }
 
@@ -198,7 +198,7 @@ export class JestTestController {
 
     if (results?.testResults?.[0]?.assertionResults) {
       const testResults = results.testResults[0].assertionResults;
-      console.log(`Processing ${testResults.length} test results for ${tests.length} test items`);
+      logDebug(`Processing ${testResults.length} test results for ${tests.length} test items`);
 
       // Create a map to track which results have been used
       const usedResults = new Set<number>();
@@ -234,7 +234,7 @@ export class JestTestController {
             matchedIndex = potentialMatches[0].index;
           } else {
             // Multiple matches with same name - use location to disambiguate
-            console.log(`Found ${potentialMatches.length} potential matches for "${test.label}", using location to match`);
+            logDebug(`Found ${potentialMatches.length} potential matches for "${test.label}", using location to match`);
             
             // First try: match by line number if available
             if (testLine !== undefined) {
@@ -268,7 +268,7 @@ export class JestTestController {
             usedResults.add(matchedIndex);
           }
           
-          console.log(`Found match for "${test.label}" at line ${testLine}: ${matchingResult.status}`);
+          logDebug(`Found match for "${test.label}" at line ${testLine}: ${matchingResult.status}`);
           if (matchingResult.status === 'passed') {
             run.passed(test);
           } else if (matchingResult.status === 'failed') {
@@ -279,13 +279,13 @@ export class JestTestController {
             run.skipped(test);
           }
         } else {
-          console.log(`No match found for test "${test.label}"`);
+          logDebug(`No match found for test "${test.label}"`);
           // Default to skipped if no match found
           run.skipped(test);
         }
       });
     } else {
-      console.log('Failed to parse test results, falling back to simple parsing');
+      logWarning('Failed to parse test results, falling back to simple parsing');
 
       // Instead of using "FAIL" presence to fail all tests,
       // try to be smarter about individual tests
@@ -335,20 +335,36 @@ export class JestTestController {
 
       let stdout = '';
       let stderr = '';
+      let killed = false;
 
       jestProcess.stdout?.on('data', (data) => {
-        stdout += data.toString();
+        if (killed) return;
         
-        // Check buffer size to prevent memory issues
-        if (stdout.length > maxBufferSize) {
+        const chunk = data.toString();
+        // Check before adding to prevent exceeding buffer
+        if (stdout.length + chunk.length > maxBufferSize) {
+          killed = true;
           jestProcess.kill();
           tests.forEach((test) => run.failed(test, new vscode.TestMessage('Test output exceeded maximum buffer size')));
           resolve(null);
+          return;
         }
+        stdout += chunk;
       });
 
       jestProcess.stderr?.on('data', (data) => {
-        stderr += data.toString();
+        if (killed) return;
+        
+        const chunk = data.toString();
+        // Also limit stderr to prevent memory issues
+        if (stderr.length + chunk.length > maxBufferSize) {
+          killed = true;
+          jestProcess.kill();
+          tests.forEach((test) => run.failed(test, new vscode.TestMessage('Error output exceeded maximum buffer size')));
+          resolve(null);
+          return;
+        }
+        stderr += chunk;
       });
 
       jestProcess.on('error', (error) => {
@@ -408,7 +424,7 @@ export class JestTestController {
 
       return undefined;
     } catch (e) {
-      console.log('Failed to parse Jest JSON output:', e);
+      logDebug(`Failed to parse Jest JSON output: ${e}`);
       return undefined;
     }
   }
@@ -503,7 +519,7 @@ export class JestTestController {
       const command = commandParts[0];
       const commandArgs = [...commandParts.slice(1), ...args];
       
-      console.log('Running batched command:', command, commandArgs.join(' '), `(${allTests.length} tests across ${allFiles.length} files)`);
+      logInfo(`Running batched command: ${command} ${commandArgs.join(' ')} (${allTests.length} tests across ${allFiles.length} files)`);
 
       // Execute Jest with spawn for async execution
       const output = await this.executeJestCommand(command, commandArgs, token, allTests, run);
