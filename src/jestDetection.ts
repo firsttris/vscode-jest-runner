@@ -72,16 +72,20 @@ export function isJestUsedIn(directoryPath: string): boolean {
     // Check package.json
     const packageJsonPath = path.join(directoryPath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      try {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-      if (
-        packageJson.dependencies?.jest ||
-        packageJson.devDependencies?.jest ||
-        packageJson.peerDependencies?.jest ||
-        packageJson.jest
-      ) {
-        jestDetectionCache.set(directoryPath, true);
-        return true;
+        if (
+          packageJson.dependencies?.jest ||
+          packageJson.devDependencies?.jest ||
+          packageJson.peerDependencies?.jest ||
+          packageJson.jest
+        ) {
+          jestDetectionCache.set(directoryPath, true);
+          return true;
+        }
+      } catch (error) {
+        console.error('Error parsing package.json:', error);
       }
     }
 
