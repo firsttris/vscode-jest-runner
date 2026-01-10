@@ -6,20 +6,5 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ${{ matrix.platform }}
-
-    strategy:
-      matrix:
-        node-version: [22.x]
-        platform: [windows-latest, macos-latest, ubuntu-22.04]
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - run: npm run test
-      - run: npm run build --if-present
+  test-and-build:
+    uses: ./.github/workflows/test-and-build.yml
