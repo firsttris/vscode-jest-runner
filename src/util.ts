@@ -4,7 +4,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ParsedNode } from 'jest-editor-support';
 import { isJestTestFile } from './jestDetection';
-import { sync } from 'fast-glob';
 
 export interface TestNode extends ParsedNode {
   name: string;
@@ -200,19 +199,27 @@ export function shouldIncludeFile(filePath: string, workspaceFolderPath: string)
     return isJestTestFile(filePath);
   }
 
-  // Normalize paths for glob matching
+  // Normalize paths for pattern matching
   const normalizedPath = normalizePath(filePath);
   const normalizedFolderPath = normalizePath(workspaceFolderPath);
-  const globOptions = { cwd: normalizedFolderPath, absolute: true };
+  
+  // Get relative path for pattern matching
+  const relativePath = path.relative(normalizedFolderPath, normalizedPath);
 
-  // Check include patterns
-  if (include.length > 0 && !sync(include, globOptions).includes(normalizedPath)) {
-    return false;
+  // Check include patterns using micromatch for efficient pattern matching
+  if (include.length > 0) {
+    const includeMatch = mm.isMatch(relativePath, include) || mm.isMatch(normalizedPath, include);
+    if (!includeMatch) {
+      return false;
+    }
   }
 
-  // Check exclude patterns
-  if (exclude.length > 0 && sync(exclude, globOptions).includes(normalizedPath)) {
-    return false;
+  // Check exclude patterns using micromatch for efficient pattern matching
+  if (exclude.length > 0) {
+    const excludeMatch = mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude);
+    if (excludeMatch) {
+      return false;
+    }
   }
 
   return true;

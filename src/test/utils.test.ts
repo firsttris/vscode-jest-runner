@@ -481,9 +481,6 @@ describe('shouldIncludeFile', () => {
         return defaultValue;
       });
 
-      // Mock fast-glob to return our file
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
-      
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(true);
@@ -499,9 +496,6 @@ describe('shouldIncludeFile', () => {
         return defaultValue;
       });
 
-      // Mock fast-glob to return empty array (no matches)
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([]);
-      
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(false);
@@ -517,9 +511,6 @@ describe('shouldIncludeFile', () => {
         return defaultValue;
       });
 
-      // Mock fast-glob to return our file
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
-      
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(true);
@@ -535,9 +526,6 @@ describe('shouldIncludeFile', () => {
         return defaultValue;
       });
 
-      // Mock fast-glob to return our file
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
-      
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(true);
@@ -555,9 +543,6 @@ describe('shouldIncludeFile', () => {
         return defaultValue;
       });
 
-      // Mock fast-glob to return our file (it's excluded)
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
-      
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(false);
@@ -573,9 +558,6 @@ describe('shouldIncludeFile', () => {
         return defaultValue;
       });
 
-      // Mock fast-glob to return empty array (not excluded)
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([]);
-      
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(true);
@@ -591,9 +573,6 @@ describe('shouldIncludeFile', () => {
         return defaultValue;
       });
 
-      // Mock fast-glob to return our file (it's excluded)
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
-      
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(false);
@@ -612,17 +591,6 @@ describe('shouldIncludeFile', () => {
         if (key === 'exclude') return excludePatterns;
         return defaultValue;
       });
-
-      // Mock fast-glob calls
-      const syncSpy = jest.spyOn(fastGlob, 'sync');
-      syncSpy.mockImplementation((patterns: any) => {
-        // First call for include patterns
-        if (Array.isArray(patterns) && patterns.includes('**/*.test.ts')) {
-          return [normalizePath(filePath)];
-        }
-        // Second call for exclude patterns
-        return [];
-      });
       
       const result = shouldIncludeFile(filePath, workspacePath);
       
@@ -640,10 +608,6 @@ describe('shouldIncludeFile', () => {
         if (key === 'exclude') return excludePatterns;
         return defaultValue;
       });
-
-      // Mock fast-glob calls
-      const syncSpy = jest.spyOn(fastGlob, 'sync');
-      syncSpy.mockReturnValue([normalizePath(filePath)]);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       
@@ -661,10 +625,6 @@ describe('shouldIncludeFile', () => {
         if (key === 'exclude') return excludePatterns;
         return defaultValue;
       });
-
-      // Mock fast-glob to return empty for include
-      const syncSpy = jest.spyOn(fastGlob, 'sync');
-      syncSpy.mockReturnValue([]);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       
@@ -682,10 +642,6 @@ describe('shouldIncludeFile', () => {
         if (key === 'exclude') return excludePatterns;
         return defaultValue;
       });
-
-      // Mock fast-glob to return the file for both calls
-      const syncSpy = jest.spyOn(fastGlob, 'sync');
-      syncSpy.mockReturnValue([normalizePath(filePath)]);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       
@@ -703,23 +659,13 @@ describe('shouldIncludeFile', () => {
         if (key === 'include') return includePatterns;
         return defaultValue;
       });
-
-      // Mock fast-glob to return normalized path
-      jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(true);
-      expect(fastGlob.sync).toHaveBeenCalledWith(
-        includePatterns,
-        expect.objectContaining({
-          cwd: normalizePath(workspacePath),
-          absolute: true,
-        })
-      );
     });
 
-    it('should call fast-glob with absolute and cwd options', () => {
+    it('should handle both relative and absolute path matching', () => {
       const filePath = '/workspace/src/test.test.ts';
       const workspacePath = '/workspace';
       const includePatterns = ['**/*.test.ts'];
@@ -728,18 +674,10 @@ describe('shouldIncludeFile', () => {
         if (key === 'include') return includePatterns;
         return defaultValue;
       });
-
-      const syncSpy = jest.spyOn(fastGlob, 'sync').mockReturnValue([normalizePath(filePath)]);
       
-      shouldIncludeFile(filePath, workspacePath);
+      const result = shouldIncludeFile(filePath, workspacePath);
       
-      expect(syncSpy).toHaveBeenCalledWith(
-        includePatterns,
-        expect.objectContaining({
-          cwd: normalizePath(workspacePath),
-          absolute: true,
-        })
-      );
+      expect(result).toBe(true);
     });
   });
 });
