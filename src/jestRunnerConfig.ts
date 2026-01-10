@@ -107,23 +107,17 @@ export class JestRunnerConfig {
 
     const configPath = resolveConfigPathOrMapping(configPathOrMapping, targetPath);
     if (!configPath || this.useNearestConfig) {
-      // If useNearestConfig is true and we have a relative configPath from glob mapping,
-      // extract just the filename to search for
-      const targetFilename = configPath && this.useNearestConfig ? path.basename(configPath) : configPath;
-      const foundPath = this.findConfigPath(targetPath, targetFilename);
+      const foundPath = this.findConfigPath(targetPath, configPath);
       if (foundPath) {
         return foundPath;
         // Continue to default if no config is found
       }
     }
 
-    // default - if configPath is absolute, return as-is; otherwise resolve against workspace
-    if (configPath) {
-      return path.isAbsolute(configPath)
-        ? configPath
-        : path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath);
-    }
-    return '';
+    // default
+    return configPath
+      ? normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath))
+      : '';
   }
   
   public findConfigPath(targetPath?: string, targetConfigFilename?: string): string | undefined {
@@ -142,7 +136,7 @@ export class JestRunnerConfig {
         }
       },
     );
-    return foundPath ? normalizePath(foundPath) : '';
+    return foundPath ? normalizePath(foundPath) : undefined;
   }
 
   public get runOptions(): string[] | null {
