@@ -1223,6 +1223,8 @@ describe('JestRunnerConfig', () => {
 
       expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
       expect(config.args).toEqual(['jest']);
+      // runtimeExecutable must be removed when using program to avoid conflicts
+      expect(config.runtimeExecutable).toBeUndefined();
     });
 
     it('should parse custom jest command', () => {
@@ -1236,6 +1238,8 @@ describe('JestRunnerConfig', () => {
 
       expect(config.program).toBe('node');
       expect(config.args).toEqual(['./node_modules/jest/bin/jest.js']);
+      // runtimeExecutable must be removed when using program to avoid conflicts
+      expect(config.runtimeExecutable).toBeUndefined();
     });
 
     it('should parse custom jest command with quoted arguments', () => {

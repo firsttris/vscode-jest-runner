@@ -322,6 +322,9 @@ export class JestRunnerConfig {
 
     // Handle Yarn PnP support first
     if (this.isYarnPnpSupportEnabled) {
+      // When using program, runtimeExecutable should not be set
+      // as it would conflict with the program execution
+      delete debugConfig.runtimeExecutable;
       debugConfig.program = `.yarn/releases/${this.getYarnPnpCommand}`;
       debugConfig.args = ['jest'];
       return debugConfig;
@@ -332,6 +335,9 @@ export class JestRunnerConfig {
     if (customCommand && typeof customCommand === 'string') {
       const parts = parseShellCommand(customCommand);
       if (parts.length > 0) {
+        // When using program, runtimeExecutable should not be set
+        // as it would conflict with the program execution
+        delete debugConfig.runtimeExecutable;
         debugConfig.program = parts[0];
         debugConfig.args = parts.slice(1);
       }
