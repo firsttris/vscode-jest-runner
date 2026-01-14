@@ -120,8 +120,12 @@ export class JestRunner {
   }
 
   public async debugTestsOnPath(filePath: string): Promise<void> {
-    const debugConfig = this.config.getDebugConfiguration();
-    const standardArgs = this.config.buildJestArgs(filePath, undefined, false);
+    const debugConfig = this.config.getDebugConfiguration(filePath);
+    const framework = this.config.getTestFramework(filePath);
+    
+    const standardArgs = framework === 'vitest'
+      ? this.config.buildVitestArgs(filePath, undefined, false)
+      : this.config.buildJestArgs(filePath, undefined, false);
     pushMany(debugConfig.args, standardArgs);
 
     await this.goToCwd();
@@ -142,8 +146,12 @@ export class JestRunner {
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const debugConfig = this.config.getDebugConfiguration();
-    const standardArgs = this.config.buildJestArgs(filePath, resolvedTestName, false);
+    const debugConfig = this.config.getDebugConfiguration(filePath);
+    const framework = this.config.getTestFramework(filePath);
+    
+    const standardArgs = framework === 'vitest'
+      ? this.config.buildVitestArgs(filePath, resolvedTestName, false)
+      : this.config.buildJestArgs(filePath, resolvedTestName, false);
     pushMany(debugConfig.args, standardArgs);
 
     await this.goToCwd();
@@ -193,8 +201,19 @@ export class JestRunner {
   }
 
   private buildJestCommand(filePath: string, testName?: string, options?: string[]): string {
+    const framework = this.config.getTestFramework(filePath);
+    
+    if (framework === 'vitest') {
+      return this.buildVitestCommand(filePath, testName, options);
+    }
+    
     const args = this.config.buildJestArgs(filePath, testName, true, options);
     return `${this.config.jestCommand} ${args.join(' ')}`;
+  }
+
+  private buildVitestCommand(filePath: string, testName?: string, options?: string[]): string {
+    const args = this.config.buildVitestArgs(filePath, testName, true, options);
+    return `${this.config.vitestCommand} ${args.join(' ')}`;
   }
 
   private async goToCwd() {

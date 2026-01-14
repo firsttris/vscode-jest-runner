@@ -4,6 +4,7 @@ import { spawn } from 'child_process';
 import { parse } from './parser';
 import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile, logInfo, logError, logWarning, logDebug } from './util';
 import { JestRunnerConfig } from './jestRunnerConfig';
+import { getTestFrameworkForFile, type TestFrameworkName } from './jestDetection';
 
 interface JestAssertionResult {
   ancestorTitles: string[];
@@ -52,7 +53,7 @@ export class JestTestController {
   constructor(context: vscode.ExtensionContext) {
     this.jestConfig = new JestRunnerConfig();
 
-    this.testController = vscode.tests.createTestController('jestTestController', 'Jest Tests');
+    this.testController = vscode.tests.createTestController('jestVitestTestController', 'Jest/Vitest Tests');
     context.subscriptions.push(this.testController);
 
     // Create the standard run profile
@@ -191,126 +192,11 @@ export class JestTestController {
   }
 
   /**
-   * Process test results from Jest output
+   * Process test results from Jest output (legacy method for backwards compatibility)
    */
   private processTestResults(output: string, tests: vscode.TestItem[], run: vscode.TestRun): void {
-    const results = this.parseJestOutput(output);
-
-    if (results?.testResults?.[0]?.assertionResults) {
-      const testResults = results.testResults[0].assertionResults;
-      logDebug(`Processing ${testResults.length} test results for ${tests.length} test items`);
-
-      // Create a map to track which results have been used
-      const usedResults = new Set<number>();
-
-      // Process each test with improved matching including location
-      tests.forEach((test) => {
-        // Get clean test name without describe blocks
-        const testName = test.label.split(' ').pop() || test.label;
-        const testLine = test.range?.start.line;
-
-        // Find all potential matches
-        const potentialMatches = testResults
-          .map((r, index) => ({ result: r, index }))
-          .filter(
-            ({ result: r }) =>
-              // Direct title match
-              r.title === test.label ||
-              // Base name match (without describe blocks)
-              r.title === testName ||
-              // Full name match
-              r.fullName === test.label ||
-              // Ancestor titles + title match the label
-              (r.ancestorTitles && r.ancestorTitles.concat(r.title).join(' ') === test.label),
-          );
-
-        let matchingResult: JestAssertionResult | undefined;
-        let matchedIndex = -1;
-
-        if (potentialMatches.length > 0) {
-          if (potentialMatches.length === 1) {
-            // Only one match, use it
-            matchingResult = potentialMatches[0].result;
-            matchedIndex = potentialMatches[0].index;
-          } else {
-            // Multiple matches with same name - use location to disambiguate
-            logDebug(`Found ${potentialMatches.length} potential matches for "${test.label}", using location to match`);
-            
-            // First try: match by line number if available
-            if (testLine !== undefined) {
-              const locationMatch = potentialMatches.find(
-                ({ result: r, index }) => 
-                  !usedResults.has(index) && 
-                  r.location?.line !== undefined && 
-                  r.location.line === testLine + 1 // Jest uses 1-based line numbers
-              );
-              
-              if (locationMatch) {
-                matchingResult = locationMatch.result;
-                matchedIndex = locationMatch.index;
-              }
-            }
-            
-            // Second try: use the first unused result
-            if (!matchingResult) {
-              const unusedMatch = potentialMatches.find(({ index }) => !usedResults.has(index));
-              if (unusedMatch) {
-                matchingResult = unusedMatch.result;
-                matchedIndex = unusedMatch.index;
-              }
-            }
-          }
-        }
-
-        if (matchingResult) {
-          // Mark this result as used
-          if (matchedIndex >= 0) {
-            usedResults.add(matchedIndex);
-          }
-          
-          logDebug(`Found match for "${test.label}" at line ${testLine}: ${matchingResult.status}`);
-          if (matchingResult.status === 'passed') {
-            run.passed(test);
-          } else if (matchingResult.status === 'failed') {
-            const message = new vscode.TestMessage(matchingResult.failureMessages?.join('\n') || 'Test failed');
-            run.failed(test, message);
-          } else {
-            // Handle skipped, todo, pending
-            run.skipped(test);
-          }
-        } else {
-          logDebug(`No match found for test "${test.label}"`);
-          // Default to skipped if no match found
-          run.skipped(test);
-        }
-      });
-    } else {
-      logWarning('Failed to parse test results, falling back to simple parsing');
-
-      // Instead of using "FAIL" presence to fail all tests,
-      // try to be smarter about individual tests
-      if (output.includes('FAIL')) {
-        const failLines = output.split('\n').filter((line) => line.includes('●'));
-
-        tests.forEach((test) => {
-          // Check if this specific test name is mentioned in a failure line
-          const testFailed = failLines.some(
-            (line) =>
-              line.includes(test.label) ||
-              (test.label.includes(' ') && line.includes(test.label.split(' ').pop() || '')),
-          );
-
-          if (testFailed) {
-            run.failed(test, new vscode.TestMessage('Test failed'));
-          } else {
-            run.passed(test);
-          }
-        });
-      } else {
-        // All passed
-        tests.forEach((test) => run.passed(test));
-      }
-    }
+    // Use Jest as default framework for backwards compatibility
+    this.processTestResultsWithFramework(output, tests, run, 'jest');
   }
 
   /**
@@ -408,7 +294,7 @@ export class JestTestController {
    */
   private parseJestOutput(output: string): JestResults | undefined {
     try {
-      // First try to match complete JSON format
+      // First try to match complete JSON format (Jest)
       const jsonRegex = /({"numFailedTestSuites":.*?"wasInterrupted":.*?})/s;
       const jsonMatch = output.match(jsonRegex);
 
@@ -426,6 +312,217 @@ export class JestTestController {
     } catch (e) {
       logDebug(`Failed to parse Jest JSON output: ${e}`);
       return undefined;
+    }
+  }
+
+  /**
+   * Parse Vitest JSON output from command output
+   */
+  private parseVitestOutput(output: string): JestResults | undefined {
+    try {
+      // Vitest with --reporter=json outputs JSON directly
+      // Try to find the JSON object in the output
+      const lines = output.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('{') && trimmed.includes('"testResults"')) {
+          try {
+            const parsed = JSON.parse(trimmed);
+            // Convert Vitest format to Jest-compatible format if needed
+            return this.convertVitestToJestResults(parsed);
+          } catch {
+            // Continue searching
+          }
+        }
+      }
+
+      // Try full output as JSON
+      const jsonMatch = output.match(/(\{[\s\S]*"testResults"[\s\S]*\})/m);
+      if (jsonMatch && jsonMatch[1]) {
+        const parsed = JSON.parse(jsonMatch[1]);
+        return this.convertVitestToJestResults(parsed);
+      }
+
+      return undefined;
+    } catch (e) {
+      logDebug(`Failed to parse Vitest JSON output: ${e}`);
+      return undefined;
+    }
+  }
+
+  /**
+   * Convert Vitest output format to Jest-compatible format
+   */
+  private convertVitestToJestResults(vitestOutput: any): JestResults {
+    // Vitest's JSON reporter output is similar to Jest's but may have slight differences
+    // Both use testResults array with assertionResults
+    if (vitestOutput.numFailedTestSuites !== undefined) {
+      // Already in Jest-compatible format
+      return vitestOutput as JestResults;
+    }
+
+    // If Vitest output has different structure, convert it
+    const results: JestResults = {
+      numFailedTestSuites: vitestOutput.numFailedTestSuites || 0,
+      numFailedTests: vitestOutput.numFailedTests || 0,
+      numPassedTestSuites: vitestOutput.numPassedTestSuites || 0,
+      numPassedTests: vitestOutput.numPassedTests || 0,
+      numPendingTestSuites: vitestOutput.numPendingTestSuites || 0,
+      numPendingTests: vitestOutput.numPendingTests || 0,
+      numTotalTestSuites: vitestOutput.numTotalTestSuites || 0,
+      numTotalTests: vitestOutput.numTotalTests || 0,
+      success: vitestOutput.success ?? (vitestOutput.numFailedTests === 0),
+      testResults: vitestOutput.testResults || [],
+    };
+
+    return results;
+  }
+
+  /**
+   * Process test results from Jest or Vitest output
+   */
+  private processTestResultsWithFramework(output: string, tests: vscode.TestItem[], run: vscode.TestRun, framework: TestFrameworkName): void {
+    const results = framework === 'vitest' 
+      ? this.parseVitestOutput(output) 
+      : this.parseJestOutput(output);
+    
+    if (results) {
+      this.processTestResultsFromParsed(results, tests, run);
+    } else {
+      // Fallback to simple parsing
+      this.processTestResultsFallback(output, tests, run);
+    }
+  }
+
+  /**
+   * Process test results from parsed JSON
+   */
+  private processTestResultsFromParsed(results: JestResults, tests: vscode.TestItem[], run: vscode.TestRun): void {
+    if (results?.testResults?.[0]?.assertionResults) {
+      const testResults = results.testResults[0].assertionResults;
+      logDebug(`Processing ${testResults.length} test results for ${tests.length} test items`);
+
+      // Create a map to track which results have been used
+      const usedResults = new Set<number>();
+
+      // Process each test with improved matching including location
+      tests.forEach((test) => {
+        // Get clean test name without describe blocks
+        const testName = test.label.split(' ').pop() || test.label;
+        const testLine = test.range?.start.line;
+
+        // Find all potential matches
+        const potentialMatches = testResults
+          .map((r, index) => ({ result: r, index }))
+          .filter(
+            ({ result: r }) =>
+              // Direct title match
+              r.title === test.label ||
+              // Base name match (without describe blocks)
+              r.title === testName ||
+              // Full name match
+              r.fullName === test.label ||
+              // Ancestor titles + title match the label
+              (r.ancestorTitles && r.ancestorTitles.concat(r.title).join(' ') === test.label),
+          );
+
+        let matchingResult: JestAssertionResult | undefined;
+        let matchedIndex = -1;
+
+        if (potentialMatches.length > 0) {
+          if (potentialMatches.length === 1) {
+            // Only one match, use it
+            matchingResult = potentialMatches[0].result;
+            matchedIndex = potentialMatches[0].index;
+          } else {
+            // Multiple matches with same name - use location to disambiguate
+            logDebug(`Found ${potentialMatches.length} potential matches for "${test.label}", using location to match`);
+            
+            // First try: match by line number if available
+            if (testLine !== undefined) {
+              const locationMatch = potentialMatches.find(
+                ({ result: r, index }) => 
+                  !usedResults.has(index) && 
+                  r.location?.line !== undefined && 
+                  r.location.line === testLine + 1 // Jest uses 1-based line numbers
+              );
+              
+              if (locationMatch) {
+                matchingResult = locationMatch.result;
+                matchedIndex = locationMatch.index;
+              }
+            }
+            
+            // Second try: use the first unused result
+            if (!matchingResult) {
+              const unusedMatch = potentialMatches.find(({ index }) => !usedResults.has(index));
+              if (unusedMatch) {
+                matchingResult = unusedMatch.result;
+                matchedIndex = unusedMatch.index;
+              }
+            }
+          }
+        }
+
+        if (matchingResult) {
+          // Mark this result as used
+          if (matchedIndex >= 0) {
+            usedResults.add(matchedIndex);
+          }
+          
+          logDebug(`Found match for "${test.label}" at line ${testLine}: ${matchingResult.status}`);
+          if (matchingResult.status === 'passed') {
+            run.passed(test);
+          } else if (matchingResult.status === 'failed') {
+            const message = new vscode.TestMessage(matchingResult.failureMessages?.join('\n') || 'Test failed');
+            run.failed(test, message);
+          } else {
+            // Handle skipped, todo, pending
+            run.skipped(test);
+          }
+        } else {
+          logDebug(`No match found for test "${test.label}"`);
+          // Default to skipped if no match found
+          run.skipped(test);
+        }
+      });
+    } else {
+      logWarning('No assertion results found in test output');
+      tests.forEach((test) => run.skipped(test));
+    }
+  }
+
+  /**
+   * Fallback test result processing when JSON parsing fails
+   */
+  private processTestResultsFallback(output: string, tests: vscode.TestItem[], run: vscode.TestRun): void {
+    logWarning('Failed to parse test results, falling back to simple parsing');
+
+    // Check for failure indicators
+    const hasFail = output.includes('FAIL') || output.includes('✗') || output.includes('×');
+    
+    if (hasFail) {
+      const failLines = output.split('\n').filter((line) => 
+        line.includes('●') || line.includes('✗') || line.includes('×') || line.includes('AssertionError')
+      );
+
+      tests.forEach((test) => {
+        // Check if this specific test name is mentioned in a failure line
+        const testFailed = failLines.some(
+          (line) =>
+            line.includes(test.label) ||
+            (test.label.includes(' ') && line.includes(test.label.split(' ').pop() || '')),
+        );
+
+        if (testFailed) {
+          run.failed(test, new vscode.TestMessage('Test failed'));
+        } else {
+          run.passed(test);
+        }
+      });
+    } else {
+      // All passed
+      tests.forEach((test) => run.passed(test));
     }
   }
 
@@ -477,7 +574,7 @@ export class JestTestController {
     }
 
     try {
-      // Batch all test files into a single Jest command
+      // Batch all test files into a single command
       const allFiles = Array.from(testsByFile.keys());
       const allTests = Array.from(testsByFile.values()).flat();
 
@@ -494,34 +591,54 @@ export class JestTestController {
         return;
       }
 
-      // Build command: run all test files in a single Jest invocation
+      // Detect the test framework for the first file (assuming all files use the same framework)
+      const framework = getTestFrameworkForFile(allFiles[0]) || 'jest';
+      const isVitest = framework === 'vitest';
+
+      // Build command: run all test files in a single invocation
       // Use file pattern if multiple files, otherwise specific file with optional test name pattern
       let args: string[];
       const fileItem = allFiles.length === 1 ? this.testController.items.get(allFiles[0]) : undefined;
       const totalTestsInFile = fileItem?.children.size ?? 0;
+      
       if (allFiles.length === 1 && testsByFile.get(allFiles[0])!.length < totalTestsInFile) {
         // Single file with specific tests - use test name pattern
         const tests = testsByFile.get(allFiles[0])!;
         const testNamePattern = tests.length > 1
           ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
           : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-        args = this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--json']);
+        
+        if (isVitest) {
+          args = this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--reporter=json']);
+        } else {
+          args = this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--json']);
+        }
       } else {
         // Multiple files or whole file - just pass file paths
-        args = [
-          ...allFiles,
-          '--json',
-          ...additionalArgs,
-        ];
+        if (isVitest) {
+          args = [
+            'run',
+            ...allFiles,
+            '--reporter=json',
+            ...additionalArgs,
+          ];
+        } else {
+          args = [
+            ...allFiles,
+            '--json',
+            ...additionalArgs,
+          ];
+        }
       }
 
-      const commandParts = this.jestConfig.jestCommand.split(' ');
+      const testCommand = isVitest ? this.jestConfig.vitestCommand : this.jestConfig.jestCommand;
+      const commandParts = testCommand.split(' ');
       const command = commandParts[0];
       const commandArgs = [...commandParts.slice(1), ...args];
       
-      logInfo(`Running batched command: ${command} ${commandArgs.join(' ')} (${allTests.length} tests across ${allFiles.length} files)`);
+      logInfo(`Running batched ${framework} command: ${command} ${commandArgs.join(' ')} (${allTests.length} tests across ${allFiles.length} files)`);
 
-      // Execute Jest with spawn for async execution
+      // Execute test command with spawn for async execution
       const output = await this.executeJestCommand(command, commandArgs, token, allTests, run);
       
       if (output === null) {
@@ -530,8 +647,8 @@ export class JestTestController {
         return;
       }
 
-      // Process all test results
-      this.processTestResults(output, allTests, run);
+      // Process all test results with the appropriate framework parser
+      this.processTestResultsWithFramework(output, allTests, run, framework);
     } catch (error) {
       const errOutput = error instanceof Error ? error.message : (error ? String(error) : 'Test execution failed');
       testsByFile.forEach((tests) => {

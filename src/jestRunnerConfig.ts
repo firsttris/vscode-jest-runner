@@ -12,6 +12,7 @@ import {
   quote,
   escapeSingleQuotes,
 } from './util';
+import { getTestFrameworkForFile, type TestFrameworkName } from './jestDetection';
 
 /**
  * Parses a shell command string into an array of arguments, respecting quotes.
@@ -68,8 +69,9 @@ function parseShellCommand(command: string): string[] {
 
 export class JestRunnerConfig {
   /**
-   * The command that runs jest.
-   * Defaults to: node "node_modules/.bin/jest"
+   * The command that runs jest or vitest.
+   * For Jest: Defaults to npx --no-install jest
+   * For Vitest: Defaults to npx --no-install vitest
    */
   public get jestCommand(): string {
     // Check for custom command first
@@ -87,6 +89,52 @@ export class JestRunnerConfig {
     // cross-platform. VS Code's terminal automatically handles .cmd extensions on Windows.
     // For edge cases or older npm versions, users can set jestrunner.jestCommand.
     return 'npx --no-install jest';
+  }
+
+  /**
+   * The command that runs vitest.
+   * Defaults to: npx --no-install vitest
+   */
+  public get vitestCommand(): string {
+    // Check for custom vitest command first
+    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.vitestCommand') as string | undefined;
+    if (customCommand) {
+      return customCommand;
+    }
+
+    // Use yarn for PnP support
+    if (this.isYarnPnpSupportEnabled) {
+      return `yarn vitest`;
+    }
+
+    return 'npx --no-install vitest';
+  }
+
+  /**
+   * Get the appropriate test command based on the framework used for the file
+   */
+  public getTestCommand(filePath?: string): string {
+    if (filePath) {
+      const framework = getTestFrameworkForFile(filePath);
+      if (framework === 'vitest') {
+        return this.vitestCommand;
+      }
+    }
+    return this.jestCommand;
+  }
+
+  /**
+   * Detects the test framework for the current file
+   */
+  public getTestFramework(filePath?: string): TestFrameworkName | undefined {
+    if (filePath) {
+      return getTestFrameworkForFile(filePath);
+    }
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+      return getTestFrameworkForFile(editor.document.uri.fsPath);
+    }
+    return undefined;
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
@@ -175,14 +223,25 @@ export class JestRunnerConfig {
       : '';
   }
   
-  public findConfigPath(targetPath?: string, targetConfigFilename?: string): string | undefined {
+  public findConfigPath(targetPath?: string, targetConfigFilename?: string, framework?: TestFrameworkName): string | undefined {
+    const jestConfigFiles = ['jest.config.js', 'jest.config.ts', 'jest.config.cjs', 'jest.config.mjs', 'jest.config.json'];
+    const vitestConfigFiles = ['vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts'];
+    
+    // Determine which config files to look for based on framework
+    let configFiles: string[];
+    if (targetConfigFilename) {
+      configFiles = [targetConfigFilename];
+    } else if (framework === 'vitest') {
+      configFiles = vitestConfigFiles;
+    } else {
+      configFiles = jestConfigFiles;
+    }
+
     const foundPath = searchPathToParent<string>(
       targetPath || path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
-        for (const configFilename of targetConfigFilename
-          ? [targetConfigFilename]
-          : ['jest.config.js', 'jest.config.ts', 'jest.config.cjs', 'jest.config.mjs', 'jest.config.json']) {
+        for (const configFilename of configFiles) {
           const currentFolderConfigPath = path.join(currentFolderPath, configFilename);
 
           if (fs.existsSync(currentFolderConfigPath)) {
@@ -192,6 +251,27 @@ export class JestRunnerConfig {
       },
     );
     return foundPath ? normalizePath(foundPath) : undefined;
+  }
+
+  /**
+   * Gets the Vitest config path for a given target path
+   */
+  public getVitestConfigPath(targetPath: string): string {
+    const configPathOrMapping: string | Record<string, string> | undefined = vscode.workspace
+      .getConfiguration()
+      .get('jestrunner.vitestConfigPath');
+
+    const configPath = resolveConfigPathOrMapping(configPathOrMapping, targetPath);
+    if (!configPath || this.useNearestConfig) {
+      const foundPath = this.findConfigPath(targetPath, configPath, 'vitest');
+      if (foundPath) {
+        return foundPath;
+      }
+    }
+
+    return configPath
+      ? normalizePath(path.resolve(this.currentWorkspaceFolderPath, this.projectPathFromConfig || '', configPath))
+      : '';
   }
 
   public get runOptions(): string[] | null {
@@ -306,17 +386,85 @@ export class JestRunnerConfig {
     return args;
   }
 
-  public getDebugConfiguration(): vscode.DebugConfiguration {
+  /**
+   * Build Vitest arguments for running tests
+   */
+  public buildVitestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const args: string[] = [];
+    const quoter = withQuotes ? quote : (str) => str;
+
+    // Vitest uses 'run' subcommand for single runs (non-watch mode)
+    args.push('run');
+
+    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+
+    const vitestConfigPath = this.getVitestConfigPath(filePath);
+    if (vitestConfigPath) {
+      args.push('--config');
+      args.push(quoter(normalizePath(vitestConfigPath)));
+    }
+
+    if (testName) {
+      // Transform any placeholders in the test name if needed
+      if (testName.includes('%')) {
+        testName = resolveTestNameStringInterpolation(testName);
+      }
+
+      args.push('-t');
+      args.push(withQuotes ? quoter(escapeSingleQuotes(testName)) : testName);
+    }
+
+    const setOptions = new Set(options);
+
+    // Get vitest-specific run options
+    const vitestRunOptions = vscode.workspace.getConfiguration().get<string[]>('jestrunner.vitestRunOptions');
+    if (vitestRunOptions && Array.isArray(vitestRunOptions)) {
+      vitestRunOptions.forEach((option) => setOptions.add(option));
+    } else if (this.runOptions) {
+      // Fall back to jest run options if no vitest-specific options are set
+      this.runOptions.forEach((option) => setOptions.add(option));
+    }
+
+    args.push(...setOptions);
+
+    return args;
+  }
+
+  /**
+   * Build test args based on detected framework
+   */
+  public buildTestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const framework = this.getTestFramework(filePath);
+    if (framework === 'vitest') {
+      return this.buildVitestArgs(filePath, testName, withQuotes, options);
+    }
+    return this.buildJestArgs(filePath, testName, withQuotes, options);
+  }
+
+  public getDebugConfiguration(filePath?: string): vscode.DebugConfiguration {
+    const framework = this.getTestFramework(filePath);
+    const isVitest = framework === 'vitest';
+
     // Base configuration that both implementations share
     const debugConfig: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
-      name: 'Debug Jest Tests',
+      name: isVitest ? 'Debug Vitest Tests' : 'Debug Jest Tests',
       request: 'launch',
       type: 'node',
       runtimeExecutable: 'npx',
       cwd: this.cwd,
-      args: ['--no-install', 'jest', '--runInBand'],
+      args: isVitest ? ['--no-install', 'vitest', 'run'] : ['--no-install', 'jest', '--runInBand'],
       ...this.debugOptions,
     };
 
@@ -326,12 +474,13 @@ export class JestRunnerConfig {
       // as it would conflict with the program execution
       delete debugConfig.runtimeExecutable;
       debugConfig.program = `.yarn/releases/${this.getYarnPnpCommand}`;
-      debugConfig.args = ['jest'];
+      debugConfig.args = isVitest ? ['vitest', 'run'] : ['jest'];
       return debugConfig;
     }
 
-    // Handle custom Jest command if one is set
-    const customCommand = vscode.workspace.getConfiguration().get('jestrunner.jestCommand');
+    // Handle custom command if one is set
+    const customCommandKey = isVitest ? 'jestrunner.vitestCommand' : 'jestrunner.jestCommand';
+    const customCommand = vscode.workspace.getConfiguration().get(customCommandKey);
     if (customCommand && typeof customCommand === 'string') {
       const parts = parseShellCommand(customCommand);
       if (parts.length > 0) {
@@ -339,7 +488,7 @@ export class JestRunnerConfig {
         // as it would conflict with the program execution
         delete debugConfig.runtimeExecutable;
         debugConfig.program = parts[0];
-        debugConfig.args = parts.slice(1);
+        debugConfig.args = isVitest ? [...parts.slice(1), 'run'] : parts.slice(1);
       }
       return debugConfig;
     }

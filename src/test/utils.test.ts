@@ -441,25 +441,25 @@ describe('shouldIncludeFile', () => {
       configMock.get.mockImplementation((key: string, defaultValue: any) => defaultValue);
     });
 
-    it('should delegate to isJestTestFile when no include/exclude patterns', () => {
+    it('should delegate to isTestFile when no include/exclude patterns', () => {
       const filePath = '/workspace/src/test.test.ts';
       const workspacePath = '/workspace';
       
-      // Mock isJestTestFile to return true
-      jest.spyOn(require('../jestDetection'), 'isJestTestFile').mockReturnValue(true);
+      // Mock isTestFile to return true
+      jest.spyOn(require('../jestDetection'), 'isTestFile').mockReturnValue(true);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(true);
-      expect(require('../jestDetection').isJestTestFile).toHaveBeenCalledWith(filePath);
+      expect(require('../jestDetection').isTestFile).toHaveBeenCalledWith(filePath);
     });
 
-    it('should return false when isJestTestFile returns false', () => {
+    it('should return false when isTestFile returns false', () => {
       const filePath = '/workspace/src/regular.ts';
       const workspacePath = '/workspace';
       
-      // Mock isJestTestFile to return false
-      jest.spyOn(require('../jestDetection'), 'isJestTestFile').mockReturnValue(false);
+      // Mock isTestFile to return false
+      jest.spyOn(require('../jestDetection'), 'isTestFile').mockReturnValue(false);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       

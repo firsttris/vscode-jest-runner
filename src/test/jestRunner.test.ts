@@ -13,13 +13,24 @@ describe('JestRunner', () => {
   beforeEach(() => {
     mockConfig = {
       get jestCommand() { return 'node jest'; },
+      get vitestCommand() { return 'npx vitest'; },
       get jestBinPath() { return 'node_modules/.bin/jest'; },
       get cwd() { return '/workspace'; },
       get changeDirectoryToWorkspaceRoot() { return false; },
       get preserveEditorFocus() { return false; },
       getJestConfigPath: jest.fn().mockReturnValue(''),
+      getVitestConfigPath: jest.fn().mockReturnValue(''),
+      getTestFramework: jest.fn().mockReturnValue('jest'),
       buildJestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
         const args = [filePath];
+        if (testName) {
+          args.push('-t', testName);
+        }
+        args.push(...options);
+        return args;
+      }),
+      buildVitestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
+        const args = ['run', filePath];
         if (testName) {
           args.push('-t', testName);
         }

@@ -1438,4 +1438,244 @@ describe('JestRunnerConfig', () => {
       expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.test.js');
     });
   });
+
+  describe('vitestCommand', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+    });
+
+    it('should return custom vitest command when set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.vitestCommand': 'pnpm vitest',
+        }),
+      );
+
+      expect(jestRunnerConfig.vitestCommand).toBe('pnpm vitest');
+    });
+
+    it('should return default vitest command when not set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+
+      expect(jestRunnerConfig.vitestCommand).toBe('npx --no-install vitest');
+    });
+
+    it('should use yarn when PnP support is enabled', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableYarnPnpSupport': true,
+        }),
+      );
+
+      expect(jestRunnerConfig.vitestCommand).toBe('yarn vitest');
+    });
+  });
+
+  describe('buildVitestArgs', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
+    });
+
+    it('should include run subcommand for vitest', () => {
+      const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true);
+      
+      expect(args[0]).toBe('run');
+    });
+
+    it('should include file path', () => {
+      const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true);
+      
+      expect(args).toContain("'/workspace/test\\.spec\\.ts'");
+    });
+
+    it('should include test name with -t flag', () => {
+      const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', 'my test', true);
+      
+      expect(args).toContain('-t');
+      expect(args).toContain("'my test'");
+    });
+
+    it('should include vitest config path when set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.vitestConfigPath': 'vitest.config.ts',
+        }),
+      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+      const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true);
+      
+      expect(args).toContain('--config');
+    });
+
+    it('should include additional options', () => {
+      const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true, ['--coverage']);
+      
+      expect(args).toContain('--coverage');
+    });
+
+    it('should include vitestRunOptions from config', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.vitestRunOptions': ['--reporter=verbose', '--no-color'],
+        }),
+      );
+
+      const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true);
+      
+      expect(args).toContain('--reporter=verbose');
+      expect(args).toContain('--no-color');
+    });
+  });
+
+  describe('getVitestConfigPath', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
+    });
+
+    it('should return configured vitest config path', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.vitestConfigPath': 'vitest.config.ts',
+        }),
+      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+      const configPath = jestRunnerConfig.getVitestConfigPath('/workspace/test.spec.ts');
+      
+      expect(configPath).toContain('vitest.config.ts');
+    });
+
+    it('should return empty string when no config is set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+      const configPath = jestRunnerConfig.getVitestConfigPath('/workspace/test.spec.ts');
+      
+      expect(configPath).toBe('');
+    });
+  });
+
+  describe('getTestFramework', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
+    });
+
+    it('should detect jest framework', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('jest.config');
+      });
+
+      const framework = jestRunnerConfig.getTestFramework('/workspace/test.spec.ts');
+      
+      expect(framework).toBe('jest');
+    });
+
+    it('should detect vitest framework', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('vitest.config');
+      });
+
+      const framework = jestRunnerConfig.getTestFramework('/workspace/test.spec.ts');
+      
+      expect(framework).toBe('vitest');
+    });
+  });
+
+  describe('getDebugConfiguration with Vitest', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
+    });
+
+    it('should return vitest debug configuration for vitest files', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('vitest.config');
+      });
+
+      const config = jestRunnerConfig.getDebugConfiguration('/workspace/test.spec.ts');
+      
+      expect(config.name).toBe('Debug Vitest Tests');
+      expect(config.args).toContain('vitest');
+      expect(config.args).toContain('run');
+    });
+
+    it('should return jest debug configuration for jest files', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('jest.config');
+      });
+
+      const config = jestRunnerConfig.getDebugConfiguration('/workspace/test.spec.ts');
+      
+      expect(config.name).toBe('Debug Jest Tests');
+      expect(config.args).toContain('jest');
+    });
+  });
+
+  describe('buildTestArgs', () => {
+    let jestRunnerConfig: JestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new JestRunnerConfig();
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
+    });
+
+    it('should use buildVitestArgs for vitest framework', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('vitest.config');
+      });
+
+      const args = jestRunnerConfig.buildTestArgs('/workspace/test.spec.ts', 'my test', true);
+      
+      // Vitest args should include 'run' subcommand
+      expect(args[0]).toBe('run');
+    });
+
+    it('should use buildJestArgs for jest framework', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('jest.config');
+      });
+
+      const args = jestRunnerConfig.buildTestArgs('/workspace/test.spec.ts', 'my test', true);
+      
+      // Jest args should not include 'run' subcommand
+      expect(args[0]).not.toBe('run');
+    });
+  });
 });

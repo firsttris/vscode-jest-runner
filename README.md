@@ -13,7 +13,7 @@ Looking for collaborators to help me maintain the project. Please contact me at 
 
 ## Features
 
-Jest Runner provides a powerful, flexible way to run and debug Jest tests directly from VS Code.
+Jest/Vitest Runner provides a powerful, flexible way to run and debug Jest and Vitest tests directly from VS Code.
 
 ### 🚀 Run & Debug Experience
 - **Run individual tests** or entire test suites with a single click
@@ -30,15 +30,17 @@ Jest Runner provides a powerful, flexible way to run and debug Jest tests direct
 - **Keyboard shortcuts** for quick test execution
 
 ### 🔍 Smart Test Detection
-- **Automatic framework detection** distinguishes Jest from Cypress/Playwright/Vitest
+- **Automatic framework detection** - distinguishes between Jest, Vitest, Cypress, and Playwright
+- **Seamless switching** - automatically uses the correct test runner based on your project configuration
 - **Include/exclude patterns** for fine-grained control over which tests appear
 - **Configurable test file patterns** to match your project conventions
 
 ### 💼 Project Flexibility
 - **Monorepo support** for yarn & VS Code workspaces
-- **Multiple Jest configurations** with dynamic resolution based on file paths
+- **Multiple configurations** with dynamic resolution based on file paths
 - **Yarn 2 Plug'n'Play** compatibility
 - **Create React App** and similar abstraction layers
+- **Vite projects** with automatic Vitest detection
 - **Custom commands** for specialized test environments
 
 ### ⚙️ Highly Configurable
@@ -47,6 +49,28 @@ Jest Runner provides a powerful, flexible way to run and debug Jest tests direct
 - Configure specialized debug configurations
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
+
+## Vitest Support
+
+The extension automatically detects whether your project uses Jest or Vitest and uses the appropriate test runner. Detection is based on:
+
+1. **Config files**: `vitest.config.ts`, `vitest.config.js`, `vitest.config.mjs`, etc.
+2. **Package.json**: `vitest` in dependencies/devDependencies
+3. **Binary**: `node_modules/.bin/vitest`
+
+### Vitest-specific settings
+
+```json
+{
+  "jestrunner.vitestCommand": "npx vitest",
+  "jestrunner.vitestConfigPath": "./vitest.config.ts",
+  "jestrunner.vitestRunOptions": ["--reporter=verbose"]
+}
+```
+
+### Mixed projects (Jest + Vitest)
+
+In monorepos where some packages use Jest and others use Vitest, the extension automatically detects which framework to use based on the nearest configuration. Tests in each package will run with their respective test runner.
 
 ## Usage with CRA or similar abstractions
 
@@ -89,6 +113,10 @@ If you have a custom setup use the following options to customize Jest Runner:
 | `jestrunner.jestCommand`                | Define an alternative Jest command for projects using abstractions like Create React App (e.g. `npm run test --`).                                                                                      |
 | `jestrunner.runOptions`                 | CLI options to add to Jest commands (e.g. `["--coverage", "--colors"]`). See [Jest CLI documentation](https://jestjs.io/docs/en/cli).                                                                  |
 | `jestrunner.debugOptions`               | Add or override VS Code debug configurations (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging tests.                                                                                    |
+| **Vitest Configuration**                |                                                                                                                                                                                                       |
+| `jestrunner.vitestCommand`              | Define an alternative Vitest command (default: `npx --no-install vitest`).                                                                                                                            |
+| `jestrunner.vitestConfigPath`           | Path to Vitest config (relative to workspace folder, e.g. `vitest.config.ts`). Can be a string or a glob mapping object similar to `configPath`.                                                      |
+| `jestrunner.vitestRunOptions`           | CLI options to add to Vitest commands (e.g. `["--reporter=verbose"]`). See [Vitest CLI documentation](https://vitest.dev/guide/cli.html).                                                             |
 | **Test Detection & Filtering**          |                                                                                                                                                                                                       |
 | `jestrunner.testFilePattern`            | Pattern to identify test files. Affects CodeLens, Test Explorer, and test detection. Default: `**/*.{test,spec}.{js,jsx,ts,tsx}`                                                                     |
 | `jestrunner.codeLensSelector`           | **Deprecated:** Use `jestrunner.testFilePattern` instead. This setting is kept for backward compatibility with versions prior to 0.4.80.                                                             |

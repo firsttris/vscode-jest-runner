@@ -66,6 +66,9 @@ type JestRunnerConfigProps = {
   'jestrunner.runOptions'?: string[];
   'jestrunner.debugOptions'?: any;
   'jestrunner.jestCommand'?: string;
+  'jestrunner.vitestCommand'?: string;
+  'jestrunner.vitestConfigPath'?: string | Record<string, string>;
+  'jestrunner.vitestRunOptions'?: string[];
   'jestrunner.enableYarnPnpSupport'?: boolean;
   'jestrunner.yarnPnpCommand'?: string;
   'jestrunner.enableCodeLens'?: boolean;
