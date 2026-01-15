@@ -12,7 +12,7 @@ import {
   quote,
   escapeSingleQuotes,
 } from './util';
-import { getTestFrameworkForFile, type TestFrameworkName } from './jestDetection';
+import { getTestFrameworkForFile, type TestFrameworkName } from './testDetection';
 
 /**
  * Parses a shell command string into an array of arguments, respecting quotes.
@@ -67,7 +67,7 @@ function parseShellCommand(command: string): string[] {
   return args;
 }
 
-export class JestRunnerConfig {
+export class TestRunnerConfig {
   /**
    * The command that runs jest or vitest.
    * For Jest: Defaults to npx --no-install jest

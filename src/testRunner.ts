@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { JestRunnerConfig } from './jestRunnerConfig';
+import { TestRunnerConfig } from './testRunnerConfig';
 import { parse } from './parser';
 import {
   escapeRegExp,
@@ -18,7 +18,7 @@ interface DebugCommand {
   config: vscode.DebugConfiguration;
 }
 
-export class JestRunner {
+export class TestRunner {
   private previousCommand: string | DebugCommand;
 
   private previousFramework: string | undefined;
@@ -33,7 +33,7 @@ export class JestRunner {
 
   private isExecuting: boolean = false;
 
-  constructor(private readonly config: JestRunnerConfig) {
+  constructor(private readonly config: TestRunnerConfig) {
     this.setup();
   }
 

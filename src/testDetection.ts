@@ -4,7 +4,7 @@ import * as path from 'path';
 import { logError, logWarning } from './util';
 
 // Cache for Jest detection results
-const jestDetectionCache = new Map<string, boolean>();
+const testDetectionCache = new Map<string, boolean>();
 
 // Cache for Vitest detection results
 const vitestDetectionCache = new Map<string, boolean>();
@@ -12,8 +12,8 @@ const vitestDetectionCache = new Map<string, boolean>();
 /**
  * Clears the Jest detection cache (useful for testing)
  */
-export function clearJestDetectionCache(): void {
-  jestDetectionCache.clear();
+export function clearTestDetectionCache(): void {
+  testDetectionCache.clear();
 }
 
 /**
@@ -128,7 +128,7 @@ function isFrameworkUsedIn(directoryPath: string, frameworkName: string, cache: 
  * Checks if Jest is used in the specified directory
  */
 export function isJestUsedIn(directoryPath: string): boolean {
-  return isFrameworkUsedIn(directoryPath, 'jest', jestDetectionCache);
+  return isFrameworkUsedIn(directoryPath, 'jest', testDetectionCache);
 }
 
 /**

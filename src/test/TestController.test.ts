@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { TestItem, CancellationToken, CancellationTokenSource, VscodeRange, Position } from './__mocks__/vscode';
 import { JestTestController } from '../TestController';
-import { JestRunnerConfig } from '../jestRunnerConfig';
+import { TestRunnerConfig } from '../testRunnerConfig';
 import * as parser from '../parser';
 import * as util from '../util';
 import { EventEmitter } from 'events';
@@ -1169,7 +1169,7 @@ describe('JestTestController', () => {
       mockTestController.items.add(test1);
       
       // Mock vitest detection
-      jest.spyOn(require('../jestDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
       
       const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
       const mockRequest = { include: [test1], exclude: [] } as any;
@@ -1218,7 +1218,7 @@ describe('JestTestController', () => {
       mockTestController.items.add(test1);
       mockTestController.items.add(test2);
       
-      jest.spyOn(require('../jestDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
       
       const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
       const mockRequest = { include: [test1, test2], exclude: [] } as any;
@@ -1281,7 +1281,7 @@ describe('JestTestController', () => {
       test1.uri = vscode.Uri.file('/workspace/test.ts');
       mockTestController.items.add(test1);
       
-      jest.spyOn(require('../jestDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
       
       // Get the coverage profile (third profile created)
       const coverageProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[2][2];
@@ -1319,7 +1319,7 @@ describe('JestTestController', () => {
       test1.uri = vscode.Uri.file('/workspace/test.ts');
       mockTestController.items.add(test1);
       
-      jest.spyOn(require('../jestDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
       
       const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
       const mockRequest = { include: [test1], exclude: [] } as any;

@@ -1,8 +1,8 @@
 'use strict';
 import * as vscode from 'vscode';
-import { JestRunner } from './jestRunner';
-import { JestRunnerCodeLensProvider } from './JestRunnerCodeLensProvider';
-import { JestRunnerConfig } from './jestRunnerConfig';
+import { TestRunner } from './testRunner';
+import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
+import { TestRunnerConfig } from './testRunnerConfig';
 import { JestTestController } from './TestController';
 import { shouldIncludeFile, logError } from './util';
 
@@ -23,9 +23,9 @@ function wrapCommandHandler<T extends unknown[]>(
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  const config = new JestRunnerConfig();
-  const jestRunner = new JestRunner(config);
-  const codeLensProvider = new JestRunnerCodeLensProvider(config.codeLensOptions);
+  const config = new TestRunnerConfig();
+  const jestRunner = new TestRunner(config);
+  const codeLensProvider = new TestRunnerCodeLensProvider(config.codeLensOptions);
 
   // Add this function to update the context key
   const updateJestFileContext = () => {

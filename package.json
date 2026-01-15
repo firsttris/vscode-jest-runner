@@ -24,7 +24,7 @@
   "contributes": {
     "configuration": [
       {
-        "title": "Jest-Runner Config",
+        "title": "Test Runner Config",
         "properties": {
           "jestrunner.configPath": {
             "oneOf": [
@@ -272,24 +272,24 @@
         {
           "command": "extension.runJest",
           "when": "jestrunner.isJestFile",
-          "group": "02_jest"
+          "group": "02_testrunner"
         },
         {
           "command": "extension.debugJest",
           "when": "jestrunner.isJestFile",
-          "group": "02_jest"
+          "group": "02_testrunner"
         }
       ],
       "explorer/context": [
         {
           "command": "extension.runJestPath",
           "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
-          "group": "02_jest@1"
+          "group": "02_testrunner@1"
         },
         {
           "command": "extension.debugJestPath",
           "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
-          "group": "02_jest@2"
+          "group": "02_testrunner@2"
         }
       ]
     }

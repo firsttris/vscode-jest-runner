@@ -5,7 +5,7 @@ import {
   isJestUsedIn, 
   findJestDirectory, 
   isJestTestFile, 
-  clearJestDetectionCache,
+  clearTestDetectionCache,
   isVitestUsedIn,
   clearVitestDetectionCache,
   findVitestDirectory,
@@ -14,7 +14,7 @@ import {
   getTestFrameworkForFile,
   findTestFrameworkDirectory,
   detectTestFramework,
-} from '../jestDetection';
+} from '../testDetection';
 
 // Mock fs and vscode modules
 jest.mock('fs');
@@ -26,7 +26,7 @@ describe('jestDetection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Clear the cache before each test
-    clearJestDetectionCache();
+    clearTestDetectionCache();
     clearVitestDetectionCache();
   });
 

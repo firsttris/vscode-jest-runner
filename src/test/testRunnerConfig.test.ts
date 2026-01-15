@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { JestRunnerConfig } from '../jestRunnerConfig';
+import { TestRunnerConfig } from '../testRunnerConfig';
 import { Document, TextEditor, Uri, WorkspaceConfiguration, WorkspaceFolder } from './__mocks__/vscode';
 import { isWindows, normalizePath } from '../util';
 import * as fs from 'fs';
@@ -15,11 +15,11 @@ const its = {
   linux: ['linux', 'darwin'].includes(process.platform) ? it : it.skip,
 };
 
-describe('JestRunnerConfig', () => {
+describe('TestRunnerConfig', () => {
   describes.windows('Windows style paths', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest
         .spyOn(vscode.workspace, 'getWorkspaceFolder')
         .mockReturnValue(new WorkspaceFolder(new Uri('C:\\project') as any) as any);
@@ -41,10 +41,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describes.linux('Linux style paths', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest
         .spyOn(vscode.workspace, 'getWorkspaceFolder')
         .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
@@ -163,10 +163,10 @@ describe('JestRunnerConfig', () => {
           expectedPath,
           useNearestConfig = undefined,
         ) => {
-          let jestRunnerConfig: JestRunnerConfig;
+          let jestRunnerConfig: TestRunnerConfig;
 
           beforeEach(() => {
-            jestRunnerConfig = new JestRunnerConfig();
+            jestRunnerConfig = new TestRunnerConfig();
             jest
               .spyOn(vscode.workspace, 'getWorkspaceFolder')
               .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
@@ -438,10 +438,10 @@ describe('JestRunnerConfig', () => {
             expectedPath,
             useNearestConfig = undefined,
           ) => {
-            let jestRunnerConfig: JestRunnerConfig;
+            let jestRunnerConfig: TestRunnerConfig;
 
             beforeEach(() => {
-              jestRunnerConfig = new JestRunnerConfig();
+              jestRunnerConfig = new TestRunnerConfig();
               jest
                 .spyOn(vscode.workspace, 'getWorkspaceFolder')
                 .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
@@ -544,10 +544,10 @@ describe('JestRunnerConfig', () => {
         describe.each(scenarios)(
           '%s: %s',
           (_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, foundPath, expectedPath) => {
-            let jestRunnerConfig: JestRunnerConfig;
+            let jestRunnerConfig: TestRunnerConfig;
 
             beforeEach(() => {
-              jestRunnerConfig = new JestRunnerConfig();
+              jestRunnerConfig = new TestRunnerConfig();
               jest
                 .spyOn(vscode.workspace, 'getWorkspaceFolder')
                 .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
@@ -661,10 +661,10 @@ describe('JestRunnerConfig', () => {
       describe.each(scenarios)(
         '%s: %s',
         (_os, _name, behavior, workspacePath, projectPath, targetPath, expectedPath) => {
-          let jestRunnerConfig: JestRunnerConfig;
+          let jestRunnerConfig: TestRunnerConfig;
 
           beforeEach(() => {
-            jestRunnerConfig = new JestRunnerConfig();
+            jestRunnerConfig = new TestRunnerConfig();
             jest
               .spyOn(vscode.workspace, 'getWorkspaceFolder')
               .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
@@ -792,12 +792,12 @@ describe('JestRunnerConfig', () => {
     ];
 
     describe.each(scenarios)('%s: %s', (_os, _name, behavior, workspacePath, openedFilePath, installedPath) => {
-      let jestRunnerConfig: JestRunnerConfig;
+      let jestRunnerConfig: TestRunnerConfig;
       let packagePath: string;
       let modulePath: string;
 
       beforeEach(() => {
-        jestRunnerConfig = new JestRunnerConfig();
+        jestRunnerConfig = new TestRunnerConfig();
         packagePath = installedPath ? path.resolve(installedPath, 'package.json') : '';
         modulePath = installedPath ? path.resolve(installedPath, 'node_modules', 'jest') : '';
         jest
@@ -955,12 +955,12 @@ describe('JestRunnerConfig', () => {
       describe.each(scenarios)(
         '%s: %s',
         (_os, _name, behavior, workspacePath, openedFilePath, configPath, configFilename) => {
-          let jestRunnerConfig: JestRunnerConfig;
+          let jestRunnerConfig: TestRunnerConfig;
           let configFilePath: string;
           let activeTextEditorSpy: jest.SpyInstance;
 
           beforeEach(() => {
-            jestRunnerConfig = new JestRunnerConfig();
+            jestRunnerConfig = new TestRunnerConfig();
             configFilePath = configPath && configFilename ? path.resolve(configPath, configFilename) : '';
             jest
               .spyOn(vscode.workspace, 'getWorkspaceFolder')
@@ -989,11 +989,11 @@ describe('JestRunnerConfig', () => {
       describe.each(scenarios)(
         '%s: %s',
         (_os, _name, behavior, workspacePath, openedFilePath, configPath, configFilename) => {
-          let jestRunnerConfig: JestRunnerConfig;
+          let jestRunnerConfig: TestRunnerConfig;
           let configFilePath: string;
 
           beforeEach(() => {
-            jestRunnerConfig = new JestRunnerConfig();
+            jestRunnerConfig = new TestRunnerConfig();
             configFilePath = configPath && configFilename ? path.resolve(configPath, configFilename) : '';
             jest.spyOn(vscode.window, 'activeTextEditor', 'get');
             jest
@@ -1018,11 +1018,11 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('buildJestArgs', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
     const mockFilePath = '/home/user/project/src/test.spec.ts';
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest
         .spyOn(vscode.workspace, 'getWorkspaceFolder')
         .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
@@ -1182,11 +1182,11 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('getDebugConfiguration', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
     const mockFilePath = '/home/user/project/src/test.spec.ts';
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest
         .spyOn(vscode.workspace, 'getWorkspaceFolder')
         .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
@@ -1307,10 +1307,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('isCodeLensEnabled - backwards compatibility', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest
         .spyOn(vscode.workspace, 'getWorkspaceFolder')
         .mockReturnValue(new WorkspaceFolder(new Uri('/home/user/project') as any) as any);
@@ -1380,10 +1380,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('getTestFilePattern', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
     });
 
     it('should return testFilePattern when set', () => {
@@ -1441,10 +1441,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('vitestCommand', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
     });
 
     it('should return custom vitest command when set', () => {
@@ -1477,10 +1477,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('buildVitestArgs', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({}),
       );
@@ -1543,10 +1543,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('getVitestConfigPath', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest
         .spyOn(vscode.workspace, 'getWorkspaceFolder')
         .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
@@ -1578,10 +1578,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('getTestFramework', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest
         .spyOn(vscode.workspace, 'getWorkspaceFolder')
         .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
@@ -1632,10 +1632,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('getDebugConfiguration with Vitest', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({}),
       );
@@ -1669,10 +1669,10 @@ describe('JestRunnerConfig', () => {
   });
 
   describe('buildTestArgs', () => {
-    let jestRunnerConfig: JestRunnerConfig;
+    let jestRunnerConfig: TestRunnerConfig;
 
     beforeEach(() => {
-      jestRunnerConfig = new JestRunnerConfig();
+      jestRunnerConfig = new TestRunnerConfig();
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({}),
       );

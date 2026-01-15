@@ -446,12 +446,12 @@ describe('shouldIncludeFile', () => {
       const workspacePath = '/workspace';
       
       // Mock isTestFile to return true
-      jest.spyOn(require('../jestDetection'), 'isTestFile').mockReturnValue(true);
+      jest.spyOn(require('../testDetection'), 'isTestFile').mockReturnValue(true);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       
       expect(result).toBe(true);
-      expect(require('../jestDetection').isTestFile).toHaveBeenCalledWith(filePath);
+      expect(require('../testDetection').isTestFile).toHaveBeenCalledWith(filePath);
     });
 
     it('should return false when isTestFile returns false', () => {
@@ -459,7 +459,7 @@ describe('shouldIncludeFile', () => {
       const workspacePath = '/workspace';
       
       // Mock isTestFile to return false
-      jest.spyOn(require('../jestDetection'), 'isTestFile').mockReturnValue(false);
+      jest.spyOn(require('../testDetection'), 'isTestFile').mockReturnValue(false);
       
       const result = shouldIncludeFile(filePath, workspacePath);
       

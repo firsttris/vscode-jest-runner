@@ -1,4 +1,4 @@
-import { JestRunnerCodeLensProvider } from '../JestRunnerCodeLensProvider';
+import { TestRunnerCodeLensProvider } from '../TestRunnerCodeLensProvider';
 import * as vscode from 'vscode';
 import { Document, Uri, WorkspaceFolder } from './__mocks__/vscode';
 import * as fastGlob from 'fast-glob';
@@ -7,8 +7,8 @@ import * as util from '../util';
 
 jest.mock('fast-glob');
 
-describe('JestRunnerCodeLensProvider', () => {
-  let codeLensProvider: JestRunnerCodeLensProvider;
+describe('TestRunnerCodeLensProvider', () => {
+  let codeLensProvider: TestRunnerCodeLensProvider;
   let mockDocument: vscode.TextDocument;
 
   beforeEach(() => {
@@ -74,19 +74,19 @@ describe('JestRunnerCodeLensProvider', () => {
 
   describe('constructor', () => {
     it('should create instance with run option', () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run']);
       expect(codeLensProvider).toBeDefined();
     });
 
     it('should create instance with multiple options', () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run', 'debug', 'watch']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug', 'watch']);
       expect(codeLensProvider).toBeDefined();
     });
   });
 
   describe('provideCodeLenses', () => {
     beforeEach(() => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run', 'debug']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
     });
 
     it('should provide code lenses for test file', async () => {
@@ -148,7 +148,7 @@ describe('JestRunnerCodeLensProvider', () => {
 
   describe('include/exclude patterns', () => {
     beforeEach(() => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run']);
     });
 
     it('should not provide lenses when file is not in include pattern', async () => {
@@ -201,7 +201,7 @@ describe('JestRunnerCodeLensProvider', () => {
 
   describe('code lens commands', () => {
     it('should create run command with correct title and command', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       
       const runLens = codeLenses.find(lens => lens.command?.command === 'extension.runJest');
@@ -210,7 +210,7 @@ describe('JestRunnerCodeLensProvider', () => {
     });
 
     it('should create debug command with correct title and command', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['debug']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['debug']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       
       const debugLens = codeLenses.find(lens => lens.command?.command === 'extension.debugJest');
@@ -219,7 +219,7 @@ describe('JestRunnerCodeLensProvider', () => {
     });
 
     it('should create watch command with correct title and command', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['watch']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['watch']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       
       const watchLens = codeLenses.find(lens => lens.command?.command === 'extension.watchJest');
@@ -228,7 +228,7 @@ describe('JestRunnerCodeLensProvider', () => {
     });
 
     it('should create coverage command with correct title and command', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['coverage']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['coverage']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       
       const coverageLens = codeLenses.find(lens => lens.command?.command === 'extension.runJestCoverage');
@@ -237,7 +237,7 @@ describe('JestRunnerCodeLensProvider', () => {
     });
 
     it('should create current-test-coverage command with correct title and command', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['current-test-coverage']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['current-test-coverage']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       
       const coverageLens = codeLenses.find(
@@ -250,7 +250,7 @@ describe('JestRunnerCodeLensProvider', () => {
 
   describe('nested test structures', () => {
     it('should provide lenses for nested describe blocks', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run']);
       mockDocument.getText = jest.fn().mockReturnValue(`
         describe('Outer Suite', () => {
           describe('Inner Suite', () => {
@@ -297,7 +297,7 @@ describe('JestRunnerCodeLensProvider', () => {
     });
 
     it('should provide lenses for multiple tests in same suite', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run']);
       mockDocument.getText = jest.fn().mockReturnValue(`
         describe('Suite', () => {
           it('test 1', () => {});
@@ -354,7 +354,7 @@ describe('JestRunnerCodeLensProvider', () => {
 
   describe('test.each and describe.each', () => {
     it('should provide lenses for test.each', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run']);
       mockDocument.getText = jest.fn().mockReturnValue(`
         test.each([
           [1, 2, 3],
@@ -384,7 +384,7 @@ describe('JestRunnerCodeLensProvider', () => {
     });
 
     it('should provide lenses for describe.each', async () => {
-      codeLensProvider = new JestRunnerCodeLensProvider(['run']);
+      codeLensProvider = new TestRunnerCodeLensProvider(['run']);
       mockDocument.getText = jest.fn().mockReturnValue(`
         describe.each([
           ['Apple', 'red'],

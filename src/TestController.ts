@@ -3,8 +3,8 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { parse } from './parser';
 import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile, logInfo, logError, logWarning, logDebug } from './util';
-import { JestRunnerConfig } from './jestRunnerConfig';
-import { getTestFrameworkForFile, type TestFrameworkName } from './jestDetection';
+import { TestRunnerConfig } from './testRunnerConfig';
+import { getTestFrameworkForFile, type TestFrameworkName } from './testDetection';
 
 interface JestAssertionResult {
   ancestorTitles: string[];
@@ -48,10 +48,10 @@ interface JestResults {
 export class JestTestController {
   private testController: vscode.TestController;
   private disposables: vscode.Disposable[] = [];
-  private jestConfig: JestRunnerConfig;
+  private jestConfig: TestRunnerConfig;
 
   constructor(context: vscode.ExtensionContext) {
-    this.jestConfig = new JestRunnerConfig();
+    this.jestConfig = new TestRunnerConfig();
 
     this.testController = vscode.tests.createTestController('jestVitestTestController', 'Jest/Vitest Tests');
     context.subscriptions.push(this.testController);
