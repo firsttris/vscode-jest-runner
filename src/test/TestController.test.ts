@@ -161,8 +161,8 @@ describe('JestTestController', () => {
 
       // Check Coverage profile
       expect(mockTestController.createRunProfile).toHaveBeenCalledWith(
-        'Run with Coverage',
-        vscode.TestRunProfileKind.Run,
+        'Coverage',
+        vscode.TestRunProfileKind.Coverage,
         expect.any(Function),
         true,
       );

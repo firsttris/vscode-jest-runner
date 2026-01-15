@@ -5,6 +5,7 @@ import { parse } from './parser';
 import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile, logInfo, logError, logWarning, logDebug, resolveTestNameStringInterpolation } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { getTestFrameworkForFile, type TestFrameworkName } from './testDetection';
+import { CoverageProvider, DetailedFileCoverage, type CoverageMap } from './coverageProvider';
 
 interface JestAssertionResult {
   ancestorTitles: string[];
@@ -49,9 +50,11 @@ export class JestTestController {
   private testController: vscode.TestController;
   private disposables: vscode.Disposable[] = [];
   private jestConfig: TestRunnerConfig;
+  private coverageProvider: CoverageProvider;
 
   constructor(context: vscode.ExtensionContext) {
     this.jestConfig = new TestRunnerConfig();
+    this.coverageProvider = new CoverageProvider();
 
     this.testController = vscode.tests.createTestController('jestVitestTestController', 'Jest/Vitest Tests');
     context.subscriptions.push(this.testController);
@@ -72,13 +75,21 @@ export class JestTestController {
       true,
     );
 
-    // Add Coverage profile (custom)
-    this.testController.createRunProfile(
-      'Run with Coverage',
-      vscode.TestRunProfileKind.Run,
-      (request, token) => this.runHandler(request, token, ['--coverage']),
+    // Add Coverage profile using the proper Coverage kind
+    const coverageProfile = this.testController.createRunProfile(
+      'Coverage',
+      vscode.TestRunProfileKind.Coverage,
+      (request, token) => this.coverageHandler(request, token),
       true,
     );
+
+    // Set up detailed coverage loading
+    coverageProfile.loadDetailedCoverage = async (testRun, fileCoverage, token) => {
+      if (fileCoverage instanceof DetailedFileCoverage) {
+        return this.coverageProvider.loadDetailedCoverage(fileCoverage, token);
+      }
+      return [];
+    };
 
     // Add Update Snapshots profile
     this.testController.createRunProfile(
@@ -197,6 +208,31 @@ export class JestTestController {
   private processTestResults(output: string, tests: vscode.TestItem[], run: vscode.TestRun): void {
     // Use Jest as default framework for backwards compatibility
     this.processTestResultsWithFramework(output, tests, run, 'jest');
+  }
+
+  /**
+   * Process coverage data from test output and add to test run
+   */
+  private processCoverageData(output: string, run: vscode.TestRun, workspaceFolder: string): void {
+    try {
+      const coverageMap = this.coverageProvider.parseCoverageFromOutput(output);
+      
+      if (!coverageMap) {
+        logDebug('No coverage data found in output. Note: Vitest writes coverage to files, not JSON output.');
+        logInfo('For Vitest coverage, ensure you have @vitest/coverage-v8 or @vitest/coverage-istanbul installed.');
+        return;
+      }
+
+      const fileCoverages = this.coverageProvider.convertToVSCodeCoverage(coverageMap, workspaceFolder);
+      
+      logInfo(`Adding coverage for ${fileCoverages.length} files`);
+      
+      for (const fileCoverage of fileCoverages) {
+        run.addCoverage(fileCoverage);
+      }
+    } catch (error) {
+      logError('Failed to process coverage data', error);
+    }
   }
 
   /**
@@ -591,6 +627,25 @@ export class JestTestController {
     token: vscode.CancellationToken,
     additionalArgs: string[] = [],
   ) {
+    return this.executeTests(request, token, additionalArgs, false);
+  }
+
+  // Coverage handler using the proper Coverage profile
+  private async coverageHandler(
+    request: vscode.TestRunRequest,
+    token: vscode.CancellationToken,
+  ) {
+    // Note: We don't pass --json here, it will be added in executeTests based on framework
+    return this.executeTests(request, token, ['--coverage'], true);
+  }
+
+  // Main test execution method
+  private async executeTests(
+    request: vscode.TestRunRequest,
+    token: vscode.CancellationToken,
+    additionalArgs: string[] = [],
+    collectCoverage: boolean = false,
+  ) {
     const run = this.testController.createTestRun(request);
 
     // Group tests by file
@@ -668,7 +723,10 @@ export class JestTestController {
           : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
         
         if (isVitest) {
-          args = this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--reporter=json']);
+          // For Vitest: --reporter=json gives test results, but coverage needs special handling
+          // Vitest doesn't include coverage in JSON output, it writes to coverage/ folder
+          const vitestAdditionalArgs = [...additionalArgs, '--reporter=json'];
+          args = this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, vitestAdditionalArgs);
         } else {
           args = this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--json']);
         }
@@ -712,6 +770,11 @@ export class JestTestController {
 
       // Process all test results with the appropriate framework parser
       this.processTestResultsWithFramework(output, allTests, run, framework);
+
+      // If collecting coverage, parse and add coverage data
+      if (collectCoverage && workspaceFolder) {
+        this.processCoverageData(output, run, workspaceFolder);
+      }
     } catch (error) {
       const errOutput = error instanceof Error ? error.message : (error ? String(error) : 'Test execution failed');
       testsByFile.forEach((tests) => {
