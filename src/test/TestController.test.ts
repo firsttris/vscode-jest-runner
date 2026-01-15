@@ -716,6 +716,87 @@ describe('JestTestController', () => {
       // Should not start debugging if already cancelled
       expect(vscode.debug.startDebugging).not.toHaveBeenCalled();
     });
+
+    it('should use buildTestArgs for Vitest files', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
+      
+      // Create a Vitest test item
+      const vitestTestItem = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test.spec.ts'));
+      const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
+      
+      // Mock getTestFramework to return 'vitest'
+      const mockConfig = (controller as any).jestConfig;
+      jest.spyOn(mockConfig, 'getTestFramework').mockReturnValue('vitest');
+      jest.spyOn(mockConfig, 'buildTestArgs').mockReturnValue(['run', '/workspace/test.spec.ts', '-c', '/workspace/vitest.config.ts']);
+      
+      await debugProfile(vitestRequest, mockToken);
+      
+      // Should call buildTestArgs (not buildJestArgs)
+      expect(mockConfig.buildTestArgs).toHaveBeenCalledWith(
+        '/workspace/test.spec.ts',
+        'Test 1',
+        false
+      );
+      expect(vscode.debug.startDebugging).toHaveBeenCalled();
+    });
+
+    it('should pass filePath to getDebugConfiguration for framework detection', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
+      
+      const vitestTestItem = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test.spec.ts'));
+      const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
+      
+      const mockConfig = (controller as any).jestConfig;
+      jest.spyOn(mockConfig, 'getDebugConfiguration').mockReturnValue({
+        type: 'node',
+        request: 'launch',
+        name: 'Debug Vitest Tests',
+        args: ['--no-install', 'vitest', 'run'],
+      });
+      
+      await debugProfile(vitestRequest, mockToken);
+      
+      // Should pass filePath to getDebugConfiguration
+      expect(mockConfig.getDebugConfiguration).toHaveBeenCalledWith('/workspace/test.spec.ts');
+    });
+
+    it('should include Vitest config in debug args', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
+      
+      const vitestTestItem = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test.spec.ts'));
+      const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
+      
+      const mockConfig = (controller as any).jestConfig;
+      jest.spyOn(mockConfig, 'getTestFramework').mockReturnValue('vitest');
+      jest.spyOn(mockConfig, 'buildTestArgs').mockReturnValue([
+        'run', 
+        '/workspace/test.spec.ts', 
+        '-c', 
+        '/workspace/vitest.config.ts',
+        '-t',
+        'Test 1'
+      ]);
+      jest.spyOn(mockConfig, 'getDebugConfiguration').mockReturnValue({
+        type: 'node',
+        request: 'launch',
+        name: 'Debug Vitest Tests',
+        args: ['--no-install', 'vitest'],
+      });
+      
+      await debugProfile(vitestRequest, mockToken);
+      
+      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[
+        (vscode.debug.startDebugging as jest.Mock).mock.calls.length - 1
+      ];
+      const config = debugCall[1];
+      
+      // Config should be included in args
+      expect(config.args).toContain('-c');
+      expect(config.args).toContain('/workspace/vitest.config.ts');
+    });
   });
 
   describe('file watcher', () => {

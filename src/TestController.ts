@@ -765,9 +765,10 @@ export class JestTestController {
       return;
     }
 
-    // Get the base debug configuration from the unified method
-    const debugConfig = this.jestConfig.getDebugConfiguration();
-    const standardArgs = this.jestConfig.buildJestArgs(filePath, testName, false);
+    // Get the base debug configuration from the unified method (pass filePath to detect framework)
+    const debugConfig = this.jestConfig.getDebugConfiguration(filePath);
+    // Use buildTestArgs to support both Jest and Vitest
+    const standardArgs = this.jestConfig.buildTestArgs(filePath, testName, false);
     pushMany(debugConfig.args, standardArgs);
 
     // Start debugging with the workspace folder context
