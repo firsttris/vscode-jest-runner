@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { spawn } from 'child_process';
 import { parse } from './parser';
-import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile, logInfo, logError, logWarning, logDebug } from './util';
+import { escapeRegExp, updateTestNameIfUsingProperties, pushMany, TestNode, shouldIncludeFile, logInfo, logError, logWarning, logDebug, resolveTestNameStringInterpolation } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { getTestFrameworkForFile, type TestFrameworkName } from './testDetection';
 
@@ -395,6 +395,34 @@ export class JestTestController {
   }
 
   /**
+   * Check if a test title matches a label, supporting it.each template variables
+   * like $description, $tags, %s, %p, etc.
+   */
+  private matchesTestLabel(resultTitle: string, testLabel: string): boolean {
+    // Direct match
+    if (resultTitle === testLabel) {
+      return true;
+    }
+    
+    // Check if label contains template variables (it.each pattern)
+    // Template variables: $varName, ${varName}, %s, %p, %d, %i, %f, %j, %o, %#, %%
+    const hasTemplateVar = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/i.test(testLabel);
+    if (hasTemplateVar) {
+      // Convert template to regex pattern and test against result
+      const pattern = resolveTestNameStringInterpolation(testLabel);
+      try {
+        const regex = new RegExp(`^${pattern}$`);
+        return regex.test(resultTitle);
+      } catch {
+        // Invalid regex, fall back to direct comparison
+        return false;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
    * Process test results from parsed JSON
    */
   private processTestResultsFromParsed(results: JestResults, tests: vscode.TestItem[], run: vscode.TestRun): void {
@@ -416,21 +444,53 @@ export class JestTestController {
           .map((r, index) => ({ result: r, index }))
           .filter(
             ({ result: r }) =>
-              // Direct title match
-              r.title === test.label ||
+              // Direct title match or template match (for it.each)
+              this.matchesTestLabel(r.title, test.label) ||
               // Base name match (without describe blocks)
-              r.title === testName ||
+              this.matchesTestLabel(r.title, testName) ||
               // Full name match
               r.fullName === test.label ||
               // Ancestor titles + title match the label
-              (r.ancestorTitles && r.ancestorTitles.concat(r.title).join(' ') === test.label),
+              (r.ancestorTitles && this.matchesTestLabel(r.ancestorTitles.concat(r.title).join(' '), test.label)),
           );
 
         let matchingResult: JestAssertionResult | undefined;
         let matchedIndex = -1;
+        
+        // For it.each tests, we may have multiple results that all match the same template
+        // In this case, we aggregate the results - if any fails, the test fails
+        const hasTemplateVar = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/i.test(test.label);
 
         if (potentialMatches.length > 0) {
-          if (potentialMatches.length === 1) {
+          if (hasTemplateVar && potentialMatches.length > 1) {
+            // This is an it.each test with multiple parameterized results
+            // Aggregate all matching results
+            logDebug(`Found ${potentialMatches.length} it.each results for "${test.label}"`);
+            
+            const allResults = potentialMatches.map(m => m.result);
+            const failedResults = allResults.filter(r => r.status === 'failed');
+            const passedResults = allResults.filter(r => r.status === 'passed');
+            const skippedResults = allResults.filter(r => r.status === 'skipped' || r.status === 'pending' || r.status === 'todo');
+            
+            // Mark all these results as used
+            potentialMatches.forEach(m => usedResults.add(m.index));
+            
+            if (failedResults.length > 0) {
+              // At least one failed - report as failed with all failure messages
+              const allFailureMessages = failedResults
+                .flatMap(r => r.failureMessages || ['Test failed'])
+                .map((msg, i) => `[${failedResults[i]?.title || i + 1}]: ${msg}`)
+                .join('\n\n');
+              run.failed(test, new vscode.TestMessage(allFailureMessages));
+            } else if (passedResults.length > 0) {
+              // All passed
+              run.passed(test);
+            } else {
+              // All skipped
+              run.skipped(test);
+            }
+            return; // Skip the normal result processing
+          } else if (potentialMatches.length === 1) {
             // Only one match, use it
             matchingResult = potentialMatches[0].result;
             matchedIndex = potentialMatches[0].index;

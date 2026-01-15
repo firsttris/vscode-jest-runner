@@ -203,6 +203,7 @@ class TestItem {
   canResolveChildren = false;
   busy = false;
   error?: string;
+  parent?: TestItem;
 
   constructor(
     public id: string,
