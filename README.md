@@ -1,15 +1,22 @@
 # vscode-jest-runner
 
-Looking for collaborators to help me maintain the project. Please contact me at tristanteufel@gmail.com
-
 ## Visual Studio Code Marketplace
 
 [VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)    
 [Open VSX Registry](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 
-## Comparison with [vscode-jest](https://github.com/jest-community/vscode-jest)
+## Overview
 
-[vscode-jest-runner](https://github.com/firsttris/vscode-jest-runner) is focused on running or debugging a specific test or test-suite, while [vscode-jest](https://github.com/jest-community/vscode-jest) is running your current test-suite everytime you change it.
+**vscode-jest-runner** is a lightweight, focused extension for running and debugging individual tests or test suites with minimal configuration. It provides a simple, straightforward testing experience that works out-of-the-box for most projects.
+
+**Key Advantages:**
+- **Zero configuration** - Works immediately with standard Jest/Vitest setups
+- **Lightweight** - Minimal resource usage, runs only when you need it
+- **Fast test execution** - Run specific tests on-demand without overhead
+- **Simple debugging** - One-click debug setup for most projects
+- **Framework flexibility** - Supports Jest, Vitest, Cypress, and Playwright
+
+Perfect for developers who want quick, on-demand test execution without background processes or complex configuration.
 
 ## Features
 
