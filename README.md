@@ -7,16 +7,18 @@
 
 ## Overview
 
-**vscode-jest-runner** is a lightweight, focused extension for running and debugging individual tests or test suites with minimal configuration. It provides a simple, straightforward testing experience that works out-of-the-box for most projects.
+**vscode-jest-runner** is a lightweight extension for running and debugging individual tests or test suites with minimal configuration. It provides a simple, straightforward testing experience that works out-of-the-box for most projects.
 
 **Key Advantages:**
 - **Zero configuration** - Works immediately with standard Jest/Vitest setups
 - **Lightweight** - Minimal resource usage, runs only when you need it
 - **Fast test execution** - Run specific tests on-demand without overhead
 - **Simple debugging** - One-click debug setup for most projects
-- **Framework flexibility** - Supports Jest, Vitest, Cypress, and Playwright
+- **Framework flexibility** - Supports Jest, Vitest
 
 Perfect for developers who want quick, on-demand test execution without background processes or complex configuration.
+
+![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Features
 
@@ -37,7 +39,7 @@ Jest/Vitest Runner provides a powerful, flexible way to run and debug Jest and V
 - **Keyboard shortcuts** for quick test execution
 
 ### 🔍 Smart Test Detection
-- **Automatic framework detection** - distinguishes between Jest, Vitest, Cypress, and Playwright
+- **Automatic framework detection** - distinguishes between Jest, Vitest
 - **Seamless switching** - automatically uses the correct test runner based on your project configuration
 - **Include/exclude patterns** for fine-grained control over which tests appear
 - **Configurable test file patterns** to match your project conventions
@@ -54,8 +56,6 @@ Jest/Vitest Runner provides a powerful, flexible way to run and debug Jest and V
 - Choose between CodeLens, Test Explorer, or both
 - Customize test commands with additional CLI options
 - Configure specialized debug configurations
-
-![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Vitest Support
 
