@@ -1,5 +1,16 @@
 # Change Log
 
+## 0.4.86 - 2026-01-15
+
+### Added
+
+- Full Vitest support with automatic framework detection
+- Separate Vitest configuration options: `vitestCommand`, `vitestConfigPath`, `vitestRunOptions`, and `vitestDebugOptions`
+- Automatic detection between Jest and Vitest based on config files, package.json, and binaries
+- Support for mixed Jest/Vitest monorepos with per-package framework detection
+- Vitest config file detection including both `vitest.config.*` and `vite.config.*` files
+- Updated extension name to "Jest / Vitest Runner" to reflect dual framework support
+
 ## 0.4.80 2025-04-11
 
 - Automatic Jest Detection and possibility to define Include & Exclude patterns

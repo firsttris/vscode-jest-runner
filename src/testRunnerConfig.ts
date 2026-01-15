@@ -302,6 +302,16 @@ export class TestRunnerConfig {
     return {};
   }
 
+  public get vitestDebugOptions(): Partial<vscode.DebugConfiguration> {
+    const vitestDebugOptions = vscode.workspace.getConfiguration().get('jestrunner.vitestDebugOptions');
+    if (vitestDebugOptions) {
+      return vitestDebugOptions;
+    }
+
+    // default
+    return {};
+  }
+
   public get isCodeLensEnabled(): boolean {
     const config = vscode.workspace.getConfiguration();
     
@@ -476,7 +486,7 @@ export class TestRunnerConfig {
       runtimeExecutable: 'npx',
       cwd: this.cwd,
       args: isVitest ? ['--no-install', 'vitest', 'run'] : ['--no-install', 'jest', '--runInBand'],
-      ...this.debugOptions,
+      ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
     // Handle Yarn PnP support first

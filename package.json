@@ -126,6 +126,12 @@
             "description": "Add CLI Options to the Vitest Command e.g. https://vitest.dev/guide/cli.html",
             "scope": "window"
           },
+          "jestrunner.vitestDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or override VS Code debug configurations for Vitest (e.g. { \"args\": [\"--no-cache\"] }). Only applies when debugging Vitest tests.",
+            "scope": "window"
+          },
           "jestrunner.disableCodeLens": {
             "type": "boolean",
             "default": false,
