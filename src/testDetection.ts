@@ -220,9 +220,7 @@ export function findTestFrameworkDirectory(filePath: string, targetFramework?: '
           return { directory: currentDir, framework };
         }
         // If we found a different framework, this file doesn't belong to target framework
-        if (framework !== targetFramework) {
-          return undefined;
-        }
+        return undefined;
       } else {
         // Return any supported framework (jest or vitest)
         if (framework === 'jest' || framework === 'vitest') {
