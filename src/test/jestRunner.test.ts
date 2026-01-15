@@ -91,6 +91,14 @@ describe('JestRunner', () => {
       expect(vscode.window.createTerminal).toHaveBeenCalledWith('jest');
     });
 
+    it('should create a terminal with vitest name for vitest tests', async () => {
+      (mockConfig.getTestFramework as jest.Mock).mockReturnValue('vitest');
+      // Reset the terminal mock to ensure a fresh terminal is created
+      (vscode.window.createTerminal as jest.Mock).mockClear();
+      await jestRunner.runTestsOnPath('/workspace/test.spec.ts');
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith('vitest');
+    });
+
     it('should show the terminal', async () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       expect(mockTerminal.show).toHaveBeenCalledWith(false);
