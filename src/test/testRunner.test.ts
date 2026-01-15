@@ -81,7 +81,8 @@ describe('TestRunner', () => {
     it('should build and run jest command for a file path', async () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       expect(mockTerminal.sendText).toHaveBeenCalled();
-      const command = (mockTerminal.sendText as jest.Mock).mock.calls[0][0];
+      const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
+      const command = calls[calls.length - 1][0];
       expect(command).toContain('node jest');
       expect(command).toContain('test.ts');
     });
@@ -129,7 +130,8 @@ describe('TestRunner', () => {
     it('should run with test name when provided', async () => {
       await jestRunner.runCurrentTest('My Test Name');
       expect(mockTerminal.sendText).toHaveBeenCalled();
-      const command = (mockTerminal.sendText as jest.Mock).mock.calls[0][0];
+      const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
+      const command = calls[calls.length - 1][0];
       expect(command).toContain('-t');
       expect(command).toContain('My Test Name');
     });
@@ -144,7 +146,8 @@ describe('TestRunner', () => {
       jest.spyOn(fs, 'existsSync').mockReturnValue(true);
       await jestRunner.runCurrentTest(undefined, [], true);
       expect(mockTerminal.sendText).toHaveBeenCalled();
-      const command = (mockTerminal.sendText as jest.Mock).mock.calls[0][0];
+      const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
+      const command = calls[calls.length - 1][0];
       expect(command).toContain('--collectCoverageFrom');
     });
   });
@@ -168,7 +171,8 @@ describe('TestRunner', () => {
     it('should run jest command without test name', async () => {
       await jestRunner.runCurrentFile();
       expect(mockTerminal.sendText).toHaveBeenCalled();
-      const command = (mockTerminal.sendText as jest.Mock).mock.calls[0][0];
+      const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
+      const command = calls[calls.length - 1][0];
       expect(command).not.toContain('-t');
     });
 
@@ -180,7 +184,8 @@ describe('TestRunner', () => {
 
     it('should pass custom options to jest', async () => {
       await jestRunner.runCurrentFile(['--verbose', '--no-cache']);
-      const command = (mockTerminal.sendText as jest.Mock).mock.calls[0][0];
+      const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
+      const command = calls[calls.length - 1][0];
       expect(command).toContain('--verbose');
       expect(command).toContain('--no-cache');
     });
@@ -200,14 +205,16 @@ describe('TestRunner', () => {
     it('should run the previous command', async () => {
       // First run a test
       await jestRunner.runTestsOnPath('/workspace/test.ts');
-      const firstCommand = (mockTerminal.sendText as jest.Mock).mock.calls[0][0];
+      const calls1 = (mockTerminal.sendText as jest.Mock).mock.calls;
+      const firstCommand = calls1[calls1.length - 1][0];
 
       // Clear mock
       (mockTerminal.sendText as jest.Mock).mockClear();
 
       // Run previous test
       await jestRunner.runPreviousTest();
-      const secondCommand = (mockTerminal.sendText as jest.Mock).mock.calls[0][0];
+      const calls2 = (mockTerminal.sendText as jest.Mock).mock.calls;
+      const secondCommand = calls2[calls2.length - 1][0];
 
       expect(secondCommand).toBe(firstCommand);
     });
@@ -283,9 +290,9 @@ describe('TestRunner', () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       
       const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
-      expect(calls.length).toBeGreaterThan(1);
-      expect(calls[0][0]).toContain('cd');
-      expect(calls[0][0]).toContain('/different/path');
+      expect(calls.length).toBeGreaterThan(2);
+      expect(calls[1][0]).toContain('cd');
+      expect(calls[1][0]).toContain('/different/path');
     });
 
     it('should not change directory when option is disabled', async () => {
@@ -298,8 +305,8 @@ describe('TestRunner', () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       
       const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
-      expect(calls.length).toBe(1);
-      expect(calls[0][0]).not.toContain('cd');
+      expect(calls.length).toBe(2);
+      expect(calls[1][0]).not.toContain('cd');
     });
   });
 
