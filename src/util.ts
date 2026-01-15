@@ -3,7 +3,7 @@ import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ParsedNode } from 'jest-editor-support';
-import { isJestTestFile, isVitestTestFile, isTestFile } from './testDetection';
+import { isTestFile } from './testDetection';
 
 // Centralized output channel for logging
 let outputChannel: vscode.OutputChannel | undefined;
