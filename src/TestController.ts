@@ -470,7 +470,6 @@ export class JestTestController {
             const allResults = potentialMatches.map(m => m.result);
             const failedResults = allResults.filter(r => r.status === 'failed');
             const passedResults = allResults.filter(r => r.status === 'passed');
-            const skippedResults = allResults.filter(r => r.status === 'skipped' || r.status === 'pending' || r.status === 'todo');
             
             // Mark all these results as used
             potentialMatches.forEach(m => usedResults.add(m.index));
