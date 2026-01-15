@@ -1501,14 +1501,16 @@ describe('TestRunnerConfig', () => {
       const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true);
       
       // Vitest uses glob patterns, NOT regex - file path should NOT be escaped
-      expect(args).toContain("'/workspace/test.spec.ts'");
+      const expectedPath = isWindows() ? '"/workspace/test.spec.ts"' : "'/workspace/test.spec.ts'";
+      expect(args).toContain(expectedPath);
     });
 
     it('should include test name with -t flag', () => {
       const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', 'my test', true);
       
       expect(args).toContain('-t');
-      expect(args).toContain("'my test'");
+      const expectedTestName = isWindows() ? '"my test"' : "'my test'";
+      expect(args).toContain(expectedTestName);
     });
 
     it('should include vitest config path when set', () => {
