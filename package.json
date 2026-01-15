@@ -1,7 +1,7 @@
 {
   "name": "vscode-jest-runner",
-  "displayName": "Jest Runner",
-  "description": "Simple way to run or debug a single (or multiple) tests from context-menu",
+  "displayName": "Jest / Vitest Runner",
+  "description": "Simple way to run or debug a single (or multiple) tests from context-menu (supports Jest and Vitest)",
   "version": "0.4.85",
   "publisher": "firsttris",
   "author": "Tristan Teufel",
@@ -24,7 +24,7 @@
   "contributes": {
     "configuration": [
       {
-        "title": "Jest-Runner Config",
+        "title": "Test Runner Config",
         "properties": {
           "jestrunner.configPath": {
             "oneOf": [
@@ -86,6 +86,50 @@
             "type": "string",
             "default": "",
             "description": "Define an alternative Jest command (e.g. for Create React App and similar abstractions)",
+            "scope": "window"
+          },
+          "jestrunner.vitestCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative Vitest command",
+            "scope": "window"
+          },
+          "jestrunner.vitestConfigPath": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Vitest config path (relative to `${workspaceFolder}` e.g. vitest.config.ts)"
+              },
+              {
+                "type": "object",
+                "scope": "resource",
+                "description": "A mapping of file globs to vitest config paths. Useful when you need to run different vitest configurations based on the file naming convention.",
+                "patternProperties": {
+                  ".*": {
+                    "type": "string",
+                    "description": "The target vitest config path for the matched file glob."
+                  }
+                },
+                "additionalProperties": false
+              }
+            ],
+            "default": "",
+            "scope": "window"
+          },
+          "jestrunner.vitestRunOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --reporter=verbose"
+            },
+            "description": "Add CLI Options to the Vitest Command e.g. https://vitest.dev/guide/cli.html",
+            "scope": "window"
+          },
+          "jestrunner.vitestDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or override VS Code debug configurations for Vitest (e.g. { \"args\": [\"--no-cache\"] }). Only applies when debugging Vitest tests.",
             "scope": "window"
           },
           "jestrunner.disableCodeLens": {
@@ -234,24 +278,24 @@
         {
           "command": "extension.runJest",
           "when": "jestrunner.isJestFile",
-          "group": "02_jest"
+          "group": "02_testrunner"
         },
         {
           "command": "extension.debugJest",
           "when": "jestrunner.isJestFile",
-          "group": "02_jest"
+          "group": "02_testrunner"
         }
       ],
       "explorer/context": [
         {
           "command": "extension.runJestPath",
           "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
-          "group": "02_jest@1"
+          "group": "02_testrunner@1"
         },
         {
           "command": "extension.debugJestPath",
           "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
-          "group": "02_jest@2"
+          "group": "02_testrunner@2"
         }
       ]
     }

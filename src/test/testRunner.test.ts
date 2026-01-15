@@ -1,25 +1,36 @@
 import * as vscode from 'vscode';
-import { JestRunner } from '../jestRunner';
-import { JestRunnerConfig } from '../jestRunnerConfig';
+import { TestRunner } from '../testRunner';
+import { TestRunnerConfig } from '../testRunnerConfig';
 import { Document, TextEditor, Uri } from './__mocks__/vscode';
 import * as fs from 'fs';
 import * as parser from '../parser';
 
-describe('JestRunner', () => {
-  let jestRunner: JestRunner;
-  let mockConfig: JestRunnerConfig;
+describe('TestRunner', () => {
+  let jestRunner: TestRunner;
+  let mockConfig: TestRunnerConfig;
   let mockTerminal: vscode.Terminal;
 
   beforeEach(() => {
     mockConfig = {
       get jestCommand() { return 'node jest'; },
+      get vitestCommand() { return 'npx vitest'; },
       get jestBinPath() { return 'node_modules/.bin/jest'; },
       get cwd() { return '/workspace'; },
       get changeDirectoryToWorkspaceRoot() { return false; },
       get preserveEditorFocus() { return false; },
       getJestConfigPath: jest.fn().mockReturnValue(''),
+      getVitestConfigPath: jest.fn().mockReturnValue(''),
+      getTestFramework: jest.fn().mockReturnValue('jest'),
       buildJestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
         const args = [filePath];
+        if (testName) {
+          args.push('-t', testName);
+        }
+        args.push(...options);
+        return args;
+      }),
+      buildVitestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
+        const args = ['run', filePath];
         if (testName) {
           args.push('-t', testName);
         }
@@ -59,7 +70,7 @@ describe('JestRunner', () => {
       },
     } as any);
 
-    jestRunner = new JestRunner(mockConfig);
+    jestRunner = new TestRunner(mockConfig);
   });
 
   afterEach(() => {
@@ -78,6 +89,14 @@ describe('JestRunner', () => {
     it('should create a terminal if none exists', async () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       expect(vscode.window.createTerminal).toHaveBeenCalledWith('jest');
+    });
+
+    it('should create a terminal with vitest name for vitest tests', async () => {
+      (mockConfig.getTestFramework as jest.Mock).mockReturnValue('vitest');
+      // Reset the terminal mock to ensure a fresh terminal is created
+      (vscode.window.createTerminal as jest.Mock).mockClear();
+      await jestRunner.runTestsOnPath('/workspace/test.spec.ts');
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith('vitest');
     });
 
     it('should show the terminal', async () => {
@@ -259,7 +278,7 @@ describe('JestRunner', () => {
         get changeDirectoryToWorkspaceRoot() { return true; },
         get cwd() { return '/different/path'; },
       } as any;
-      jestRunner = new JestRunner(mockConfig);
+      jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       
@@ -274,7 +293,7 @@ describe('JestRunner', () => {
         ...mockConfig,
         get changeDirectoryToWorkspaceRoot() { return false; },
       } as any;
-      jestRunner = new JestRunner(mockConfig);
+      jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       
@@ -290,7 +309,7 @@ describe('JestRunner', () => {
         ...mockConfig,
         get preserveEditorFocus() { return true; },
       } as any;
-      jestRunner = new JestRunner(mockConfig);
+      jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       expect(mockTerminal.show).toHaveBeenCalledWith(true);
@@ -301,7 +320,7 @@ describe('JestRunner', () => {
         ...mockConfig,
         get preserveEditorFocus() { return false; },
       } as any;
-      jestRunner = new JestRunner(mockConfig);
+      jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       expect(mockTerminal.show).toHaveBeenCalledWith(false);
@@ -325,7 +344,7 @@ describe('JestRunner', () => {
           args: ['jest'],
         })),
       } as any;
-      jestRunner = new JestRunner(mockConfig);
+      jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.debugTestsOnPath('/workspace/test.ts');
       

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import { JestRunnerConfig } from './jestRunnerConfig';
+import { TestRunnerConfig } from './testRunnerConfig';
 import { parse } from './parser';
 import {
   escapeRegExp,
@@ -18,10 +18,14 @@ interface DebugCommand {
   config: vscode.DebugConfiguration;
 }
 
-export class JestRunner {
+export class TestRunner {
   private previousCommand: string | DebugCommand;
 
+  private previousFramework: string | undefined;
+
   private terminal: vscode.Terminal;
+
+  private currentTerminalName: string | undefined;
 
   private commands: string[] = [];
 
@@ -29,7 +33,7 @@ export class JestRunner {
 
   private isExecuting: boolean = false;
 
-  constructor(private readonly config: JestRunnerConfig) {
+  constructor(private readonly config: TestRunnerConfig) {
     this.setup();
   }
 
@@ -39,11 +43,13 @@ export class JestRunner {
 
   public async runTestsOnPath(path: string): Promise<void> {
     const command = this.buildJestCommand(path);
+    const framework = this.config.getTestFramework(path);
 
     this.previousCommand = command;
+    this.previousFramework = framework;
 
     await this.goToCwd();
-    await this.runTerminalCommand(command);
+    await this.runTerminalCommand(command, framework);
   }
 
   public async runCurrentTest(
@@ -79,11 +85,13 @@ export class JestRunner {
     const testName = currentTestName || this.findCurrentTestName(editor);
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
     const command = this.buildJestCommand(filePath, resolvedTestName, finalOptions);
+    const framework = this.config.getTestFramework(filePath);
 
     this.previousCommand = command;
+    this.previousFramework = framework;
 
     await this.goToCwd();
-    await this.runTerminalCommand(command);
+    await this.runTerminalCommand(command, framework);
   }
 
   public async runCurrentFile(options?: string[]): Promise<void> {
@@ -96,11 +104,13 @@ export class JestRunner {
 
     const filePath = editor.document.fileName;
     const command = this.buildJestCommand(filePath, undefined, options);
+    const framework = this.config.getTestFramework(filePath);
 
     this.previousCommand = command;
+    this.previousFramework = framework;
 
     await this.goToCwd();
-    await this.runTerminalCommand(command);
+    await this.runTerminalCommand(command, framework);
   }
 
   public async runPreviousTest(): Promise<void> {
@@ -113,15 +123,19 @@ export class JestRunner {
 
     if (typeof this.previousCommand === 'string') {
       await this.goToCwd();
-      await this.runTerminalCommand(this.previousCommand);
+      await this.runTerminalCommand(this.previousCommand, this.previousFramework);
     } else {
       await this.executeDebugCommand(this.previousCommand);
     }
   }
 
   public async debugTestsOnPath(filePath: string): Promise<void> {
-    const debugConfig = this.config.getDebugConfiguration();
-    const standardArgs = this.config.buildJestArgs(filePath, undefined, false);
+    const debugConfig = this.config.getDebugConfiguration(filePath);
+    const framework = this.config.getTestFramework(filePath);
+    
+    const standardArgs = framework === 'vitest'
+      ? this.config.buildVitestArgs(filePath, undefined, false)
+      : this.config.buildJestArgs(filePath, undefined, false);
     pushMany(debugConfig.args, standardArgs);
 
     await this.goToCwd();
@@ -142,8 +156,12 @@ export class JestRunner {
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const debugConfig = this.config.getDebugConfiguration();
-    const standardArgs = this.config.buildJestArgs(filePath, resolvedTestName, false);
+    const debugConfig = this.config.getDebugConfiguration(filePath);
+    const framework = this.config.getTestFramework(filePath);
+    
+    const standardArgs = framework === 'vitest'
+      ? this.config.buildVitestArgs(filePath, resolvedTestName, false)
+      : this.config.buildJestArgs(filePath, resolvedTestName, false);
     pushMany(debugConfig.args, standardArgs);
 
     await this.goToCwd();
@@ -193,8 +211,19 @@ export class JestRunner {
   }
 
   private buildJestCommand(filePath: string, testName?: string, options?: string[]): string {
+    const framework = this.config.getTestFramework(filePath);
+    
+    if (framework === 'vitest') {
+      return this.buildVitestCommand(filePath, testName, options);
+    }
+    
     const args = this.config.buildJestArgs(filePath, testName, true, options);
     return `${this.config.jestCommand} ${args.join(' ')}`;
+  }
+
+  private buildVitestCommand(filePath: string, testName?: string, options?: string[]): string {
+    const args = this.config.buildVitestArgs(filePath, testName, true, options);
+    return `${this.config.vitestCommand} ${args.join(' ')}`;
   }
 
   private async goToCwd() {
@@ -204,10 +233,18 @@ export class JestRunner {
     }
   }
 
-  private async runTerminalCommand(command: string) {
-    if (!this.terminal) {
-      this.terminal = vscode.window.createTerminal('jest');
+  private async runTerminalCommand(command: string, framework?: string) {
+    const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
+    
+    // Recreate terminal if framework changed or terminal doesn't exist
+    if (!this.terminal || (this.currentTerminalName && this.currentTerminalName !== terminalName)) {
+      if (this.terminal) {
+        this.terminal.dispose();
+      }
+      this.terminal = vscode.window.createTerminal(terminalName);
+      this.currentTerminalName = terminalName;
     }
+    
     this.terminal.show(this.config.preserveEditorFocus);
     await vscode.commands.executeCommand('workbench.action.terminal.clear');
     this.terminal.sendText(command);
@@ -217,6 +254,7 @@ export class JestRunner {
     const terminalCloseHandler = vscode.window.onDidCloseTerminal((closedTerminal: vscode.Terminal) => {
       if (this.terminal === closedTerminal) {
         this.terminal = null;
+        this.currentTerminalName = undefined;
       }
     });
     this.disposables.push(terminalCloseHandler);

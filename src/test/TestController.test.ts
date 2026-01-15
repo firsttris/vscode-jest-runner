@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { TestItem, CancellationToken, CancellationTokenSource, VscodeRange, Position } from './__mocks__/vscode';
 import { JestTestController } from '../TestController';
-import { JestRunnerConfig } from '../jestRunnerConfig';
 import * as parser from '../parser';
 import * as util from '../util';
 import { EventEmitter } from 'events';
@@ -137,7 +136,7 @@ describe('JestTestController', () => {
 
   describe('constructor', () => {
     it('should create a test controller', () => {
-      expect(vscode.tests.createTestController).toHaveBeenCalledWith('jestTestController', 'Jest Tests');
+      expect(vscode.tests.createTestController).toHaveBeenCalledWith('jestVitestTestController', 'Jest/Vitest Tests');
     });
 
     it('should create run profiles for Run, Debug, Coverage, and Update Snapshots', () => {
@@ -716,6 +715,87 @@ describe('JestTestController', () => {
       // Should not start debugging if already cancelled
       expect(vscode.debug.startDebugging).not.toHaveBeenCalled();
     });
+
+    it('should use buildTestArgs for Vitest files', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
+      
+      // Create a Vitest test item
+      const vitestTestItem = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test.spec.ts'));
+      const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
+      
+      // Mock getTestFramework to return 'vitest'
+      const mockConfig = (controller as any).jestConfig;
+      jest.spyOn(mockConfig, 'getTestFramework').mockReturnValue('vitest');
+      jest.spyOn(mockConfig, 'buildTestArgs').mockReturnValue(['run', '/workspace/test.spec.ts', '-c', '/workspace/vitest.config.ts']);
+      
+      await debugProfile(vitestRequest, mockToken);
+      
+      // Should call buildTestArgs (not buildJestArgs)
+      expect(mockConfig.buildTestArgs).toHaveBeenCalledWith(
+        '/workspace/test.spec.ts',
+        'Test 1',
+        false
+      );
+      expect(vscode.debug.startDebugging).toHaveBeenCalled();
+    });
+
+    it('should pass filePath to getDebugConfiguration for framework detection', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
+      
+      const vitestTestItem = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test.spec.ts'));
+      const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
+      
+      const mockConfig = (controller as any).jestConfig;
+      jest.spyOn(mockConfig, 'getDebugConfiguration').mockReturnValue({
+        type: 'node',
+        request: 'launch',
+        name: 'Debug Vitest Tests',
+        args: ['--no-install', 'vitest', 'run'],
+      });
+      
+      await debugProfile(vitestRequest, mockToken);
+      
+      // Should pass filePath to getDebugConfiguration
+      expect(mockConfig.getDebugConfiguration).toHaveBeenCalledWith('/workspace/test.spec.ts');
+    });
+
+    it('should include Vitest config in debug args', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
+      
+      const vitestTestItem = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test.spec.ts'));
+      const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
+      
+      const mockConfig = (controller as any).jestConfig;
+      jest.spyOn(mockConfig, 'getTestFramework').mockReturnValue('vitest');
+      jest.spyOn(mockConfig, 'buildTestArgs').mockReturnValue([
+        'run', 
+        '/workspace/test.spec.ts', 
+        '-c', 
+        '/workspace/vitest.config.ts',
+        '-t',
+        'Test 1'
+      ]);
+      jest.spyOn(mockConfig, 'getDebugConfiguration').mockReturnValue({
+        type: 'node',
+        request: 'launch',
+        name: 'Debug Vitest Tests',
+        args: ['--no-install', 'vitest'],
+      });
+      
+      await debugProfile(vitestRequest, mockToken);
+      
+      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[
+        (vscode.debug.startDebugging as jest.Mock).mock.calls.length - 1
+      ];
+      const config = debugCall[1];
+      
+      // Config should be included in args
+      expect(config.args).toContain('-c');
+      expect(config.args).toContain('/workspace/vitest.config.ts');
+    });
   });
 
   describe('file watcher', () => {
@@ -991,6 +1071,223 @@ describe('JestTestController', () => {
     });
   });
 
+  describe('it.each parameterized tests', () => {
+    it('should match it.each tests with $variable template', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // Create a test item with template variable (like it.each uses)
+      const testItem = new TestItem('test1', '$description', vscode.Uri.file('/workspace/test.ts'));
+      testItem.uri = vscode.Uri.file('/workspace/test.ts');
+      mockTestController.items.add(testItem);
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [testItem], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        // Jest returns expanded test names from it.each
+        const jestOutput = JSON.stringify({
+          success: true,
+          testResults: [{
+            assertionResults: [
+              { title: 'should exclude lowercase', status: 'passed', ancestorTitles: [] },
+              { title: 'should exclude uppercase', status: 'passed', ancestorTitles: [] },
+              { title: 'should keep other tags', status: 'passed', ancestorTitles: [] },
+            ],
+          }],
+        });
+        mockProcess.stdout.emit('data', jestOutput);
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      const mockRun = mockTestController.createTestRun();
+      expect(mockRun.passed).toHaveBeenCalled();
+    });
+
+    it('should aggregate it.each results - all pass', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      const testItem = new TestItem('test1', '$case', vscode.Uri.file('/workspace/test.ts'));
+      testItem.uri = vscode.Uri.file('/workspace/test.ts');
+      mockTestController.items.add(testItem);
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [testItem], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        const jestOutput = JSON.stringify({
+          success: true,
+          testResults: [{
+            assertionResults: [
+              { title: 'case 1', status: 'passed', ancestorTitles: [] },
+              { title: 'case 2', status: 'passed', ancestorTitles: [] },
+              { title: 'case 3', status: 'passed', ancestorTitles: [] },
+            ],
+          }],
+        });
+        mockProcess.stdout.emit('data', jestOutput);
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      const mockRun = mockTestController.createTestRun();
+      expect(mockRun.passed).toHaveBeenCalled();
+      expect(mockRun.failed).not.toHaveBeenCalled();
+    });
+
+    it('should aggregate it.each results - some fail', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      const testItem = new TestItem('test1', '$case', vscode.Uri.file('/workspace/test.ts'));
+      testItem.uri = vscode.Uri.file('/workspace/test.ts');
+      mockTestController.items.add(testItem);
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [testItem], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        const jestOutput = JSON.stringify({
+          success: false,
+          testResults: [{
+            assertionResults: [
+              { title: 'case 1', status: 'passed', ancestorTitles: [] },
+              { title: 'case 2', status: 'failed', failureMessages: ['Expected 1 to be 2'], ancestorTitles: [] },
+              { title: 'case 3', status: 'passed', ancestorTitles: [] },
+            ],
+          }],
+        });
+        mockProcess.stdout.emit('data', jestOutput);
+        mockProcess.emit('close', 1);
+      }, 10);
+
+      await runPromise;
+
+      const mockRun = mockTestController.createTestRun();
+      expect(mockRun.failed).toHaveBeenCalled();
+    });
+
+    it('should handle %s and %p template variables', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // it.each with printf-style placeholders
+      const testItem = new TestItem('test1', 'should handle %s with %p', vscode.Uri.file('/workspace/test.ts'));
+      testItem.uri = vscode.Uri.file('/workspace/test.ts');
+      mockTestController.items.add(testItem);
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [testItem], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        const jestOutput = JSON.stringify({
+          success: true,
+          testResults: [{
+            assertionResults: [
+              { title: 'should handle string with 123', status: 'passed', ancestorTitles: [] },
+              { title: 'should handle array with [1, 2]', status: 'passed', ancestorTitles: [] },
+            ],
+          }],
+        });
+        mockProcess.stdout.emit('data', jestOutput);
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      const mockRun = mockTestController.createTestRun();
+      expect(mockRun.passed).toHaveBeenCalled();
+    });
+
+    it('should handle nested describe with it.each', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // Nested structure: describe > it.each
+      const fileItem = new TestItem('/workspace/test.ts', 'test.ts', vscode.Uri.file('/workspace/test.ts'));
+      fileItem.uri = vscode.Uri.file('/workspace/test.ts');
+      
+      const describeItem = new TestItem('describe1', 'testTagsFilter', vscode.Uri.file('/workspace/test.ts'));
+      describeItem.uri = vscode.Uri.file('/workspace/test.ts');
+      describeItem.parent = fileItem;
+      
+      const testItem = new TestItem('test1', '$description', vscode.Uri.file('/workspace/test.ts'));
+      testItem.uri = vscode.Uri.file('/workspace/test.ts');
+      testItem.parent = describeItem;
+      
+      describeItem.children.add(testItem);
+      fileItem.children.add(describeItem);
+      mockTestController.items.add(fileItem);
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [testItem], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        const jestOutput = JSON.stringify({
+          success: true,
+          testResults: [{
+            assertionResults: [
+              { title: 'should exclude tags with testzugang (lowercase)', status: 'passed', ancestorTitles: ['testTagsFilter'] },
+              { title: 'should exclude tags with testzugang (uppercase)', status: 'passed', ancestorTitles: ['testTagsFilter'] },
+              { title: 'should keep tags with other values', status: 'passed', ancestorTitles: ['testTagsFilter'] },
+            ],
+          }],
+        });
+        mockProcess.stdout.emit('data', jestOutput);
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      const mockRun = mockTestController.createTestRun();
+      expect(mockRun.passed).toHaveBeenCalled();
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle multiple files in single run', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
@@ -1156,6 +1453,296 @@ describe('JestTestController', () => {
 
       const mockRun = mockTestController.createTestRun();
       expect(mockRun.started).toHaveBeenCalled();
+    });
+  });
+
+  describe('Vitest support', () => {
+    it('should detect and use vitest command for vitest projects', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // Create test item with vitest project
+      const test1 = new TestItem('test1', 'Vitest Test', vscode.Uri.file('/workspace/vitest-project/test.ts'));
+      test1.uri = vscode.Uri.file('/workspace/vitest-project/test.ts');
+      mockTestController.items.add(test1);
+      
+      // Mock vitest detection
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [test1], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', JSON.stringify({
+          success: true,
+          numPassedTests: 1,
+          numFailedTests: 0,
+          testResults: [{ 
+            assertionResults: [{ 
+              title: 'Vitest Test', 
+              status: 'passed',
+              ancestorTitles: [],
+            }] 
+          }],
+        }));
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      // Verify vitest command was used
+      expect(spawn).toHaveBeenCalled();
+      const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
+      // The command should contain vitest-related args
+      expect(spawnCall[1].some((arg: string) => arg.includes('run') || arg.includes('reporter'))).toBe(true);
+    });
+
+    it('should parse Vitest JSON output correctly', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      const test1 = new TestItem('test1', 'should pass', vscode.Uri.file('/workspace/test.ts'));
+      const test2 = new TestItem('test2', 'should fail', vscode.Uri.file('/workspace/test.ts'));
+      test1.uri = vscode.Uri.file('/workspace/test.ts');
+      test2.uri = vscode.Uri.file('/workspace/test.ts');
+      mockTestController.items.add(test1);
+      mockTestController.items.add(test2);
+      
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [test1, test2], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      // Vitest JSON output format
+      const vitestOutput = JSON.stringify({
+        numFailedTestSuites: 0,
+        numFailedTests: 1,
+        numPassedTestSuites: 1,
+        numPassedTests: 1,
+        numTotalTestSuites: 1,
+        numTotalTests: 2,
+        success: false,
+        testResults: [{
+          name: '/workspace/test.ts',
+          status: 'failed',
+          assertionResults: [
+            { 
+              title: 'should pass', 
+              status: 'passed',
+              ancestorTitles: [],
+              fullName: 'should pass',
+            },
+            { 
+              title: 'should fail', 
+              status: 'failed',
+              ancestorTitles: [],
+              fullName: 'should fail',
+              failureMessages: ['Expected true but got false'],
+            },
+          ],
+        }],
+      });
+
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', vitestOutput);
+        mockProcess.emit('close', 1);
+      }, 10);
+
+      await runPromise;
+
+      const mockRun = mockTestController.createTestRun();
+      expect(mockRun.passed).toHaveBeenCalled();
+      expect(mockRun.failed).toHaveBeenCalled();
+    });
+
+    it('should handle Vitest coverage option', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      const test1 = new TestItem('test1', 'Test', vscode.Uri.file('/workspace/test.ts'));
+      test1.uri = vscode.Uri.file('/workspace/test.ts');
+      mockTestController.items.add(test1);
+      
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      
+      // Get the coverage profile (third profile created)
+      const coverageProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[2][2];
+      const mockRequest = { include: [test1], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = coverageProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', JSON.stringify({
+          success: true,
+          testResults: [{ assertionResults: [{ title: 'Test', status: 'passed' }] }],
+        }));
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      // Verify coverage flag was passed
+      expect(spawn).toHaveBeenCalled();
+      const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
+      expect(spawnCall[1].some((arg: string) => arg.includes('coverage'))).toBe(true);
+    });
+
+    it('should fallback to text parsing when JSON parsing fails for Vitest', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      const test1 = new TestItem('test1', 'should pass', vscode.Uri.file('/workspace/test.ts'));
+      test1.uri = vscode.Uri.file('/workspace/test.ts');
+      mockTestController.items.add(test1);
+      
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [test1], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      // Non-JSON vitest output (text mode)
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', `
+ ✓ should pass (5ms)
+ 
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+        `);
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      const mockRun = mockTestController.createTestRun();
+      expect(mockRun.passed).toHaveBeenCalled();
+    });
+
+    it('should include Vitest config path when running multiple files', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // Create multiple test files
+      const test1 = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test1.ts'));
+      const test2 = new TestItem('test2', 'Test 2', vscode.Uri.file('/workspace/test2.ts'));
+      test1.uri = vscode.Uri.file('/workspace/test1.ts');
+      test2.uri = vscode.Uri.file('/workspace/test2.ts');
+      mockTestController.items.add(test1);
+      mockTestController.items.add(test2);
+      
+      // Mock vitest detection and config path
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      const mockConfig = controller['jestConfig'] as any;
+      jest.spyOn(mockConfig, 'getVitestConfigPath').mockReturnValue('/workspace/vitest.config.ts');
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [test1, test2], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', JSON.stringify({
+          success: true,
+          testResults: [
+            { assertionResults: [{ title: 'Test 1', status: 'passed', ancestorTitles: [] }] },
+            { assertionResults: [{ title: 'Test 2', status: 'passed', ancestorTitles: [] }] },
+          ],
+        }));
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      // Verify vitest command included config path
+      expect(spawn).toHaveBeenCalled();
+      const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
+      const args = spawnCall[1];
+      expect(args).toContain('--config');
+      expect(args).toContain('/workspace/vitest.config.ts');
+    });
+
+    it('should include Jest config path when running multiple files', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // Create multiple test files
+      const test1 = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test1.ts'));
+      const test2 = new TestItem('test2', 'Test 2', vscode.Uri.file('/workspace/test2.ts'));
+      test1.uri = vscode.Uri.file('/workspace/test1.ts');
+      test2.uri = vscode.Uri.file('/workspace/test2.ts');
+      mockTestController.items.add(test1);
+      mockTestController.items.add(test2);
+      
+      // Mock jest detection and config path
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('jest');
+      const mockConfig = controller['jestConfig'] as any;
+      jest.spyOn(mockConfig, 'getJestConfigPath').mockReturnValue('/workspace/jest.config.js');
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [test1, test2], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', JSON.stringify({
+          success: true,
+          testResults: [
+            { assertionResults: [{ title: 'Test 1', status: 'passed', ancestorTitles: [] }] },
+            { assertionResults: [{ title: 'Test 2', status: 'passed', ancestorTitles: [] }] },
+          ],
+        }));
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      // Verify jest command included config path
+      expect(spawn).toHaveBeenCalled();
+      const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
+      const args = spawnCall[1];
+      expect(args).toContain('-c');
+      expect(args).toContain('/workspace/jest.config.js');
     });
   });
 });

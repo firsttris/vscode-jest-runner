@@ -49,7 +49,7 @@ function getTestsBlocks(parsedNode: TestNode, parseResults: TestNode[], codeLens
   return codeLens;
 }
 
-export class JestRunnerCodeLensProvider implements CodeLensProvider {
+export class TestRunnerCodeLensProvider implements CodeLensProvider {
   private lastSuccessfulCodeLens: CodeLens[] = [];
 
   constructor(private readonly codeLensOptions: CodeLensOption[]) {}

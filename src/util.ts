@@ -3,7 +3,7 @@ import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import { ParsedNode } from 'jest-editor-support';
-import { isJestTestFile } from './jestDetection';
+import { isTestFile } from './testDetection';
 
 // Centralized output channel for logging
 let outputChannel: vscode.OutputChannel | undefined;
@@ -225,9 +225,9 @@ export function shouldIncludeFile(filePath: string, workspaceFolderPath: string)
   const include = config.get<string[]>('include', []);
   const exclude = config.get<string[]>('exclude', []);
 
-  // If no include/exclude, check if it's a Jest test file
+  // If no include/exclude, check if it's a Jest or Vitest test file
   if (include.length === 0 && exclude.length === 0) {
-    return isJestTestFile(filePath);
+    return isTestFile(filePath);
   }
 
   // Normalize paths for pattern matching
