@@ -246,7 +246,7 @@ export class TestRunner {
     }
     
     this.terminal.show(this.config.preserveEditorFocus);
-    await vscode.commands.executeCommand('workbench.action.terminal.clear');
+    this.terminal.sendText('\x1bc'); // Clear only this terminal
     this.terminal.sendText(command);
   }
 
