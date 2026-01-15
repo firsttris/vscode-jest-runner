@@ -676,16 +676,20 @@ export class JestTestController {
       } else {
         // Multiple files or whole file - just pass file paths
         if (isVitest) {
+          const vitestConfigPath = this.jestConfig.getVitestConfigPath(allFiles[0]);
           args = [
             'run',
             ...allFiles,
             '--reporter=json',
+            ...(vitestConfigPath ? ['--config', vitestConfigPath] : []),
             ...additionalArgs,
           ];
         } else {
+          const jestConfigPath = this.jestConfig.getJestConfigPath(allFiles[0]);
           args = [
             ...allFiles,
             '--json',
+            ...(jestConfigPath ? ['-c', jestConfigPath] : []),
             ...additionalArgs,
           ];
         }

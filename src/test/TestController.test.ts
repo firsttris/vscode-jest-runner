@@ -1566,5 +1566,103 @@ describe('JestTestController', () => {
       const mockRun = mockTestController.createTestRun();
       expect(mockRun.passed).toHaveBeenCalled();
     });
+
+    it('should include Vitest config path when running multiple files', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // Create multiple test files
+      const test1 = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test1.ts'));
+      const test2 = new TestItem('test2', 'Test 2', vscode.Uri.file('/workspace/test2.ts'));
+      test1.uri = vscode.Uri.file('/workspace/test1.ts');
+      test2.uri = vscode.Uri.file('/workspace/test2.ts');
+      mockTestController.items.add(test1);
+      mockTestController.items.add(test2);
+      
+      // Mock vitest detection and config path
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
+      const mockConfig = controller['jestConfig'] as any;
+      jest.spyOn(mockConfig, 'getVitestConfigPath').mockReturnValue('/workspace/vitest.config.ts');
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [test1, test2], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', JSON.stringify({
+          success: true,
+          testResults: [
+            { assertionResults: [{ title: 'Test 1', status: 'passed', ancestorTitles: [] }] },
+            { assertionResults: [{ title: 'Test 2', status: 'passed', ancestorTitles: [] }] },
+          ],
+        }));
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      // Verify vitest command included config path
+      expect(spawn).toHaveBeenCalled();
+      const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
+      const args = spawnCall[1];
+      expect(args).toContain('--config');
+      expect(args).toContain('/workspace/vitest.config.ts');
+    });
+
+    it('should include Jest config path when running multiple files', async () => {
+      const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
+      
+      // Create multiple test files
+      const test1 = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test1.ts'));
+      const test2 = new TestItem('test2', 'Test 2', vscode.Uri.file('/workspace/test2.ts'));
+      test1.uri = vscode.Uri.file('/workspace/test1.ts');
+      test2.uri = vscode.Uri.file('/workspace/test2.ts');
+      mockTestController.items.add(test1);
+      mockTestController.items.add(test2);
+      
+      // Mock jest detection and config path
+      jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('jest');
+      const mockConfig = controller['jestConfig'] as any;
+      jest.spyOn(mockConfig, 'getJestConfigPath').mockReturnValue('/workspace/jest.config.js');
+      
+      const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
+      const mockRequest = { include: [test1, test2], exclude: [] } as any;
+      const mockToken = new CancellationToken();
+      
+      const { spawn } = require('child_process');
+      const mockProcess: MockProcess = new EventEmitter() as any;
+      mockProcess.stdout = new EventEmitter();
+      mockProcess.stderr = new EventEmitter();
+      spawn.mockReturnValue(mockProcess);
+
+      const runPromise = runProfile(mockRequest, mockToken);
+      
+      setTimeout(() => {
+        mockProcess.stdout.emit('data', JSON.stringify({
+          success: true,
+          testResults: [
+            { assertionResults: [{ title: 'Test 1', status: 'passed', ancestorTitles: [] }] },
+            { assertionResults: [{ title: 'Test 2', status: 'passed', ancestorTitles: [] }] },
+          ],
+        }));
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await runPromise;
+
+      // Verify jest command included config path
+      expect(spawn).toHaveBeenCalled();
+      const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
+      const args = spawnCall[1];
+      expect(args).toContain('-c');
+      expect(args).toContain('/workspace/jest.config.js');
+    });
   });
 });
