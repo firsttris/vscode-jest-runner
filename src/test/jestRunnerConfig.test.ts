@@ -1040,6 +1040,7 @@ describe('JestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false);
 
+      // Jest uses regex patterns - special characters like dots must be escaped
       expect(args[0]).toBe('/home/user/project/src/test\\.spec\\.ts');
       expect(args).not.toContain('-c');
       expect(args).not.toContain('-t');
@@ -1494,10 +1495,11 @@ describe('JestRunnerConfig', () => {
       expect(args[0]).toBe('run');
     });
 
-    it('should include file path', () => {
+    it('should include file path without regex escaping (vitest uses glob patterns)', () => {
       const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true);
       
-      expect(args).toContain("'/workspace/test\\.spec\\.ts'");
+      // Vitest uses glob patterns, NOT regex - file path should NOT be escaped
+      expect(args).toContain("'/workspace/test.spec.ts'");
     });
 
     it('should include test name with -t flag', () => {
@@ -1603,6 +1605,29 @@ describe('JestRunnerConfig', () => {
       const framework = jestRunnerConfig.getTestFramework('/workspace/test.spec.ts');
       
       expect(framework).toBe('vitest');
+    });
+
+    it('should detect vitest framework when only vite.config exists (vitest embedded in vite config)', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('vite.config');
+      });
+
+      const framework = jestRunnerConfig.getTestFramework('/workspace/test.spec.ts');
+      
+      expect(framework).toBe('vitest');
+    });
+
+    it('should prefer vitest.config over vite.config when both exist', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        const path = String(filePath);
+        return path.includes('vitest.config') || path.includes('vite.config');
+      });
+
+      // When findConfigPath iterates, vitest.config.* comes before vite.config.*
+      // so vitest.config should be found first
+      const configPath = jestRunnerConfig.findConfigPath('/workspace/test.spec.ts', undefined, 'vitest');
+      
+      expect(configPath).toContain('vitest.config');
     });
   });
 

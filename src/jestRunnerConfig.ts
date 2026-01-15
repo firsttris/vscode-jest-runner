@@ -225,7 +225,11 @@ export class JestRunnerConfig {
   
   public findConfigPath(targetPath?: string, targetConfigFilename?: string, framework?: TestFrameworkName): string | undefined {
     const jestConfigFiles = ['jest.config.js', 'jest.config.ts', 'jest.config.cjs', 'jest.config.mjs', 'jest.config.json'];
-    const vitestConfigFiles = ['vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts'];
+    // Vitest config can be in vitest.config.* OR vite.config.* (vitest is often embedded in vite config)
+    const vitestConfigFiles = [
+      'vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts',
+      'vite.config.js', 'vite.config.ts', 'vite.config.mjs', 'vite.config.mts', 'vite.config.cjs', 'vite.config.cts'
+    ];
     
     // Determine which config files to look for based on framework
     let configFiles: string[];
@@ -401,7 +405,8 @@ export class JestRunnerConfig {
     // Vitest uses 'run' subcommand for single runs (non-watch mode)
     args.push('run');
 
-    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+    // Vitest uses glob patterns for file filtering, NOT regex - don't escape the path
+    args.push(quoter(normalizePath(filePath)));
 
     const vitestConfigPath = this.getVitestConfigPath(filePath);
     if (vitestConfigPath) {

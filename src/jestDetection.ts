@@ -48,7 +48,11 @@ const testFrameworks: TestFramework[] = [
   },
   {
     name: 'vitest',
-    configFiles: ['vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts'],
+    // Vitest config can be in vitest.config.* OR vite.config.* (vitest is often embedded in vite config)
+    configFiles: [
+      'vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts',
+      'vite.config.js', 'vite.config.ts', 'vite.config.mjs', 'vite.config.mts', 'vite.config.cjs', 'vite.config.cts'
+    ],
     binaryName: 'vitest',
   },
 ];
