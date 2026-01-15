@@ -361,7 +361,13 @@ export class TestRunnerConfig {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str) => str;
 
-    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
+    // When withQuotes is true (terminal mode), we escape regex chars and quote
+    // When withQuotes is false (debug mode), we only normalize the path (no escaping)
+    // This prevents issues with Git Bash where backslash-escaped spaces break path parsing
+    const processedFilePath = withQuotes 
+      ? quoter(escapeRegExpForPath(normalizePath(filePath)))
+      : normalizePath(filePath);
+    args.push(processedFilePath);
 
     const jestConfigPath = this.getJestConfigPath(filePath);
     if (jestConfigPath) {
