@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { TestItem, CancellationToken, CancellationTokenSource, VscodeRange, Position } from './__mocks__/vscode';
 import { JestTestController } from '../TestController';
-import { TestRunnerConfig } from '../testRunnerConfig';
 import * as parser from '../parser';
 import * as util from '../util';
 import { EventEmitter } from 'events';
