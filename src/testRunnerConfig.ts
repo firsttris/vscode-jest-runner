@@ -484,7 +484,8 @@ export class TestRunnerConfig {
       request: 'launch',
       type: 'node',
       runtimeExecutable: 'npx',
-      cwd: this.cwd,
+      // Only set cwd if changeDirectoryToWorkspaceRoot is enabled
+      ...(this.changeDirectoryToWorkspaceRoot ? { cwd: this.cwd } : {}),
       args: isVitest ? ['--no-install', 'vitest', 'run'] : ['--no-install', 'jest', '--runInBand'],
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };

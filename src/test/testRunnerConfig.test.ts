@@ -1198,7 +1198,9 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should return default debug configuration', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(new WorkspaceConfiguration({}));
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(new WorkspaceConfiguration({
+        'jestrunner.changeDirectoryToWorkspaceRoot': true,
+      }));
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
@@ -1279,6 +1281,7 @@ describe('TestRunnerConfig', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.projectPath': './packages/app',
+          'jestrunner.changeDirectoryToWorkspaceRoot': true,
         }),
       );
 
@@ -1289,6 +1292,18 @@ describe('TestRunnerConfig', () => {
         ? path.resolve('/home/user/project/packages/app').replace(/\//g, '\\')
         : '/home/user/project/packages/app';
       expect(config.cwd).toBe(expectedPath);
+    });
+
+    it('should not set cwd when changeDirectoryToWorkspaceRoot is false', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.changeDirectoryToWorkspaceRoot': false,
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.cwd).toBeUndefined();
     });
 
     it('should prioritize Yarn PnP over custom jest command', () => {

@@ -75,6 +75,7 @@ type JestRunnerConfigProps = {
   'jestrunner.disableCodeLens'?: boolean;
   'jestrunner.testFilePattern'?: string;
   'jestrunner.codeLensSelector'?: string;
+  'jestrunner.changeDirectoryToWorkspaceRoot'?: boolean;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) {}
