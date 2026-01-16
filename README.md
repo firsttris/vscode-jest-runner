@@ -1,15 +1,17 @@
 # Jest & Vitest Runner
 
-## Visual Studio Code Marketplace
-
-[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)    
-[Open VSX Registry](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
+[![CI](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml/badge.svg)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml)
+[![VS Marketplace](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Rating](https://vsmarketplacebadges.dev/rating-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
 A lightweight VS Code extension for running and debugging Jest and Vitest tests directly in your editor. Works out-of-the-box with minimal configuration.
 
-![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
+![Extension Example](./public/screenshot.png)
 
 ## Features
 
