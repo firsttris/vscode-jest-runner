@@ -7,6 +7,7 @@ import {
   findFullTestName,
   getFileName,
   getDirName,
+  isWindows,
   pushMany,
   quote,
   unquote,
@@ -246,7 +247,10 @@ export class TestRunner {
     }
     
     this.terminal.show(this.config.preserveEditorFocus);
-    this.terminal.sendText('\x1bc'); // Clear only this terminal
+    // Clear terminal before running command (only on non-Windows as \x1bc causes issues on Windows shells)
+    if (!isWindows()) {
+      this.terminal.sendText('\x1bc');
+    }
     this.terminal.sendText(command);
   }
 
