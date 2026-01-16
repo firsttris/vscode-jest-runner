@@ -94,16 +94,17 @@ export default defineConfig({
 
 ### Running Tests with Coverage
 
-**Full Coverage Experience (Test Explorer only)**
+All coverage entry points use the same **Coverage** profile powered by VS Code's native coverage API.
+
+**Coverage via Test Explorer**
 - Click the "Coverage" button (shield icon) in the Test Explorer panel
 - Coverage results appear in VS Code's Coverage panel (View → Testing → Show Coverage)
 - Inline decorations in the editor show covered/uncovered lines
-- This uses VS Code's native coverage API for the best experience
 
-**Basic Coverage (CodeLens/Command Palette)**
-- CodeLens "Coverage" option (if enabled) runs tests with `--coverage` flag
-- Command Palette: "Jest: Run Test with Coverage"
-- Results are shown in **terminal output only** (no inline decorations or coverage panel)
+**Coverage via CodeLens / Command Palette**
+- Use the CodeLens "Coverage" action (if enabled) above a test or suite
+- Or run the Command Palette command: "Jest: Run Test with Coverage"
+- Both invoke the same Coverage profile and report results through the Coverage panel and inline decorations (not a separate terminal-only profile)
 
 ## Usage with CRA or similar abstractions
 
