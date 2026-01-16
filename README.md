@@ -93,7 +93,7 @@ export default defineConfig({
 ### Running Tests with Coverage
 
 **Full Coverage Experience (Test Explorer only)**
-- Click the "Run with Coverage" button (shield icon) in the Test Explorer panel
+- Click the "Coverage" button (shield icon) in the Test Explorer panel
 - Coverage results appear in VS Code's Coverage panel (View → Testing → Show Coverage)
 - Inline decorations in the editor show covered/uncovered lines
 - This uses VS Code's native coverage API for the best experience
