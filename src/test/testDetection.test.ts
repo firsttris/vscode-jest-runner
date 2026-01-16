@@ -14,6 +14,7 @@ import {
   getTestFrameworkForFile,
   findTestFrameworkDirectory,
   detectTestFramework,
+  viteConfigHasTestAttribute,
 } from '../testDetection';
 
 // Mock fs and vscode modules
@@ -793,6 +794,109 @@ describe('jestDetection', () => {
       // No additional calls should be made due to caching
       expect(mockedFs.existsSync).toHaveBeenCalledTimes(callCountAfterFirst);
     });
+
+    it('should return true when vite.config.ts exists with test attribute', () => {
+      mockedFs.existsSync = jest.fn((filePath: fs.PathLike) => {
+        return filePath === path.join(testDir, 'vite.config.ts');
+      });
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          test: {
+            globals: true,
+          },
+        });
+      `);
+
+      const result = isVitestUsedIn(testDir);
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when vite.config.ts exists without test attribute', () => {
+      mockedFs.existsSync = jest.fn((filePath: fs.PathLike) => {
+        return filePath === path.join(testDir, 'vite.config.ts');
+      });
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          plugins: [react()],
+        });
+      `);
+
+      const result = isVitestUsedIn(testDir);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('viteConfigHasTestAttribute', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should return true when config has test: attribute', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          test: {
+            globals: true,
+          },
+        });
+      `);
+
+      const result = viteConfigHasTestAttribute('/test/vite.config.ts');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return true when config has test = attribute', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        const config = {
+          test = {}
+        };
+      `);
+
+      const result = viteConfigHasTestAttribute('/test/vite.config.ts');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return true when config has test with space before colon', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          test : {
+            globals: true,
+          },
+        });
+      `);
+
+      const result = viteConfigHasTestAttribute('/test/vite.config.ts');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when config has no test attribute', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          plugins: [react()],
+          build: {
+            outDir: './dist',
+          },
+        });
+      `);
+
+      const result = viteConfigHasTestAttribute('/test/vite.config.ts');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when file cannot be read', () => {
+      mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
+      const result = viteConfigHasTestAttribute('/test/vite.config.ts');
+
+      expect(result).toBe(false);
+    });
   });
 
   describe('findVitestDirectory', () => {
@@ -1231,6 +1335,86 @@ describe('jestDetection', () => {
       const result = detectTestFramework(testDir);
 
       expect(result).toBe('playwright');
+    });
+
+    it('should detect Jest when vite.config exists without test attribute and jest.config exists', () => {
+      const testDir = '/test/project';
+      
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === path.join(testDir, 'vite.config.ts') ||
+               fsPath === path.join(testDir, 'jest.config.js');
+      });
+      // vite.config without test attribute
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          plugins: [react()],
+        });
+      `);
+
+      const result = detectTestFramework(testDir);
+
+      expect(result).toBe('jest');
+    });
+
+    it('should detect Vitest when vite.config exists with test attribute', () => {
+      const testDir = '/test/project';
+      
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === path.join(testDir, 'vite.config.ts');
+      });
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          test: {
+            globals: true,
+            environment: 'jsdom',
+          },
+        });
+      `);
+
+      const result = detectTestFramework(testDir);
+
+      expect(result).toBe('vitest');
+    });
+
+    it('should not detect Vitest when only vite.config exists without test attribute', () => {
+      const testDir = '/test/project';
+      
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === path.join(testDir, 'vite.config.ts');
+      });
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          plugins: [react()],
+          build: {
+            outDir: './dist',
+          },
+        });
+      `);
+
+      const result = detectTestFramework(testDir);
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should detect Vitest from vite.config.ts with test attribute even when jest.config.js also exists', () => {
+      const testDir = '/test/project';
+      
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === path.join(testDir, 'vite.config.ts') ||
+               fsPath === path.join(testDir, 'jest.config.js');
+      });
+      // vite.config WITH test attribute - vitest should win
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          test: {
+            globals: true,
+          },
+        });
+      `);
+
+      const result = detectTestFramework(testDir);
+
+      expect(result).toBe('vitest');
     });
   });
 });

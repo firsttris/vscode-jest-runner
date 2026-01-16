@@ -1615,10 +1615,32 @@ describe('TestRunnerConfig', () => {
       jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
         return String(filePath).includes('vite.config');
       });
+      jest.spyOn(fs, 'readFileSync').mockReturnValue(`
+        export default defineConfig({
+          test: {
+            globals: true,
+          },
+        });
+      `);
 
       const framework = jestRunnerConfig.getTestFramework('/workspace/test.spec.ts');
       
       expect(framework).toBe('vitest');
+    });
+
+    it('should not detect vitest framework when vite.config exists without test attribute', () => {
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath: fs.PathLike) => {
+        return String(filePath).includes('vite.config');
+      });
+      jest.spyOn(fs, 'readFileSync').mockReturnValue(`
+        export default defineConfig({
+          plugins: [react()],
+        });
+      `);
+
+      const framework = jestRunnerConfig.getTestFramework('/workspace/test.spec.ts');
+      
+      expect(framework).toBeUndefined();
     });
 
     it('should prefer vitest.config over vite.config when both exist', () => {

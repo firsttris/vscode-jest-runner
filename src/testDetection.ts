@@ -6,6 +6,27 @@ import { logError, logWarning } from './util';
 // Cache for Jest detection results
 const testDetectionCache = new Map<string, boolean>();
 
+// Vite config files that need to be checked for test attribute
+const viteConfigFiles = [
+  'vite.config.js', 'vite.config.ts', 'vite.config.mjs', 'vite.config.mts', 'vite.config.cjs', 'vite.config.cts'
+];
+
+/**
+ * Checks if a vite config file contains a test attribute (indicating Vitest usage)
+ * This is a simple heuristic check that looks for 'test:' or 'test :' pattern in the file
+ */
+export function viteConfigHasTestAttribute(configPath: string): boolean {
+  try {
+    const content = fs.readFileSync(configPath, 'utf8');
+    // Look for test attribute in the config - can be 'test:' or 'test :' (with space before colon)
+    // Also handles cases like 'test: {' or '  test:'
+    return /\btest\s*[:=]/.test(content);
+  } catch (error) {
+    logError(`Error reading vite config file: ${configPath}`, error);
+    return false;
+  }
+}
+
 // Cache for Vitest detection results
 const vitestDetectionCache = new Map<string, boolean>();
 
@@ -48,10 +69,9 @@ const testFrameworks: TestFramework[] = [
   },
   {
     name: 'vitest',
-    // Vitest config can be in vitest.config.* OR vite.config.* (vitest is often embedded in vite config)
+    // Vitest config can be in vitest.config.* - vite.config.* is checked separately for test attribute
     configFiles: [
-      'vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts',
-      'vite.config.js', 'vite.config.ts', 'vite.config.mjs', 'vite.config.mts', 'vite.config.cjs', 'vite.config.cts'
+      'vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts'
     ],
     binaryName: 'vitest',
   },
@@ -92,6 +112,17 @@ function isFrameworkUsedIn(directoryPath: string, frameworkName: string, cache: 
       if (fs.existsSync(path.join(directoryPath, configFile))) {
         cache.set(directoryPath, true);
         return true;
+      }
+    }
+
+    // Special case for Vitest: check vite.config.* files for test attribute
+    if (frameworkName === 'vitest') {
+      for (const viteConfig of viteConfigFiles) {
+        const viteConfigPath = path.join(directoryPath, viteConfig);
+        if (fs.existsSync(viteConfigPath) && viteConfigHasTestAttribute(viteConfigPath)) {
+          cache.set(directoryPath, true);
+          return true;
+        }
       }
     }
 
@@ -177,6 +208,15 @@ export function detectTestFramework(directoryPath: string): TestFrameworkName | 
       for (const configFile of framework.configFiles) {
         if (fs.existsSync(path.join(directoryPath, configFile))) {
           return framework.name as TestFrameworkName;
+        }
+      }
+      // Special case for Vitest: check vite.config.* files for test attribute
+      if (frameworkName === 'vitest') {
+        for (const viteConfig of viteConfigFiles) {
+          const viteConfigPath = path.join(directoryPath, viteConfig);
+          if (fs.existsSync(viteConfigPath) && viteConfigHasTestAttribute(viteConfigPath)) {
+            return 'vitest';
+          }
         }
       }
     }
