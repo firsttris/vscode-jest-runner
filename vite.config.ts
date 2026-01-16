@@ -17,13 +17,16 @@ export default defineConfig({
       ],
       output: {
         format: 'cjs',
+        exports: 'named',
       },
     },
     outDir: 'dist',
     sourcemap: true,
     minify: false,
     target: 'node18',
-    ssr: true,
+    commonjsOptions: {
+      esmExternals: true,
+    },
   },
   resolve: {
     extensions: ['.ts', '.js'],
