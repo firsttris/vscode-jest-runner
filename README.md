@@ -1,4 +1,4 @@
-# vscode-jest-runner
+# Jest & Vitest Runner
 
 ## Visual Studio Code Marketplace
 
@@ -7,7 +7,7 @@
 
 ## Overview
 
-**vscode-jest-runner** is a lightweight extension for running and debugging Jest and Vitest tests directly from VS Code. It works out-of-the-box with minimal configuration.
+A lightweight VS Code extension for running and debugging Jest and Vitest tests directly in your editor. Works out-of-the-box with minimal configuration.
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
@@ -138,7 +138,7 @@ For projects requiring `--experimental-vm-modules`:
 
 ## Extension Settings
 
-Customize Jest Runner for your project:
+Customize the test runner for your project:
 
 | Setting                                 | Description                                                                                                                                                                                           |
 |----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
