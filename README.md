@@ -7,22 +7,11 @@
 
 ## Overview
 
-**vscode-jest-runner** is a lightweight extension for running and debugging individual tests or test suites with minimal configuration. It provides a simple, straightforward testing experience that works out-of-the-box for most projects.
-
-**Key Advantages:**
-- **Zero configuration** - Works immediately with standard Jest/Vitest setups
-- **Lightweight** - Minimal resource usage, runs only when you need it
-- **Fast test execution** - Run specific tests on-demand without overhead
-- **Simple debugging** - One-click debug setup for most projects
-- **Framework flexibility** - Supports Jest, Vitest
-
-Perfect for developers who want quick, on-demand test execution without background processes or complex configuration.
+**vscode-jest-runner** is a lightweight extension for running and debugging Jest and Vitest tests directly from VS Code. It works out-of-the-box with minimal configuration.
 
 ![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
 
 ## Features
-
-Jest/Vitest Runner provides a powerful, flexible way to run and debug Jest and Vitest tests directly from VS Code.
 
 ### 🚀 Run & Debug Experience
 - **Run individual tests** or entire test suites with a single click
@@ -39,33 +28,19 @@ Jest/Vitest Runner provides a powerful, flexible way to run and debug Jest and V
 - **Keyboard shortcuts** for quick test execution
 
 ### 🔍 Smart Test Detection
-- **Automatic framework detection** - distinguishes between Jest, Vitest
-- **Seamless switching** - automatically uses the correct test runner based on your project configuration
+- **Automatic framework detection** - distinguishes between Jest and Vitest
 - **Include/exclude patterns** for fine-grained control over which tests appear
 - **Configurable test file patterns** to match your project conventions
 
 ### 💼 Project Flexibility
 - **Monorepo support** for yarn & VS Code workspaces
-- **Multiple configurations** with dynamic resolution based on file paths
+- **Multiple configurations** with glob-based config resolution
 - **Yarn 2 Plug'n'Play** compatibility
 - **Create React App** and similar abstraction layers
-- **Vite projects** with automatic Vitest detection
-- **Custom commands** for specialized test environments
-
-### ⚙️ Highly Configurable
-- Choose between CodeLens, Test Explorer, or both
-- Customize test commands with additional CLI options
-- Configure specialized debug configurations
 
 ## Vitest Support
 
-The extension automatically detects whether your project uses Jest or Vitest and uses the appropriate test runner. Detection is based on:
-
-1. **Config files**: `vitest.config.ts`, `vitest.config.js`, `vitest.config.mjs`, etc.
-2. **Package.json**: `vitest` in dependencies/devDependencies
-3. **Binary**: `node_modules/.bin/vitest`
-
-### Vitest-specific settings
+The extension automatically detects Vitest based on config files (`vitest.config.*`), package.json dependencies, or the vitest binary. In mixed monorepos, each package uses its detected framework.
 
 ```json
 {
@@ -75,42 +50,43 @@ The extension automatically detects whether your project uses Jest or Vitest and
 }
 ```
 
-### Mixed projects (Jest + Vitest)
+## Common Configurations
 
-In monorepos where some packages use Jest and others use Vitest, the extension automatically detects which framework to use based on the nearest configuration. Tests in each package will run with their respective test runner.
+### Create React App (CRA)
 
-## Usage with CRA or similar abstractions
-
-add the following command to settings:
 ```json
 "jestrunner.jestCommand": "npm run test --",
 "jestrunner.debugOptions": {
     "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/react-scripts",
-    "runtimeArgs": [
-      "test",
-      "${fileBasename}",
-      "--runInBand",
-      "--no-cache",
-      "--watchAll=false",
-      "--color"
-    ]
-},
+    "runtimeArgs": ["test", "${fileBasename}", "--runInBand", "--no-cache", "--watchAll=false"]
+}
 ```
 
-## Usage with nvm
+### nvm
 
-add the following command to settings to help jestrunner find your node:
 ```json
 "jestrunner.jestCommand": "nvm use && npm run test --",
 "jestrunner.debugOptions": {
-    runtimeExecutable": "/PATH/TO/YOUR/node"
-},
+    "runtimeExecutable": "/PATH/TO/YOUR/node"
+}
 ```
+
+### ESM (ECMAScript Modules)
+
+For projects requiring `--experimental-vm-modules`:
+
+```json
+"jestrunner.jestCommand": "npx cross-env NODE_OPTIONS=\"--experimental-vm-modules\" node 'node_modules/jest/bin/jest.js'",
+"jestrunner.debugOptions": {
+  "runtimeArgs": ["--experimental-vm-modules"]
+}
+```
+
+> **Note:** `jestrunner.runOptions` passes arguments to Jest, not Node. Use `jestrunner.jestCommand` with `NODE_OPTIONS` for Node flags.
 
 ## Extension Settings
 
-Jest Runner will work out of the box, with a valid Jest config.
-If you have a custom setup use the following options to customize Jest Runner:
+Customize Jest Runner for your project:
 
 | Setting                                 | Description                                                                                                                                                                                           |
 |----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
