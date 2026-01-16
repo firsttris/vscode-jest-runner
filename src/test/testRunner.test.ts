@@ -290,9 +290,9 @@ describe('TestRunner', () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       
       const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
-      expect(calls.length).toBeGreaterThan(2);
-      expect(calls[1][0]).toContain('cd');
-      expect(calls[1][0]).toContain('/different/path');
+      expect(calls.length).toBe(2);
+      expect(calls[0][0]).toContain('cd');
+      expect(calls[0][0]).toContain('/different/path');
     });
 
     it('should not change directory when option is disabled', async () => {
@@ -305,8 +305,8 @@ describe('TestRunner', () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       
       const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
-      expect(calls.length).toBe(2);
-      expect(calls[1][0]).not.toContain('cd');
+      expect(calls.length).toBe(1);
+      expect(calls[0][0]).not.toContain('cd');
     });
   });
 
