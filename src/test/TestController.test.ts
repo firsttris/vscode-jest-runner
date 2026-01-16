@@ -11,7 +11,6 @@ interface MockProcess extends EventEmitter {
   kill: jest.Mock;
 }
 
-// Mock child_process
 jest.mock('child_process');
 
 describe('JestTestController', () => {
@@ -20,10 +19,8 @@ describe('JestTestController', () => {
   let mockWorkspaceFolder: vscode.WorkspaceFolder;
 
   beforeEach(() => {
-    // Reset mocks
     jest.clearAllMocks();
 
-    // Setup mock context
     mockContext = {
       subscriptions: [],
       extensionPath: '/test/path',
@@ -44,14 +41,12 @@ describe('JestTestController', () => {
       languageModelAccessInformation: {} as any,
     };
 
-    // Setup mock workspace folder
     mockWorkspaceFolder = {
       uri: vscode.Uri.file('/workspace'),
       name: 'test-workspace',
       index: 0,
     };
 
-    // Mock workspace configuration
     jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue({
       get: jest.fn((key: string, defaultValue?: any) => {
         if (key === 'jestrunner.testFilePattern') {
@@ -67,13 +62,11 @@ describe('JestTestController', () => {
       update: jest.fn(),
     } as any);
 
-    // Mock workspace folders
     Object.defineProperty(vscode.workspace, 'workspaceFolders', {
       value: [mockWorkspaceFolder],
       configurable: true,
     });
 
-    // Mock workspace methods
     jest.spyOn(vscode.workspace, 'findFiles').mockResolvedValue([
       vscode.Uri.file('/workspace/test1.test.ts'),
       vscode.Uri.file('/workspace/test2.spec.ts'),
@@ -81,7 +74,6 @@ describe('JestTestController', () => {
 
     jest.spyOn(vscode.workspace, 'getWorkspaceFolder').mockReturnValue(mockWorkspaceFolder);
 
-    // Mock file system watcher
     const mockWatcher = {
       onDidChange: jest.fn().mockReturnValue({ dispose: jest.fn() }),
       onDidCreate: jest.fn().mockReturnValue({ dispose: jest.fn() }),
@@ -90,7 +82,6 @@ describe('JestTestController', () => {
     };
     jest.spyOn(vscode.workspace, 'createFileSystemWatcher').mockReturnValue(mockWatcher as any);
 
-    // Mock parser
     jest.spyOn(parser, 'parse').mockReturnValue({
       root: {
         children: [
@@ -113,7 +104,6 @@ describe('JestTestController', () => {
       },
     } as any);
 
-    // Mock util functions
     jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(true);
     jest.spyOn(util, 'updateTestNameIfUsingProperties').mockImplementation((name) => name);
     jest.spyOn(util, 'escapeRegExp').mockImplementation((str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
@@ -122,10 +112,8 @@ describe('JestTestController', () => {
       return arr.length;
     });
 
-    // Mock debug
     jest.spyOn(vscode.debug, 'startDebugging').mockResolvedValue(true);
 
-    // Create controller
     controller = new JestTestController(mockContext);
   });
 
@@ -143,7 +131,6 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       expect(mockTestController.createRunProfile).toHaveBeenCalledTimes(4);
       
-      // Check Run profile
       expect(mockTestController.createRunProfile).toHaveBeenCalledWith(
         'Run',
         vscode.TestRunProfileKind.Run,
@@ -151,7 +138,6 @@ describe('JestTestController', () => {
         true,
       );
 
-      // Check Debug profile
       expect(mockTestController.createRunProfile).toHaveBeenCalledWith(
         'Debug',
         vscode.TestRunProfileKind.Debug,
@@ -159,7 +145,6 @@ describe('JestTestController', () => {
         true,
       );
 
-      // Check Coverage profile
       expect(mockTestController.createRunProfile).toHaveBeenCalledWith(
         'Coverage',
         vscode.TestRunProfileKind.Coverage,
@@ -167,7 +152,6 @@ describe('JestTestController', () => {
         true,
       );
 
-      // Check Update Snapshots profile
       expect(mockTestController.createRunProfile).toHaveBeenCalledWith(
         'Update Snapshots',
         vscode.TestRunProfileKind.Run,
@@ -189,7 +173,6 @@ describe('JestTestController', () => {
 
   describe('test discovery', () => {
     it('should find test files using configured pattern', async () => {
-      // The constructor already triggers discovery
       expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
         expect.any(vscode.RelativePattern),
         '**/node_modules/**'
@@ -199,7 +182,6 @@ describe('JestTestController', () => {
     it('should create test items for discovered files', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Should create test items for files
       expect(mockTestController.createTestItem).toHaveBeenCalled();
     });
 
@@ -208,7 +190,6 @@ describe('JestTestController', () => {
     });
 
     it('should handle parser errors gracefully', async () => {
-      // Mock logError from util
       const { logError } = require('../util');
       const logErrorSpy = jest.spyOn({ logError }, 'logError').mockImplementation();
       
@@ -217,20 +198,14 @@ describe('JestTestController', () => {
         throw parseError;
       });
       
-      // Ensure at least one file is found so parser is called
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         vscode.Uri.file('/workspace/error.test.ts'),
       ]);
 
-      // Create new controller which will attempt to discover tests
       const newController = new JestTestController(mockContext);
       
-      // Wait for async discovery
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      // The error should be logged when parse throws
-      // Note: Due to mocking, we can't easily verify the internal call
-      // but we ensure the code path doesn't crash
       expect(true).toBe(true); // Test passes if no crash
       
       newController.dispose();
@@ -247,7 +222,6 @@ describe('JestTestController', () => {
       const newController = new JestTestController(mockContext);
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[1].value;
       
-      // Should not throw and should still create file items
       expect(mockTestController.items.size).toBeGreaterThanOrEqual(0);
       
       newController.dispose();
@@ -256,7 +230,6 @@ describe('JestTestController', () => {
     it('should create nested test items for describe blocks', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Should create items for describe blocks and tests
       const createCalls = (mockTestController.createTestItem as jest.Mock).mock.calls;
       expect(createCalls.length).toBeGreaterThan(0);
     });
@@ -265,7 +238,6 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const createdItems = (mockTestController.createTestItem as jest.Mock).mock.results.map(r => r.value);
       
-      // Check that items have tags
       createdItems.forEach((item: any) => {
         expect(item.tags).toBeDefined();
       });
@@ -275,7 +247,6 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const createdItems = (mockTestController.createTestItem as jest.Mock).mock.results.map(r => r.value);
       
-      // At least some items should have ranges
       const itemsWithRanges = createdItems.filter((item: any) => item.range);
       expect(itemsWithRanges.length).toBeGreaterThanOrEqual(0);
     });
@@ -300,7 +271,6 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
       
-      // Mock spawn to prevent actual execution
       const { spawn } = require('child_process');
       const mockProcess: MockProcess = new EventEmitter() as any;
       mockProcess.stdout = new EventEmitter();
@@ -308,10 +278,8 @@ describe('JestTestController', () => {
       (mockProcess as any).kill = jest.fn();
       spawn.mockReturnValue(mockProcess);
 
-      // Execute run handler
       const runPromise = runProfile(mockRequest, mockToken);
       
-      // Simulate successful completion
       setTimeout(() => {
         mockProcess.stdout.emit('data', JSON.stringify({
           numFailedTestSuites: 0,
@@ -336,7 +304,6 @@ describe('JestTestController', () => {
     it('should mark tests as started', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Add test item to controller
       mockTestController.items.add(mockTestItem);
       
       const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
@@ -414,7 +381,6 @@ describe('JestTestController', () => {
       const tokenSource = new CancellationTokenSource();
       const runPromise = runProfile(mockRequest, tokenSource.token);
       
-      // Cancel the token
       setTimeout(() => {
         tokenSource.cancel();
         mockProcess.emit('close', 0);
@@ -441,7 +407,6 @@ describe('JestTestController', () => {
 
       const runPromise = runProfile(mockRequest, mockToken);
       
-      // Emit data that exceeds max buffer (50MB default)
       const largeOutput = 'x'.repeat(51 * 1024 * 1024);
       setTimeout(() => {
         mockProcess.stdout.emit('data', largeOutput);
@@ -571,7 +536,6 @@ describe('JestTestController', () => {
 
       await runPromise;
 
-      // Both tests should be processed
       expect(mockRun.passed).toHaveBeenCalled();
       expect(mockRun.failed).toHaveBeenCalled();
     });
@@ -580,7 +544,6 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       mockTestController.items.add(mockTestItem);
       
-      // Get coverage profile (index 2)
       const coverageProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[2][2];
       
       const { spawn } = require('child_process');
@@ -601,7 +564,6 @@ describe('JestTestController', () => {
 
       await runPromise;
 
-      // Check that --coverage was passed
       expect(spawn).toHaveBeenCalled();
       const spawnArgs = spawn.mock.calls[0][1];
       expect(spawnArgs).toContain('--coverage');
@@ -611,7 +573,6 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       mockTestController.items.add(mockTestItem);
       
-      // Get update snapshots profile (index 3)
       const snapshotProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[3][2];
       
       const { spawn } = require('child_process');
@@ -652,7 +613,6 @@ describe('JestTestController', () => {
     it('should start debugging for a test', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Get debug profile (index 1)
       const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
       
       await debugProfile(mockRequest, mockToken);
@@ -690,7 +650,6 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
       
-      // Create a suite with children
       const suite = new TestItem('suite1', 'Suite', vscode.Uri.file('/workspace/test.ts'));
       const childTest = new TestItem('test1', 'Test', vscode.Uri.file('/workspace/test.ts'));
       suite.children.add(childTest);
@@ -699,7 +658,6 @@ describe('JestTestController', () => {
       
       await debugProfile(request, mockToken);
       
-      // Should start debugging (for the child test)
       expect(vscode.debug.startDebugging).toHaveBeenCalled();
     });
 
@@ -712,7 +670,6 @@ describe('JestTestController', () => {
       
       await debugProfile(mockRequest, tokenSource.token);
       
-      // Should not start debugging if already cancelled
       expect(vscode.debug.startDebugging).not.toHaveBeenCalled();
     });
 
@@ -720,18 +677,15 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[1][2];
       
-      // Create a Vitest test item
       const vitestTestItem = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test.spec.ts'));
       const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
       
-      // Mock getTestFramework to return 'vitest'
       const mockConfig = (controller as any).jestConfig;
       jest.spyOn(mockConfig, 'getTestFramework').mockReturnValue('vitest');
       jest.spyOn(mockConfig, 'buildTestArgs').mockReturnValue(['run', '/workspace/test.spec.ts', '-c', '/workspace/vitest.config.ts']);
       
       await debugProfile(vitestRequest, mockToken);
       
-      // Should call buildTestArgs (not buildJestArgs)
       expect(mockConfig.buildTestArgs).toHaveBeenCalledWith(
         '/workspace/test.spec.ts',
         'Test 1',
@@ -757,7 +711,6 @@ describe('JestTestController', () => {
       
       await debugProfile(vitestRequest, mockToken);
       
-      // Should pass filePath to getDebugConfiguration
       expect(mockConfig.getDebugConfiguration).toHaveBeenCalledWith('/workspace/test.spec.ts');
     });
 
@@ -792,7 +745,6 @@ describe('JestTestController', () => {
       ];
       const config = debugCall[1];
       
-      // Config should be included in args
       expect(config.args).toContain('-c');
       expect(config.args).toContain('/workspace/vitest.config.ts');
     });
@@ -805,14 +757,11 @@ describe('JestTestController', () => {
       
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const testFilePath = '/workspace/test.ts';
-      // Use the file path as the ID to match how TestController creates items
       const testItem = new TestItem(testFilePath, 'test.ts', vscode.Uri.file(testFilePath));
       mockTestController.items.add(testItem);
       
-      // Clear previous calls
       (parser.parse as jest.Mock).mockClear();
       
-      // Trigger change
       changeCallback({ fsPath: testFilePath });
       
       expect(parser.parse).toHaveBeenCalledWith(testFilePath);
@@ -825,10 +774,8 @@ describe('JestTestController', () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const previousItemCount = mockTestController.items.size;
       
-      // Trigger create
       createCallback(vscode.Uri.file('/workspace/new-test.ts'));
       
-      // Should have added new item
       expect(mockTestController.items.size).toBeGreaterThanOrEqual(previousItemCount);
     });
 
@@ -838,11 +785,9 @@ describe('JestTestController', () => {
       
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       const testFilePath = '/workspace/test.ts';
-      // Use the file path as the ID
       const testItem = new TestItem(testFilePath, 'test.ts', vscode.Uri.file(testFilePath));
       mockTestController.items.add(testItem);
       
-      // Trigger delete
       deleteCallback(vscode.Uri.file(testFilePath));
       
       expect(mockTestController.items.get(testFilePath)).toBeUndefined();
@@ -854,10 +799,8 @@ describe('JestTestController', () => {
       
       (parser.parse as jest.Mock).mockClear();
       
-      // Trigger create for file outside workspace
       createCallback(vscode.Uri.file('/other/path/test.ts'));
       
-      // Should not parse files outside workspace
       expect(parser.parse).not.toHaveBeenCalled();
     });
   });
@@ -991,15 +934,12 @@ describe('JestTestController', () => {
       const runPromise = runProfile(mockRequest, mockToken);
       
       setTimeout(() => {
-        // Send invalid JSON
         mockProcess.stdout.emit('data', 'PASS test.ts\n  ✓ Test 1');
         mockProcess.emit('close', 0);
       }, 10);
 
       await runPromise;
 
-      // With OutputChannel logging, the warning is logged internally
-      // Just verify the test doesn't crash
       expect(true).toBe(true);
     });
 
@@ -1075,7 +1015,6 @@ describe('JestTestController', () => {
     it('should match it.each tests with $variable template', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Create a test item with template variable (like it.each uses)
       const testItem = new TestItem('test1', '$description', vscode.Uri.file('/workspace/test.ts'));
       testItem.uri = vscode.Uri.file('/workspace/test.ts');
       mockTestController.items.add(testItem);
@@ -1093,7 +1032,6 @@ describe('JestTestController', () => {
       const runPromise = runProfile(mockRequest, mockToken);
       
       setTimeout(() => {
-        // Jest returns expanded test names from it.each
         const jestOutput = JSON.stringify({
           success: true,
           testResults: [{
@@ -1198,7 +1136,6 @@ describe('JestTestController', () => {
     it('should handle %s and %p template variables', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // it.each with printf-style placeholders
       const testItem = new TestItem('test1', 'should handle %s with %p', vscode.Uri.file('/workspace/test.ts'));
       testItem.uri = vscode.Uri.file('/workspace/test.ts');
       mockTestController.items.add(testItem);
@@ -1238,7 +1175,6 @@ describe('JestTestController', () => {
     it('should handle nested describe with it.each', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Nested structure: describe > it.each
       const fileItem = new TestItem('/workspace/test.ts', 'test.ts', vscode.Uri.file('/workspace/test.ts'));
       fileItem.uri = vscode.Uri.file('/workspace/test.ts');
       
@@ -1359,12 +1295,10 @@ describe('JestTestController', () => {
       await runPromise;
 
       const mockRun = mockTestController.createTestRun();
-      // Only test1 should be run
       expect(mockRun.started).toHaveBeenCalledTimes(1);
     });
 
     it('should handle test names with special characters', () => {
-      // Setup parse to return special characters test
       (parser.parse as jest.Mock).mockReturnValue({
         root: {
           children: [
@@ -1379,21 +1313,16 @@ describe('JestTestController', () => {
         },
       } as any);
       
-      // Ensure findFiles returns a test file
       (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
         vscode.Uri.file('/workspace/special.test.ts'),
       ]);
 
-      // Create a new controller to trigger parsing with special characters
       const newController = new JestTestController(mockContext);
       
-      // Wait for async discovery to complete
       return new Promise<void>((resolve) => {
         setTimeout(() => {
           const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[1].value;
           
-          // Should create test items without errors
-          // The controller should have called createTestItem for the file and tests
           expect(mockTestController.createTestItem).toHaveBeenCalled();
           
           newController.dispose();
@@ -1417,7 +1346,6 @@ describe('JestTestController', () => {
       
       const newController = new JestTestController(mockContext);
       
-      // Should not throw
       expect(() => newController).not.toThrow();
       
       newController.dispose();
@@ -1460,12 +1388,10 @@ describe('JestTestController', () => {
     it('should detect and use vitest command for vitest projects', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Create test item with vitest project
       const test1 = new TestItem('test1', 'Vitest Test', vscode.Uri.file('/workspace/vitest-project/test.ts'));
       test1.uri = vscode.Uri.file('/workspace/vitest-project/test.ts');
       mockTestController.items.add(test1);
       
-      // Mock vitest detection
       jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
       
       const runProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[0][2];
@@ -1498,10 +1424,8 @@ describe('JestTestController', () => {
 
       await runPromise;
 
-      // Verify vitest command was used
       expect(spawn).toHaveBeenCalled();
       const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
-      // The command should contain vitest-related args
       expect(spawnCall[1].some((arg: string) => arg.includes('run') || arg.includes('reporter'))).toBe(true);
     });
 
@@ -1529,7 +1453,6 @@ describe('JestTestController', () => {
 
       const runPromise = runProfile(mockRequest, mockToken);
       
-      // Vitest JSON output format
       const vitestOutput = JSON.stringify({
         numFailedTestSuites: 0,
         numFailedTests: 1,
@@ -1580,7 +1503,6 @@ describe('JestTestController', () => {
       
       jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
       
-      // Get the coverage profile (third profile created)
       const coverageProfile = (mockTestController.createRunProfile as jest.Mock).mock.calls[2][2];
       const mockRequest = { include: [test1], exclude: [] } as any;
       const mockToken = new CancellationToken();
@@ -1603,7 +1525,6 @@ describe('JestTestController', () => {
 
       await runPromise;
 
-      // Verify coverage flag was passed
       expect(spawn).toHaveBeenCalled();
       const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
       expect(spawnCall[1].some((arg: string) => arg.includes('coverage'))).toBe(true);
@@ -1630,7 +1551,6 @@ describe('JestTestController', () => {
 
       const runPromise = runProfile(mockRequest, mockToken);
       
-      // Non-JSON vitest output (text mode)
       setTimeout(() => {
         mockProcess.stdout.emit('data', `
  ✓ should pass (5ms)
@@ -1650,7 +1570,6 @@ describe('JestTestController', () => {
     it('should include Vitest config path when running multiple files', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Create multiple test files
       const test1 = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test1.ts'));
       const test2 = new TestItem('test2', 'Test 2', vscode.Uri.file('/workspace/test2.ts'));
       test1.uri = vscode.Uri.file('/workspace/test1.ts');
@@ -1658,7 +1577,6 @@ describe('JestTestController', () => {
       mockTestController.items.add(test1);
       mockTestController.items.add(test2);
       
-      // Mock vitest detection and config path
       jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('vitest');
       const mockConfig = controller['jestConfig'] as any;
       jest.spyOn(mockConfig, 'getVitestConfigPath').mockReturnValue('/workspace/vitest.config.ts');
@@ -1688,7 +1606,6 @@ describe('JestTestController', () => {
 
       await runPromise;
 
-      // Verify vitest command included config path
       expect(spawn).toHaveBeenCalled();
       const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
       const args = spawnCall[1];
@@ -1699,7 +1616,6 @@ describe('JestTestController', () => {
     it('should include Jest config path when running multiple files', async () => {
       const mockTestController = (vscode.tests.createTestController as jest.Mock).mock.results[0].value;
       
-      // Create multiple test files
       const test1 = new TestItem('test1', 'Test 1', vscode.Uri.file('/workspace/test1.ts'));
       const test2 = new TestItem('test2', 'Test 2', vscode.Uri.file('/workspace/test2.ts'));
       test1.uri = vscode.Uri.file('/workspace/test1.ts');
@@ -1707,7 +1623,6 @@ describe('JestTestController', () => {
       mockTestController.items.add(test1);
       mockTestController.items.add(test2);
       
-      // Mock jest detection and config path
       jest.spyOn(require('../testDetection'), 'getTestFrameworkForFile').mockReturnValue('jest');
       const mockConfig = controller['jestConfig'] as any;
       jest.spyOn(mockConfig, 'getJestConfigPath').mockReturnValue('/workspace/jest.config.js');
@@ -1737,7 +1652,6 @@ describe('JestTestController', () => {
 
       await runPromise;
 
-      // Verify jest command included config path
       expect(spawn).toHaveBeenCalled();
       const spawnCall = spawn.mock.calls[spawn.mock.calls.length - 1];
       const args = spawnCall[1];

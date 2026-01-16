@@ -300,7 +300,6 @@ describe('TestRunnerConfig', () => {
             '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
             true,
           ],
-          // windows
           [
             'windows',
             'matched glob specifies an absolute path (with \\)',
@@ -446,13 +445,11 @@ describe('TestRunnerConfig', () => {
                 .spyOn(vscode.workspace, 'getWorkspaceFolder')
                 .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
               jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
-                // Check both normalized and non-normalized paths
                 if (p === targetPath || normalizePath(p as string) === normalizePath(targetPath)) {
                   return { isFile: () => true, isDirectory: () => false };
                 }
                 return { isFile: () => false, isDirectory: () => true };
               });
-              // Return true if getJestConfigPath is checking the expected path (check both normalized and non-normalized)
               jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
                 return filePath === expectedPath || normalizePath(filePath as string) === normalizePath(expectedPath);
               });
@@ -513,7 +510,6 @@ describe('TestRunnerConfig', () => {
             '/home/user/workspace/jest.config.mjs',
             '/home/user/workspace/jest.config.mjs',
           ],
-          // windows
           [
             'windows',
             'projectPath is relative',
@@ -620,7 +616,6 @@ describe('TestRunnerConfig', () => {
           '/home/user/workspace/anotherProject/src/index.unit.spec.js',
           '',
         ],
-        // windows
         [
           'windows',
           'without project path',
@@ -670,13 +665,11 @@ describe('TestRunnerConfig', () => {
               .mockReturnValue(new WorkspaceFolder(new Uri(workspacePath) as any) as any);
 
             jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
-              // Check both normalized and non-normalized paths
               if (p === targetPath || normalizePath(p as string) === normalizePath(targetPath)) {
                 return { isFile: () => true, isDirectory: () => false };
               }
               return { isFile: () => false, isDirectory: () => true };
             });
-            // Return true if getJestConfigPath is checking the expected path (check both normalized and non-normalized)
             jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
               return filePath === expectedPath || normalizePath(filePath as string) === normalizePath(expectedPath);
             });
@@ -748,7 +741,6 @@ describe('TestRunnerConfig', () => {
         '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
         undefined,
       ],
-      // windows
       [
         'windows',
         'jest dep installed in same path as the opened file',
@@ -903,7 +895,6 @@ describe('TestRunnerConfig', () => {
         undefined,
         undefined,
       ],
-      // windows
       [
         'windows',
         'jest config located in same path as the opened file',
@@ -1040,8 +1031,6 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false);
 
-      // When withQuotes is false (debug mode), file paths are not escaped
-      // to prevent issues with Git Bash terminal where backslash-escaped spaces break path parsing
       expect(args[0]).toBe('/home/user/project/src/test.spec.ts');
       expect(args).not.toContain('-c');
       expect(args).not.toContain('-t');
@@ -1056,7 +1045,6 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, 'my test name', false);
 
-      // When withQuotes is false (debug mode), file paths are not escaped
       expect(args[0]).toBe('/home/user/project/src/test.spec.ts');
       expect(args).toContain('-t');
       expect(args).toContain('my test name');
@@ -1072,8 +1060,6 @@ describe('TestRunnerConfig', () => {
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, "test's name", true);
 
       const testNameIndex = args.indexOf('-t') + 1;
-      // On Windows, we use double quotes and don't escape single quotes
-      // On Unix, we use single quotes and escape them
       if (isWindows()) {
         expect(args[testNameIndex]).toBe('"test\'s name"');
       } else {
@@ -1117,7 +1103,6 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, true);
 
-      // File path should be quoted
       expect(args[0]).toMatch(/^["'].*["']$/);
     });
 
@@ -1158,7 +1143,6 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false, ['--verbose', '--coverage']);
 
-      // Count occurrences of --verbose
       const verboseCount = args.filter((arg) => arg === '--verbose').length;
       expect(verboseCount).toBe(1);
       expect(args).toContain('--bail');
@@ -1228,7 +1212,6 @@ describe('TestRunnerConfig', () => {
 
       expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
       expect(config.args).toEqual(['jest']);
-      // runtimeExecutable must be removed when using program to avoid conflicts
       expect(config.runtimeExecutable).toBeUndefined();
     });
 
@@ -1243,7 +1226,6 @@ describe('TestRunnerConfig', () => {
 
       expect(config.program).toBe('node');
       expect(config.args).toEqual(['./node_modules/jest/bin/jest.js']);
-      // runtimeExecutable must be removed when using program to avoid conflicts
       expect(config.runtimeExecutable).toBeUndefined();
     });
 
@@ -1287,7 +1269,6 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      // On Windows, the path gets converted to Windows-style
       const expectedPath = isWindows()
         ? path.resolve('/home/user/project/packages/app').replace(/\//g, '\\')
         : '/home/user/project/packages/app';
@@ -1317,7 +1298,6 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      // Should use Yarn PnP config, not custom command
       expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
       expect(config.args).toEqual(['jest']);
     });
@@ -1368,7 +1348,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // disableCodeLens: true means CodeLens should be disabled (return false)
       expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
     });
 
@@ -1379,7 +1358,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // disableCodeLens: false means CodeLens should be enabled (return true)
       expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
     });
 
@@ -1391,7 +1369,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // Old setting takes precedence
       expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
     });
   });
@@ -1428,7 +1405,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // Old setting should be used
       expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.spec.ts');
     });
 
@@ -1440,7 +1416,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // Old setting takes precedence when it differs from default
       expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.spec.ts');
     });
 
@@ -1452,7 +1427,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // When codeLensSelector is at default, use testFilePattern
       expect(jestRunnerConfig.getTestFilePattern()).toBe('**/*.test.js');
     });
   });
@@ -1515,7 +1489,6 @@ describe('TestRunnerConfig', () => {
     it('should include file path without regex escaping (vitest uses glob patterns)', () => {
       const args = jestRunnerConfig.buildVitestArgs('/workspace/test.spec.ts', undefined, true);
       
-      // Vitest uses glob patterns, NOT regex - file path should NOT be escaped
       const expectedPath = isWindows() ? '"/workspace/test.spec.ts"' : "'/workspace/test.spec.ts'";
       expect(args).toContain(expectedPath);
     });
@@ -1664,8 +1637,6 @@ describe('TestRunnerConfig', () => {
         return path.includes('vitest.config') || path.includes('vite.config');
       });
 
-      // When findConfigPath iterates, vitest.config.* comes before vite.config.*
-      // so vitest.config should be found first
       const configPath = jestRunnerConfig.findConfigPath('/workspace/test.spec.ts', undefined, 'vitest');
       
       expect(configPath).toContain('vitest.config');
@@ -1729,7 +1700,6 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildTestArgs('/workspace/test.spec.ts', 'my test', true);
       
-      // Vitest args should include 'run' subcommand
       expect(args[0]).toBe('run');
     });
 
@@ -1740,7 +1710,6 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildTestArgs('/workspace/test.spec.ts', 'my test', true);
       
-      // Jest args should not include 'run' subcommand
       expect(args[0]).not.toBe('run');
     });
   });

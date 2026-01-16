@@ -17,8 +17,6 @@ jest.mock('../util', () => ({
   logError: jest.fn(),
 }));
 
-// Helper to normalize paths for cross-platform comparison
-// Converts forward slashes to platform-specific separators
 const normalizePath = (p: string): string => p.split('/').join(path.sep);
 
 describe('CoverageProvider', () => {
@@ -313,7 +311,6 @@ describe('CoverageProvider', () => {
 
       const result = await provider.loadDetailedCoverage(fileCoverage, token as any);
 
-      // Should have statement coverage entries
       const statements = result.filter((d) => d instanceof vscode.StatementCoverage);
       expect(statements.length).toBeGreaterThanOrEqual(2);
     });
@@ -358,7 +355,6 @@ describe('CoverageProvider', () => {
 
       const result = await provider.loadDetailedCoverage(fileCoverage, token as any);
 
-      // Branch coverage is added as StatementCoverage with branches
       const statementsWithBranches = result.filter(
         (d) => d instanceof vscode.StatementCoverage && (d as any).branches?.length > 0
       );
@@ -367,7 +363,6 @@ describe('CoverageProvider', () => {
   });
 });
 
-// Helper functions
 
 function createMockFileCoverageData(filePath: string): FileCoverageData {
   return {

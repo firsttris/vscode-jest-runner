@@ -1,4 +1,3 @@
-// __mocks__/vscode.ts
 
 class Uri {
   constructor(readonly fsPath: string) {}

@@ -24,7 +24,6 @@ const its = {
   linux: ['linux', 'darwin'].includes(process.platform) ? it : it.skip,
 };
 
-// Helper function to create test nodes with required properties
 function createTestNode(data: {
   type: string;
   name: string;
@@ -277,7 +276,6 @@ describe('resolveConfigPathOrMapping', () => {
       '**/*.test.ts': 'C:\\\\path\\\\to\\\\jest.config.js',
     };
     const result = resolveConfigPathOrMapping(mapping, '/path/to/my.test.ts');
-    // normalizePath is called, so on non-Windows it stays as is, on Windows backslashes are converted
     expect(result).toBeTruthy();
     expect(result).toContain('jest.config.js');
   });
@@ -343,10 +341,6 @@ describe('searchPathToParent', () => {
     ],
   ];
   describe.each(scenarios)('on %s', (os, fileAsStartPath, folderAsStartPath, workspacePath, traversedPaths) => {
-    // const fileAsStartPath = '/home/user/workspace/package/src/file.ts';
-    // const folderAsStartPath = '/home/user/workspace/package/src';
-    // const workspacePath = '/home/user/workspace';
-    // const traversedPaths = ['/home/user/workspace/package/src', '/home/user/workspace/package', '/home/user/workspace'];
     beforeEach(() => {
       jest.spyOn(fs, 'statSync').mockImplementation((path): any => {
         if (path === fileAsStartPath) {
@@ -423,7 +417,6 @@ describe('shouldIncludeFile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Setup configuration mock
     configMock = {
       get: jest.fn((key: string, defaultValue?: any) => defaultValue),
     };
@@ -445,7 +438,6 @@ describe('shouldIncludeFile', () => {
       const filePath = '/workspace/src/test.test.ts';
       const workspacePath = '/workspace';
       
-      // Mock isTestFile to return true
       jest.spyOn(require('../testDetection'), 'isTestFile').mockReturnValue(true);
       
       const result = shouldIncludeFile(filePath, workspacePath);
@@ -458,7 +450,6 @@ describe('shouldIncludeFile', () => {
       const filePath = '/workspace/src/regular.ts';
       const workspacePath = '/workspace';
       
-      // Mock isTestFile to return false
       jest.spyOn(require('../testDetection'), 'isTestFile').mockReturnValue(false);
       
       const result = shouldIncludeFile(filePath, workspacePath);

@@ -65,7 +65,6 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
 
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
-      // Use the shared utility to determine if we should process this file
       const workspaceFolderPath = this.currentWorkspaceFolderPath;
       if (!workspaceFolderPath || !shouldIncludeFile(document.fileName, workspaceFolderPath)) {
         return [];

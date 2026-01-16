@@ -43,10 +43,8 @@ describe('TestRunnerCodeLensProvider', () => {
 
     (fastGlob.sync as jest.Mock).mockReturnValue([]);
     
-    // Mock shouldIncludeFile to return true for test files
     jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(true);
     
-    // Mock the parser to return test nodes
     jest.spyOn(parser, 'parse').mockReturnValue({
       root: {
         children: [
@@ -129,7 +127,6 @@ describe('TestRunnerCodeLensProvider', () => {
     });
 
     it('should cache last successful code lenses on error', async () => {
-      // First call with valid code
       mockDocument.getText = jest.fn().mockReturnValue(`
         describe('Suite', () => {
           it('test', () => {});
@@ -137,11 +134,9 @@ describe('TestRunnerCodeLensProvider', () => {
       `);
       const firstResult = await codeLensProvider.provideCodeLenses(mockDocument);
       
-      // Second call with invalid code
       mockDocument.getText = jest.fn().mockReturnValue('invalid code {{{');
       const secondResult = await codeLensProvider.provideCodeLenses(mockDocument);
       
-      // Should return cached result
       expect(secondResult).toEqual(firstResult);
     });
   });
@@ -347,7 +342,6 @@ describe('TestRunnerCodeLensProvider', () => {
       } as any);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
-      // Should have lenses for describe + 3 its = 4 * 1 (run) = 4
       expect(codeLenses.length).toBeGreaterThanOrEqual(4);
     });
   });
