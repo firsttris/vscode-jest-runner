@@ -54,6 +54,60 @@ The extension automatically detects Vitest based on config files (`vitest.config
 
 ### Create React App (CRA)
 
+<<<<<<< HEAD
+=======
+## Coverage Support
+
+The extension supports test coverage through VS Code's Test Explorer. When you run tests with coverage, the results are displayed directly in VS Code's coverage view.
+
+### Prerequisites
+
+**For Jest:**
+- Coverage works out of the box! Jest includes `json` in its default coverage reporters.
+- Only if you've customized `coverageReporters` in your config, make sure `json` is included:
+```javascript
+// jest.config.js (only needed if you've customized coverageReporters)
+module.exports = {
+  coverageReporters: ['json', 'lcov', 'text'], // ensure 'json' is present
+};
+```
+
+**For Vitest:**
+- Install a coverage provider:
+```bash
+npm install -D @vitest/coverage-v8
+# or
+npm install -D @vitest/coverage-istanbul
+```
+- Configure coverage in `vitest.config.ts`:
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8', // or 'istanbul'
+      reporter: ['json', 'text', 'lcov'], // 'json' is required
+    },
+  },
+});
+```
+
+### Running Tests with Coverage
+
+1. **Test Explorer**: Click the "Run with Coverage" button (shield icon) in the Test Explorer panel
+2. **CodeLens**: If enabled, click the "Coverage" link above your test
+3. **Command Palette**: Use "Jest: Run Test with Coverage" command
+
+Coverage results will appear in:
+- The VS Code Coverage panel (View → Testing → Show Coverage)
+- Inline decorations in the editor showing covered/uncovered lines
+
+## Usage with CRA or similar abstractions
+
+add the following command to settings:
+>>>>>>> 08b6d42 (working)
 ```json
 "jestrunner.jestCommand": "npm run test --",
 "jestrunner.debugOptions": {

@@ -211,15 +211,27 @@ export class JestTestController {
   }
 
   /**
-   * Process coverage data from test output and add to test run
+   * Process coverage data from test output and add to test run.
+   * Coverage is read from files (coverage-final.json) since Jest/Vitest write coverage
+   * to the filesystem, not to stdout.
    */
-  private processCoverageData(output: string, run: vscode.TestRun, workspaceFolder: string): void {
+  private async processCoverageData(
+    run: vscode.TestRun,
+    workspaceFolder: string,
+    framework: 'jest' | 'vitest' = 'jest',
+    configPath?: string,
+  ): Promise<void> {
     try {
-      const coverageMap = this.coverageProvider.parseCoverageFromOutput(output);
+      // Read coverage from file, passing config path for monorepo support
+      const coverageMap = await this.coverageProvider.readCoverageFromFile(
+        workspaceFolder,
+        framework,
+        configPath,
+      );
       
       if (!coverageMap) {
-        logDebug('No coverage data found in output. Note: Vitest writes coverage to files, not JSON output.');
-        logInfo('For Vitest coverage, ensure you have @vitest/coverage-v8 or @vitest/coverage-istanbul installed.');
+        logDebug(`No coverage data found for ${framework}.`);
+        logInfo(`Make sure coverageReporters includes "json" in your ${framework} config.`);
         return;
       }
 
@@ -635,8 +647,9 @@ export class JestTestController {
     request: vscode.TestRunRequest,
     token: vscode.CancellationToken,
   ) {
-    // Note: We don't pass --json here, it will be added in executeTests based on framework
-    return this.executeTests(request, token, ['--coverage'], true);
+    // Pass collectCoverage=true; framework-specific coverage args will be added in executeTests
+    // Don't pass --coverage here - it will be added specifically for each framework
+    return this.executeTests(request, token, [], true);
   }
 
   // Main test execution method
@@ -708,6 +721,11 @@ export class JestTestController {
       // Detect the test framework for the first file (assuming all files use the same framework)
       const framework = getTestFrameworkForFile(allFiles[0]) || 'jest';
       const isVitest = framework === 'vitest';
+      
+      // Get config path for later use (coverage parsing)
+      const configPath = isVitest
+        ? this.jestConfig.getVitestConfigPath(allFiles[0])
+        : this.jestConfig.getJestConfigPath(allFiles[0]);
 
       // Build command: run all test files in a single invocation
       // Use file pattern if multiple files, otherwise specific file with optional test name pattern
@@ -723,32 +741,52 @@ export class JestTestController {
           : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
         
         if (isVitest) {
-          // For Vitest: --reporter=json gives test results, but coverage needs special handling
-          // Vitest doesn't include coverage in JSON output, it writes to coverage/ folder
+          // For Vitest: --reporter=json gives test results, coverage writes to coverage/ folder
+          // Add coverage options if collecting coverage
           const vitestAdditionalArgs = [...additionalArgs, '--reporter=json'];
+          if (collectCoverage) {
+            // Ensure coverage is enabled and json reporter is used
+            vitestAdditionalArgs.push('--coverage', '--coverage.reporter=json');
+          }
           args = this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, vitestAdditionalArgs);
         } else {
-          args = this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, [...additionalArgs, '--json']);
+          // For Jest: add --coverage and --coverageReporters=json if collecting coverage
+          const jestAdditionalArgs = [...additionalArgs, '--json'];
+          if (collectCoverage) {
+            jestAdditionalArgs.push('--coverage', '--coverageReporters=json');
+          }
+          args = this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, jestAdditionalArgs);
         }
       } else {
         // Multiple files or whole file - just pass file paths
         if (isVitest) {
           const vitestConfigPath = this.jestConfig.getVitestConfigPath(allFiles[0]);
-          args = [
+          const vitestArgs = [
             'run',
             ...allFiles,
             '--reporter=json',
             ...(vitestConfigPath ? ['--config', vitestConfigPath] : []),
             ...additionalArgs,
           ];
+          // Add coverage options if collecting coverage
+          if (collectCoverage) {
+            // Ensure coverage is enabled and json reporter is used
+            vitestArgs.push('--coverage', '--coverage.reporter=json');
+          }
+          args = vitestArgs;
         } else {
           const jestConfigPath = this.jestConfig.getJestConfigPath(allFiles[0]);
-          args = [
+          const jestArgs = [
             ...allFiles,
             '--json',
             ...(jestConfigPath ? ['-c', jestConfigPath] : []),
             ...additionalArgs,
           ];
+          // Add coverage options if collecting coverage
+          if (collectCoverage) {
+            jestArgs.push('--coverage', '--coverageReporters=json');
+          }
+          args = jestArgs;
         }
       }
 
@@ -771,9 +809,9 @@ export class JestTestController {
       // Process all test results with the appropriate framework parser
       this.processTestResultsWithFramework(output, allTests, run, framework);
 
-      // If collecting coverage, parse and add coverage data
+      // If collecting coverage, read coverage from file and add to test run
       if (collectCoverage && workspaceFolder) {
-        this.processCoverageData(output, run, workspaceFolder);
+        await this.processCoverageData(run, workspaceFolder, isVitest ? 'vitest' : 'jest', configPath);
       }
     } catch (error) {
       const errOutput = error instanceof Error ? error.message : (error ? String(error) : 'Test execution failed');
