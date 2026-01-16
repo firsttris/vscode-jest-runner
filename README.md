@@ -52,15 +52,11 @@ The extension automatically detects Vitest based on config files (`vitest.config
 
 ## Common Configurations
 
-### Create React App (CRA)
-
-<<<<<<< HEAD
-=======
-## Coverage Support
+### Coverage Support
 
 The extension supports test coverage through VS Code's Test Explorer. When you run tests with coverage, the results are displayed directly in VS Code's coverage view.
 
-### Prerequisites
+#### Prerequisites
 
 **For Jest:**
 - Coverage works out of the box! Jest includes `json` in its default coverage reporters.
@@ -110,7 +106,6 @@ export default defineConfig({
 ## Usage with CRA or similar abstractions
 
 add the following command to settings:
->>>>>>> 08b6d42 (working)
 ```json
 "jestrunner.jestCommand": "npm run test --",
 "jestrunner.debugOptions": {
