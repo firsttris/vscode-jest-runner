@@ -37,10 +37,6 @@ export class TestRunner {
     this.setup();
   }
 
-  //
-  // public methods
-  //
-
   public async runTestsOnPath(path: string): Promise<void> {
     const command = this.buildJestCommand(path);
     const framework = this.config.getTestFramework(path);
@@ -72,8 +68,6 @@ export class TestRunner {
       const targetFileDir = getDirName(filePath);
       const targetFileName = getFileName(filePath).replace(/\.(test|spec)\./, '.');
 
-      // if a file does not exist with the same name as the test file but without the test/spec part
-      // use test file's directory for coverage target
       const coverageTarget = fs.existsSync(`${targetFileDir}/${targetFileName}`)
         ? `**/${targetFileName}`
         : `**/${getFileName(targetFileDir)}/**`;
@@ -171,10 +165,6 @@ export class TestRunner {
     });
   }
 
-  //
-  // private methods
-  //
-
   private async executeDebugCommand(debugCommand: DebugCommand) {
     if (this.isExecuting) {
       vscode.window.showWarningMessage('Another debug session is already starting. Please wait.');
@@ -236,7 +226,6 @@ export class TestRunner {
   private async runTerminalCommand(command: string, framework?: string) {
     const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
     
-    // Recreate terminal if framework changed or terminal doesn't exist
     if (!this.terminal || (this.currentTerminalName && this.currentTerminalName !== terminalName)) {
       if (this.terminal) {
         this.terminal.dispose();

@@ -1,4 +1,3 @@
-// __mocks__/vscode.ts
 
 class Uri {
   constructor(readonly fsPath: string) {}
@@ -221,11 +220,69 @@ class TestRun {
   errored = jest.fn();
   enqueued = jest.fn();
   end = jest.fn();
+  addCoverage = jest.fn();
+}
+
+class TestCoverageCount {
+  constructor(
+    public covered: number,
+    public total: number,
+  ) {}
+}
+
+class FileCoverage {
+  constructor(
+    public uri: Uri,
+    public statementCoverage: TestCoverageCount,
+    public branchCoverage?: TestCoverageCount,
+    public declarationCoverage?: TestCoverageCount,
+  ) {}
+}
+
+class StatementCoverage {
+  constructor(
+    public executed: number,
+    public location: VscodeRange,
+    public branches?: BranchCoverage[],
+  ) {}
+}
+
+class BranchCoverage {
+  constructor(
+    public executed: number,
+    public location: VscodeRange,
+    public label?: string,
+  ) {}
+}
+
+class DeclarationCoverage {
+  constructor(
+    public name: string,
+    public executed: number,
+    public location: VscodeRange,
+  ) {}
+}
+
+class TestRunProfile {
+  loadDetailedCoverage?: (
+    testRun: TestRun,
+    fileCoverage: FileCoverage,
+    token: CancellationToken,
+  ) => Promise<any[]>;
+
+  constructor(
+    public label: string,
+    public kind: TestRunProfileKind,
+    public runHandler: any,
+    public isDefault: boolean,
+  ) {}
 }
 
 class TestController {
   items: TestItemCollection = new TestItemCollection();
-  createRunProfile = jest.fn();
+  createRunProfile = jest.fn((label: string, kind: TestRunProfileKind, runHandler: any, isDefault: boolean) => {
+    return new TestRunProfile(label, kind, runHandler, isDefault);
+  });
   createTestRun = jest.fn().mockReturnValue(new TestRun());
   createTestItem = jest.fn((id: string, label: string, uri?: Uri) => new TestItem(id, label, uri));
   dispose = jest.fn();
@@ -319,9 +376,15 @@ export {
   TestItemCollection,
   TestRun,
   TestController,
+  TestRunProfile,
   TestRunProfileKind,
   CancellationToken,
   CancellationTokenSource,
   RelativePattern,
   OutputChannel,
+  TestCoverageCount,
+  FileCoverage,
+  StatementCoverage,
+  BranchCoverage,
+  DeclarationCoverage,
 };

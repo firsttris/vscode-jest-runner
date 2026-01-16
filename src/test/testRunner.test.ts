@@ -94,7 +94,6 @@ describe('TestRunner', () => {
 
     it('should create a terminal with vitest name for vitest tests', async () => {
       (mockConfig.getTestFramework as jest.Mock).mockReturnValue('vitest');
-      // Reset the terminal mock to ensure a fresh terminal is created
       (vscode.window.createTerminal as jest.Mock).mockClear();
       await jestRunner.runTestsOnPath('/workspace/test.spec.ts');
       expect(vscode.window.createTerminal).toHaveBeenCalledWith('vitest');
@@ -203,15 +202,12 @@ describe('TestRunner', () => {
     });
 
     it('should run the previous command', async () => {
-      // First run a test
       await jestRunner.runTestsOnPath('/workspace/test.ts');
       const calls1 = (mockTerminal.sendText as jest.Mock).mock.calls;
       const firstCommand = calls1[calls1.length - 1][0];
 
-      // Clear mock
       (mockTerminal.sendText as jest.Mock).mockClear();
 
-      // Run previous test
       await jestRunner.runPreviousTest();
       const calls2 = (mockTerminal.sendText as jest.Mock).mock.calls;
       const secondCommand = calls2[calls2.length - 1][0];
@@ -364,16 +360,12 @@ describe('TestRunner', () => {
 
   describe('terminal cleanup', () => {
     it('should register onDidCloseTerminal handler that nullifies terminal reference', () => {
-      // Get the callback registered with onDidCloseTerminal
       const windowMock = vscode.window as any;
       expect(windowMock.onDidCloseTerminal).toHaveBeenCalled();
       const callback = windowMock.onDidCloseTerminal.mock.calls[0][0];
       
-      // Verify the callback is a function
       expect(typeof callback).toBe('function');
       
-      // The callback should handle terminal close events properly
-      // This ensures the JestRunner instance sets up the cleanup handler
       expect(callback).toBeDefined();
     });
   });

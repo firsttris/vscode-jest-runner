@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import { ParsedNode } from 'jest-editor-support';
 import { isTestFile } from './testDetection';
 
-// Centralized output channel for logging
 let outputChannel: vscode.OutputChannel | undefined;
 
 export function getOutputChannel(): vscode.OutputChannel {
@@ -58,13 +57,12 @@ export function normalizePath(path: string): string {
 }
 
 export function escapeRegExp(s: string): string {
-  const escapedString = s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-  return escapedString.replace(/\\\(\\\.\\\*\\\?\\\)/g, '(.*?)'); // should revert the escaping of match all regex patterns.
+  const escapedString = s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&');
+  return escapedString.replace(/\\\(\\\.\\\*\\\?\\\)/g, '(.*?)');
 }
 
 export function escapeRegExpForPath(s: string): string {
-  // Keep consistent with escapeRegExp but without special handling for (.*?) patterns
-  return s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+  return s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&');
 }
 
 export function findFullTestName(selectedLine: number, children: TestNode[]): string | undefined {
@@ -155,7 +153,6 @@ export function resolveConfigPathOrMapping(
   }
   for (const [key, value] of Object.entries(configPathOrMapping as Record<string, string>)) {
     const isMatch = mm.matcher(key);
-    // try the glob against normalized and non-normalized path
     if (isMatch(targetPath) || isMatch(normalizePath(targetPath))) {
       return normalizePath(value);
     }
@@ -169,14 +166,6 @@ export function resolveConfigPathOrMapping(
   return undefined;
 }
 
-/**
- * Traverse from starting path to and including ancestor path calling the callback function with each path.
- * If the callback function returns a non-falsy value, the traversal will stop and the value will be returned.
- * Returns false if the traversal completes without the callback returning a non-false value.
- * @param ancestorPath
- * @param startingPath
- * @param callback <T>(currentFolderPath: string) => false | T
- */
 export function searchPathToParent<T>(
   startingPath: string,
   ancestorPath: string,
@@ -186,7 +175,6 @@ export function searchPathToParent<T>(
   try {
     currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
   } catch (error) {
-    // If we can't access the path (permissions, doesn't exist, etc.), use parent directory
     logWarning(`Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`);
     currentFolderPath = path.dirname(startingPath);
   }
@@ -194,12 +182,10 @@ export function searchPathToParent<T>(
   const endPath = path.dirname(ancestorPath);
   const resolvedStart = path.resolve(currentFolderPath);
   const resolvedEnd = path.resolve(endPath);
-  // this might occur if you've opened a file outside of the workspace
   if (!resolvedStart.startsWith(resolvedEnd)) {
     return false;
   }
 
-  // prevent edge case of workdir at root path ie, '/' -> '..' -> '/'
   let lastPath: null | string = null;
   do {
     const result = callback(currentFolderPath);
@@ -213,31 +199,20 @@ export function searchPathToParent<T>(
   return false;
 }
 
-/**
- * Determines if a file should be included based on configuration
- * @param filePath Path to the file being checked
- * @param workspaceFolderPath Root workspace folder path
- * @returns Boolean indicating if the file should be processed
- */
 export function shouldIncludeFile(filePath: string, workspaceFolderPath: string): boolean {
-  // Get include/exclude configuration
   const config = vscode.workspace.getConfiguration('jestrunner');
   const include = config.get<string[]>('include', []);
   const exclude = config.get<string[]>('exclude', []);
 
-  // If no include/exclude, check if it's a Jest or Vitest test file
   if (include.length === 0 && exclude.length === 0) {
     return isTestFile(filePath);
   }
 
-  // Normalize paths for pattern matching
   const normalizedPath = normalizePath(filePath);
   const normalizedFolderPath = normalizePath(workspaceFolderPath);
   
-  // Get relative path for pattern matching
   const relativePath = path.relative(normalizedFolderPath, normalizedPath);
 
-  // Check include patterns using micromatch for efficient pattern matching
   if (include.length > 0) {
     const includeMatch = mm.isMatch(relativePath, include) || mm.isMatch(normalizedPath, include);
     if (!includeMatch) {
@@ -245,7 +220,6 @@ export function shouldIncludeFile(filePath: string, workspaceFolderPath: string)
     }
   }
 
-  // Check exclude patterns using micromatch for efficient pattern matching
   if (exclude.length > 0) {
     const excludeMatch = mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude);
     if (excludeMatch) {

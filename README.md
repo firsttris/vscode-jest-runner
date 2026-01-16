@@ -1,15 +1,17 @@
-# vscode-jest-runner
+# Jest & Vitest Runner
 
-## Visual Studio Code Marketplace
-
-[VisualStudio Marketplace](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)    
-[Open VSX Registry](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
+[![CI](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml/badge.svg)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml)
+[![VS Marketplace](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Rating](https://vsmarketplacebadges.dev/rating-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
-**vscode-jest-runner** is a lightweight extension for running and debugging Jest and Vitest tests directly from VS Code. It works out-of-the-box with minimal configuration.
+A lightweight VS Code extension for running and debugging Jest and Vitest tests directly in your editor. Works out-of-the-box with minimal configuration.
 
-![Extension Example](https://github.com/firsttris/vscode-jest/raw/master/public/vscode-jest.gif)
+![Extension Example](./public/screenshot.png)
 
 ## Features
 
@@ -52,8 +54,61 @@ The extension automatically detects Vitest based on config files (`vitest.config
 
 ## Common Configurations
 
-### Create React App (CRA)
+### Coverage Support
 
+The extension supports test coverage through VS Code's Test Explorer. When you run tests with coverage, the results are displayed directly in VS Code's coverage view.
+
+#### Prerequisites
+
+**For Jest:**
+- Coverage works out of the box! Jest includes `json` in its default coverage reporters.
+- Only if you've customized `coverageReporters` in your config, make sure `json` is included:
+```javascript
+// jest.config.js (only needed if you've customized coverageReporters)
+module.exports = {
+  coverageReporters: ['json', 'lcov', 'text'], // ensure 'json' is present
+};
+```
+
+**For Vitest:**
+- Install a coverage provider:
+```bash
+npm install -D @vitest/coverage-v8
+# or
+npm install -D @vitest/coverage-istanbul
+```
+- Configure coverage in `vitest.config.ts`:
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8', // or 'istanbul'
+      reporter: ['json', 'text', 'lcov'], // 'json' is required
+    },
+  },
+});
+```
+
+### Running Tests with Coverage
+
+All coverage entry points use the same **Coverage** profile powered by VS Code's native coverage API.
+
+**Coverage via Test Explorer**
+- Click the "Coverage" button (shield icon) in the Test Explorer panel
+- Coverage results appear in VS Code's Coverage panel (View → Testing → Show Coverage)
+- Inline decorations in the editor show covered/uncovered lines
+
+**Coverage via CodeLens / Command Palette**
+- Use the CodeLens "Coverage" action (if enabled) above a test or suite
+- Or run the Command Palette command: "Jest: Run Test with Coverage"
+- Both invoke the same Coverage profile and report results through the Coverage panel and inline decorations (not a separate terminal-only profile)
+
+## Usage with CRA or similar abstractions
+
+add the following command to settings:
 ```json
 "jestrunner.jestCommand": "npm run test --",
 "jestrunner.debugOptions": {
@@ -86,7 +141,7 @@ For projects requiring `--experimental-vm-modules`:
 
 ## Extension Settings
 
-Customize Jest Runner for your project:
+Customize the test runner for your project:
 
 | Setting                                 | Description                                                                                                                                                                                           |
 |----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

@@ -17,7 +17,6 @@ import {
   viteConfigHasTestAttribute,
 } from '../testDetection';
 
-// Mock fs and vscode modules
 jest.mock('fs');
 jest.mock('vscode');
 
@@ -26,7 +25,6 @@ const mockedFs = fs as jest.Mocked<typeof fs>;
 describe('jestDetection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Clear the cache before each test
     clearTestDetectionCache();
     clearVitestDetectionCache();
   });
@@ -35,7 +33,6 @@ describe('jestDetection', () => {
     const testDir = '/test/project';
 
     beforeEach(() => {
-      // Reset all mocks before each test
       mockedFs.existsSync = jest.fn().mockReturnValue(false);
       mockedFs.readFileSync = jest.fn();
     });
@@ -195,12 +192,10 @@ describe('jestDetection', () => {
         return filePath === path.join(testDir, 'jest.config.js');
       });
 
-      // First call
       const result1 = isJestUsedIn(testDir);
       expect(result1).toBe(true);
       const firstCallCount = mockedFs.existsSync.mock.calls.length;
 
-      // Second call should use cache
       const result2 = isJestUsedIn(testDir);
       expect(result2).toBe(true);
       expect(mockedFs.existsSync).toHaveBeenCalledTimes(firstCallCount);
@@ -236,7 +231,6 @@ describe('jestDetection', () => {
       mockedFs.existsSync = jest.fn().mockReturnValue(false);
       mockedFs.readFileSync = jest.fn();
 
-      // Mock vscode.workspace.getWorkspaceFolder
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
       }));
@@ -386,13 +380,11 @@ describe('jestDetection', () => {
       }));
 
       mockedFs.existsSync = jest.fn((filePath: fs.PathLike) => {
-        // Jest config exists outside workspace
         return filePath === '/different/jest.config.js';
       });
 
       const result = findJestDirectory(outsidePath);
 
-      // Should not find Jest outside workspace boundaries
       expect(result).toBeUndefined();
     });
   });
@@ -613,7 +605,6 @@ describe('jestDetection', () => {
 
       const result = findJestDirectory(filePath);
 
-      // Should find the closest one
       expect(result).toBe(srcDir);
     });
   });
@@ -787,11 +778,8 @@ describe('jestDetection', () => {
       isVitestUsedIn(testDir);
       isVitestUsedIn(testDir);
 
-      // First call checks multiple paths (binary, config files), second call uses cache
-      // The exact number depends on implementation, just verify caching works
       const callCountAfterFirst = (mockedFs.existsSync as jest.Mock).mock.calls.length;
       isVitestUsedIn(testDir);
-      // No additional calls should be made due to caching
       expect(mockedFs.existsSync).toHaveBeenCalledTimes(callCountAfterFirst);
     });
 
@@ -1208,7 +1196,6 @@ describe('jestDetection', () => {
         return fsPath === path.join(rootPath, 'vitest.config.ts');
       });
 
-      // Looking for jest but only vitest exists
       const result = findTestFrameworkDirectory(filePath, 'jest');
 
       expect(result).toBeUndefined();
@@ -1344,7 +1331,6 @@ describe('jestDetection', () => {
         return fsPath === path.join(testDir, 'vite.config.ts') ||
                fsPath === path.join(testDir, 'jest.config.js');
       });
-      // vite.config without test attribute
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
         export default defineConfig({
           plugins: [react()],
@@ -1403,7 +1389,6 @@ describe('jestDetection', () => {
         return fsPath === path.join(testDir, 'vite.config.ts') ||
                fsPath === path.join(testDir, 'jest.config.js');
       });
-      // vite.config WITH test attribute - vitest should win
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
         export default defineConfig({
           test: {
