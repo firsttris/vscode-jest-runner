@@ -75,29 +75,6 @@ const VITEST_CONFIG_FILES = [
  */
 export class CoverageProvider {
   /**
-   * Parse coverage directory from Jest config file
-   * Jest uses: coverageDirectory: './coverage'
-   */
-  private parseJestCoverageDir(configPath: string): string | undefined {
-    try {
-      const content = fs.readFileSync(configPath, 'utf-8');
-      
-      // Match coverageDirectory in various formats:
-      // coverageDirectory: './path'
-      // coverageDirectory: "./path"
-      // "coverageDirectory": "./path"
-      const match = content.match(/["']?coverageDirectory["']?\s*[=:]\s*["']([^"']+)["']/);
-      if (match) {
-        logDebug(`Found Jest coverageDirectory: ${match[1]}`);
-        return match[1];
-      }
-    } catch (error) {
-      logDebug(`Could not parse Jest config: ${error}`);
-    }
-    return undefined;
-  }
-
-  /**
    * Parse coverage directory from Vitest config file
    * Vitest uses: coverage: { reportsDirectory: './coverage' }
    * Returns the absolute path to the coverage directory
