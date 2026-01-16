@@ -610,7 +610,7 @@ export class JestTestController {
         if (isVitest) {
           const vitestAdditionalArgs = [...additionalArgs, '--reporter=json'];
           if (collectCoverage) {
-            vitestAdditionalArgs.push('--coverage', '--coverage.reporter=json');
+            vitestAdditionalArgs.push('--coverage', '--coverage.reporter', 'json');
           }
           args = this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, vitestAdditionalArgs);
         } else {
@@ -631,7 +631,7 @@ export class JestTestController {
             ...additionalArgs,
           ];
           if (collectCoverage) {
-            vitestArgs.push('--coverage', '--coverage.reporter=json');
+            vitestArgs.push('--coverage', '--coverage.reporter', 'json', '--coverage.reporter', 'text');
           }
           args = vitestArgs;
         } else {
