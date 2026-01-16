@@ -17,6 +17,10 @@ jest.mock('../util', () => ({
   logError: jest.fn(),
 }));
 
+// Helper to normalize paths for cross-platform comparison
+// Converts forward slashes to platform-specific separators
+const normalizePath = (p: string): string => p.split('/').join(path.sep);
+
 describe('CoverageProvider', () => {
   let provider: CoverageProvider;
   const mockFs = fs as jest.Mocked<typeof fs>;
@@ -27,8 +31,8 @@ describe('CoverageProvider', () => {
   });
 
   describe('readCoverageFromFile', () => {
-    const workspaceFolder = '/workspace';
-    const defaultCoveragePath = '/workspace/coverage/coverage-final.json';
+    const workspaceFolder = normalizePath('/workspace');
+    const defaultCoveragePath = normalizePath('/workspace/coverage/coverage-final.json');
 
     it('should return undefined when coverage file does not exist', async () => {
       mockFs.existsSync.mockReturnValue(false);
@@ -76,14 +80,17 @@ describe('CoverageProvider', () => {
         '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
       };
 
+      const jestConfigPath = normalizePath('/workspace/jest.config.js');
+      const customCoveragePath = normalizePath('/workspace/custom-coverage/coverage-final.json');
+
       mockFs.existsSync.mockImplementation((p) => {
-        if (p === '/workspace/jest.config.js') return true;
-        if (p === '/workspace/custom-coverage/coverage-final.json') return true;
+        if (p === jestConfigPath) return true;
+        if (p === customCoveragePath) return true;
         return false;
       });
       mockFs.readFileSync.mockImplementation((p) => {
-        if (p === '/workspace/jest.config.js') return jestConfig;
-        if (p === '/workspace/custom-coverage/coverage-final.json') return JSON.stringify(coverageData);
+        if (p === jestConfigPath) return jestConfig;
+        if (p === customCoveragePath) return JSON.stringify(coverageData);
         return '';
       });
 
@@ -98,14 +105,17 @@ describe('CoverageProvider', () => {
         '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
       };
 
+      const vitestConfigPath = normalizePath('/workspace/vitest.config.ts');
+      const vitestCoveragePath = normalizePath('/workspace/vitest-coverage/coverage-final.json');
+
       mockFs.existsSync.mockImplementation((p) => {
-        if (p === '/workspace/vitest.config.ts') return true;
-        if (p === '/workspace/vitest-coverage/coverage-final.json') return true;
+        if (p === vitestConfigPath) return true;
+        if (p === vitestCoveragePath) return true;
         return false;
       });
       mockFs.readFileSync.mockImplementation((p) => {
-        if (p === '/workspace/vitest.config.ts') return vitestConfig;
-        if (p === '/workspace/vitest-coverage/coverage-final.json') return JSON.stringify(coverageData);
+        if (p === vitestConfigPath) return vitestConfig;
+        if (p === vitestCoveragePath) return JSON.stringify(coverageData);
         return '';
       });
 
@@ -115,20 +125,22 @@ describe('CoverageProvider', () => {
     });
 
     it('should use config path when provided', async () => {
-      const configPath = '/workspace/packages/app/vitest.config.ts';
+      const configPath = normalizePath('/workspace/packages/app/vitest.config.ts');
       const vitestConfig = `export default { test: { coverage: { reportsDirectory: './coverage' } } };`;
       const coverageData: CoverageMap = {
         '/workspace/packages/app/src/index.ts': createMockFileCoverageData('/workspace/packages/app/src/index.ts'),
       };
 
+      const appCoveragePath = normalizePath('/workspace/packages/app/coverage/coverage-final.json');
+
       mockFs.existsSync.mockImplementation((p) => {
         if (p === configPath) return true;
-        if (p === '/workspace/packages/app/coverage/coverage-final.json') return true;
+        if (p === appCoveragePath) return true;
         return false;
       });
       mockFs.readFileSync.mockImplementation((p) => {
         if (p === configPath) return vitestConfig;
-        if (p === '/workspace/packages/app/coverage/coverage-final.json') return JSON.stringify(coverageData);
+        if (p === appCoveragePath) return JSON.stringify(coverageData);
         return '';
       });
 
