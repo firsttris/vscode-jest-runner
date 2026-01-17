@@ -1031,7 +1031,8 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, undefined, false);
 
-      expect(args[0]).toBe('/home/user/project/src/test.spec.ts');
+      // Jest uses regex patterns - special characters like dots must be escaped
+      expect(args[0]).toBe('/home/user/project/src/test\\.spec\\.ts');
       expect(args).not.toContain('-c');
       expect(args).not.toContain('-t');
     });
@@ -1045,7 +1046,7 @@ describe('TestRunnerConfig', () => {
 
       const args = jestRunnerConfig.buildJestArgs(mockFilePath, 'my test name', false);
 
-      expect(args[0]).toBe('/home/user/project/src/test.spec.ts');
+      expect(args[0]).toBe('/home/user/project/src/test\\.spec\\.ts');
       expect(args).toContain('-t');
       expect(args).toContain('my test name');
     });

@@ -323,10 +323,7 @@ export class TestRunnerConfig {
     const args: string[] = [];
     const quoter = withQuotes ? quote : (str) => str;
 
-    const processedFilePath = withQuotes 
-      ? quoter(escapeRegExpForPath(normalizePath(filePath)))
-      : normalizePath(filePath);
-    args.push(processedFilePath);
+    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
 
     const jestConfigPath = this.getJestConfigPath(filePath);
     if (jestConfigPath) {
