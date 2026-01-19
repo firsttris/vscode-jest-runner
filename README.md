@@ -87,15 +87,7 @@ The extension supports test coverage through VS Code's Test Explorer. When you r
 
 **For Jest:**
 
-- Coverage works out of the box! Jest includes `json` in its default coverage reporters.
-- Only if you've customized `coverageReporters` in your config, make sure `json` is included:
-
-```javascript
-// jest.config.js (only needed if you've customized coverageReporters)
-module.exports = {
-  coverageReporters: ["json", "lcov", "text"], // ensure 'json' is present
-};
-```
+- Coverage works out of the box! No configuration needed.
 
 **For Vitest:**
 
@@ -107,7 +99,7 @@ npm install -D @vitest/coverage-v8
 npm install -D @vitest/coverage-istanbul
 ```
 
-- Configure coverage in `vitest.config.ts`:
+- You only need to specify the coverage provider in `vitest.config.ts`:
 
 ```typescript
 // vitest.config.ts
@@ -117,7 +109,6 @@ export default defineConfig({
   test: {
     coverage: {
       provider: "v8", // or 'istanbul'
-      reporter: ["json", "text", "lcov"], // 'json' is required
     },
   },
 });
@@ -141,7 +132,13 @@ All coverage entry points use the same **Coverage** profile powered by VS Code's
 - Or run the Command Palette command: "Jest: Run Test with Coverage"
 - Both invoke the same Coverage profile and report results through the Coverage panel and inline decorations (not a separate terminal-only profile)
 
-### ⚛️ Usage with CRA or similar abstractions
+### 🔧 Advanced Configuration Examples
+
+<details>
+<summary><b>📖 Click to expand usage examples for specific tools and scenarios</b></summary>
+<br>
+
+#### ⚛️ Usage with CRA or similar abstractions
 
 Add the following command to settings:
 
@@ -153,7 +150,7 @@ Add the following command to settings:
 }
 ```
 
-### 🔄 nvm
+#### 🔄 nvm
 
 ```json
 "jestrunner.jestCommand": "nvm use && npm run test --",
@@ -162,7 +159,7 @@ Add the following command to settings:
 }
 ```
 
-### 📦 ESM (ECMAScript Modules)
+#### 📦 ESM (ECMAScript Modules)
 
 For projects requiring `--experimental-vm-modules`:
 
@@ -174,6 +171,8 @@ For projects requiring `--experimental-vm-modules`:
 ```
 
 > **Note:** `jestrunner.runOptions` passes arguments to Jest, not Node. Use `jestrunner.jestCommand` with `NODE_OPTIONS` for Node flags.
+
+</details>
 
 ## 🛠️ Extension Settings
 
