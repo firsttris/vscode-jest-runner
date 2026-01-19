@@ -5,10 +5,10 @@
 **Run and debug tests with ease, right from your editor**
 
 [![Build](https://img.shields.io/github/actions/workflow/status/firsttris/vscode-jest-runner/master.yml?branch=master&label=Build&logo=github&style=flat-square)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml)
-[![VS Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/firsttris.vscode-jest-runner?label=VS%20Marketplace)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![VS Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/firsttris.vscode-jest-runner?label=Installs)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![VS Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/firsttris.vscode-jest-runner?label=Rating)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
+[![VS Marketplace Version](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Rating](https://vsmarketplacebadges.dev/rating-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX&style=flat-square)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ![Extension Example](./public/screenshot.png)
