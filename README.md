@@ -73,18 +73,6 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 </tr>
 </table>
 
-## 🟢 Vitest Support
-
-The extension **automatically detects** Vitest based on config files (`vitest.config.*`), package.json dependencies, or the vitest binary. In mixed monorepos, each package uses its detected framework.
-
-```json
-{
-  "jestrunner.vitestCommand": "npx vitest",
-  "jestrunner.vitestConfigPath": "./vitest.config.ts",
-  "jestrunner.vitestRunOptions": ["--reporter=verbose"]
-}
-```
-
 ## ⚙️ Configuration
 
 ### 📊 Coverage Support
