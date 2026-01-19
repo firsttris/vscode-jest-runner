@@ -182,7 +182,7 @@ Customize the test runner for your project:
 ### 🔧 Advanced Configuration Examples
 
 <details>
-<summary><b>📖 Click to expand usage examples for specific tools and scenarios</b></summary>
+<summary><b>📖 Click to view config examples for specific tools and scenarios</b></summary>
 <br>
 
 #### ⚛️ Usage with CRA or similar abstractions
@@ -218,6 +218,43 @@ For projects requiring `--experimental-vm-modules`:
 ```
 
 > **Note:** `jestrunner.runOptions` passes arguments to Jest, not Node. Use `jestrunner.jestCommand` with `NODE_OPTIONS` for Node flags.
+
+</details>
+
+### Advanced Test Examples
+
+<details>
+<summary><b>🔄 Click to view Parameterized Test examples</b></summary>
+<br>
+
+The extension fully supports Jest's parameterized tests using `it.each` and `describe.each`. These allow you to run the same test logic with different inputs, making your tests more concise and maintainable.
+
+In the test names, you can use **template variables** like `%s` (string), `%i` (integer), `%f` (float), etc., which Jest replaces with the actual parameter values for better readability.
+
+#### Jest Example
+
+```javascript
+it.each([
+  ["apple", 5],
+  ["banana", 6],
+  ["cherry", 6],
+])("should return correct length for %s", (fruit, expectedLength) => {
+  expect(fruit.length).toBe(expectedLength);
+});
+```
+
+#### Vitest Example
+
+```javascript
+import { describe, it, expect } from "vitest";
+
+it.each([
+  { input: "hello", expected: 5 },
+  { input: "world", expected: 5 },
+])("length of $input is $expected", ({ input, expected }) => {
+  expect(input.length).toBe(expected);
+});
+```
 
 </details>
 
