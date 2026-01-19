@@ -4,6 +4,8 @@
 
 **Run and debug tests with ease, right from your editor**
 
+![Extension Example](./public/screenshot.png)
+
 [![Build](https://img.shields.io/github/actions/workflow/status/firsttris/vscode-jest-runner/master.yml?branch=master&label=Build&logo=github&style=flat-square)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml)
 [![VS Marketplace Version](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 [![Installs](https://vsmarketplacebadges.dev/installs-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
@@ -11,7 +13,12 @@
 [![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX&style=flat-square)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![Extension Example](./public/screenshot.png)
+[Overview](#-overview) •
+[Features](#-features) •
+[Configuration](#️-configuration) •
+[Extension Settings](#️-extension-settings) •
+[Keyboard Shortcuts](#️-keyboard-shortcuts) •
+[Contributing](#-contributing)
 
 </div>
 
