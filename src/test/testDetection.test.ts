@@ -1801,7 +1801,7 @@ module.exports = {
       const rootPath = '/workspace/project';
       const testFile = path.join(rootPath, 'src', 'component.test.ts');
       const customConfigPath = 'jest.config.custom.js';
-      const customConfigFullPath = path.join(rootPath, customConfigPath);
+      const customConfigFullPath = path.resolve(rootPath, customConfigPath);
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
@@ -1854,7 +1854,7 @@ module.exports = {
       const rootPath = '/workspace/project';
       const testFile = path.join(rootPath, 'src', 'component.test.ts');
       const customConfigPath = 'vitest.config.custom.ts';
-      const customConfigFullPath = path.join(rootPath, customConfigPath);
+      const customConfigFullPath = path.resolve(rootPath, customConfigPath);
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
@@ -1908,7 +1908,7 @@ module.exports = {
       const rootPath = '/workspace/project';
       const testFile = path.join(rootPath, 'src', 'component.test.ts');
       const customConfigPath = 'jest.config.custom.js';
-      const customConfigFullPath = path.join(rootPath, customConfigPath);
+      const customConfigFullPath = path.resolve(rootPath, customConfigPath);
       const standardConfigPath = path.join(rootPath, 'jest.config.js');
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
@@ -1961,7 +1961,7 @@ module.exports = {
       const rootPath = '/workspace/project';
       const testFile = path.join(rootPath, 'src', 'component.test.ts');
       const customConfigPath = 'jest.config.custom.js';
-      const customConfigFullPath = path.join(rootPath, customConfigPath);
+      const customConfigFullPath = path.resolve(rootPath, customConfigPath);
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
