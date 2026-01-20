@@ -531,6 +531,27 @@ function getTestFilePatternsForFile(filePath: string): {
 	};
 }
 
+function hasValidCustomConfig(
+	configPath: string | undefined,
+	frameworkType: 'jest' | 'vitest',
+): boolean {
+	if (!configPath) {
+		return false;
+	}
+
+	if (!fs.existsSync(configPath)) {
+		return false;
+	}
+
+	if (frameworkType === 'jest') {
+		const patterns = getTestMatchFromJestConfig(configPath);
+		return !!patterns && patterns.length > 0;
+	} else {
+		const patterns = getIncludeFromVitestConfig(configPath);
+		return !!patterns && patterns.length > 0;
+	}
+}
+
 export function matchesTestFilePattern(filePath: string): boolean {
 	const { patterns, configDir } = getTestFilePatternsForFile(filePath);
 
@@ -557,7 +578,13 @@ export function isJestTestFile(filePath: string): boolean {
   const customJestConfigPath = vscode.workspace
     .getConfiguration()
     .get('jestrunner.configPath') as string | Record<string, string> | undefined;
-  const hasCustomConfig = !!customJestConfigPath;
+  
+  const resolvedConfigPath = resolveConfigPathOrMapping(customJestConfigPath, filePath);
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+  const fullConfigPath = resolvedConfigPath && workspaceFolder
+    ? path.resolve(workspaceFolder.uri.fsPath, resolvedConfigPath)
+    : undefined;
+  const hasCustomConfig = hasValidCustomConfig(fullConfigPath, 'jest');
   
   return hasJestDir || hasCustomConfig;
 }
@@ -572,7 +599,13 @@ export function isVitestTestFile(filePath: string): boolean {
   const customVitestConfigPath = vscode.workspace
     .getConfiguration()
     .get('jestrunner.vitestConfigPath') as string | Record<string, string> | undefined;
-  const hasCustomConfig = !!customVitestConfigPath;
+  
+  const resolvedConfigPath = resolveConfigPathOrMapping(customVitestConfigPath, filePath);
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+  const fullConfigPath = resolvedConfigPath && workspaceFolder
+    ? path.resolve(workspaceFolder.uri.fsPath, resolvedConfigPath)
+    : undefined;
+  const hasCustomConfig = hasValidCustomConfig(fullConfigPath, 'vitest');
   
   return hasVitestDir || hasCustomConfig;
 }
@@ -590,7 +623,18 @@ export function isTestFile(filePath: string): boolean {
   const customVitestConfigPath = vscode.workspace
     .getConfiguration()
     .get('jestrunner.vitestConfigPath') as string | Record<string, string> | undefined;
-  const hasCustomConfig = !!customJestConfigPath || !!customVitestConfigPath;
+  
+  const resolvedJestConfigPath = resolveConfigPathOrMapping(customJestConfigPath, filePath);
+  const resolvedVitestConfigPath = resolveConfigPathOrMapping(customVitestConfigPath, filePath);
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+  const fullJestConfigPath = resolvedJestConfigPath && workspaceFolder
+    ? path.resolve(workspaceFolder.uri.fsPath, resolvedJestConfigPath)
+    : undefined;
+  const fullVitestConfigPath = resolvedVitestConfigPath && workspaceFolder
+    ? path.resolve(workspaceFolder.uri.fsPath, resolvedVitestConfigPath)
+    : undefined;
+  const hasCustomConfig = hasValidCustomConfig(fullJestConfigPath, 'jest') ||
+    hasValidCustomConfig(fullVitestConfigPath, 'vitest');
   
   return hasFrameworkDir || hasCustomConfig;
 }
