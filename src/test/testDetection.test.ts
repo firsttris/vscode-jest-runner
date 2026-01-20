@@ -1905,7 +1905,8 @@ module.exports = {
     });
 
     it('should fallback to standard configs when custom config does not exist', () => {
-      const rootPath = '/workspace/project';
+      // Use path.resolve to ensure cross-platform compatibility
+      const rootPath = path.resolve('/workspace/project');
       const testFile = path.join(rootPath, 'src', 'component.test.ts');
       const customConfigPath = 'jest.config.custom.js';
       const customConfigFullPath = path.resolve(rootPath, customConfigPath);
