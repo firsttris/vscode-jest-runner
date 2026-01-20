@@ -132,13 +132,6 @@
             "description": "Add or override VS Code debug configurations for Vitest (e.g. { \"args\": [\"--no-cache\"] }). Only applies when debugging Vitest tests.",
             "scope": "window"
           },
-          "jestrunner.disableCodeLens": {
-            "type": "boolean",
-            "default": false,
-            "description": "Deprecated: Use 'jestrunner.enableCodeLens' instead. This setting is kept for backwards compatibility.",
-            "scope": "window",
-            "deprecationMessage": "This setting is deprecated. Please use 'jestrunner.enableCodeLens' instead (note: enableCodeLens uses inverted logic)."
-          },
           "jestrunner.enableCodeLens": {
             "type": "boolean",
             "default": true,
@@ -164,12 +157,6 @@
             },
             "scope": "window"
           },
-          "jestrunner.enableYarnPnpSupport": {
-            "type": "boolean",
-            "default": false,
-            "description": "Enable if you are using Yarn 2 with Plug'n'Play",
-            "scope": "window"
-          },
           "jestrunner.changeDirectoryToWorkspaceRoot": {
             "type": "boolean",
             "default": true,
@@ -180,12 +167,6 @@
             "type": "boolean",
             "default": false,
             "description": "Preserve focus on editor when running tests",
-            "scope": "window"
-          },
-          "jestrunner.yarnPnpCommand": {
-            "type": "string",
-            "default": "yarn-*.*js",
-            "description": "Command for debugging with Plug'n'Play",
             "scope": "window"
           },
           "jestrunner.include": {

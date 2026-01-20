@@ -19,6 +19,27 @@ import {
 } from './testDetection';
 import { JEST_CONFIG_FILES, VITEST_CONFIG_FILES } from './constants';
 
+export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
+  const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
+  
+  if (!fs.existsSync(yarnReleasesPath)) {
+    return { enabled: false };
+  }
+  
+  try {
+    const files = fs.readdirSync(yarnReleasesPath);
+    const yarnBinary = files.find(file => file.startsWith('yarn-') && file.endsWith('.cjs'));
+    
+    if (yarnBinary) {
+      return { enabled: true, yarnBinary };
+    }
+  } catch (error) {
+    // If we can't read the directory, assume PnP is not enabled
+  }
+  
+  return { enabled: false };
+}
+
 function parseShellCommand(command: string): string[] {
   const args: string[] = [];
   let current = '';
@@ -79,7 +100,8 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    if (this.isYarnPnpSupportEnabled) {
+    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    if (yarnPnp.enabled) {
       return `yarn jest`;
     }
 
@@ -92,7 +114,8 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    if (this.isYarnPnpSupportEnabled) {
+    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    if (yarnPnp.enabled) {
       return `yarn vitest`;
     }
 
@@ -283,11 +306,6 @@ export class TestRunnerConfig {
   }
 
   public get isCodeLensEnabled(): boolean {
-    const disableCodeLens = this.getConfig<boolean>('jestrunner.disableCodeLens');
-    if (disableCodeLens !== undefined) {
-      return !disableCodeLens;
-    }
-
     return this.getConfig('jestrunner.enableCodeLens', true);
   }
 
@@ -304,13 +322,6 @@ export class TestRunnerConfig {
     // Actual filtering is done by shouldIncludeFile() which reads patterns
     // from framework configs (Jest testMatch / Vitest include)
     return '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}';
-  }
-
-  public get isYarnPnpSupportEnabled(): boolean {
-    return this.getConfig('jestrunner.enableYarnPnpSupport', false);
-  }
-  public get getYarnPnpCommand(): string {
-    return this.getConfig('jestrunner.yarnPnpCommand');
   }
 
   public buildJestArgs(
@@ -423,9 +434,10 @@ export class TestRunnerConfig {
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
-    if (this.isYarnPnpSupportEnabled) {
+    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    if (yarnPnp.enabled && yarnPnp.yarnBinary) {
       delete debugConfig.runtimeExecutable;
-      debugConfig.program = `.yarn/releases/${this.getYarnPnpCommand}`;
+      debugConfig.program = `.yarn/releases/${yarnPnp.yarnBinary}`;
       debugConfig.args = isVitest ? ['vitest', 'run'] : ['jest'];
       return debugConfig;
     }

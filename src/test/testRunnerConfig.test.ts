@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TestRunnerConfig } from '../testRunnerConfig';
+import { TestRunnerConfig, detectYarnPnp } from '../testRunnerConfig';
 import {
   Document,
   TextEditor,
@@ -1445,6 +1445,90 @@ describe('TestRunnerConfig', () => {
     });
   });
 
+  describe('detectYarnPnp', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should return enabled false when .yarn/releases does not exist', () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+      const result = detectYarnPnp('/home/user/project');
+
+      expect(result).toEqual({ enabled: false });
+    });
+
+    it('should return enabled true with yarn binary when found', () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([
+        'yarn-3.2.0.cjs',
+        'other-file.txt',
+      ] as any);
+
+      const result = detectYarnPnp('/home/user/project');
+
+      expect(result).toEqual({
+        enabled: true,
+        yarnBinary: 'yarn-3.2.0.cjs',
+      });
+    });
+
+    it('should find the first yarn binary when multiple exist', () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([
+        'yarn-3.2.0.cjs',
+        'yarn-4.0.0.cjs',
+      ] as any);
+
+      const result = detectYarnPnp('/home/user/project');
+
+      expect(result).toEqual({
+        enabled: true,
+        yarnBinary: 'yarn-3.2.0.cjs',
+      });
+    });
+
+    it('should return enabled false when no yarn binary found', () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([
+        'some-other-file.js',
+        'readme.md',
+      ] as any);
+
+      const result = detectYarnPnp('/home/user/project');
+
+      expect(result).toEqual({ enabled: false });
+    });
+
+    it('should return enabled false when readdirSync throws error', () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'readdirSync').mockImplementation(() => {
+        throw new Error('Permission denied');
+      });
+
+      const result = detectYarnPnp('/home/user/project');
+
+      expect(result).toEqual({ enabled: false });
+    });
+
+    it('should only match files starting with yarn- and ending with .cjs', () => {
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([
+        'yarn.cjs',           // missing version
+        'yarn-3.2.0.js',      // wrong extension
+        'my-yarn-3.2.0.cjs',  // not starting with yarn-
+        'yarn-4.0.0.cjs',     // correct
+      ] as any);
+
+      const result = detectYarnPnp('/home/user/project');
+
+      expect(result).toEqual({
+        enabled: true,
+        yarnBinary: 'yarn-4.0.0.cjs',
+      });
+    });
+  });
+
   describe('getDebugConfiguration', () => {
     let jestRunnerConfig: TestRunnerConfig;
     const mockFilePath = '/home/user/project/src/test.spec.ts';
@@ -1470,6 +1554,9 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
       const config = jestRunnerConfig.getDebugConfiguration();
 
       expect(config).toMatchObject({
@@ -1484,13 +1571,21 @@ describe('TestRunnerConfig', () => {
       });
     });
 
-    it('should configure for Yarn PnP when enabled', () => {
+    it('should configure for Yarn PnP when detected', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.enableYarnPnpSupport': true,
-          'jestrunner.yarnPnpCommand': 'yarn-3.2.0.cjs',
-        }),
+        new WorkspaceConfiguration({}),
       );
+
+      // Mock Yarn PnP directory structure
+      jest.spyOn(fs, 'existsSync').mockImplementation((path: any) => {
+        if (path === '/home/user/project/.yarn/releases') {
+          return true;
+        }
+        return false;
+      });
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([
+        'yarn-3.2.0.cjs' as any,
+      ]);
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
@@ -1506,6 +1601,9 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
       const config = jestRunnerConfig.getDebugConfiguration();
 
       expect(config.program).toBe('node');
@@ -1520,6 +1618,9 @@ describe('TestRunnerConfig', () => {
             'node "node_modules/.bin/jest" --config="jest.config.js"',
         }),
       );
+
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
@@ -1570,24 +1671,28 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
       const config = jestRunnerConfig.getDebugConfiguration();
 
       expect(config.cwd).toBeUndefined();
     });
 
-    it('should prioritize Yarn PnP over custom jest command', () => {
+    it('should use custom jest command when configured', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
-          'jestrunner.enableYarnPnpSupport': true,
-          'jestrunner.yarnPnpCommand': 'yarn-3.2.0.cjs',
           'jestrunner.jestCommand': 'node ./custom-jest.js',
         }),
       );
 
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
-      expect(config.args).toEqual(['jest']);
+      expect(config.program).toBe('node');
+      expect(config.args).toEqual(['./custom-jest.js']);
     });
   });
 
@@ -1630,37 +1735,6 @@ describe('TestRunnerConfig', () => {
 
       expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
     });
-
-    it('should support old disableCodeLens setting (set to true)', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.disableCodeLens': true,
-        }),
-      );
-
-      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
-    });
-
-    it('should support old disableCodeLens setting (set to false)', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.disableCodeLens': false,
-        }),
-      );
-
-      expect(jestRunnerConfig.isCodeLensEnabled).toBe(true);
-    });
-
-    it('should prioritize disableCodeLens over enableCodeLens for backwards compatibility', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.disableCodeLens': true,
-          'jestrunner.enableCodeLens': true, // This should be ignored
-        }),
-      );
-
-      expect(jestRunnerConfig.isCodeLensEnabled).toBe(false);
-    });
   });
 
   describe('getTestFilePattern', () => {
@@ -1682,6 +1756,15 @@ describe('TestRunnerConfig', () => {
 
     beforeEach(() => {
       jestRunnerConfig = new TestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(
+          new WorkspaceFolder(new Uri('/home/user/project') as any) as any,
+        );
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
     });
 
     it('should return custom vitest command when set', () => {
@@ -1699,15 +1782,27 @@ describe('TestRunnerConfig', () => {
         .spyOn(vscode.workspace, 'getConfiguration')
         .mockReturnValue(new WorkspaceConfiguration({}));
 
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
       expect(jestRunnerConfig.vitestCommand).toBe('npx --no-install vitest');
     });
 
-    it('should use yarn when PnP support is enabled', () => {
+    it('should use yarn when PnP is detected', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.enableYarnPnpSupport': true,
-        }),
+        new WorkspaceConfiguration({}),
       );
+
+      // Mock Yarn PnP directory structure
+      jest.spyOn(fs, 'existsSync').mockImplementation((path: any) => {
+        if (path === '/home/user/project/.yarn/releases') {
+          return true;
+        }
+        return false;
+      });
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([
+        'yarn-3.2.0.cjs' as any,
+      ]);
 
       expect(jestRunnerConfig.vitestCommand).toBe('yarn vitest');
     });
