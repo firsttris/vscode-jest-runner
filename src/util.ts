@@ -213,22 +213,22 @@ export function searchPathToParent<T>(
     currentFolderPath = path.dirname(startingPath);
   }
 
-  const endPath = path.dirname(ancestorPath);
-  const resolvedStart = path.resolve(currentFolderPath);
-  const resolvedEnd = path.resolve(endPath);
+  const endPath = normalizePath(path.dirname(ancestorPath));
+  const resolvedStart = normalizePath(path.resolve(currentFolderPath));
+  const resolvedEnd = normalizePath(path.resolve(endPath));
   if (!resolvedStart.startsWith(resolvedEnd)) {
     return false;
   }
 
   let lastPath: null | string = null;
   do {
-    const result = callback(currentFolderPath);
+    const result = callback(normalizePath(currentFolderPath));
     if (result) {
       return result;
     }
-    lastPath = currentFolderPath;
+    lastPath = normalizePath(currentFolderPath);
     currentFolderPath = path.dirname(currentFolderPath);
-  } while (currentFolderPath !== endPath && currentFolderPath !== lastPath);
+  } while (normalizePath(currentFolderPath) !== endPath && normalizePath(currentFolderPath) !== lastPath);
 
   return false;
 }
