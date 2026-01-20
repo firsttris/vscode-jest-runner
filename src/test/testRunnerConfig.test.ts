@@ -776,8 +776,8 @@ describe('TestRunnerConfig', () => {
     describe('custom config fallback to standard config', () => {
       it('should fallback to standard Jest config when custom config does not exist', () => {
         const jestRunnerConfig = new TestRunnerConfig();
-        const workspacePath = '/home/user/workspace';
-        const targetPath = '/home/user/workspace/src/test.spec.ts';
+        const workspacePath = normalizePath('/home/user/workspace');
+        const targetPath = path.join(workspacePath, 'src/test.spec.ts');
         const customConfigPath = 'jest.config.custom.js';
         const standardConfigPath = path.resolve(workspacePath, 'jest.config.js');
         const customConfigFullPath = path.resolve(workspacePath, customConfigPath);
@@ -811,8 +811,8 @@ describe('TestRunnerConfig', () => {
 
       it('should use custom config when it exists', () => {
         const jestRunnerConfig = new TestRunnerConfig();
-        const workspacePath = '/home/user/workspace';
-        const targetPath = '/home/user/workspace/src/test.spec.ts';
+        const workspacePath = normalizePath('/home/user/workspace');
+        const targetPath = path.join(workspacePath, 'src/test.spec.ts');
         const customConfigPath = 'jest.config.custom.js';
         const customConfigFullPath = path.resolve(workspacePath, customConfigPath);
 
@@ -1879,8 +1879,8 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should fallback to standard Vitest config when custom config does not exist', () => {
-      const workspacePath = '/home/user/workspace';
-      const targetPath = '/home/user/workspace/src/test.spec.ts';
+      const workspacePath = normalizePath('/home/user/workspace');
+      const targetPath = path.join(workspacePath, 'src/test.spec.ts');
       const customConfigPath = 'vitest.config.custom.ts';
       const standardConfigPath = path.resolve(workspacePath, 'vitest.config.ts');
       const customConfigFullPath = path.resolve(workspacePath, customConfigPath);
@@ -1913,8 +1913,8 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should use custom Vitest config when it exists', () => {
-      const workspacePath = '/home/user/workspace';
-      const targetPath = '/home/user/workspace/src/test.spec.ts';
+      const workspacePath = normalizePath('/home/user/workspace');
+      const targetPath = path.join(workspacePath, 'src/test.spec.ts');
       const customConfigPath = 'vitest.config.custom.ts';
       const customConfigFullPath = path.resolve(workspacePath, customConfigPath);
 
