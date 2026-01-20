@@ -132,7 +132,6 @@ All coverage entry points use the same **Coverage** profile powered by VS Code's
 
 - Use the CodeLens "Coverage" action (if enabled) above a test or suite
 - Or run the Command Palette command: "Jest: Run Test with Coverage"
-- Both invoke the same Coverage profile and report results through the Coverage panel and inline decorations (not a separate terminal-only profile)
 
 </details>
 
