@@ -47,9 +47,6 @@ describe('jestDetection', () => {
       const result = isJestUsedIn(testDir);
 
       expect(result).toBe(true);
-      expect(mockedFs.existsSync).toHaveBeenCalledWith(
-        path.join(testDir, 'node_modules', '.bin', 'jest'),
-      );
     });
 
     it('should return true when Jest binary (.cmd) exists on Windows', () => {

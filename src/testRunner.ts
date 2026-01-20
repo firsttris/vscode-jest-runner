@@ -38,14 +38,8 @@ export class TestRunner {
   }
 
   public async runTestsOnPath(path: string): Promise<void> {
-    const command = this.buildJestCommand(path);
-    const framework = this.config.getTestFramework(path);
-
-    this.previousCommand = command;
-    this.previousFramework = framework;
-
-    await this.goToCwd();
-    await this.runTerminalCommand(command, framework);
+    const command = this.buildCommand(path);
+    await this.executeCommand(command, path);
   }
 
   public async runCurrentTest(
@@ -53,7 +47,6 @@ export class TestRunner {
     options?: string[],
     collectCoverageFromCurrentFile?: boolean,
   ): Promise<void> {
-    const currentTestName = typeof argument === 'string' ? argument : undefined;
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;
@@ -62,37 +55,13 @@ export class TestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-
-    const finalOptions = options;
-    if (collectCoverageFromCurrentFile) {
-      const targetFileDir = getDirName(filePath);
-      const targetFileName = getFileName(filePath).replace(
-        /\.(test|spec)\./,
-        '.',
-      );
-
-      const coverageTarget = fs.existsSync(`${targetFileDir}/${targetFileName}`)
-        ? `**/${targetFileName}`
-        : `**/${getFileName(targetFileDir)}/**`;
-
-      finalOptions.push('--collectCoverageFrom');
-      finalOptions.push(quote(coverageTarget));
-    }
-
+    const currentTestName = typeof argument === 'string' ? argument : undefined;
     const testName = currentTestName || this.findCurrentTestName(editor);
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const command = this.buildJestCommand(
-      filePath,
-      resolvedTestName,
-      finalOptions,
-    );
-    const framework = this.config.getTestFramework(filePath);
 
-    this.previousCommand = command;
-    this.previousFramework = framework;
-
-    await this.goToCwd();
-    await this.runTerminalCommand(command, framework);
+    const finalOptions = this.getCoverageOptions(filePath, collectCoverageFromCurrentFile, options);
+    const command = this.buildCommand(filePath, resolvedTestName, finalOptions);
+    await this.executeCommand(command, filePath);
   }
 
   public async runCurrentFile(options?: string[]): Promise<void> {
@@ -104,14 +73,8 @@ export class TestRunner {
     await editor.document.save();
 
     const filePath = editor.document.fileName;
-    const command = this.buildJestCommand(filePath, undefined, options);
-    const framework = this.config.getTestFramework(filePath);
-
-    this.previousCommand = command;
-    this.previousFramework = framework;
-
-    await this.goToCwd();
-    await this.runTerminalCommand(command, framework);
+    const command = this.buildCommand(filePath, undefined, options);
+    await this.executeCommand(command, filePath);
   }
 
   public async runPreviousTest(): Promise<void> {
@@ -124,10 +87,7 @@ export class TestRunner {
 
     if (typeof this.previousCommand === 'string') {
       await this.goToCwd();
-      await this.runTerminalCommand(
-        this.previousCommand,
-        this.previousFramework,
-      );
+      await this.runTerminalCommand(this.previousCommand, this.previousFramework);
     } else {
       await this.executeDebugCommand(this.previousCommand);
     }
@@ -214,7 +174,7 @@ export class TestRunner {
     return fullTestName ? escapeRegExp(fullTestName) : undefined;
   }
 
-  private buildJestCommand(
+  private buildCommand(
     filePath: string,
     testName?: string,
     options?: string[],
@@ -222,20 +182,42 @@ export class TestRunner {
     const framework = this.config.getTestFramework(filePath);
 
     if (framework === 'vitest') {
-      return this.buildVitestCommand(filePath, testName, options);
+      const args = this.config.buildVitestArgs(filePath, testName, true, options);
+      return `${this.config.vitestCommand} ${args.join(' ')}`;
     }
 
     const args = this.config.buildJestArgs(filePath, testName, true, options);
     return `${this.config.jestCommand} ${args.join(' ')}`;
   }
 
-  private buildVitestCommand(
+  private getCoverageOptions(
     filePath: string,
-    testName?: string,
+    collectCoverageFromCurrentFile: boolean,
     options?: string[],
-  ): string {
-    const args = this.config.buildVitestArgs(filePath, testName, true, options);
-    return `${this.config.vitestCommand} ${args.join(' ')}`;
+  ): string[] {
+    if (!collectCoverageFromCurrentFile) {
+      return options || [];
+    }
+
+    const finalOptions = [...(options || [])];
+    const targetFileDir = getDirName(filePath);
+    const targetFileName = getFileName(filePath).replace(/\.(test|spec)\./, '.');
+
+    const coverageTarget = fs.existsSync(`${targetFileDir}/${targetFileName}`)
+      ? `**/${targetFileName}`
+      : `**/${getFileName(targetFileDir)}/**`;
+
+    finalOptions.push('--collectCoverageFrom', quote(coverageTarget));
+    return finalOptions;
+  }
+
+  private async executeCommand(command: string, filePath: string): Promise<void> {
+    const framework = this.config.getTestFramework(filePath);
+    this.previousCommand = command;
+    this.previousFramework = framework;
+
+    await this.goToCwd();
+    await this.runTerminalCommand(command, framework);
   }
 
   private async goToCwd() {

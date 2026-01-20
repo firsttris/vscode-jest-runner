@@ -5,6 +5,7 @@ import * as fs from 'node:fs';
 import type { ParsedNode } from 'jest-editor-support';
 import { isTestFile } from './testDetection';
 
+const IS_WINDOWS = process.platform.includes('win32');
 let outputChannel: vscode.OutputChannel | undefined;
 
 export function getOutputChannel(): vscode.OutputChannel {
@@ -52,11 +53,11 @@ export function getFileName(filePath: string): string {
 }
 
 export function isWindows(): boolean {
-  return process.platform.includes('win32');
+  return IS_WINDOWS;
 }
 
 export function normalizePath(path: string): string {
-  return isWindows() ? path.replace(/\\/g, '/') : path;
+  return IS_WINDOWS ? path.replace(/\\/g, '/') : path;
 }
 
 export function escapeRegExp(s: string): string {
@@ -95,11 +96,7 @@ export function findFullTestName(
   }
 }
 
-const QUOTES = {
-  '"': true,
-  "'": true,
-  '`': true,
-};
+const QUOTES = new Set(['"', "'", '`']);
 
 export function resolveTestNameStringInterpolation(s: string): string {
   const variableRegex = /(\${?[A-Za-z0-9_]+}?|%[psdifjo#%])/gi;
@@ -108,20 +105,20 @@ export function resolveTestNameStringInterpolation(s: string): string {
 }
 
 export function escapeSingleQuotes(s: string): string {
-  return isWindows() ? s : s.replace(/'/g, "'\\''");
+  return IS_WINDOWS ? s : s.replace(/'/g, "'\\''");
 }
 
 export function quote(s: string): string {
-  const q = isWindows() ? '"' : `'`;
-  return [q, s, q].join('');
+  const q = IS_WINDOWS ? '"' : `'`;
+  return `${q}${s}${q}`;
 }
 
 export function unquote(s: string): string {
-  if (QUOTES[s[0]]) {
+  if (QUOTES.has(s[0])) {
     s = s.substring(1);
   }
 
-  if (QUOTES[s[s.length - 1]]) {
+  if (QUOTES.has(s[s.length - 1])) {
     s = s.substring(0, s.length - 1);
   }
 
@@ -162,14 +159,9 @@ export function updateTestNameIfUsingProperties(receivedTestName?: string) {
     return undefined;
   }
 
-  const namePropertyRegex = /(?<=\S)\\.name/g;
-  const testNameWithoutNameProperty = receivedTestName.replace(
-    namePropertyRegex,
-    '',
-  );
-
-  const prototypePropertyRegex = /\w*\\.prototype\\./g;
-  return testNameWithoutNameProperty.replace(prototypePropertyRegex, '');
+  return receivedTestName
+    .replace(/(?<=\S)\\.name/g, '')
+    .replace(/\w*\\.prototype\\./g, '');
 }
 
 export function resolveConfigPathOrMapping(
@@ -246,22 +238,19 @@ export function shouldIncludeFile(
 	}
 
 	const normalizedPath = normalizePath(filePath);
-	const normalizedFolderPath = normalizePath(workspaceFolderPath);
-
-	const relativePath = path.relative(normalizedFolderPath, normalizedPath);
+	const relativePath = path.relative(
+		normalizePath(workspaceFolderPath),
+		normalizedPath,
+	);
 
 	if (include.length > 0) {
-		const includeMatch =
-			mm.isMatch(relativePath, include) || mm.isMatch(normalizedPath, include);
-		if (!includeMatch) {
+		if (!mm.isMatch(relativePath, include) && !mm.isMatch(normalizedPath, include)) {
 			return false;
 		}
 	}
 
 	if (exclude.length > 0) {
-		const excludeMatch =
-			mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude);
-		if (excludeMatch) {
+		if (mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude)) {
 			return false;
 		}
 	}

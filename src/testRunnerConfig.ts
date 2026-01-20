@@ -16,6 +16,7 @@ import {
   getTestFrameworkForFile,
   type TestFrameworkName,
 } from './testDetection';
+import { JEST_CONFIG_FILES, VITEST_CONFIG_FILES } from './constants';
 
 function parseShellCommand(command: string): string[] {
   const args: string[] = [];
@@ -67,10 +68,12 @@ function parseShellCommand(command: string): string[] {
 }
 
 export class TestRunnerConfig {
+  private getConfig<T>(key: string, defaultValue?: T): T | undefined {
+    return vscode.workspace.getConfiguration().get(key, defaultValue);
+  }
+
   public get jestCommand(): string {
-    const customCommand = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.jestCommand') as string | undefined;
+    const customCommand = this.getConfig<string>('jestrunner.jestCommand');
     if (customCommand) {
       return customCommand;
     }
@@ -83,9 +86,7 @@ export class TestRunnerConfig {
   }
 
   public get vitestCommand(): string {
-    const customCommand = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.vitestCommand') as string | undefined;
+    const customCommand = this.getConfig<string>('jestrunner.vitestCommand');
     if (customCommand) {
       return customCommand;
     }
@@ -119,17 +120,11 @@ export class TestRunnerConfig {
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
-    return vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.changeDirectoryToWorkspaceRoot');
+    return this.getConfig('jestrunner.changeDirectoryToWorkspaceRoot');
   }
 
   public get preserveEditorFocus(): boolean {
-    return (
-      vscode.workspace
-        .getConfiguration()
-        .get('jestrunner.preserveEditorFocus') || false
-    );
+    return this.getConfig('jestrunner.preserveEditorFocus', false);
   }
 
   public get cwd(): string {
@@ -141,9 +136,7 @@ export class TestRunnerConfig {
   }
 
   private get projectPathFromConfig(): string | undefined {
-    const projectPathFromConfig = vscode.workspace
-      .getConfiguration()
-      .get<string>('jestrunner.projectPath');
+    const projectPathFromConfig = this.getConfig<string>('jestrunner.projectPath');
     if (projectPathFromConfig) {
       return path.resolve(
         this.currentWorkspaceFolderPath,
@@ -153,9 +146,7 @@ export class TestRunnerConfig {
   }
 
   private get useNearestConfig(): boolean | undefined {
-    return vscode.workspace
-      .getConfiguration()
-      .get<boolean>('jestrunner.useNearestConfig');
+    return this.getConfig<boolean>('jestrunner.useNearestConfig');
   }
 
   public get currentPackagePath() {
@@ -164,9 +155,7 @@ export class TestRunnerConfig {
       return '';
     }
 
-    const checkRelativePathForJest = vscode.workspace
-      .getConfiguration()
-      .get<boolean>('jestrunner.checkRelativePathForJest');
+    const checkRelativePathForJest = this.getConfig<boolean>('jestrunner.checkRelativePathForJest');
     const foundPath = searchPathToParent<string>(
       path.dirname(editor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
@@ -200,16 +189,19 @@ export class TestRunnerConfig {
     return workspaceFolder.uri.fsPath;
   }
 
-  public getJestConfigPath(targetPath: string): string {
-    const configPathOrMapping: string | Record<string, string> | undefined =
-      vscode.workspace.getConfiguration().get('jestrunner.configPath');
+  private getConfigPath(
+    targetPath: string,
+    configKey: string,
+    framework?: TestFrameworkName,
+  ): string {
+    const configPathOrMapping = this.getConfig<string | Record<string, string>>(configKey);
 
     const configPath = resolveConfigPathOrMapping(
       configPathOrMapping,
       targetPath,
     );
     if (!configPath || this.useNearestConfig) {
-      const foundPath = this.findConfigPath(targetPath, configPath);
+      const foundPath = this.findConfigPath(targetPath, configPath, framework);
       if (foundPath) {
         return foundPath;
       }
@@ -228,7 +220,7 @@ export class TestRunnerConfig {
         return resolvedPath;
       }
       
-      const foundPath = this.findConfigPath(targetPath, undefined);
+      const foundPath = this.findConfigPath(targetPath, undefined, framework);
       if (foundPath) {
         return foundPath;
       }
@@ -239,40 +231,22 @@ export class TestRunnerConfig {
     return '';
   }
 
+  public getJestConfigPath(targetPath: string): string {
+    return this.getConfigPath(targetPath, 'jestrunner.configPath');
+  }
+
   public findConfigPath(
     targetPath?: string,
     targetConfigFilename?: string,
     framework?: TestFrameworkName,
   ): string | undefined {
-    const jestConfigFiles = [
-      'jest.config.js',
-      'jest.config.ts',
-      'jest.config.cjs',
-      'jest.config.mjs',
-      'jest.config.json',
-    ];
-    const vitestConfigFiles = [
-      'vitest.config.js',
-      'vitest.config.ts',
-      'vitest.config.mjs',
-      'vitest.config.mts',
-      'vitest.config.cjs',
-      'vitest.config.cts',
-      'vite.config.js',
-      'vite.config.ts',
-      'vite.config.mjs',
-      'vite.config.mts',
-      'vite.config.cjs',
-      'vite.config.cts',
-    ];
-
-    let configFiles: string[];
+    let configFiles: readonly string[];
     if (targetConfigFilename) {
       configFiles = [targetConfigFilename];
     } else if (framework === 'vitest') {
-      configFiles = vitestConfigFiles;
+      configFiles = VITEST_CONFIG_FILES;
     } else {
-      configFiles = jestConfigFiles;
+      configFiles = JEST_CONFIG_FILES;
     }
 
     const foundPath = searchPathToParent<string>(
@@ -296,48 +270,11 @@ export class TestRunnerConfig {
   }
 
   public getVitestConfigPath(targetPath: string): string {
-    const configPathOrMapping: string | Record<string, string> | undefined =
-      vscode.workspace.getConfiguration().get('jestrunner.vitestConfigPath');
-
-    const configPath = resolveConfigPathOrMapping(
-      configPathOrMapping,
-      targetPath,
-    );
-    if (!configPath || this.useNearestConfig) {
-      const foundPath = this.findConfigPath(targetPath, configPath, 'vitest');
-      if (foundPath) {
-        return foundPath;
-      }
-    }
-
-    if (configPath) {
-      const resolvedPath = normalizePath(
-        path.resolve(
-          this.currentWorkspaceFolderPath,
-          this.projectPathFromConfig || '',
-          configPath,
-        ),
-      );
-      
-      if (fs.existsSync(resolvedPath)) {
-        return resolvedPath;
-      }
-      
-      const foundPath = this.findConfigPath(targetPath, undefined, 'vitest');
-      if (foundPath) {
-        return foundPath;
-      }
-      
-      return resolvedPath;
-    }
-
-    return '';
+    return this.getConfigPath(targetPath, 'jestrunner.vitestConfigPath', 'vitest');
   }
 
   public get runOptions(): string[] | null {
-    const runOptions = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.runOptions');
+    const runOptions = this.getConfig('jestrunner.runOptions');
     if (runOptions) {
       if (Array.isArray(runOptions)) {
         return runOptions;
@@ -351,46 +288,24 @@ export class TestRunnerConfig {
   }
 
   public get debugOptions(): Partial<vscode.DebugConfiguration> {
-    const debugOptions = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.debugOptions');
-    if (debugOptions) {
-      return debugOptions;
-    }
-
-    return {};
+    return this.getConfig('jestrunner.debugOptions', {});
   }
 
   public get vitestDebugOptions(): Partial<vscode.DebugConfiguration> {
-    const vitestDebugOptions = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.vitestDebugOptions');
-    if (vitestDebugOptions) {
-      return vitestDebugOptions;
-    }
-
-    return {};
+    return this.getConfig('jestrunner.vitestDebugOptions', {});
   }
 
   public get isCodeLensEnabled(): boolean {
-    const config = vscode.workspace.getConfiguration();
-
-    const disableCodeLens = config.get<boolean>('jestrunner.disableCodeLens');
+    const disableCodeLens = this.getConfig<boolean>('jestrunner.disableCodeLens');
     if (disableCodeLens !== undefined) {
       return !disableCodeLens;
     }
 
-    const enableCodeLens = config.get<boolean>(
-      'jestrunner.enableCodeLens',
-      true,
-    );
-    return enableCodeLens;
+    return this.getConfig('jestrunner.enableCodeLens', true);
   }
 
   public get codeLensOptions(): CodeLensOption[] {
-    const codeLensOptions = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.codeLens');
+    const codeLensOptions = this.getConfig('jestrunner.codeLens');
     if (Array.isArray(codeLensOptions)) {
       return validateCodeLensOptions(codeLensOptions);
     }
@@ -405,17 +320,10 @@ export class TestRunnerConfig {
   }
 
   public get isYarnPnpSupportEnabled(): boolean {
-    return (
-      vscode.workspace
-        .getConfiguration()
-        .get('jestrunner.enableYarnPnpSupport') || false
-    );
+    return this.getConfig('jestrunner.enableYarnPnpSupport', false);
   }
   public get getYarnPnpCommand(): string {
-    const yarnPnpCommand: string = vscode.workspace
-      .getConfiguration()
-      .get('jestrunner.yarnPnpCommand');
-    return yarnPnpCommand;
+    return this.getConfig('jestrunner.yarnPnpCommand');
   }
 
   public buildJestArgs(
@@ -485,9 +393,7 @@ export class TestRunnerConfig {
 
     const setOptions = new Set(options);
 
-    const vitestRunOptions = vscode.workspace
-      .getConfiguration()
-      .get<string[]>('jestrunner.vitestRunOptions');
+    const vitestRunOptions = this.getConfig<string[]>('jestrunner.vitestRunOptions');
     if (vitestRunOptions && Array.isArray(vitestRunOptions)) {
       vitestRunOptions.forEach((option) => setOptions.add(option));
     } else if (this.runOptions) {
@@ -540,9 +446,7 @@ export class TestRunnerConfig {
     const customCommandKey = isVitest
       ? 'jestrunner.vitestCommand'
       : 'jestrunner.jestCommand';
-    const customCommand = vscode.workspace
-      .getConfiguration()
-      .get(customCommandKey);
+    const customCommand = this.getConfig(customCommandKey);
     if (customCommand && typeof customCommand === 'string') {
       const parts = parseShellCommand(customCommand);
       if (parts.length > 0) {

@@ -25,6 +25,21 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
   }
 }
 
+function binaryExists(directoryPath: string, binaryName: string): boolean {
+  const possibleBinaryPaths = [
+    path.join(directoryPath, 'node_modules', '.bin', binaryName),
+    path.join(directoryPath, 'node_modules', '.bin', `${binaryName}.cmd`),
+  ];
+  return possibleBinaryPaths.some(fs.existsSync);
+}
+
+function checkVitestViteConfig(directoryPath: string): boolean {
+  return viteConfigFiles.some((viteConfig) => {
+    const viteConfigPath = path.join(directoryPath, viteConfig);
+    return fs.existsSync(viteConfigPath) && viteConfigHasTestAttribute(viteConfigPath);
+  });
+}
+
 const vitestDetectionCache = new Map<string, boolean>();
 
 export function clearTestDetectionCache(): void {
@@ -94,49 +109,25 @@ function isFrameworkUsedIn(
       return false;
     }
 
-    const possibleBinaryPaths = [
-      path.join(directoryPath, 'node_modules', '.bin', framework.binaryName),
-      path.join(
-        directoryPath,
-        'node_modules',
-        '.bin',
-        `${framework.binaryName}.cmd`,
-      ),
-    ];
-
-    for (const binPath of possibleBinaryPaths) {
-      if (fs.existsSync(binPath)) {
-        cache.set(directoryPath, true);
-        return true;
-      }
+    if (binaryExists(directoryPath, framework.binaryName)) {
+      cache.set(directoryPath, true);
+      return true;
     }
 
-    for (const configFile of framework.configFiles) {
-      if (fs.existsSync(path.join(directoryPath, configFile))) {
-        cache.set(directoryPath, true);
-        return true;
-      }
+    if (framework.configFiles.some((cfg) => fs.existsSync(path.join(directoryPath, cfg)))) {
+      cache.set(directoryPath, true);
+      return true;
     }
 
-    if (frameworkName === 'vitest') {
-      for (const viteConfig of viteConfigFiles) {
-        const viteConfigPath = path.join(directoryPath, viteConfig);
-        if (
-          fs.existsSync(viteConfigPath) &&
-          viteConfigHasTestAttribute(viteConfigPath)
-        ) {
-          cache.set(directoryPath, true);
-          return true;
-        }
-      }
+    if (frameworkName === 'vitest' && checkVitestViteConfig(directoryPath)) {
+      cache.set(directoryPath, true);
+      return true;
     }
 
     const packageJsonPath = path.join(directoryPath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
       try {
-        const packageJson = JSON.parse(
-          fs.readFileSync(packageJsonPath, 'utf8'),
-        );
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
         if (
           packageJson.dependencies?.[frameworkName] ||
@@ -198,39 +189,17 @@ export function detectTestFramework(
   for (const frameworkName of configOrder) {
     const framework = testFrameworks.find((f) => f.name === frameworkName);
     if (framework) {
-      for (const configFile of framework.configFiles) {
-        if (fs.existsSync(path.join(directoryPath, configFile))) {
-          return framework.name as TestFrameworkName;
-        }
+      if (framework.configFiles.some((cfg) => fs.existsSync(path.join(directoryPath, cfg)))) {
+        return framework.name as TestFrameworkName;
       }
-      if (frameworkName === 'vitest') {
-        for (const viteConfig of viteConfigFiles) {
-          const viteConfigPath = path.join(directoryPath, viteConfig);
-          if (
-            fs.existsSync(viteConfigPath) &&
-            viteConfigHasTestAttribute(viteConfigPath)
-          ) {
-            return 'vitest';
-          }
-        }
+      if (frameworkName === 'vitest' && checkVitestViteConfig(directoryPath)) {
+        return 'vitest';
       }
     }
   }
 
   for (const framework of testFrameworks) {
-    if (
-      fs.existsSync(
-        path.join(directoryPath, 'node_modules', '.bin', framework.binaryName),
-      ) ||
-      fs.existsSync(
-        path.join(
-          directoryPath,
-          'node_modules',
-          '.bin',
-          `${framework.binaryName}.cmd`,
-        ),
-      )
-    ) {
+    if (binaryExists(directoryPath, framework.binaryName)) {
       return framework.name as TestFrameworkName;
     }
   }
@@ -419,9 +388,7 @@ function getTestFilePatternsForFile(filePath: string): {
 	patterns: string[];
 	configDir: string;
 } {
-	const workspaceFolder = vscode.workspace.getWorkspaceFolder(
-		vscode.Uri.file(filePath),
-	);
+	const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
 	if (!workspaceFolder) {
 		return {
 			patterns: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
@@ -429,7 +396,6 @@ function getTestFilePatternsForFile(filePath: string): {
 		};
 	}
 
-	let currentDir = path.dirname(filePath);
 	const rootPath = workspaceFolder.uri.fsPath;
 
 	const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', 'jest', filePath);
@@ -448,61 +414,30 @@ function getTestFilePatternsForFile(filePath: string): {
 		}
 	}
 
+	let currentDir = path.dirname(filePath);
 	while (currentDir && currentDir.startsWith(rootPath)) {
 		const framework = detectTestFramework(currentDir);
 
 		if (framework === 'jest') {
-			const jestConfigFiles = [
-				'jest.config.js',
-				'jest.config.ts',
-				'jest.config.json',
-				'jest.config.cjs',
-				'jest.config.mjs',
-			];
-			for (const configFile of jestConfigFiles) {
+			const jestFramework = testFrameworks.find((f) => f.name === 'jest');
+			for (const configFile of [...jestFramework!.configFiles, 'package.json']) {
 				const configPath = path.join(currentDir, configFile);
 				if (fs.existsSync(configPath)) {
 					const patterns = getTestMatchFromJestConfig(configPath);
-					if (patterns) {
-						return { patterns, configDir: currentDir };
-					}
+					if (patterns) return { patterns, configDir: currentDir };
 				}
 			}
-
-			const packageJsonPath = path.join(currentDir, 'package.json');
-			if (fs.existsSync(packageJsonPath)) {
-				const patterns = getTestMatchFromJestConfig(packageJsonPath);
-				if (patterns) {
-					return { patterns, configDir: currentDir };
-				}
-			}
-
 			break;
 		} else if (framework === 'vitest') {
-			const vitestConfigFiles = [
-				'vitest.config.js',
-				'vitest.config.ts',
-				'vitest.config.mjs',
-				'vitest.config.mts',
-				'vitest.config.cjs',
-				'vitest.config.cts',
-				'vite.config.js',
-				'vite.config.ts',
-				'vite.config.mjs',
-				'vite.config.mts',
-				'vite.config.cjs',
-				'vite.config.cts',
-			];
-			for (const configFile of vitestConfigFiles) {
+			const vitestFramework = testFrameworks.find((f) => f.name === 'vitest');
+			const allConfigs = [...vitestFramework!.configFiles, ...viteConfigFiles];
+			for (const configFile of allConfigs) {
 				const configPath = path.join(currentDir, configFile);
 				if (fs.existsSync(configPath)) {
 					const patterns = getIncludeFromVitestConfig(configPath);
-					if (patterns) {
-						return { patterns, configDir: currentDir };
-					}
+					if (patterns) return { patterns, configDir: currentDir };
 				}
 			}
-
 			break;
 		}
 
@@ -522,31 +457,22 @@ function resolveAndValidateCustomConfig(
 	frameworkType: 'jest' | 'vitest',
 	filePath: string,
 ): string | undefined {
-	const customConfigPath = vscode.workspace
-		.getConfiguration()
-		.get(configKey) as string | Record<string, string> | undefined;
+	const customConfigPath = vscode.workspace.getConfiguration().get(configKey) as string | Record<string, string> | undefined;
 	
 	const resolvedConfigPath = resolveConfigPathOrMapping(customConfigPath, filePath);
-	if (!resolvedConfigPath) {
-		return undefined;
-	}
+	if (!resolvedConfigPath) return undefined;
 	
-	const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
-	const basePath = workspaceFolder?.uri.fsPath;
-	if (!basePath) {
-		return undefined;
-	}
+	const basePath = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath;
+	if (!basePath) return undefined;
 	
 	const fullConfigPath = path.resolve(basePath, resolvedConfigPath);
-	if (!fs.existsSync(fullConfigPath)) {
-		return undefined;
-	}
+	if (!fs.existsSync(fullConfigPath)) return undefined;
 
 	const patterns = frameworkType === 'jest'
 		? getTestMatchFromJestConfig(fullConfigPath)
 		: getIncludeFromVitestConfig(fullConfigPath);
 	
-	return patterns && patterns.length > 0 ? fullConfigPath : undefined;
+	return patterns?.length ? fullConfigPath : undefined;
 }
 
 export function matchesTestFilePattern(filePath: string): boolean {

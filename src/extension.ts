@@ -24,6 +24,18 @@ function wrapCommandHandler<T extends unknown[]>(
   };
 }
 
+function registerCommand(
+  context: vscode.ExtensionContext,
+  commandId: string,
+  handler: (...args: unknown[]) => Promise<void> | void,
+): void {
+  const disposable = vscode.commands.registerCommand(
+    commandId,
+    wrapCommandHandler(handler, commandId.replace('extension.', '')),
+  );
+  context.subscriptions.push(disposable);
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   const config = new TestRunnerConfig();
   const jestRunner = new TestRunner(config);
@@ -83,112 +95,96 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
 
-  const runJest = vscode.commands.registerCommand(
+  registerCommand(
+    context,
     'extension.runJest',
-    wrapCommandHandler(async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument);
-    }, 'runJest'),
+    async (argument: Record<string, unknown> | string) =>
+      jestRunner.runCurrentTest(argument),
   );
 
-  const runJestCoverage = vscode.commands.registerCommand(
+  registerCommand(
+    context,
     'extension.runJestCoverage',
-    wrapCommandHandler(async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument, ['--coverage']);
-    }, 'runJestCoverage'),
+    async (argument: Record<string, unknown> | string) =>
+      jestRunner.runCurrentTest(argument, ['--coverage']),
   );
 
-  const runJestCurrentTestCoverage = vscode.commands.registerCommand(
+  registerCommand(
+    context,
     'extension.runJestCurrentTestCoverage',
-    wrapCommandHandler(async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument, ['--coverage'], true);
-    }, 'runJestCurrentTestCoverage'),
+    async (argument: Record<string, unknown> | string) =>
+      jestRunner.runCurrentTest(argument, ['--coverage'], true),
   );
 
-  const runJestPath = vscode.commands.registerCommand(
+  registerCommand(
+    context,
     'extension.runJestPath',
-    wrapCommandHandler(
-      async (argument: vscode.Uri) =>
-        jestRunner.runTestsOnPath(argument.fsPath),
-      'runJestPath',
-    ),
+    async (argument: vscode.Uri) => jestRunner.runTestsOnPath(argument.fsPath),
   );
-  const runJestAndUpdateSnapshots = vscode.commands.registerCommand(
+
+  registerCommand(
+    context,
     'extension.runJestAndUpdateSnapshots',
-    wrapCommandHandler(async () => {
-      jestRunner.runCurrentTest('', ['-u']);
-    }, 'runJestAndUpdateSnapshots'),
+    async () => jestRunner.runCurrentTest('', ['-u']),
   );
-  const runJestFile = vscode.commands.registerCommand(
+
+  registerCommand(
+    context,
     'extension.runJestFile',
-    wrapCommandHandler(async () => jestRunner.runCurrentFile(), 'runJestFile'),
+    async () => jestRunner.runCurrentFile(),
   );
-  const debugJest = vscode.commands.registerCommand(
+
+  registerCommand(
+    context,
     'extension.debugJest',
-    wrapCommandHandler(async (argument: Record<string, unknown> | string) => {
+    async (argument: Record<string, unknown> | string) => {
       if (typeof argument === 'string') {
         return jestRunner.debugCurrentTest(argument);
-      } else {
-        return jestRunner.debugCurrentTest();
       }
-    }, 'debugJest'),
+      return jestRunner.debugCurrentTest();
+    },
   );
-  const debugJestPath = vscode.commands.registerCommand(
+
+  registerCommand(
+    context,
     'extension.debugJestPath',
-    wrapCommandHandler(
-      async (argument: vscode.Uri) =>
-        jestRunner.debugTestsOnPath(argument.fsPath),
-      'debugJestPath',
-    ),
+    async (argument: vscode.Uri) =>
+      jestRunner.debugTestsOnPath(argument.fsPath),
   );
-  const runPrev = vscode.commands.registerCommand(
+
+  registerCommand(
+    context,
     'extension.runPrevJest',
-    wrapCommandHandler(async () => jestRunner.runPreviousTest(), 'runPrevJest'),
+    async () => jestRunner.runPreviousTest(),
   );
-  const runJestFileWithCoverage = vscode.commands.registerCommand(
+
+  registerCommand(
+    context,
     'extension.runJestFileWithCoverage',
-    wrapCommandHandler(
-      async () => jestRunner.runCurrentFile(['--coverage']),
-      'runJestFileWithCoverage',
-    ),
+    async () => jestRunner.runCurrentFile(['--coverage']),
   );
 
-  const runJestFileWithWatchMode = vscode.commands.registerCommand(
+  registerCommand(
+    context,
     'extension.runJestFileWithWatchMode',
-    wrapCommandHandler(
-      async () => jestRunner.runCurrentFile(['--watch']),
-      'runJestFileWithWatchMode',
-    ),
+    async () => jestRunner.runCurrentFile(['--watch']),
   );
 
-  const watchJest = vscode.commands.registerCommand(
+  registerCommand(
+    context,
     'extension.watchJest',
-    wrapCommandHandler(async (argument: Record<string, unknown> | string) => {
-      return jestRunner.runCurrentTest(argument, ['--watch']);
-    }, 'watchJest'),
+    async (argument: Record<string, unknown> | string) =>
+      jestRunner.runCurrentTest(argument, ['--watch']),
   );
 
   if (config.isCodeLensEnabled) {
     const docSelectors: vscode.DocumentFilter[] = [
-      {
-        pattern: config.getTestFilePattern(),
-      },
+      { pattern: config.getTestFilePattern() },
     ];
-    const codeLensProviderDisposable =
-      vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider);
-    context.subscriptions.push(codeLensProviderDisposable);
+    context.subscriptions.push(
+      vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider),
+    );
   }
-  context.subscriptions.push(runJest);
-  context.subscriptions.push(runJestCoverage);
-  context.subscriptions.push(runJestCurrentTestCoverage);
-  context.subscriptions.push(runJestAndUpdateSnapshots);
-  context.subscriptions.push(runJestFile);
-  context.subscriptions.push(runJestPath);
-  context.subscriptions.push(debugJest);
-  context.subscriptions.push(debugJestPath);
-  context.subscriptions.push(runPrev);
-  context.subscriptions.push(runJestFileWithCoverage);
-  context.subscriptions.push(runJestFileWithWatchMode);
-  context.subscriptions.push(watchJest);
 
   context.subscriptions.push({ dispose: () => jestRunner.dispose() });
 }

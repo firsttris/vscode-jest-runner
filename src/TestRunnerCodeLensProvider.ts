@@ -16,29 +16,30 @@ import {
   logError,
 } from './util';
 
+const CODE_LENS_CONFIG: Record<
+  CodeLensOption,
+  { title: string; command: string }
+> = {
+  run: { title: 'Run', command: 'extension.runJest' },
+  debug: { title: 'Debug', command: 'extension.debugJest' },
+  watch: { title: 'Run --watch', command: 'extension.watchJest' },
+  coverage: { title: 'Run --coverage', command: 'extension.runJestCoverage' },
+  'current-test-coverage': {
+    title: 'Run --collectCoverageFrom (target file/dir)',
+    command: 'extension.runJestCurrentTestCoverage',
+  },
+};
+
 function getCodeLensForOption(
   range: Range,
   codeLensOption: CodeLensOption,
   fullTestName: string,
 ): CodeLens {
-  const titleMap: Record<CodeLensOption, string> = {
-    run: 'Run',
-    debug: 'Debug',
-    watch: 'Run --watch',
-    coverage: 'Run --coverage',
-    'current-test-coverage': 'Run --collectCoverageFrom (target file/dir)',
-  };
-  const commandMap: Record<CodeLensOption, string> = {
-    run: 'extension.runJest',
-    debug: 'extension.debugJest',
-    watch: 'extension.watchJest',
-    coverage: 'extension.runJestCoverage',
-    'current-test-coverage': 'extension.runJestCurrentTestCoverage',
-  };
+  const config = CODE_LENS_CONFIG[codeLensOption];
   return new CodeLens(range, {
     arguments: [fullTestName],
-    title: titleMap[codeLensOption],
-    command: commandMap[codeLensOption],
+    title: config.title,
+    command: config.command,
   });
 }
 
@@ -47,6 +48,10 @@ function getTestsBlocks(
   parseResults: TestNode[],
   codeLensOptions: CodeLensOption[],
 ): CodeLens[] {
+  if (parsedNode.type === 'expect') {
+    return [];
+  }
+
   const codeLens: CodeLens[] = [];
 
   parsedNode.children?.forEach((subNode) => {
@@ -59,10 +64,6 @@ function getTestsBlocks(
     parsedNode.end.line - 1,
     parsedNode.end.column,
   );
-
-  if (parsedNode.type === 'expect') {
-    return [];
-  }
 
   const fullTestName = escapeRegExp(
     findFullTestName(parsedNode.start.line, parseResults),
@@ -98,12 +99,13 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
         !workspaceFolderPath ||
         !shouldIncludeFile(document.fileName, workspaceFolderPath)
       ) {
-        return [];
+        return this.lastSuccessfulCodeLens;
       }
 
       const parseResults = parse(document.fileName, document.getText(), {
         plugins: { decorators: 'legacy' },
       }).root.children;
+      
       this.lastSuccessfulCodeLens = parseResults.flatMap((parseResult) =>
         getTestsBlocks(parseResult, parseResults, this.codeLensOptions),
       );
