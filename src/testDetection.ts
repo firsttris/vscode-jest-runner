@@ -517,18 +517,6 @@ function getTestFilePatternsForFile(filePath: string): {
 	};
 }
 
-/**
- * Resolves and validates a custom config path for a given framework type.
- * This helper function consolidates the logic for:
- * 1. Resolving config paths from VS Code settings (supporting both string paths and path mappings)
- * 2. Validating that the config file exists
- * 3. Checking that the config file contains valid test patterns
- * 
- * @param configKey - The VS Code configuration key (e.g., 'jestrunner.configPath')
- * @param frameworkType - The test framework type ('jest' or 'vitest')
- * @param filePath - The file path being tested
- * @returns The full path to the validated config file, or undefined if not found/invalid
- */
 function resolveAndValidateCustomConfig(
 	configKey: string,
 	frameworkType: 'jest' | 'vitest',

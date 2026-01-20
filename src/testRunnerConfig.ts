@@ -295,9 +295,6 @@ export class TestRunnerConfig {
     return foundPath ? normalizePath(foundPath) : undefined;
   }
 
-  /**
-   * Gets the Vitest config path for a given target path
-   */
   public getVitestConfigPath(targetPath: string): string {
     const configPathOrMapping: string | Record<string, string> | undefined =
       vscode.workspace.getConfiguration().get('jestrunner.vitestConfigPath');
@@ -322,18 +319,15 @@ export class TestRunnerConfig {
         ),
       );
       
-      // Check if the custom config exists, fall back to standard config if it doesn't
       if (fs.existsSync(resolvedPath)) {
         return resolvedPath;
       }
       
-      // Custom config doesn't exist, try to find a standard config
       const foundPath = this.findConfigPath(targetPath, undefined, 'vitest');
       if (foundPath) {
         return foundPath;
       }
       
-      // Return the custom path even if it doesn't exist (maintains backward compatibility)
       return resolvedPath;
     }
 
