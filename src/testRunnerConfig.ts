@@ -215,15 +215,28 @@ export class TestRunnerConfig {
       }
     }
 
-    return configPath
-      ? normalizePath(
-          path.resolve(
-            this.currentWorkspaceFolderPath,
-            this.projectPathFromConfig || '',
-            configPath,
-          ),
-        )
-      : '';
+    if (configPath) {
+      const resolvedPath = normalizePath(
+        path.resolve(
+          this.currentWorkspaceFolderPath,
+          this.projectPathFromConfig || '',
+          configPath,
+        ),
+      );
+      
+      if (fs.existsSync(resolvedPath)) {
+        return resolvedPath;
+      }
+      
+      const foundPath = this.findConfigPath(targetPath, undefined);
+      if (foundPath) {
+        return foundPath;
+      }
+      
+      return resolvedPath;
+    }
+
+    return '';
   }
 
   public findConfigPath(
@@ -300,15 +313,31 @@ export class TestRunnerConfig {
       }
     }
 
-    return configPath
-      ? normalizePath(
-          path.resolve(
-            this.currentWorkspaceFolderPath,
-            this.projectPathFromConfig || '',
-            configPath,
-          ),
-        )
-      : '';
+    if (configPath) {
+      const resolvedPath = normalizePath(
+        path.resolve(
+          this.currentWorkspaceFolderPath,
+          this.projectPathFromConfig || '',
+          configPath,
+        ),
+      );
+      
+      // Check if the custom config exists, fall back to standard config if it doesn't
+      if (fs.existsSync(resolvedPath)) {
+        return resolvedPath;
+      }
+      
+      // Custom config doesn't exist, try to find a standard config
+      const foundPath = this.findConfigPath(targetPath, undefined, 'vitest');
+      if (foundPath) {
+        return foundPath;
+      }
+      
+      // Return the custom path even if it doesn't exist (maintains backward compatibility)
+      return resolvedPath;
+    }
+
+    return '';
   }
 
   public get runOptions(): string[] | null {

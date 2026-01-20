@@ -772,6 +772,72 @@ describe('TestRunnerConfig', () => {
         },
       );
     });
+
+    describe('custom config fallback to standard config', () => {
+      it('should fallback to standard Jest config when custom config does not exist', () => {
+        const jestRunnerConfig = new TestRunnerConfig();
+        const workspacePath = '/home/user/workspace';
+        const targetPath = '/home/user/workspace/src/test.spec.ts';
+        const customConfigPath = 'jest.config.custom.js';
+        const standardConfigPath = '/home/user/workspace/jest.config.js';
+
+        jest
+          .spyOn(vscode.workspace, 'getWorkspaceFolder')
+          .mockReturnValue(
+            new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+          );
+
+        jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+          new WorkspaceConfiguration({
+            'jestrunner.configPath': customConfigPath,
+          }),
+        );
+
+        jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+          // Custom config doesn't exist, but standard config does
+          return filePath === standardConfigPath;
+        });
+
+        jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
+          new TextEditor(new Document(new Uri(targetPath) as any)) as any,
+        );
+
+        const result = jestRunnerConfig.getJestConfigPath(targetPath);
+
+        // Should return the standard config, not the custom one
+        expect(result).toBe(standardConfigPath);
+      });
+
+      it('should use custom config when it exists', () => {
+        const jestRunnerConfig = new TestRunnerConfig();
+        const workspacePath = '/home/user/workspace';
+        const targetPath = '/home/user/workspace/src/test.spec.ts';
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = '/home/user/workspace/jest.config.custom.js';
+
+        jest
+          .spyOn(vscode.workspace, 'getWorkspaceFolder')
+          .mockReturnValue(
+            new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+          );
+
+        jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+          new WorkspaceConfiguration({
+            'jestrunner.configPath': customConfigPath,
+          }),
+        );
+
+        jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+          // Custom config exists
+          return filePath === customConfigFullPath;
+        });
+
+        const result = jestRunnerConfig.getJestConfigPath(targetPath);
+
+        // Should use the custom config
+        expect(result).toBe(customConfigFullPath);
+      });
+    });
   });
 
   describe('currentPackagePath', () => {
@@ -1809,6 +1875,68 @@ describe('TestRunnerConfig', () => {
       );
 
       expect(configPath).toBe('');
+    });
+
+    it('should fallback to standard Vitest config when custom config does not exist', () => {
+      const workspacePath = '/home/user/workspace';
+      const targetPath = '/home/user/workspace/src/test.spec.ts';
+      const customConfigPath = 'vitest.config.custom.ts';
+      const standardConfigPath = '/home/user/workspace/vitest.config.ts';
+
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(
+          new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+        );
+
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.vitestConfigPath': customConfigPath,
+        }),
+      );
+
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+        // Custom config doesn't exist, but standard config does
+        return filePath === standardConfigPath;
+      });
+
+      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
+        new TextEditor(new Document(new Uri(targetPath) as any)) as any,
+      );
+
+      const result = jestRunnerConfig.getVitestConfigPath(targetPath);
+
+      // Should return the standard config, not the custom one
+      expect(result).toBe(standardConfigPath);
+    });
+
+    it('should use custom Vitest config when it exists', () => {
+      const workspacePath = '/home/user/workspace';
+      const targetPath = '/home/user/workspace/src/test.spec.ts';
+      const customConfigPath = 'vitest.config.custom.ts';
+      const customConfigFullPath = '/home/user/workspace/vitest.config.custom.ts';
+
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(
+          new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+        );
+
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.vitestConfigPath': customConfigPath,
+        }),
+      );
+
+      jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+        // Custom config exists
+        return filePath === customConfigFullPath;
+      });
+
+      const result = jestRunnerConfig.getVitestConfigPath(targetPath);
+
+      // Should use the custom config
+      expect(result).toBe(customConfigFullPath);
     });
   });
 
