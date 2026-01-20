@@ -624,7 +624,7 @@ describe('TestRunnerConfig', () => {
               jest
                 .spyOn(fs, 'existsSync')
                 .mockImplementation(
-                  (filePath) => normalizePath(filePath as string) === foundPath,
+                  (filePath) => normalizePath(filePath as string) === normalizePath(foundPath),
                 );
 
               expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
@@ -801,6 +801,10 @@ describe('TestRunnerConfig', () => {
           return normalizePath(filePath as string) === standardConfigPath;
         });
 
+        jest.spyOn(fs, 'statSync').mockImplementation((p): any => ({
+          isDirectory: () => !p.toString().endsWith('.ts'),
+        }));
+
         jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
           new TextEditor(new Document(new Uri(targetPath) as any)) as any,
         );
@@ -832,8 +836,12 @@ describe('TestRunnerConfig', () => {
 
         jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
           // Custom config exists
-          return filePath === customConfigFullPath;
+          return normalizePath(filePath as string) === customConfigFullPath;
         });
+
+        jest.spyOn(fs, 'statSync').mockImplementation((p): any => ({
+          isDirectory: () => !p.toString().endsWith('.ts'),
+        }));
 
         const result = jestRunnerConfig.getJestConfigPath(targetPath);
 
@@ -1147,7 +1155,7 @@ describe('TestRunnerConfig', () => {
             jest
               .spyOn(fs, 'existsSync')
               .mockImplementation(
-                (filePath) => normalizePath(filePath as string) === configFilePath,
+                (filePath) => normalizePath(filePath as string) === normalizePath(configFilePath),
               );
             jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
               isDirectory: () => !openedFilePath.endsWith('.ts'),
@@ -1197,7 +1205,7 @@ describe('TestRunnerConfig', () => {
             jest
               .spyOn(fs, 'existsSync')
               .mockImplementation(
-                (filePath) => normalizePath(filePath as string) === configFilePath,
+                (filePath) => normalizePath(filePath as string) === normalizePath(configFilePath),
               );
             jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
               isDirectory: () => !openedFilePath.endsWith('.ts'),
@@ -1908,6 +1916,10 @@ describe('TestRunnerConfig', () => {
         return normalizePath(filePath as string) === standardConfigPath;
       });
 
+      jest.spyOn(fs, 'statSync').mockImplementation((p): any => ({
+        isDirectory: () => !p.toString().endsWith('.ts'),
+      }));
+
       jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
         new TextEditor(new Document(new Uri(targetPath) as any)) as any,
       );
@@ -1938,8 +1950,12 @@ describe('TestRunnerConfig', () => {
 
       jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
         // Custom config exists
-        return filePath === customConfigFullPath;
+        return normalizePath(filePath as string) === customConfigFullPath;
       });
+
+      jest.spyOn(fs, 'statSync').mockImplementation((p): any => ({
+        isDirectory: () => !p.toString().endsWith('.ts'),
+      }));
 
       const result = jestRunnerConfig.getVitestConfigPath(targetPath);
 
