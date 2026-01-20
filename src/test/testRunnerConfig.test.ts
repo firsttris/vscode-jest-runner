@@ -938,17 +938,9 @@ describe('TestRunnerConfig', () => {
       '%s: %s',
       (_os, _name, behavior, workspacePath, openedFilePath, installedPath) => {
         let jestRunnerConfig: TestRunnerConfig;
-        let packagePath: string;
-        let modulePath: string;
 
         beforeEach(() => {
           jestRunnerConfig = new TestRunnerConfig();
-          packagePath = installedPath
-            ? path.resolve(installedPath, 'package.json')
-            : '';
-          modulePath = installedPath
-            ? path.resolve(installedPath, 'node_modules', 'jest')
-            : '';
           jest
             .spyOn(vscode.workspace, 'getWorkspaceFolder')
             .mockReturnValue(
@@ -962,16 +954,15 @@ describe('TestRunnerConfig', () => {
           jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
             isDirectory: () => !openedFilePath.endsWith('.ts'),
           }));
+          
+          // Mock findTestFrameworkDirectory to return the installed path
           jest
-            .spyOn(fs, 'existsSync')
-            .mockImplementation(
-              (filePath) => filePath === packagePath || filePath === modulePath,
+            .spyOn(require('../testDetection'), 'findTestFrameworkDirectory')
+            .mockReturnValue(
+              installedPath
+                ? { directory: installedPath, framework: 'jest' as const }
+                : undefined,
             );
-          jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-            new WorkspaceConfiguration({
-              'jestrunner.checkRelativePathForJest': false,
-            }),
-          );
         });
 
         its[_os](behavior, async () => {
@@ -982,26 +973,6 @@ describe('TestRunnerConfig', () => {
           } else {
             expect(jestRunnerConfig.currentPackagePath).toBe('');
           }
-        });
-
-        describe('checkRelativePathForJest is set to true', () => {
-          beforeEach(() => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-              new WorkspaceConfiguration({
-                'jestrunner.checkRelativePathForJest': true,
-              }),
-            );
-          });
-
-          its[_os](behavior, async () => {
-            if (installedPath) {
-              expect(jestRunnerConfig.currentPackagePath).toBe(
-                normalizePath(installedPath),
-              );
-            } else {
-              expect(jestRunnerConfig.currentPackagePath).toBe('');
-            }
-          });
         });
       },
     );

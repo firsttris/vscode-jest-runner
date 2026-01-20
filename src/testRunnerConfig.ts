@@ -14,6 +14,7 @@ import {
 } from './util';
 import {
   getTestFrameworkForFile,
+  findTestFrameworkDirectory,
   type TestFrameworkName,
 } from './testDetection';
 import { JEST_CONFIG_FILES, VITEST_CONFIG_FILES } from './constants';
@@ -155,22 +156,8 @@ export class TestRunnerConfig {
       return '';
     }
 
-    const checkRelativePathForJest = this.getConfig<boolean>('jestrunner.checkRelativePathForJest');
-    const foundPath = searchPathToParent<string>(
-      path.dirname(editor.document.uri.fsPath),
-      this.currentWorkspaceFolderPath,
-      (currentFolderPath: string) => {
-        const pkg = path.join(currentFolderPath, 'package.json');
-        const jest = path.join(currentFolderPath, 'node_modules', 'jest');
-        if (
-          fs.existsSync(pkg) &&
-          (fs.existsSync(jest) || !checkRelativePathForJest)
-        ) {
-          return currentFolderPath;
-        }
-      },
-    );
-    return foundPath ? normalizePath(foundPath) : '';
+    const result = findTestFrameworkDirectory(editor.document.uri.fsPath);
+    return result ? normalizePath(result.directory) : '';
   }
 
   private get currentWorkspaceFolderPath(): string {

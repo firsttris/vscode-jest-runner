@@ -59,7 +59,6 @@ type JestRunnerConfigProps = {
   'jestrunner.projectPath'?: string;
   'jestrunner.configPath'?: string | Record<string, string>;
   'jestrunner.useNearestConfig'?: boolean;
-  'jestrunner.checkRelativePathForJest'?: boolean;
   'jestrunner.include'?: string[];
   'jestrunner.exclude'?: string[];
   'jestrunner.runOptions'?: string[];

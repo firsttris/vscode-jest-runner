@@ -170,12 +170,6 @@
             "description": "Enable if you are using Yarn 2 with Plug'n'Play",
             "scope": "window"
           },
-          "jestrunner.checkRelativePathForJest": {
-            "type": "boolean",
-            "default": true,
-            "description": "When `false`, when looking for the nearest resolution for Jest, only check for package.json files, rather than the `node_modules` folder.",
-            "scope": "window"
-          },
           "jestrunner.changeDirectoryToWorkspaceRoot": {
             "type": "boolean",
             "default": true,
