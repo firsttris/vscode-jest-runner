@@ -623,7 +623,9 @@ describe('TestRunnerConfig', () => {
               );
               jest
                 .spyOn(fs, 'existsSync')
-                .mockImplementation((filePath) => filePath === foundPath);
+                .mockImplementation(
+                  (filePath) => normalizePath(filePath as string) === foundPath,
+                );
 
               expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
                 expectedPath,
@@ -796,7 +798,7 @@ describe('TestRunnerConfig', () => {
 
         jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
           // Custom config doesn't exist, but standard config does
-          return filePath === standardConfigPath;
+          return normalizePath(filePath as string) === standardConfigPath;
         });
 
         jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
@@ -1144,7 +1146,9 @@ describe('TestRunnerConfig', () => {
               );
             jest
               .spyOn(fs, 'existsSync')
-              .mockImplementation((filePath) => filePath === configFilePath);
+              .mockImplementation(
+                (filePath) => normalizePath(filePath as string) === configFilePath,
+              );
             jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
               isDirectory: () => !openedFilePath.endsWith('.ts'),
             }));
@@ -1192,7 +1196,9 @@ describe('TestRunnerConfig', () => {
               );
             jest
               .spyOn(fs, 'existsSync')
-              .mockImplementation((filePath) => filePath === configFilePath);
+              .mockImplementation(
+                (filePath) => normalizePath(filePath as string) === configFilePath,
+              );
             jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
               isDirectory: () => !openedFilePath.endsWith('.ts'),
             }));
@@ -1899,7 +1905,7 @@ describe('TestRunnerConfig', () => {
 
       jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
         // Custom config doesn't exist, but standard config does
-        return filePath === standardConfigPath;
+        return normalizePath(filePath as string) === standardConfigPath;
       });
 
       jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(

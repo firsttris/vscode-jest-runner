@@ -281,8 +281,9 @@ export class TestRunnerConfig {
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         for (const configFilename of configFiles) {
-          const currentFolderConfigPath = normalizePath(
-            path.join(currentFolderPath, configFilename),
+          const currentFolderConfigPath = path.join(
+            currentFolderPath,
+            configFilename,
           );
 
           if (fs.existsSync(currentFolderConfigPath)) {
