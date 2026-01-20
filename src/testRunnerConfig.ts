@@ -281,10 +281,10 @@ export class TestRunnerConfig {
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         for (const configFilename of configFiles) {
-          const currentFolderConfigPath = path.join(
+          const currentFolderConfigPath = normalizePath(path.join(
             currentFolderPath,
             configFilename,
-          );
+          ));
 
           if (fs.existsSync(currentFolderConfigPath)) {
             return currentFolderConfigPath;
@@ -292,7 +292,7 @@ export class TestRunnerConfig {
         }
       },
     );
-    return foundPath ? normalizePath(foundPath) : undefined;
+    return foundPath || undefined;
   }
 
   /**
