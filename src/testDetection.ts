@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as mm from 'micromatch';
-import { logError, logWarning, logDebug } from './util';
+import { logError, logDebug } from './util';
 
 const testDetectionCache = new Map<string, boolean>();
 
