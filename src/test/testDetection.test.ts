@@ -17,6 +17,7 @@ import {
   viteConfigHasTestAttribute,
   getIncludeFromVitestConfig,
   getTestMatchFromJestConfig,
+  hasValidCustomConfig,
 } from '../testDetection';
 
 jest.mock('fs');
@@ -1785,6 +1786,310 @@ module.exports = {
       const result = detectTestFramework(testDir);
 
       expect(result).toBe('vitest');
+    });
+  });
+
+  describe('hasValidCustomConfig', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockedFs.existsSync = jest.fn().mockReturnValue(false);
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    describe('with Jest framework', () => {
+      it('should return false when configPath is undefined', () => {
+        const result = hasValidCustomConfig(undefined, 'jest');
+        expect(result).toBe(false);
+        expect(mockedFs.existsSync).not.toHaveBeenCalled();
+      });
+
+      it('should return false when configPath is empty string', () => {
+        const result = hasValidCustomConfig('', 'jest');
+        expect(result).toBe(false);
+      });
+
+      it('should return false when config file does not exist', () => {
+        const configPath = '/workspace/jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(false);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(false);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(configPath);
+        expect(mockedFs.readFileSync).not.toHaveBeenCalled();
+      });
+
+      it('should return false when config file exists but has no testMatch patterns', () => {
+        const configPath = '/workspace/jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          module.exports = {
+            preset: 'ts-jest',
+            testEnvironment: 'node'
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(false);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(configPath);
+        expect(mockedFs.readFileSync).toHaveBeenCalledWith(configPath, 'utf8');
+      });
+
+      it('should return false when config file has empty testMatch array', () => {
+        const configPath = '/workspace/jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          module.exports = {
+            testMatch: []
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(false);
+      });
+
+      it('should return true when config file has valid testMatch patterns', () => {
+        const configPath = '/workspace/jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          module.exports = {
+            testMatch: ['**/*.test.js', '**/*.spec.js']
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(true);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(configPath);
+        expect(mockedFs.readFileSync).toHaveBeenCalledWith(configPath, 'utf8');
+      });
+
+      it('should return true when config file has single testMatch pattern', () => {
+        const configPath = '/workspace/jest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          export default {
+            testMatch: ['**/*.test.ts']
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(true);
+      });
+
+      it('should handle config file read errors gracefully', () => {
+        const configPath = '/workspace/jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+          throw new Error('Permission denied');
+        });
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(false);
+      });
+
+      it('should handle invalid config path characters', () => {
+        const configPath = '/workspace/jest\\config\x00.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(false);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('with Vitest framework', () => {
+      it('should return false when configPath is undefined', () => {
+        const result = hasValidCustomConfig(undefined, 'vitest');
+        expect(result).toBe(false);
+        expect(mockedFs.existsSync).not.toHaveBeenCalled();
+      });
+
+      it('should return false when configPath is empty string', () => {
+        const result = hasValidCustomConfig('', 'vitest');
+        expect(result).toBe(false);
+      });
+
+      it('should return false when config file does not exist', () => {
+        const configPath = '/workspace/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(false);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(false);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(configPath);
+        expect(mockedFs.readFileSync).not.toHaveBeenCalled();
+      });
+
+      it('should return false when config file exists but has no include patterns', () => {
+        const configPath = '/workspace/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          export default defineConfig({
+            test: {
+              environment: 'node'
+            }
+          });
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(false);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(configPath);
+        expect(mockedFs.readFileSync).toHaveBeenCalledWith(configPath, 'utf8');
+      });
+
+      it('should return false when config file has no test block', () => {
+        const configPath = '/workspace/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          export default defineConfig({
+            plugins: [react()]
+          });
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false when config file has empty include array', () => {
+        const configPath = '/workspace/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          export default defineConfig({
+            test: {
+              include: []
+            }
+          });
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(false);
+      });
+
+      it('should return true when config file has valid include patterns', () => {
+        const configPath = '/workspace/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          export default defineConfig({
+            test: {
+              include: ['**/*.test.ts', '**/*.spec.ts']
+            }
+          });
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(true);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(configPath);
+        expect(mockedFs.readFileSync).toHaveBeenCalledWith(configPath, 'utf8');
+      });
+
+      it('should return true when config file has single include pattern', () => {
+        const configPath = '/workspace/vitest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          export default {
+            test: {
+              include: ['src/**/*.test.js']
+            }
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(true);
+      });
+
+      it('should handle config file read errors gracefully', () => {
+        const configPath = '/workspace/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+          throw new Error('File system error');
+        });
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(false);
+      });
+
+      it('should handle malformed config file content', () => {
+        const configPath = '/workspace/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          this is not valid javascript {{{ [ ] }
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('edge cases', () => {
+      it('should handle relative paths', () => {
+        const configPath = 'jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          module.exports = {
+            testMatch: ['**/*.test.js']
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(true);
+      });
+
+      it('should handle absolute paths', () => {
+        const configPath = '/absolute/path/to/vitest.config.ts';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          export default {
+            test: {
+              include: ['**/*.test.ts']
+            }
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'vitest');
+
+        expect(result).toBe(true);
+      });
+
+      it('should handle Windows-style paths', () => {
+        const configPath = 'C:\\Users\\project\\jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          module.exports = {
+            testMatch: ['**/*.test.js']
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(true);
+      });
+
+      it('should handle config with whitespace in path', () => {
+        const configPath = '/workspace/my project/jest.config.js';
+        mockedFs.existsSync = jest.fn().mockReturnValue(true);
+        mockedFs.readFileSync = jest.fn().mockReturnValue(`
+          module.exports = {
+            testMatch: ['**/*.test.js']
+          };
+        `);
+
+        const result = hasValidCustomConfig(configPath, 'jest');
+
+        expect(result).toBe(true);
+      });
     });
   });
 

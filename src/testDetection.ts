@@ -531,7 +531,7 @@ function getTestFilePatternsForFile(filePath: string): {
 	};
 }
 
-function hasValidCustomConfig(
+export function hasValidCustomConfig(
 	configPath: string | undefined,
 	frameworkType: 'jest' | 'vitest',
 ): boolean {
