@@ -215,15 +215,28 @@ export class TestRunnerConfig {
       }
     }
 
-    return configPath
-      ? normalizePath(
-          path.resolve(
-            this.currentWorkspaceFolderPath,
-            this.projectPathFromConfig || '',
-            configPath,
-          ),
-        )
-      : '';
+    if (configPath) {
+      const resolvedPath = normalizePath(
+        path.resolve(
+          this.currentWorkspaceFolderPath,
+          this.projectPathFromConfig || '',
+          configPath,
+        ),
+      );
+      
+      if (fs.existsSync(resolvedPath)) {
+        return resolvedPath;
+      }
+      
+      const foundPath = this.findConfigPath(targetPath, undefined);
+      if (foundPath) {
+        return foundPath;
+      }
+      
+      return resolvedPath;
+    }
+
+    return '';
   }
 
   public findConfigPath(
@@ -282,9 +295,6 @@ export class TestRunnerConfig {
     return foundPath ? normalizePath(foundPath) : undefined;
   }
 
-  /**
-   * Gets the Vitest config path for a given target path
-   */
   public getVitestConfigPath(targetPath: string): string {
     const configPathOrMapping: string | Record<string, string> | undefined =
       vscode.workspace.getConfiguration().get('jestrunner.vitestConfigPath');
@@ -300,15 +310,28 @@ export class TestRunnerConfig {
       }
     }
 
-    return configPath
-      ? normalizePath(
-          path.resolve(
-            this.currentWorkspaceFolderPath,
-            this.projectPathFromConfig || '',
-            configPath,
-          ),
-        )
-      : '';
+    if (configPath) {
+      const resolvedPath = normalizePath(
+        path.resolve(
+          this.currentWorkspaceFolderPath,
+          this.projectPathFromConfig || '',
+          configPath,
+        ),
+      );
+      
+      if (fs.existsSync(resolvedPath)) {
+        return resolvedPath;
+      }
+      
+      const foundPath = this.findConfigPath(targetPath, undefined, 'vitest');
+      if (foundPath) {
+        return foundPath;
+      }
+      
+      return resolvedPath;
+    }
+
+    return '';
   }
 
   public get runOptions(): string[] | null {

@@ -81,15 +81,13 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 
 ## ⚙️ Configuration
 
-### 📊 Coverage Support
+<details>
+<summary><b>📊 Coverage Support</b></summary>
+<br>
 
 The extension supports test coverage through VS Code's Test Explorer. When you run tests with coverage, the results are displayed directly in VS Code's coverage view.
 
-<details>
-<summary><b>📖 Click to expand coverage configuration details</b></summary>
-<br>
-
-#### 🔧 Prerequisites
+**Prerequisites**
 
 **For Jest:**
 
@@ -120,7 +118,7 @@ export default defineConfig({
 });
 ```
 
-#### ▶️ Running Tests with Coverage
+**Running Tests with Coverage**
 
 All coverage entry points use the same **Coverage** profile powered by VS Code's native coverage API.
 
@@ -138,13 +136,12 @@ All coverage entry points use the same **Coverage** profile powered by VS Code's
 
 </details>
 
-### 🛠️ Extension Settings
-
-Customize the test runner for your project:
 
 <details>
-<summary><b>📋 Click to view all settings</b></summary>
+<summary><b>🛠️ Extension Settings</b></summary>
 <br>
+
+Customize the test runner for your project:
 
 | Setting                                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -177,13 +174,12 @@ Customize the test runner for your project:
 
 </details>
 
-### 🔧 Advanced Configuration Examples
 
 <details>
-<summary><b>📖 Click to view config examples for specific tools and scenarios</b></summary>
+<summary><b>🔧 Advanced Configuration Examples</b></summary>
 <br>
 
-#### 🔍 Custom Test File Patterns
+**Custom Test File Patterns**
 
 The extension **automatically reads test file patterns** from your framework configuration:
 
@@ -213,7 +209,7 @@ export default defineConfig({
 });
 ```
 
-#### ⚛️ Usage with CRA or similar abstractions
+**Usage with CRA or similar abstractions**
 
 Add the following command to settings:
 
@@ -225,7 +221,7 @@ Add the following command to settings:
 }
 ```
 
-#### 🔄 nvm
+**nvm**
 
 ```json
 "jestrunner.jestCommand": "nvm use && npm run test --",
@@ -234,7 +230,7 @@ Add the following command to settings:
 }
 ```
 
-#### 📦 ESM (ECMAScript Modules)
+**ESM (ECMAScript Modules)**
 
 For projects requiring `--experimental-vm-modules`:
 
@@ -249,17 +245,16 @@ For projects requiring `--experimental-vm-modules`:
 
 </details>
 
-### Advanced Test Examples
 
 <details>
-<summary><b>🔄 Click to view Parameterized Test examples</b></summary>
+<summary><b>🧪 Advanced Test Examples</b></summary>
 <br>
 
 The extension fully supports Jest's parameterized tests using `it.each` and `describe.each`. These allow you to run the same test logic with different inputs, making your tests more concise and maintainable.
 
 In the test names, you can use **template variables** like `%s` (string), `%i` (integer), `%f` (float), etc., which Jest replaces with the actual parameter values for better readability.
 
-#### Jest Example
+**Jest Example**
 
 ```javascript
 it.each([
@@ -271,7 +266,7 @@ it.each([
 });
 ```
 
-#### Vitest Example
+**Vitest Example**
 
 ```javascript
 import { describe, it, expect } from 'vitest';
@@ -317,18 +312,7 @@ it.each([
 ### 🚀 Development Setup
 
 1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/firsttris/vscode-jest-runner.git
-   cd vscode-jest-runner
-   ```
-
 2. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
 3. **Start debugging**
    - Press `F5` or go to **Run** → **Start Debugging**
    - A new VS Code window will open with the extension loaded
