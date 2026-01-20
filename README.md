@@ -281,7 +281,9 @@ it.each([
 
 </details>
 
-## ⌨️ Keyboard Shortcuts
+<details>
+<summary><b>⌨️ Keyboard Shortcuts</b></summary>
+<br>
 
 1. Open **Command Palette** → **Preferences: Open Keyboard Shortcuts (JSON)**
 2. Add the following shortcuts:
@@ -304,6 +306,8 @@ it.each([
   "command": "extension.runPrevJest"
 }
 ```
+
+</details>
 
 ## 🤝 Contributing
 
