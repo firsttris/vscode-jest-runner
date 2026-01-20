@@ -241,12 +241,10 @@ export function shouldIncludeFile(
 	const include = config.get<string[]>('include', []);
 	const exclude = config.get<string[]>('exclude', []);
 
-	// If no custom include/exclude patterns are configured, use the framework-based detection
 	if (include.length === 0 && exclude.length === 0) {
 		return isTestFile(filePath);
 	}
 
-	// Custom patterns are configured - use them relative to workspace
 	const normalizedPath = normalizePath(filePath);
 	const normalizedFolderPath = normalizePath(workspaceFolderPath);
 
