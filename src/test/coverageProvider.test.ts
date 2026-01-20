@@ -16,6 +16,11 @@ jest.mock('../util', () => ({
   logWarning: jest.fn(),
   logError: jest.fn(),
 }));
+jest.mock('../testDetection', () => ({
+  matchesTestFilePattern: jest.fn((filePath: string) => {
+    return filePath.includes('.test.') || filePath.includes('.spec.');
+  }),
+}));
 
 const normalizePath = (p: string): string => p.split('/').join(path.sep);
 
@@ -30,7 +35,9 @@ describe('CoverageProvider', () => {
 
   describe('readCoverageFromFile', () => {
     const workspaceFolder = normalizePath('/workspace');
-    const defaultCoveragePath = normalizePath('/workspace/coverage/coverage-final.json');
+    const defaultCoveragePath = normalizePath(
+      '/workspace/coverage/coverage-final.json',
+    );
 
     it('should return undefined when coverage file does not exist', async () => {
       mockFs.existsSync.mockReturnValue(false);
@@ -60,7 +67,9 @@ describe('CoverageProvider', () => {
 
     it('should parse coverage from default location', async () => {
       const coverageData: CoverageMap = {
-        '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
       };
 
       mockFs.existsSync.mockReturnValue(true);
@@ -69,17 +78,24 @@ describe('CoverageProvider', () => {
       const result = await provider.readCoverageFromFile(workspaceFolder);
 
       expect(result).toEqual(coverageData);
-      expect(mockFs.readFileSync).toHaveBeenCalledWith(defaultCoveragePath, 'utf-8');
+      expect(mockFs.readFileSync).toHaveBeenCalledWith(
+        defaultCoveragePath,
+        'utf-8',
+      );
     });
 
     it('should parse Jest coverageDirectory from config', async () => {
       const jestConfig = `module.exports = { coverageDirectory: './custom-coverage' };`;
       const coverageData: CoverageMap = {
-        '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
       };
 
       const jestConfigPath = normalizePath('/workspace/jest.config.js');
-      const customCoveragePath = normalizePath('/workspace/custom-coverage/coverage-final.json');
+      const customCoveragePath = normalizePath(
+        '/workspace/custom-coverage/coverage-final.json',
+      );
 
       mockFs.existsSync.mockImplementation((p) => {
         if (p === jestConfigPath) return true;
@@ -92,7 +108,10 @@ describe('CoverageProvider', () => {
         return '';
       });
 
-      const result = await provider.readCoverageFromFile(workspaceFolder, 'jest');
+      const result = await provider.readCoverageFromFile(
+        workspaceFolder,
+        'jest',
+      );
 
       expect(result).toEqual(coverageData);
     });
@@ -100,11 +119,15 @@ describe('CoverageProvider', () => {
     it('should parse Vitest reportsDirectory from config', async () => {
       const vitestConfig = `export default { test: { coverage: { reportsDirectory: './vitest-coverage' } } };`;
       const coverageData: CoverageMap = {
-        '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
       };
 
       const vitestConfigPath = normalizePath('/workspace/vitest.config.ts');
-      const vitestCoveragePath = normalizePath('/workspace/vitest-coverage/coverage-final.json');
+      const vitestCoveragePath = normalizePath(
+        '/workspace/vitest-coverage/coverage-final.json',
+      );
 
       mockFs.existsSync.mockImplementation((p) => {
         if (p === vitestConfigPath) return true;
@@ -117,19 +140,28 @@ describe('CoverageProvider', () => {
         return '';
       });
 
-      const result = await provider.readCoverageFromFile(workspaceFolder, 'vitest');
+      const result = await provider.readCoverageFromFile(
+        workspaceFolder,
+        'vitest',
+      );
 
       expect(result).toEqual(coverageData);
     });
 
     it('should use config path when provided', async () => {
-      const configPath = normalizePath('/workspace/packages/app/vitest.config.ts');
+      const configPath = normalizePath(
+        '/workspace/packages/app/vitest.config.ts',
+      );
       const vitestConfig = `export default { test: { coverage: { reportsDirectory: './coverage' } } };`;
       const coverageData: CoverageMap = {
-        '/workspace/packages/app/src/index.ts': createMockFileCoverageData('/workspace/packages/app/src/index.ts'),
+        '/workspace/packages/app/src/index.ts': createMockFileCoverageData(
+          '/workspace/packages/app/src/index.ts',
+        ),
       };
 
-      const appCoveragePath = normalizePath('/workspace/packages/app/coverage/coverage-final.json');
+      const appCoveragePath = normalizePath(
+        '/workspace/packages/app/coverage/coverage-final.json',
+      );
 
       mockFs.existsSync.mockImplementation((p) => {
         if (p === configPath) return true;
@@ -142,7 +174,11 @@ describe('CoverageProvider', () => {
         return '';
       });
 
-      const result = await provider.readCoverageFromFile(workspaceFolder, 'vitest', configPath);
+      const result = await provider.readCoverageFromFile(
+        workspaceFolder,
+        'vitest',
+        configPath,
+      );
 
       expect(result).toEqual(coverageData);
     });
@@ -162,10 +198,15 @@ describe('CoverageProvider', () => {
 
     it('should convert coverage map to VS Code format', () => {
       const coverageMap: CoverageMap = {
-        '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
       };
 
-      const result = provider.convertToVSCodeCoverage(coverageMap, workspaceFolder);
+      const result = provider.convertToVSCodeCoverage(
+        coverageMap,
+        workspaceFolder,
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(DetailedFileCoverage);
@@ -174,11 +215,18 @@ describe('CoverageProvider', () => {
 
     it('should skip node_modules files', () => {
       const coverageMap: CoverageMap = {
-        '/workspace/node_modules/lodash/index.js': createMockFileCoverageData('/workspace/node_modules/lodash/index.js'),
-        '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
+        '/workspace/node_modules/lodash/index.js': createMockFileCoverageData(
+          '/workspace/node_modules/lodash/index.js',
+        ),
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
       };
 
-      const result = provider.convertToVSCodeCoverage(coverageMap, workspaceFolder);
+      const result = provider.convertToVSCodeCoverage(
+        coverageMap,
+        workspaceFolder,
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].uri.fsPath).toBe('/workspace/src/index.ts');
@@ -186,12 +234,21 @@ describe('CoverageProvider', () => {
 
     it('should skip test files', () => {
       const coverageMap: CoverageMap = {
-        '/workspace/src/index.test.ts': createMockFileCoverageData('/workspace/src/index.test.ts'),
-        '/workspace/src/index.spec.js': createMockFileCoverageData('/workspace/src/index.spec.js'),
-        '/workspace/src/index.ts': createMockFileCoverageData('/workspace/src/index.ts'),
+        '/workspace/src/index.test.ts': createMockFileCoverageData(
+          '/workspace/src/index.test.ts',
+        ),
+        '/workspace/src/index.spec.js': createMockFileCoverageData(
+          '/workspace/src/index.spec.js',
+        ),
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
       };
 
-      const result = provider.convertToVSCodeCoverage(coverageMap, workspaceFolder);
+      const result = provider.convertToVSCodeCoverage(
+        coverageMap,
+        workspaceFolder,
+      );
 
       expect(result).toHaveLength(1);
       expect(result[0].uri.fsPath).toBe('/workspace/src/index.ts');
@@ -202,9 +259,18 @@ describe('CoverageProvider', () => {
         '/workspace/src/index.ts': {
           path: '/workspace/src/index.ts',
           statementMap: {
-            '0': { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
-            '1': { start: { line: 2, column: 0 }, end: { line: 2, column: 10 } },
-            '2': { start: { line: 3, column: 0 }, end: { line: 3, column: 10 } },
+            '0': {
+              start: { line: 1, column: 0 },
+              end: { line: 1, column: 10 },
+            },
+            '1': {
+              start: { line: 2, column: 0 },
+              end: { line: 2, column: 10 },
+            },
+            '2': {
+              start: { line: 3, column: 0 },
+              end: { line: 3, column: 10 },
+            },
           },
           fnMap: {},
           branchMap: {},
@@ -214,7 +280,10 @@ describe('CoverageProvider', () => {
         },
       };
 
-      const result = provider.convertToVSCodeCoverage(coverageMap, workspaceFolder);
+      const result = provider.convertToVSCodeCoverage(
+        coverageMap,
+        workspaceFolder,
+      );
 
       expect(result[0].statementCoverage.covered).toBe(2);
       expect(result[0].statementCoverage.total).toBe(3);
@@ -228,7 +297,10 @@ describe('CoverageProvider', () => {
           fnMap: {},
           branchMap: {
             '0': {
-              loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+              loc: {
+                start: { line: 1, column: 0 },
+                end: { line: 1, column: 10 },
+              },
               type: 'if',
               locations: [
                 { start: { line: 1, column: 0 }, end: { line: 1, column: 5 } },
@@ -243,7 +315,10 @@ describe('CoverageProvider', () => {
         },
       };
 
-      const result = provider.convertToVSCodeCoverage(coverageMap, workspaceFolder);
+      const result = provider.convertToVSCodeCoverage(
+        coverageMap,
+        workspaceFolder,
+      );
 
       expect(result[0].branchCoverage?.covered).toBe(1);
       expect(result[0].branchCoverage?.total).toBe(2);
@@ -257,14 +332,26 @@ describe('CoverageProvider', () => {
           fnMap: {
             '0': {
               name: 'foo',
-              decl: { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
-              loc: { start: { line: 1, column: 0 }, end: { line: 3, column: 1 } },
+              decl: {
+                start: { line: 1, column: 0 },
+                end: { line: 1, column: 10 },
+              },
+              loc: {
+                start: { line: 1, column: 0 },
+                end: { line: 3, column: 1 },
+              },
               line: 1,
             },
             '1': {
               name: 'bar',
-              decl: { start: { line: 5, column: 0 }, end: { line: 5, column: 10 } },
-              loc: { start: { line: 5, column: 0 }, end: { line: 7, column: 1 } },
+              decl: {
+                start: { line: 5, column: 0 },
+                end: { line: 5, column: 10 },
+              },
+              loc: {
+                start: { line: 5, column: 0 },
+                end: { line: 7, column: 1 },
+              },
               line: 5,
             },
           },
@@ -275,7 +362,10 @@ describe('CoverageProvider', () => {
         },
       };
 
-      const result = provider.convertToVSCodeCoverage(coverageMap, workspaceFolder);
+      const result = provider.convertToVSCodeCoverage(
+        coverageMap,
+        workspaceFolder,
+      );
 
       expect(result[0].declarationCoverage?.covered).toBe(1);
       expect(result[0].declarationCoverage?.total).toBe(2);
@@ -294,7 +384,10 @@ describe('CoverageProvider', () => {
       tokenSource.cancel();
 
       const fileCoverage = createMockDetailedFileCoverage();
-      const result = await provider.loadDetailedCoverage(fileCoverage, tokenSource.token as any);
+      const result = await provider.loadDetailedCoverage(
+        fileCoverage,
+        tokenSource.token as any,
+      );
 
       expect(result).toHaveLength(0);
     });
@@ -309,9 +402,14 @@ describe('CoverageProvider', () => {
         s: { '0': 5, '1': 0 },
       });
 
-      const result = await provider.loadDetailedCoverage(fileCoverage, token as any);
+      const result = await provider.loadDetailedCoverage(
+        fileCoverage,
+        token as any,
+      );
 
-      const statements = result.filter((d) => d instanceof vscode.StatementCoverage);
+      const statements = result.filter(
+        (d) => d instanceof vscode.StatementCoverage,
+      );
       expect(statements.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -321,7 +419,10 @@ describe('CoverageProvider', () => {
         fnMap: {
           '0': {
             name: 'testFunction',
-            decl: { start: { line: 1, column: 0 }, end: { line: 1, column: 20 } },
+            decl: {
+              start: { line: 1, column: 0 },
+              end: { line: 1, column: 20 },
+            },
             loc: { start: { line: 1, column: 0 }, end: { line: 3, column: 1 } },
             line: 1,
           },
@@ -329,11 +430,18 @@ describe('CoverageProvider', () => {
         f: { '0': 3 },
       });
 
-      const result = await provider.loadDetailedCoverage(fileCoverage, token as any);
+      const result = await provider.loadDetailedCoverage(
+        fileCoverage,
+        token as any,
+      );
 
-      const declarations = result.filter((d) => d instanceof vscode.DeclarationCoverage);
+      const declarations = result.filter(
+        (d) => d instanceof vscode.DeclarationCoverage,
+      );
       expect(declarations).toHaveLength(1);
-      expect((declarations[0] as vscode.DeclarationCoverage).name).toBe('testFunction');
+      expect((declarations[0] as vscode.DeclarationCoverage).name).toBe(
+        'testFunction',
+      );
     });
 
     it('should load branch coverage details', async () => {
@@ -341,7 +449,10 @@ describe('CoverageProvider', () => {
       const fileCoverage = createMockDetailedFileCoverage({
         branchMap: {
           '0': {
-            loc: { start: { line: 1, column: 0 }, end: { line: 1, column: 20 } },
+            loc: {
+              start: { line: 1, column: 0 },
+              end: { line: 1, column: 20 },
+            },
             type: 'if',
             locations: [
               { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
@@ -353,16 +464,20 @@ describe('CoverageProvider', () => {
         b: { '0': [5, 2] },
       });
 
-      const result = await provider.loadDetailedCoverage(fileCoverage, token as any);
+      const result = await provider.loadDetailedCoverage(
+        fileCoverage,
+        token as any,
+      );
 
       const statementsWithBranches = result.filter(
-        (d) => d instanceof vscode.StatementCoverage && (d as any).branches?.length > 0
+        (d) =>
+          d instanceof vscode.StatementCoverage &&
+          (d as any).branches?.length > 0,
       );
       expect(statementsWithBranches.length).toBeGreaterThanOrEqual(1);
     });
   });
 });
-
 
 function createMockFileCoverageData(filePath: string): FileCoverageData {
   return {
@@ -379,7 +494,7 @@ function createMockFileCoverageData(filePath: string): FileCoverageData {
 }
 
 function createMockDetailedFileCoverage(
-  overrides: Partial<FileCoverageData> = {}
+  overrides: Partial<FileCoverageData> = {},
 ): DetailedFileCoverage {
   const data: FileCoverageData = {
     path: '/workspace/src/index.ts',

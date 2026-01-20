@@ -13,7 +13,7 @@ export default defineConfig({
       external: [
         'vscode',
         ...builtinModules,
-        ...builtinModules.map(m => `node:${m}`),
+        ...builtinModules.map((m) => `node:${m}`),
       ],
       output: {
         format: 'cjs',

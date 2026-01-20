@@ -13,7 +13,7 @@ describe('TestRunnerCodeLensProvider', () => {
 
   beforeEach(() => {
     jest.restoreAllMocks();
-    
+
     const mockUri = new Uri('/workspace/test.spec.ts');
     mockDocument = new Document(mockUri) as any;
     (mockDocument as any).fileName = '/workspace/test.spec.ts';
@@ -25,9 +25,11 @@ describe('TestRunnerCodeLensProvider', () => {
       });
     `);
 
-    jest.spyOn(vscode.workspace, 'getWorkspaceFolder').mockReturnValue(
-      new WorkspaceFolder(new Uri('/workspace') as any) as any,
-    );
+    jest
+      .spyOn(vscode.workspace, 'getWorkspaceFolder')
+      .mockReturnValue(
+        new WorkspaceFolder(new Uri('/workspace') as any) as any,
+      );
 
     jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue({
       document: mockDocument,
@@ -42,9 +44,9 @@ describe('TestRunnerCodeLensProvider', () => {
     } as any);
 
     (fastGlob.sync as jest.Mock).mockReturnValue([]);
-    
+
     jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(true);
-    
+
     jest.spyOn(parser, 'parse').mockReturnValue({
       root: {
         children: [
@@ -77,7 +79,11 @@ describe('TestRunnerCodeLensProvider', () => {
     });
 
     it('should create instance with multiple options', () => {
-      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug', 'watch']);
+      codeLensProvider = new TestRunnerCodeLensProvider([
+        'run',
+        'debug',
+        'watch',
+      ]);
       expect(codeLensProvider).toBeDefined();
     });
   });
@@ -96,8 +102,8 @@ describe('TestRunnerCodeLensProvider', () => {
     it('should provide run and debug lenses for each test', async () => {
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses.length).toBeGreaterThan(0);
-      
-      const commands = codeLenses.map(lens => lens.command?.command);
+
+      const commands = codeLenses.map((lens) => lens.command?.command);
       expect(commands).toContain('extension.runJest');
       expect(commands).toContain('extension.debugJest');
     });
@@ -112,15 +118,17 @@ describe('TestRunnerCodeLensProvider', () => {
       `);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
-      const expectLenses = codeLenses.filter(lens => 
-        lens.command?.arguments?.[0]?.includes('expect')
+      const expectLenses = codeLenses.filter((lens) =>
+        lens.command?.arguments?.[0]?.includes('expect'),
       );
       expect(expectLenses.length).toBe(0);
     });
 
     it('should handle parse errors gracefully', async () => {
-      mockDocument.getText = jest.fn().mockReturnValue('invalid javascript code {{{');
-      
+      mockDocument.getText = jest
+        .fn()
+        .mockReturnValue('invalid javascript code {{{');
+
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses).toBeDefined();
       expect(Array.isArray(codeLenses)).toBe(true);
@@ -132,11 +140,13 @@ describe('TestRunnerCodeLensProvider', () => {
           it('test', () => {});
         });
       `);
-      const firstResult = await codeLensProvider.provideCodeLenses(mockDocument);
-      
+      const firstResult =
+        await codeLensProvider.provideCodeLenses(mockDocument);
+
       mockDocument.getText = jest.fn().mockReturnValue('invalid code {{{');
-      const secondResult = await codeLensProvider.provideCodeLenses(mockDocument);
-      
+      const secondResult =
+        await codeLensProvider.provideCodeLenses(mockDocument);
+
       expect(secondResult).toEqual(firstResult);
     });
   });
@@ -198,8 +208,10 @@ describe('TestRunnerCodeLensProvider', () => {
     it('should create run command with correct title and command', async () => {
       codeLensProvider = new TestRunnerCodeLensProvider(['run']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
-      
-      const runLens = codeLenses.find(lens => lens.command?.command === 'extension.runJest');
+
+      const runLens = codeLenses.find(
+        (lens) => lens.command?.command === 'extension.runJest',
+      );
       expect(runLens).toBeDefined();
       expect(runLens.command?.title).toBe('Run');
     });
@@ -207,8 +219,10 @@ describe('TestRunnerCodeLensProvider', () => {
     it('should create debug command with correct title and command', async () => {
       codeLensProvider = new TestRunnerCodeLensProvider(['debug']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
-      
-      const debugLens = codeLenses.find(lens => lens.command?.command === 'extension.debugJest');
+
+      const debugLens = codeLenses.find(
+        (lens) => lens.command?.command === 'extension.debugJest',
+      );
       expect(debugLens).toBeDefined();
       expect(debugLens.command?.title).toBe('Debug');
     });
@@ -216,8 +230,10 @@ describe('TestRunnerCodeLensProvider', () => {
     it('should create watch command with correct title and command', async () => {
       codeLensProvider = new TestRunnerCodeLensProvider(['watch']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
-      
-      const watchLens = codeLenses.find(lens => lens.command?.command === 'extension.watchJest');
+
+      const watchLens = codeLenses.find(
+        (lens) => lens.command?.command === 'extension.watchJest',
+      );
       expect(watchLens).toBeDefined();
       expect(watchLens.command?.title).toBe('Run --watch');
     });
@@ -225,21 +241,28 @@ describe('TestRunnerCodeLensProvider', () => {
     it('should create coverage command with correct title and command', async () => {
       codeLensProvider = new TestRunnerCodeLensProvider(['coverage']);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
-      
-      const coverageLens = codeLenses.find(lens => lens.command?.command === 'extension.runJestCoverage');
+
+      const coverageLens = codeLenses.find(
+        (lens) => lens.command?.command === 'extension.runJestCoverage',
+      );
       expect(coverageLens).toBeDefined();
       expect(coverageLens.command?.title).toBe('Run --coverage');
     });
 
     it('should create current-test-coverage command with correct title and command', async () => {
-      codeLensProvider = new TestRunnerCodeLensProvider(['current-test-coverage']);
+      codeLensProvider = new TestRunnerCodeLensProvider([
+        'current-test-coverage',
+      ]);
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
-      
+
       const coverageLens = codeLenses.find(
-        lens => lens.command?.command === 'extension.runJestCurrentTestCoverage'
+        (lens) =>
+          lens.command?.command === 'extension.runJestCurrentTestCoverage',
       );
       expect(coverageLens).toBeDefined();
-      expect(coverageLens.command?.title).toBe('Run --collectCoverageFrom (target file/dir)');
+      expect(coverageLens.command?.title).toBe(
+        'Run --collectCoverageFrom (target file/dir)',
+      );
     });
   });
 
@@ -253,7 +276,7 @@ describe('TestRunnerCodeLensProvider', () => {
           });
         });
       `);
-      
+
       jest.spyOn(parser, 'parse').mockReturnValue({
         root: {
           children: [
@@ -300,7 +323,7 @@ describe('TestRunnerCodeLensProvider', () => {
           it('test 3', () => {});
         });
       `);
-      
+
       jest.spyOn(parser, 'parse').mockReturnValue({
         root: {
           children: [
@@ -357,7 +380,7 @@ describe('TestRunnerCodeLensProvider', () => {
           expect(a + b).toBe(expected);
         });
       `);
-      
+
       jest.spyOn(parser, 'parse').mockReturnValue({
         root: {
           children: [
@@ -389,7 +412,7 @@ describe('TestRunnerCodeLensProvider', () => {
           });
         });
       `);
-      
+
       jest.spyOn(parser, 'parse').mockReturnValue({
         root: {
           children: [

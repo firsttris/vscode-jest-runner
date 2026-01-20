@@ -1,8 +1,26 @@
 import { parse } from './parser';
-import { CodeLens, CodeLensProvider, Range, TextDocument, window, workspace } from 'vscode';
-import { findFullTestName, escapeRegExp, CodeLensOption, TestNode, shouldIncludeFile, logError } from './util';
+import {
+  CodeLens,
+  CodeLensProvider,
+  Range,
+  TextDocument,
+  window,
+  workspace,
+} from 'vscode';
+import {
+  findFullTestName,
+  escapeRegExp,
+  CodeLensOption,
+  TestNode,
+  shouldIncludeFile,
+  logError,
+} from './util';
 
-function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, fullTestName: string): CodeLens {
+function getCodeLensForOption(
+  range: Range,
+  codeLensOption: CodeLensOption,
+  fullTestName: string,
+): CodeLens {
   const titleMap: Record<CodeLensOption, string> = {
     run: 'Run',
     debug: 'Debug',
@@ -24,7 +42,11 @@ function getCodeLensForOption(range: Range, codeLensOption: CodeLensOption, full
   });
 }
 
-function getTestsBlocks(parsedNode: TestNode, parseResults: TestNode[], codeLensOptions: CodeLensOption[]): CodeLens[] {
+function getTestsBlocks(
+  parsedNode: TestNode,
+  parseResults: TestNode[],
+  codeLensOptions: CodeLensOption[],
+): CodeLens[] {
   const codeLens: CodeLens[] = [];
 
   parsedNode.children?.forEach((subNode) => {
@@ -42,9 +64,15 @@ function getTestsBlocks(parsedNode: TestNode, parseResults: TestNode[], codeLens
     return [];
   }
 
-  const fullTestName = escapeRegExp(findFullTestName(parsedNode.start.line, parseResults));
+  const fullTestName = escapeRegExp(
+    findFullTestName(parsedNode.start.line, parseResults),
+  );
 
-  codeLens.push(...codeLensOptions.map((option) => getCodeLensForOption(range, option, fullTestName)));
+  codeLens.push(
+    ...codeLensOptions.map((option) =>
+      getCodeLensForOption(range, option, fullTestName),
+    ),
+  );
 
   return codeLens;
 }
@@ -66,12 +94,16 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
       const workspaceFolderPath = this.currentWorkspaceFolderPath;
-      if (!workspaceFolderPath || !shouldIncludeFile(document.fileName, workspaceFolderPath)) {
+      if (
+        !workspaceFolderPath ||
+        !shouldIncludeFile(document.fileName, workspaceFolderPath)
+      ) {
         return [];
       }
 
-      const parseResults = parse(document.fileName, document.getText(), { plugins: { decorators: 'legacy' } }).root
-        .children;
+      const parseResults = parse(document.fileName, document.getText(), {
+        plugins: { decorators: 'legacy' },
+      }).root.children;
       this.lastSuccessfulCodeLens = parseResults.flatMap((parseResult) =>
         getTestsBlocks(parseResult, parseResults, this.codeLensOptions),
       );

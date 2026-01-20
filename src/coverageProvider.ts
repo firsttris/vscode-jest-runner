@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logDebug, logError, logInfo, logWarning } from './util';
+import { matchesTestFilePattern } from './testDetection';
 
 export interface CoverageMap {
   [filePath: string]: FileCoverageData;
@@ -51,10 +52,22 @@ export class DetailedFileCoverage extends vscode.FileCoverage {
 const DEFAULT_COVERAGE_DIR = 'coverage';
 const COVERAGE_FINAL_FILE = 'coverage-final.json';
 
-const JEST_CONFIG_FILES = ['jest.config.js', 'jest.config.ts', 'jest.config.mjs', 'jest.config.cjs', 'jest.config.json'];
+const JEST_CONFIG_FILES = [
+  'jest.config.js',
+  'jest.config.ts',
+  'jest.config.mjs',
+  'jest.config.cjs',
+  'jest.config.json',
+];
 const VITEST_CONFIG_FILES = [
-  'vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts',
-  'vite.config.js', 'vite.config.ts', 'vite.config.mjs', 'vite.config.mts',
+  'vitest.config.js',
+  'vitest.config.ts',
+  'vitest.config.mjs',
+  'vitest.config.mts',
+  'vite.config.js',
+  'vite.config.ts',
+  'vite.config.mjs',
+  'vite.config.mts',
 ];
 
 export class CoverageProvider {
@@ -62,13 +75,13 @@ export class CoverageProvider {
     try {
       const content = fs.readFileSync(configPath, 'utf-8');
       const configDir = path.dirname(configPath);
-      
+
       const match = content.match(/reportsDirectory\s*[=:]\s*["']([^"']+)["']/);
       if (match) {
         const reportsDir = match[1];
         logDebug(`Found Vitest reportsDirectory: ${reportsDir}`);
-        return path.isAbsolute(reportsDir) 
-          ? reportsDir 
+        return path.isAbsolute(reportsDir)
+          ? reportsDir
           : path.join(configDir, reportsDir);
       }
     } catch (error) {
@@ -81,8 +94,10 @@ export class CoverageProvider {
     try {
       const content = fs.readFileSync(configPath, 'utf-8');
       const configDir = path.dirname(configPath);
-      
-      const match = content.match(/["']?coverageDirectory["']?\s*[=:]\s*["']([^"']+)["']/);
+
+      const match = content.match(
+        /["']?coverageDirectory["']?\s*[=:]\s*["']([^"']+)["']/,
+      );
       if (match) {
         const coverageDir = match[1];
         logDebug(`Found Jest coverageDirectory: ${coverageDir}`);
@@ -103,7 +118,7 @@ export class CoverageProvider {
     if (!fs.existsSync(configPath)) {
       return undefined;
     }
-    
+
     logDebug(`Parsing coverage dir from config: ${configPath}`);
     return framework === 'vitest'
       ? this.parseVitestCoverageDir(configPath)
@@ -114,18 +129,22 @@ export class CoverageProvider {
     workspaceFolder: string,
     framework: 'jest' | 'vitest',
   ): string | undefined {
-    const configFiles = framework === 'vitest' ? VITEST_CONFIG_FILES : JEST_CONFIG_FILES;
-    
+    const configFiles =
+      framework === 'vitest' ? VITEST_CONFIG_FILES : JEST_CONFIG_FILES;
+
     for (const configFile of configFiles) {
       const configPath = path.join(workspaceFolder, configFile);
       if (fs.existsSync(configPath)) {
-        const coverageDir = this.getCoverageDirFromConfigPath(configPath, framework);
+        const coverageDir = this.getCoverageDirFromConfigPath(
+          configPath,
+          framework,
+        );
         if (coverageDir) {
           return coverageDir;
         }
       }
     }
-    
+
     return undefined;
   }
 
@@ -136,15 +155,18 @@ export class CoverageProvider {
   ): Promise<CoverageMap | undefined> {
     try {
       let coverageDir: string | undefined;
-      
+
       if (configPath) {
         coverageDir = this.getCoverageDirFromConfigPath(configPath, framework);
       }
-      
+
       if (!coverageDir) {
-        coverageDir = this.getCoverageDirectoryFromWorkspace(workspaceFolder, framework);
+        coverageDir = this.getCoverageDirectoryFromWorkspace(
+          workspaceFolder,
+          framework,
+        );
       }
-      
+
       if (!coverageDir) {
         const baseDir = configPath ? path.dirname(configPath) : workspaceFolder;
         coverageDir = path.join(baseDir, DEFAULT_COVERAGE_DIR);
@@ -156,7 +178,9 @@ export class CoverageProvider {
 
       if (!fs.existsSync(coveragePath)) {
         logInfo(`Coverage file not found at: ${coveragePath}`);
-        logInfo(`Make sure you have ${framework === 'vitest' ? '@vitest/coverage-v8 or @vitest/coverage-istanbul' : 'jest'} configured with JSON reporter.`);
+        logInfo(
+          `Make sure you have ${framework === 'vitest' ? '@vitest/coverage-v8 or @vitest/coverage-istanbul' : 'jest'} configured with JSON reporter.`,
+        );
         return undefined;
       }
 
@@ -165,8 +189,12 @@ export class CoverageProvider {
       const content = fs.readFileSync(coveragePath, 'utf-8');
 
       if (!content || content.trim() === '' || content.trim() === '{}') {
-        logWarning('Coverage file is empty. This may indicate a configuration issue.');
-        logInfo(`For ${framework}, ensure coverageReporters includes "json" in your config.`);
+        logWarning(
+          'Coverage file is empty. This may indicate a configuration issue.',
+        );
+        logInfo(
+          `For ${framework}, ensure coverageReporters includes "json" in your config.`,
+        );
         return undefined;
       }
 
@@ -194,14 +222,19 @@ export class CoverageProvider {
 
     for (const [filePath, coverageData] of Object.entries(coverageMap)) {
       try {
-        if (filePath.includes('node_modules') || filePath.match(/\.(test|spec)\.(ts|tsx|js|jsx)$/)) {
+        if (
+          filePath.includes('node_modules') ||
+          matchesTestFilePattern(filePath)
+        ) {
           continue;
         }
 
         const uri = vscode.Uri.file(filePath);
 
         const statements = Object.values(coverageData.s);
-        const coveredStatements = statements.filter((count) => count > 0).length;
+        const coveredStatements = statements.filter(
+          (count) => count > 0,
+        ).length;
         const totalStatements = statements.length;
         const statementCoverage = new vscode.TestCoverageCount(
           coveredStatements,
@@ -257,19 +290,20 @@ export class CoverageProvider {
         const executionCount = data.s[id] || 0;
         const range = this.convertLocationToRange(location);
 
-        details.push(
-          new vscode.StatementCoverage(
-            executionCount,
-            range,
-          ),
-        );
+        details.push(new vscode.StatementCoverage(executionCount, range));
       }
 
       for (const [id, fn] of Object.entries(data.fnMap)) {
         const executionCount = data.f[id] || 0;
         const range = this.convertLocationToRange(fn.loc);
 
-        details.push(new vscode.DeclarationCoverage(fn.name || `Function ${id}`, executionCount, range));
+        details.push(
+          new vscode.DeclarationCoverage(
+            fn.name || `Function ${id}`,
+            executionCount,
+            range,
+          ),
+        );
       }
 
       for (const [id, branch] of Object.entries(data.branchMap)) {
@@ -284,7 +318,9 @@ export class CoverageProvider {
 
         if (branches.length > 0) {
           const executionCount = Math.max(...branchCounts);
-          details.push(new vscode.StatementCoverage(executionCount, range, branches));
+          details.push(
+            new vscode.StatementCoverage(executionCount, range, branches),
+          );
         }
       }
 

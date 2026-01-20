@@ -1,18 +1,12 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "target": "es2018",
-        "outDir": "out",
-        "lib": [
-            "es2018"
-        ],
-        "sourceMap": true,
-        "rootDir": "src",
-        "allowSyntheticDefaultImports": true
-    },
-    "exclude": [
-        "node_modules",
-        ".vscode-test",
-        "examples"
-    ]
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2018",
+    "outDir": "out",
+    "lib": ["es2018"],
+    "sourceMap": true,
+    "rootDir": "src",
+    "allowSyntheticDefaultImports": true
+  },
+  "exclude": ["node_modules", ".vscode-test", "examples"]
 }
