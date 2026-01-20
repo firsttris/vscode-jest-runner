@@ -541,6 +541,400 @@ describe('jestDetection', () => {
 
       expect(result).toBe(true);
     });
+
+    describe('with custom config paths', () => {
+      let getConfigurationMock: jest.Mock;
+      let configMock: any;
+
+      beforeEach(() => {
+        configMock = {
+          get: jest.fn(),
+        };
+        getConfigurationMock = jest.fn().mockReturnValue(configMock);
+        (vscode.workspace.getConfiguration as jest.Mock) = getConfigurationMock;
+      });
+
+      it('should return true when only Jest custom config exists (no standard Jest directory) - Unix', () => {
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists - no Jest binary, no standard configs, no package.json
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+        expect(mockedFs.readFileSync).toHaveBeenCalledWith(
+          customConfigFullPath,
+          'utf8',
+        );
+      });
+
+      it('should return true when only Jest custom config exists (no standard Jest directory) - Windows', () => {
+        // Simulate Windows paths
+        const windowsRootPath = 'C:\\workspace\\project';
+        const testFile = path.join(windowsRootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(windowsRootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: windowsRootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists - no Jest binary, no standard configs
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.test.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+      });
+
+      it('should return false when custom config exists but file does not match pattern - Unix', () => {
+        const testFile = path.join(rootPath, 'src', 'component.integrationtest.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config exists but only matches .test and .spec files
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.{test,spec}.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false when custom config exists but file does not match pattern - Windows', () => {
+        const windowsRootPath = 'C:\\workspace\\project';
+        const testFile = path.join(windowsRootPath, 'src', 'component.integrationtest.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(windowsRootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: windowsRootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config exists but only matches .test and .spec files
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.{test,spec}.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(false);
+      });
+
+      it('should match integrationtest files with custom config pattern - Unix', () => {
+        const testFile = path.join(rootPath, 'src', 'somename.integrationtest.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists with integrationtest pattern
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.{test,spec,integrationtest}.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should match integrationtest files with custom config pattern - Windows', () => {
+        const windowsRootPath = 'C:\\workspace\\project';
+        const testFile = path.join(windowsRootPath, 'src', 'somename.integrationtest.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(windowsRootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: windowsRootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists with integrationtest pattern
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.{test,spec,integrationtest}.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should match .spec.ts files with custom config - Unix', () => {
+        const testFile = path.join(rootPath, 'src', 'component.spec.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.{test,spec}.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should match .spec.ts files with custom config - Windows', () => {
+        const windowsRootPath = 'C:\\workspace\\project';
+        const testFile = path.join(windowsRootPath, 'src', 'component.spec.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(windowsRootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: windowsRootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.{test,spec}.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should return false when custom config has no testMatch patterns', () => {
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config exists but has no testMatch patterns
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              module.exports = {
+                preset: 'ts-jest'
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(false);
+      });
+
+      it('should fallback to standard config when custom config does not exist', () => {
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'jest.config.custom.js';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+        const standardConfigPath = path.join(rootPath, 'jest.config.js');
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config doesn't exist, but standard config does
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === standardConfigPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === standardConfigPath) {
+            return `
+              module.exports = {
+                testMatch: ['**/*.test.{js,ts}']
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+        // Should check custom config first, then fall back to standard
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(standardConfigPath);
+      });
+    });
   });
 
   describe('Framework detection and priority', () => {
@@ -1238,6 +1632,450 @@ module.exports = {
 
       expect(result).toBe(false);
     });
+
+    describe('with custom config paths', () => {
+      let getConfigurationMock: jest.Mock;
+      let configMock: any;
+
+      beforeEach(() => {
+        configMock = {
+          get: jest.fn(),
+        };
+        getConfigurationMock = jest.fn().mockReturnValue(configMock);
+        (vscode.workspace.getConfiguration as jest.Mock) = getConfigurationMock;
+      });
+
+      it('should return true when only Vitest custom config exists (no standard Vitest directory) - Unix', () => {
+        const rootPath = '/workspace/project';
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists - no Vitest binary, no standard configs, no package.json
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(true);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+        expect(mockedFs.readFileSync).toHaveBeenCalledWith(
+          customConfigFullPath,
+          'utf8',
+        );
+      });
+
+      it('should return true when only Vitest custom config exists (no standard Vitest directory) - Windows', () => {
+        // Simulate Windows paths
+        const rootPath = 'C:\\workspace\\project';
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists - no Vitest binary, no standard configs
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.test.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(true);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+      });
+
+      it('should return false when custom config exists but file does not match pattern - Unix', () => {
+        const rootPath = '/workspace/project';
+        const testFile = path.join(rootPath, 'src', 'component.integrationtest.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config exists but only matches .test and .spec files
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.{test,spec}.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false when custom config exists but file does not match pattern - Windows', () => {
+        const rootPath = 'C:\\workspace\\project';
+        const testFile = path.join(rootPath, 'src', 'component.integrationtest.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config exists but only matches .test and .spec files
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.{test,spec}.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(false);
+      });
+
+      it('should match integrationtest files with custom config pattern - Unix', () => {
+        const rootPath = '/workspace/project';
+        const testFile = path.join(rootPath, 'src', 'somename.integrationtest.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists with integrationtest pattern
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.{test,spec,integrationtest}.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should match integrationtest files with custom config pattern - Windows', () => {
+        const rootPath = 'C:\\workspace\\project';
+        const testFile = path.join(rootPath, 'src', 'somename.integrationtest.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists with integrationtest pattern
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.{test,spec,integrationtest}.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should match .spec.ts files with custom config - Unix', () => {
+        const rootPath = '/workspace/project';
+        const testFile = path.join(rootPath, 'src', 'component.spec.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.{test,spec}.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should match .spec.ts files with custom config - Windows', () => {
+        const rootPath = 'C:\\workspace\\project';
+        const testFile = path.join(rootPath, 'src', 'component.spec.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // ONLY custom config exists
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.{test,spec}.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
+
+      it('should return false when custom config has no include patterns', () => {
+        const rootPath = '/workspace/project';
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config exists but has no include patterns
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  globals: true
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(false);
+      });
+
+      it('should fallback to standard config when custom config does not exist', () => {
+        const rootPath = '/workspace/project';
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'vitest.config.custom.ts';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+        const standardConfigPath = path.join(rootPath, 'vitest.config.ts');
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        // Custom config doesn't exist, but standard config does
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === standardConfigPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === standardConfigPath) {
+            return `
+              export default defineConfig({
+                test: {
+                  include: ['**/*.test.{js,ts}']
+                }
+              });
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isVitestTestFile(testFile);
+
+        expect(result).toBe(true);
+        // Should check custom config first, then fall back to standard
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+        expect(mockedFs.existsSync).toHaveBeenCalledWith(standardConfigPath);
+      });
+    });
   });
 
   describe('isTestFile', () => {
@@ -1321,6 +2159,346 @@ module.exports = {
         const result = isTestFile(filePath);
 
         expect(result).toBe(false);
+      });
+
+      describe('with custom config paths', () => {
+        it('should return true when only Jest custom config exists (no standard framework directory) - Unix', () => {
+          const rootPath = '/workspace/project';
+          const testFile = path.join(rootPath, 'src', 'component.test.ts');
+          const customConfigPath = 'jest.config.custom.js';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.configPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // ONLY custom config exists - no Jest binary, no standard configs, no package.json
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                module.exports = {
+                  testMatch: ['**/*.test.{js,ts}']
+                };
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(true);
+          expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+          expect(mockedFs.readFileSync).toHaveBeenCalledWith(
+            customConfigFullPath,
+            'utf8',
+          );
+        });
+
+        it('should return true when only Jest custom config exists (no standard framework directory) - Windows', () => {
+          // Simulate Windows paths
+          const rootPath = 'C:\\workspace\\project';
+          const testFile = path.join(rootPath, 'src', 'component.test.ts');
+          const customConfigPath = 'jest.config.custom.js';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.configPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // ONLY custom config exists - no Jest binary, no standard configs
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                module.exports = {
+                  testMatch: ['**/*.test.{js,ts}']
+                };
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(true);
+          expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+        });
+
+        it('should return true when only Vitest custom config exists (no standard framework directory) - Unix', () => {
+          const rootPath = '/workspace/project';
+          const testFile = path.join(rootPath, 'src', 'component.test.ts');
+          const customConfigPath = 'vitest.config.custom.ts';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.vitestConfigPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // ONLY custom config exists - no Vitest binary, no standard configs
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                export default defineConfig({
+                  test: {
+                    include: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}']
+                  }
+                });
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(true);
+          expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+          expect(mockedFs.readFileSync).toHaveBeenCalledWith(
+            customConfigFullPath,
+            'utf8',
+          );
+        });
+
+        it('should return true when only Vitest custom config exists (no standard framework directory) - Windows', () => {
+          // Simulate Windows paths
+          const rootPath = 'C:\\workspace\\project';
+          const testFile = path.join(rootPath, 'src', 'component.test.ts');
+          const customConfigPath = 'vitest.config.custom.ts';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.vitestConfigPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // ONLY custom config exists - no Vitest binary, no standard configs
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                export default defineConfig({
+                  test: {
+                    include: ['**/*.test.{js,ts}']
+                  }
+                });
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(true);
+          expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
+        });
+
+        it('should return false when custom config exists but file does not match pattern - Unix', () => {
+          const rootPath = '/workspace/project';
+          const testFile = path.join(rootPath, 'src', 'component.integrationtest.ts');
+          const customConfigPath = 'jest.config.custom.js';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.configPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // Custom config exists but only matches .test and .spec files
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                module.exports = {
+                  testMatch: ['**/*.{test,spec}.{js,ts}']
+                };
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(false);
+        });
+
+        it('should return false when custom config exists but file does not match pattern - Windows', () => {
+          const rootPath = 'C:\\workspace\\project';
+          const testFile = path.join(rootPath, 'src', 'component.integrationtest.ts');
+          const customConfigPath = 'jest.config.custom.js';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.configPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // Custom config exists but only matches .test and .spec files
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                module.exports = {
+                  testMatch: ['**/*.{test,spec}.{js,ts}']
+                };
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(false);
+        });
+
+        it('should match integrationtest files with custom config pattern - Unix', () => {
+          const rootPath = '/workspace/project';
+          const testFile = path.join(rootPath, 'src', 'somename.integrationtest.ts');
+          const customConfigPath = 'jest.config.custom.js';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.configPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // ONLY custom config exists with integrationtest pattern
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                module.exports = {
+                  testMatch: ['**/*.{test,spec,integrationtest}.{js,ts}']
+                };
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(true);
+        });
+
+        it('should match integrationtest files with custom config pattern - Windows', () => {
+          const rootPath = 'C:\\workspace\\project';
+          const testFile = path.join(rootPath, 'src', 'somename.integrationtest.ts');
+          const customConfigPath = 'jest.config.custom.js';
+          const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+          (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+            uri: { fsPath: rootPath },
+          }));
+
+          configMock.get.mockImplementation((key: string) => {
+            if (key === 'jestrunner.configPath') {
+              return customConfigPath;
+            }
+            return undefined;
+          });
+
+          // ONLY custom config exists with integrationtest pattern
+          mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            return pathStr === customConfigFullPath;
+          });
+
+          mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+            const pathStr = fsPath.toString();
+            if (pathStr === customConfigFullPath) {
+              return `
+                module.exports = {
+                  testMatch: ['**/*.{test,spec,integrationtest}.{js,ts}']
+                };
+              `;
+            }
+            return '';
+          }) as any;
+
+          const result = isTestFile(testFile);
+
+          expect(result).toBe(true);
+        });
       });
 
       it('should read testMatch from jest.config.js and match integrationtest files', () => {
