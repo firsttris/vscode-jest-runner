@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as mm from 'micromatch';
-import { logError, logDebug } from './util';
+import { logError, logDebug, resolveConfigPathOrMapping } from './util';
 
 const testDetectionCache = new Map<string, boolean>();
 
@@ -302,24 +302,16 @@ export function findVitestDirectory(filePath: string): string | undefined {
   return result?.directory;
 }
 
-/**
- * Extracts testMatch patterns from Jest config file
- */
 export function getTestMatchFromJestConfig(
   configPath: string,
 ): string[] | undefined {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
 
-    // Try to extract testMatch array from config
-    // Support both CommonJS (module.exports) and ES6 (export default) formats
-    // We need to handle nested brackets in patterns like [mc] and [jt]
-    // Find testMatch: [ and then match until the closing ]
     const testMatchStart = content.indexOf('testMatch');
     if (testMatchStart !== -1) {
       const arrayStart = content.indexOf('[', testMatchStart);
       if (arrayStart !== -1) {
-        // Find the matching closing bracket by counting brackets
         let bracketCount = 1;
         let arrayEnd = arrayStart + 1;
         while (arrayEnd < content.length && bracketCount > 0) {
@@ -331,7 +323,6 @@ export function getTestMatchFromJestConfig(
 
         if (bracketCount === 0) {
           const arrayContent = content.substring(arrayStart + 1, arrayEnd - 1);
-          // Extract quoted strings from the array - handle single, double, and template strings
           const patterns: string[] = [];
           const stringRegex = /['"`]((?:\\.|[^'"`\\])*?)['"`]/g;
           let stringMatch;
@@ -348,7 +339,6 @@ export function getTestMatchFromJestConfig(
       }
     }
 
-    // Also check for testMatch in package.json's jest config section
     if (configPath.endsWith('package.json')) {
       try {
         const pkg = JSON.parse(content);
@@ -358,7 +348,6 @@ export function getTestMatchFromJestConfig(
             : undefined;
         }
       } catch {
-        // Not valid JSON or no jest config
       }
     }
 
@@ -369,17 +358,12 @@ export function getTestMatchFromJestConfig(
   }
 }
 
-/**
- * Extracts include patterns from Vitest/Vite config file
- */
 export function getIncludeFromVitestConfig(
   configPath: string,
 ): string[] | undefined {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
 
-    // Find the test config block and extract include patterns
-    // This approach handles nested objects properly
     const testBlockRegex = /test\s*:\s*\{/;
     const testBlockMatch = content.match(testBlockRegex);
 
@@ -387,12 +371,10 @@ export function getIncludeFromVitestConfig(
       return undefined;
     }
 
-    // Find the start of the test block
     let startIndex = testBlockMatch.index! + testBlockMatch[0].length;
     let braceDepth = 1;
     let endIndex = startIndex;
 
-    // Find the end of the test block by tracking braces
     for (let i = startIndex; i < content.length && braceDepth > 0; i++) {
       if (content[i] === '{') {
         braceDepth++;
@@ -407,14 +389,11 @@ export function getIncludeFromVitestConfig(
 
     const testBlockContent = content.substring(startIndex, endIndex);
 
-    // Now extract the include array from the test block
-    // Look for include that's not inside a nested object like coverage
     const includeRegex = /include\s*:\s*\[([^\]]*)\]/;
     const includeMatch = testBlockContent.match(includeRegex);
 
     if (includeMatch) {
       const arrayContent = includeMatch[1];
-      // Extract quoted strings from the array
       const patterns: string[] = [];
       const stringRegex = /['"`]((?:\\.|[^'"`\\])*?)['"`]/g;
       let stringMatch;
@@ -436,16 +415,10 @@ export function getIncludeFromVitestConfig(
   }
 }
 
-/**
- * Gets test file patterns from framework config
- * Returns both the patterns and the config directory for correct relative path calculation
- */
 function getTestFilePatternsForFile(filePath: string): {
 	patterns: string[];
 	configDir: string;
 } {
-	// Try to read patterns from test framework config
-	// We need to find the framework directory by looking for config files, not by checking if it's a test file
 	const workspaceFolder = vscode.workspace.getWorkspaceFolder(
 		vscode.Uri.file(filePath),
 	);
@@ -459,12 +432,40 @@ function getTestFilePatternsForFile(filePath: string): {
 	let currentDir = path.dirname(filePath);
 	const rootPath = workspaceFolder.uri.fsPath;
 
-	// Search up the directory tree for test framework configs
+	const customJestConfigPath = vscode.workspace
+		.getConfiguration()
+		.get('jestrunner.configPath') as string | Record<string, string> | undefined;
+	const customVitestConfigPath = vscode.workspace
+		.getConfiguration()
+		.get('jestrunner.vitestConfigPath') as string | Record<string, string> | undefined;
+
+	const resolvedJestConfigPath = resolveConfigPathOrMapping(customJestConfigPath, filePath);
+	const resolvedVitestConfigPath = resolveConfigPathOrMapping(customVitestConfigPath, filePath);
+
+	if (resolvedJestConfigPath) {
+		const customConfigFullPath = path.resolve(rootPath, resolvedJestConfigPath);
+		if (fs.existsSync(customConfigFullPath)) {
+			const patterns = getTestMatchFromJestConfig(customConfigFullPath);
+			if (patterns) {
+				return { patterns, configDir: path.dirname(customConfigFullPath) };
+			}
+		}
+	}
+
+	if (resolvedVitestConfigPath) {
+		const customConfigFullPath = path.resolve(rootPath, resolvedVitestConfigPath);
+		if (fs.existsSync(customConfigFullPath)) {
+			const patterns = getIncludeFromVitestConfig(customConfigFullPath);
+			if (patterns) {
+				return { patterns, configDir: path.dirname(customConfigFullPath) };
+			}
+		}
+	}
+
 	while (currentDir && currentDir.startsWith(rootPath)) {
 		const framework = detectTestFramework(currentDir);
 
 		if (framework === 'jest') {
-			// Try Jest config files
 			const jestConfigFiles = [
 				'jest.config.js',
 				'jest.config.ts',
@@ -482,7 +483,6 @@ function getTestFilePatternsForFile(filePath: string): {
 				}
 			}
 
-			// Also check package.json for jest config
 			const packageJsonPath = path.join(currentDir, 'package.json');
 			if (fs.existsSync(packageJsonPath)) {
 				const patterns = getTestMatchFromJestConfig(packageJsonPath);
@@ -491,10 +491,8 @@ function getTestFilePatternsForFile(filePath: string): {
 				}
 			}
 
-			// If we found Jest but no testMatch, break and use defaults
 			break;
 		} else if (framework === 'vitest') {
-			// Try Vitest config files
 			const vitestConfigFiles = [
 				'vitest.config.js',
 				'vitest.config.ts',
@@ -519,7 +517,6 @@ function getTestFilePatternsForFile(filePath: string): {
 				}
 			}
 
-			// If we found Vitest but no include, break and use defaults
 			break;
 		}
 
@@ -528,7 +525,6 @@ function getTestFilePatternsForFile(filePath: string): {
 		currentDir = parentDir;
 	}
 
-	// Fall back to default pattern
 	return {
 		patterns: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
 		configDir: rootPath,
@@ -538,15 +534,10 @@ function getTestFilePatternsForFile(filePath: string): {
 export function matchesTestFilePattern(filePath: string): boolean {
 	const { patterns, configDir } = getTestFilePatternsForFile(filePath);
 
-	// Calculate relative path from the config directory
-	// This is important because patterns in configs are relative to the config file location
 	let pathToMatch = path.relative(configDir, filePath);
 
-	// Normalize path separators to forward slashes for consistent glob matching
-	// Glob patterns always use forward slashes, even on Windows
 	pathToMatch = pathToMatch.replace(/\\/g, '/');
 
-  // Check if path matches any of the patterns
   for (const pattern of patterns) {
     if (mm.isMatch(pathToMatch, pattern, { nocase: true })) {
       return true;
@@ -561,7 +552,14 @@ export function isJestTestFile(filePath: string): boolean {
     return false;
   }
 
-  return !!findJestDirectory(filePath);
+  const hasJestDir = !!findJestDirectory(filePath);
+  
+  const customJestConfigPath = vscode.workspace
+    .getConfiguration()
+    .get('jestrunner.configPath') as string | Record<string, string> | undefined;
+  const hasCustomConfig = !!customJestConfigPath;
+  
+  return hasJestDir || hasCustomConfig;
 }
 
 export function isVitestTestFile(filePath: string): boolean {
@@ -569,7 +567,14 @@ export function isVitestTestFile(filePath: string): boolean {
     return false;
   }
 
-  return !!findVitestDirectory(filePath);
+  const hasVitestDir = !!findVitestDirectory(filePath);
+  
+  const customVitestConfigPath = vscode.workspace
+    .getConfiguration()
+    .get('jestrunner.vitestConfigPath') as string | Record<string, string> | undefined;
+  const hasCustomConfig = !!customVitestConfigPath;
+  
+  return hasVitestDir || hasCustomConfig;
 }
 
 export function isTestFile(filePath: string): boolean {
@@ -577,7 +582,17 @@ export function isTestFile(filePath: string): boolean {
     return false;
   }
 
-  return !!findTestFrameworkDirectory(filePath);
+  const hasFrameworkDir = !!findTestFrameworkDirectory(filePath);
+  
+  const customJestConfigPath = vscode.workspace
+    .getConfiguration()
+    .get('jestrunner.configPath') as string | Record<string, string> | undefined;
+  const customVitestConfigPath = vscode.workspace
+    .getConfiguration()
+    .get('jestrunner.vitestConfigPath') as string | Record<string, string> | undefined;
+  const hasCustomConfig = !!customJestConfigPath || !!customVitestConfigPath;
+  
+  return hasFrameworkDir || hasCustomConfig;
 }
 
 export function getTestFrameworkForFile(
