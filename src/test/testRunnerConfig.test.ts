@@ -1577,8 +1577,9 @@ describe('TestRunnerConfig', () => {
       );
 
       // Mock Yarn PnP directory structure
-      jest.spyOn(fs, 'existsSync').mockImplementation((path: any) => {
-        if (path === '/home/user/project/.yarn/releases') {
+      const expectedPath = path.join('/home/user/project', '.yarn', 'releases');
+      jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+        if (checkPath === expectedPath) {
           return true;
         }
         return false;
@@ -1794,8 +1795,9 @@ describe('TestRunnerConfig', () => {
       );
 
       // Mock Yarn PnP directory structure
-      jest.spyOn(fs, 'existsSync').mockImplementation((path: any) => {
-        if (path === '/home/user/project/.yarn/releases') {
+      const expectedPath = path.join('/home/user/project', '.yarn', 'releases');
+      jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+        if (checkPath === expectedPath) {
           return true;
         }
         return false;
