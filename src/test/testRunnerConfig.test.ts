@@ -1202,6 +1202,59 @@ describe('TestRunnerConfig', () => {
       expect(args).toContain('my test name');
     });
 
+    it('should escape special regex characters in file paths', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+        }),
+      );
+
+      // Test path with + (common in state management folders like +state)
+      const filePathWithPlus = '/home/user/project/src/+state/test.spec.ts';
+      const argsPlus = jestRunnerConfig.buildJestArgs(
+        filePathWithPlus,
+        undefined,
+        false,
+      );
+      expect(argsPlus[0]).toBe('/home/user/project/src/\\+state/test\\.spec\\.ts');
+
+      // Test path with [] (common in dynamic routes like Next.js [id])
+      const filePathWithBrackets = '/home/user/project/src/[id]/test.spec.ts';
+      const argsBrackets = jestRunnerConfig.buildJestArgs(
+        filePathWithBrackets,
+        undefined,
+        false,
+      );
+      expect(argsBrackets[0]).toBe('/home/user/project/src/\\[id\\]/test\\.spec\\.ts');
+
+      // Test path with () (can occur in folder names)
+      const filePathWithParens = '/home/user/project/src/(group)/test.spec.ts';
+      const argsParens = jestRunnerConfig.buildJestArgs(
+        filePathWithParens,
+        undefined,
+        false,
+      );
+      expect(argsParens[0]).toBe('/home/user/project/src/\\(group\\)/test\\.spec\\.ts');
+
+      // Test path with $ (can occur in folder names)
+      const filePathWithDollar = '/home/user/project/src/$lib/test.spec.ts';
+      const argsDollar = jestRunnerConfig.buildJestArgs(
+        filePathWithDollar,
+        undefined,
+        false,
+      );
+      expect(argsDollar[0]).toBe('/home/user/project/src/\\$lib/test\\.spec\\.ts');
+
+      // Test path with multiple special characters
+      const filePathComplex = '/home/user/project/src/[id]+state/(group)/test.spec.ts';
+      const argsComplex = jestRunnerConfig.buildJestArgs(
+        filePathComplex,
+        undefined,
+        false,
+      );
+      expect(argsComplex[0]).toBe('/home/user/project/src/\\[id\\]\\+state/\\(group\\)/test\\.spec\\.ts');
+    });
+
     it('should escape single quotes in test name when withQuotes is true', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
