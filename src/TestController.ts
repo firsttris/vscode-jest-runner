@@ -126,13 +126,11 @@ export class JestTestController {
   private setupConfigurationWatcher() {
     // Watch for VS Code configuration changes
     const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
-      // Check if vitest config or test patterns might have changed
       if (
         e.affectsConfiguration('jestrunner') ||
         e.affectsConfiguration('vitest') ||
         e.affectsConfiguration('jest')
       ) {
-        // Refresh all test items
         this.refreshAllTests();
       }
     });
@@ -146,26 +144,14 @@ export class JestTestController {
       '**/vite.config.{js,ts,mjs,mts,cjs,cts}',
     ];
 
+    const handleConfigChange = () => this.refreshAllTests();
+
     for (const pattern of configFilePatterns) {
-      const configFileWatcher =
-        vscode.workspace.createFileSystemWatcher(pattern);
-
-      configFileWatcher.onDidChange(() => {
-        // Config file changed, refresh tests
-        this.refreshAllTests();
-      });
-
-      configFileWatcher.onDidCreate(() => {
-        // New config file created, refresh tests
-        this.refreshAllTests();
-      });
-
-      configFileWatcher.onDidDelete(() => {
-        // Config file deleted, refresh tests
-        this.refreshAllTests();
-      });
-
-      this.disposables.push(configFileWatcher);
+      const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+      watcher.onDidChange(handleConfigChange);
+      watcher.onDidCreate(handleConfigChange);
+      watcher.onDidDelete(handleConfigChange);
+      this.disposables.push(watcher);
     }
   }
 
@@ -353,46 +339,35 @@ export class JestTestController {
       let stderr = '';
       let killed = false;
 
-      jestProcess.stdout?.on('data', (data) => {
-        if (killed) return;
-
-        const chunk = data.toString();
-        if (stdout.length + chunk.length > maxBufferSize) {
+      const checkBufferSize = (
+        buffer: string,
+        chunk: string,
+        errorMsg: string,
+      ): boolean => {
+        if (buffer.length + chunk.length > maxBufferSize) {
           killed = true;
           jestProcess.kill();
-          tests.forEach((test) =>
-            run.failed(
-              test,
-              new vscode.TestMessage(
-                'Test output exceeded maximum buffer size',
-              ),
-            ),
-          );
+          tests.forEach((test) => run.failed(test, new vscode.TestMessage(errorMsg)));
           resolve(null);
-          return;
+          return true;
         }
-        stdout += chunk;
+        return false;
+      };
+
+      jestProcess.stdout?.on('data', (data) => {
+        if (killed) return;
+        const chunk = data.toString();
+        if (!checkBufferSize(stdout, chunk, 'Test output exceeded maximum buffer size')) {
+          stdout += chunk;
+        }
       });
 
       jestProcess.stderr?.on('data', (data) => {
         if (killed) return;
-
         const chunk = data.toString();
-        if (stderr.length + chunk.length > maxBufferSize) {
-          killed = true;
-          jestProcess.kill();
-          tests.forEach((test) =>
-            run.failed(
-              test,
-              new vscode.TestMessage(
-                'Error output exceeded maximum buffer size',
-              ),
-            ),
-          );
-          resolve(null);
-          return;
+        if (!checkBufferSize(stderr, chunk, 'Error output exceeded maximum buffer size')) {
+          stderr += chunk;
         }
-        stderr += chunk;
       });
 
       jestProcess.on('error', (error) => {
@@ -730,14 +705,9 @@ export class JestTestController {
     return this.executeTests(request, token, [], true);
   }
 
-  private async executeTests(
+  private collectTestsByFile(
     request: vscode.TestRunRequest,
-    token: vscode.CancellationToken,
-    additionalArgs: string[] = [],
-    collectCoverage: boolean = false,
-  ) {
-    const run = this.testController.createTestRun(request);
-
+  ): Map<string, vscode.TestItem[]> {
     const testsByFile = new Map<string, vscode.TestItem[]>();
 
     const collectTests = (test: vscode.TestItem) => {
@@ -761,6 +731,18 @@ export class JestTestController {
     } else {
       this.testController.items.forEach((test) => collectTests(test));
     }
+
+    return testsByFile;
+  }
+
+  private async executeTests(
+    request: vscode.TestRunRequest,
+    token: vscode.CancellationToken,
+    additionalArgs: string[] = [],
+    collectCoverage: boolean = false,
+  ) {
+    const run = this.testController.createTestRun(request);
+    const testsByFile = this.collectTestsByFile(request);
 
     testsByFile.forEach((tests) => {
       tests.forEach((test) => run.started(test));
@@ -801,86 +783,13 @@ export class JestTestController {
         ? this.jestConfig.getVitestConfigPath(allFiles[0])
         : this.jestConfig.getJestConfigPath(allFiles[0]);
 
-      let args: string[];
-      const fileItem =
-        allFiles.length === 1
-          ? this.testController.items.get(allFiles[0])
-          : undefined;
-      const totalTestsInFile = fileItem?.children.size ?? 0;
-
-      if (
-        allFiles.length === 1 &&
-        testsByFile.get(allFiles[0])!.length < totalTestsInFile
-      ) {
-        const tests = testsByFile.get(allFiles[0])!;
-        const testNamePattern =
-          tests.length > 1
-            ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-            : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-
-        if (isVitest) {
-          const vitestAdditionalArgs = [...additionalArgs, '--reporter=json'];
-          if (collectCoverage) {
-            vitestAdditionalArgs.push(
-              '--coverage',
-              '--coverage.reporter',
-              'json',
-            );
-          }
-          args = this.jestConfig.buildVitestArgs(
-            allFiles[0],
-            testNamePattern,
-            true,
-            vitestAdditionalArgs,
-          );
-        } else {
-          const jestAdditionalArgs = [...additionalArgs, '--json'];
-          if (collectCoverage) {
-            jestAdditionalArgs.push('--coverage', '--coverageReporters=json');
-          }
-          args = this.jestConfig.buildJestArgs(
-            allFiles[0],
-            testNamePattern,
-            true,
-            jestAdditionalArgs,
-          );
-        }
-      } else {
-        if (isVitest) {
-          const vitestConfigPath = this.jestConfig.getVitestConfigPath(
-            allFiles[0],
-          );
-          const vitestArgs = [
-            'run',
-            ...allFiles,
-            '--reporter=json',
-            ...(vitestConfigPath ? ['--config', vitestConfigPath] : []),
-            ...additionalArgs,
-          ];
-          if (collectCoverage) {
-            vitestArgs.push(
-              '--coverage',
-              '--coverage.reporter',
-              'json',
-              '--coverage.reporter',
-              'text',
-            );
-          }
-          args = vitestArgs;
-        } else {
-          const jestConfigPath = this.jestConfig.getJestConfigPath(allFiles[0]);
-          const jestArgs = [
-            ...allFiles,
-            '--json',
-            ...(jestConfigPath ? ['-c', jestConfigPath] : []),
-            ...additionalArgs,
-          ];
-          if (collectCoverage) {
-            jestArgs.push('--coverage', '--coverageReporters=json');
-          }
-          args = jestArgs;
-        }
-      }
+      const args = this.buildTestArgs(
+        allFiles,
+        testsByFile,
+        isVitest,
+        additionalArgs,
+        collectCoverage,
+      );
 
       const testCommand = isVitest
         ? this.jestConfig.vitestCommand
@@ -931,6 +840,73 @@ export class JestTestController {
     }
 
     run.end();
+  }
+
+  private buildTestArgs(
+    allFiles: string[],
+    testsByFile: Map<string, vscode.TestItem[]>,
+    isVitest: boolean,
+    additionalArgs: string[],
+    collectCoverage: boolean,
+  ): string[] {
+    const fileItem =
+      allFiles.length === 1
+        ? this.testController.items.get(allFiles[0])
+        : undefined;
+    const totalTestsInFile = fileItem?.children.size ?? 0;
+    const isPartialRun =
+      allFiles.length === 1 &&
+      testsByFile.get(allFiles[0])!.length < totalTestsInFile;
+
+    if (isPartialRun) {
+      const tests = testsByFile.get(allFiles[0])!;
+      const testNamePattern =
+        tests.length > 1
+          ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
+          : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
+
+      const extraArgs = [
+        ...additionalArgs,
+        isVitest ? '--reporter=json' : '--json',
+      ];
+
+      if (collectCoverage) {
+        extraArgs.push(
+          '--coverage',
+          isVitest ? '--coverage.reporter' : '--coverageReporters=json',
+          ...(isVitest ? ['json'] : []),
+        );
+      }
+
+      return isVitest
+        ? this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, extraArgs)
+        : this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, extraArgs);
+    }
+
+    // Full file run
+    const configPath = isVitest
+      ? this.jestConfig.getVitestConfigPath(allFiles[0])
+      : this.jestConfig.getJestConfigPath(allFiles[0]);
+
+    const args = isVitest
+      ? ['run', ...allFiles, '--reporter=json']
+      : [...allFiles, '--json'];
+
+    if (configPath) {
+      args.push(isVitest ? '--config' : '-c', configPath);
+    }
+
+    args.push(...additionalArgs);
+
+    if (collectCoverage) {
+      if (isVitest) {
+        args.push('--coverage', '--coverage.reporter', 'json', '--coverage.reporter', 'text');
+      } else {
+        args.push('--coverage', '--coverageReporters=json');
+      }
+    }
+
+    return args;
   }
 
   private async debugHandler(
