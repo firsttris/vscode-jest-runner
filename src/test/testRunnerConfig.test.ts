@@ -796,7 +796,7 @@ describe('TestRunnerConfig', () => {
 
         jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
           // Custom config doesn't exist, but standard config does
-          return path.resolve(filePath as string) === standardConfigPath;
+          return normalizePath(path.resolve(filePath as string)) === normalizePath(standardConfigPath);
         });
 
         jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
@@ -830,7 +830,7 @@ describe('TestRunnerConfig', () => {
 
         jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
           // Custom config exists
-          return path.resolve(filePath as string) === customConfigFullPath;
+          return normalizePath(path.resolve(filePath as string)) === normalizePath(customConfigFullPath);
         });
 
         const result = jestRunnerConfig.getJestConfigPath(targetPath);
@@ -1899,7 +1899,7 @@ describe('TestRunnerConfig', () => {
 
       jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
         // Custom config doesn't exist, but standard config does
-        return path.resolve(filePath as string) === standardConfigPath;
+        return normalizePath(path.resolve(filePath as string)) === normalizePath(standardConfigPath);
       });
 
       jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
@@ -1932,7 +1932,7 @@ describe('TestRunnerConfig', () => {
 
       jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
         // Custom config exists
-        return path.resolve(filePath as string) === customConfigFullPath;
+        return normalizePath(path.resolve(filePath as string)) === normalizePath(customConfigFullPath);
       });
 
       const result = jestRunnerConfig.getVitestConfigPath(targetPath);
