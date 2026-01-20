@@ -62,8 +62,8 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 ### 🎯 Smart Test Detection
 
 - 🤖 **Automatic framework detection** - distinguishes between Jest and Vitest
+- 🔍 **Reads test patterns from framework configs** - automatically uses `testMatch` from Jest config or `include` from Vitest config
 - 🎚️ **Include/exclude patterns** for fine-grained control over which tests appear
-- 📝 **Configurable test file patterns** to match your project conventions
 
 </td>
 <td width="50%">
@@ -109,12 +109,12 @@ npm install -D @vitest/coverage-istanbul
 
 ```typescript
 // vitest.config.ts
-import { defineConfig } from "vitest/config";
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     coverage: {
-      provider: "v8", // or 'istanbul'
+      provider: 'v8', // or 'istanbul'
     },
   },
 });
@@ -160,8 +160,6 @@ Customize the test runner for your project:
 | `jestrunner.vitestRunOptions`               | CLI options to add to Vitest commands (e.g. `["--reporter=verbose"]`). See [Vitest CLI documentation](https://vitest.dev/guide/cli.html).                                                                                                                                                                                                                                                                                                                                                                                             |
 | `jestrunner.vitestDebugOptions`             | Add or override VS Code debug configurations for Vitest (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging Vitest tests.                                                                                                                                                                                                                                                                                                                                                                                                |
 | **Test Detection & Filtering**              |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.testFilePattern`                | Pattern to identify test files. Affects CodeLens, Test Explorer, and test detection. Default: `**/*.{test,spec}.{js,jsx,ts,tsx}`                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `jestrunner.codeLensSelector`               | **Deprecated:** Use `jestrunner.testFilePattern` instead. This setting is kept for backward compatibility with versions prior to 0.4.80.                                                                                                                                                                                                                                                                                                                                                                                              |
 | `jestrunner.include`                        | Glob patterns for files to include in test detection. When specified, disables automatic Jest detection in favor of explicit inclusion.                                                                                                                                                                                                                                                                                                                                                                                               |
 | `jestrunner.exclude`                        | Glob patterns for files to exclude from test detection. When specified, disables automatic Jest detection in favor of explicit exclusion.                                                                                                                                                                                                                                                                                                                                                                                             |
 | **UI Options**                              |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -184,6 +182,36 @@ Customize the test runner for your project:
 <details>
 <summary><b>📖 Click to view config examples for specific tools and scenarios</b></summary>
 <br>
+
+#### 🔍 Custom Test File Patterns
+
+The extension **automatically reads test file patterns** from your framework configuration:
+
+- **Jest**: Reads `testMatch` from `jest.config.js/ts/json` or `package.json`
+- **Vitest**: Reads `include` from `vitest.config.ts` or `vite.config.ts` (within the `test` section)
+
+**Example Jest Config:**
+
+```javascript
+// jest.config.js - Extension reads this automatically!
+module.exports = {
+  testMatch: [
+    '**/?(*.)+(spec|test|integrationtest).?([mc])[jt]s?(x)',
+    '**/__tests__/**/*.?([mc])[jt]s?(x)',
+  ],
+};
+```
+
+**Example Vitest Config:**
+
+```typescript
+// vitest.config.ts - Extension reads this automatically!
+export default defineConfig({
+  test: {
+    include: ['**/*.{test,spec,integrationtest}.{js,jsx,ts,tsx}'],
+  },
+});
+```
 
 #### ⚛️ Usage with CRA or similar abstractions
 
@@ -235,10 +263,10 @@ In the test names, you can use **template variables** like `%s` (string), `%i` (
 
 ```javascript
 it.each([
-  ["apple", 5],
-  ["banana", 6],
-  ["cherry", 6],
-])("should return correct length for %s", (fruit, expectedLength) => {
+  ['apple', 5],
+  ['banana', 6],
+  ['cherry', 6],
+])('should return correct length for %s', (fruit, expectedLength) => {
   expect(fruit.length).toBe(expectedLength);
 });
 ```
@@ -246,12 +274,12 @@ it.each([
 #### Vitest Example
 
 ```javascript
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from 'vitest';
 
 it.each([
-  { input: "hello", expected: 5 },
-  { input: "world", expected: 5 },
-])("length of $input is $expected", ({ input, expected }) => {
+  { input: 'hello', expected: 5 },
+  { input: 'world', expected: 5 },
+])('length of $input is $expected', ({ input, expected }) => {
   expect(input.length).toBe(expected);
 });
 ```

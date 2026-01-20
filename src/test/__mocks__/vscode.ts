@@ -1,7 +1,6 @@
-
 class Uri {
   constructor(readonly fsPath: string) {}
-  
+
   static file(path: string): Uri {
     return new Uri(path);
   }
@@ -48,11 +47,12 @@ class Workspace {
   }
 
   getConfiguration() {
-    throw new WorkspaceConfiguration({});
+    return new WorkspaceConfiguration({});
   }
 
   findFiles = jest.fn();
   createFileSystemWatcher = jest.fn();
+  onDidChangeConfiguration = jest.fn(() => ({ dispose: jest.fn() }));
 }
 
 type JestRunnerConfigProps = {
@@ -72,14 +72,15 @@ type JestRunnerConfigProps = {
   'jestrunner.yarnPnpCommand'?: string;
   'jestrunner.enableCodeLens'?: boolean;
   'jestrunner.disableCodeLens'?: boolean;
-  'jestrunner.testFilePattern'?: string;
-  'jestrunner.codeLensSelector'?: string;
   'jestrunner.changeDirectoryToWorkspaceRoot'?: boolean;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) {}
 
-  get<T extends keyof typeof this.dict>(key: T, defaultValue?: any): (typeof this.dict)[T] {
+  get<T extends keyof typeof this.dict>(
+    key: T,
+    defaultValue?: any,
+  ): (typeof this.dict)[T] {
     if (!(key in this.dict)) {
       return defaultValue;
     }
@@ -112,10 +113,16 @@ class Window {
   get activeTextEditor(): TextEditor {
     return new TextEditor(new Document(new Uri('hi')));
   }
-  showWarningMessage<T extends string>(message: string, ...items: T[]): Thenable<T | undefined> {
+  showWarningMessage<T extends string>(
+    message: string,
+    ...items: T[]
+  ): Thenable<T | undefined> {
     return Promise.resolve(undefined);
   }
-  showErrorMessage<T extends string>(message: string, ...items: T[]): Thenable<T | undefined> {
+  showErrorMessage<T extends string>(
+    message: string,
+    ...items: T[]
+  ): Thenable<T | undefined> {
     return Promise.resolve(undefined);
   }
   createTerminal(name: string): any {
@@ -128,9 +135,11 @@ class Window {
   createOutputChannel(name: string): OutputChannel {
     return new OutputChannel();
   }
-  onDidCloseTerminal: jest.Mock = jest.fn((callback: (terminal: any) => void) => {
-    return { dispose: jest.fn() };
-  });
+  onDidCloseTerminal: jest.Mock = jest.fn(
+    (callback: (terminal: any) => void) => {
+      return { dispose: jest.fn() };
+    },
+  );
 }
 
 class Commands {
@@ -184,7 +193,7 @@ class TestItemCollection {
 
   replace(items: TestItem[]): void {
     this.items.clear();
-    items.forEach(item => this.add(item));
+    items.forEach((item) => this.add(item));
   }
 
   forEach(callback: (item: TestItem) => void): void {
@@ -280,11 +289,20 @@ class TestRunProfile {
 
 class TestController {
   items: TestItemCollection = new TestItemCollection();
-  createRunProfile = jest.fn((label: string, kind: TestRunProfileKind, runHandler: any, isDefault: boolean) => {
-    return new TestRunProfile(label, kind, runHandler, isDefault);
-  });
+  createRunProfile = jest.fn(
+    (
+      label: string,
+      kind: TestRunProfileKind,
+      runHandler: any,
+      isDefault: boolean,
+    ) => {
+      return new TestRunProfile(label, kind, runHandler, isDefault);
+    },
+  );
   createTestRun = jest.fn().mockReturnValue(new TestRun());
-  createTestItem = jest.fn((id: string, label: string, uri?: Uri) => new TestItem(id, label, uri));
+  createTestItem = jest.fn(
+    (id: string, label: string, uri?: Uri) => new TestItem(id, label, uri),
+  );
   dispose = jest.fn();
 
   constructor(
@@ -301,7 +319,7 @@ enum TestRunProfileKind {
 
 class CancellationTokenSource {
   token: CancellationToken;
-  
+
   constructor() {
     this.token = new CancellationToken();
   }
@@ -335,7 +353,7 @@ class CancellationToken {
 
   cancel(): void {
     this.cancelled = true;
-    this.listeners.forEach(listener => listener());
+    this.listeners.forEach((listener) => listener());
   }
 }
 
@@ -347,7 +365,9 @@ class RelativePattern {
 }
 
 const tests = {
-  createTestController: jest.fn((id: string, label: string) => new TestController(id, label)),
+  createTestController: jest.fn(
+    (id: string, label: string) => new TestController(id, label),
+  ),
 };
 
 const workspace = new Workspace();

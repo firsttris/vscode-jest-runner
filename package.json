@@ -164,18 +164,6 @@
             },
             "scope": "window"
           },
-          "jestrunner.codeLensSelector": {
-            "type": "string",
-            "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
-            "description": "Deprecated: Use 'jestrunner.testFilePattern' instead. This setting is kept for backwards compatibility.",
-            "deprecationMessage": "This setting has been renamed to 'jestrunner.testFilePattern'. Please update your settings.",
-            "scope": "window"
-          },
-          "jestrunner.testFilePattern": {
-            "type": "string",
-            "default": "**/*.{test,spec}.{js,jsx,ts,tsx}",
-            "description": "CodeLens will be shown on files matching this pattern"
-          },
           "jestrunner.enableYarnPnpSupport": {
             "type": "boolean",
             "default": false,
@@ -313,7 +301,7 @@
     "format": "biome format --write ."
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.3.11",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.3",
     "@types/vscode": "^1.107.0",
@@ -322,11 +310,13 @@
     "ovsx": "^0.10.8",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "prettier": "^3.8.0"
   },
   "dependencies": {
     "fast-glob": "^3.3.3",
     "jest-editor-support": "^32.0.0-beta.1",
     "micromatch": "^4.0.8"
+    
   }
 }

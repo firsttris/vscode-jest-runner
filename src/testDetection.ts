@@ -1,12 +1,18 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { logError, logWarning } from './util';
+import * as mm from 'micromatch';
+import { logError, logDebug } from './util';
 
 const testDetectionCache = new Map<string, boolean>();
 
 const viteConfigFiles = [
-  'vite.config.js', 'vite.config.ts', 'vite.config.mjs', 'vite.config.mts', 'vite.config.cjs', 'vite.config.cts'
+  'vite.config.js',
+  'vite.config.ts',
+  'vite.config.mjs',
+  'vite.config.mts',
+  'vite.config.cjs',
+  'vite.config.cts',
 ];
 
 export function viteConfigHasTestAttribute(configPath: string): boolean {
@@ -38,7 +44,13 @@ interface TestFramework {
 const testFrameworks: TestFramework[] = [
   {
     name: 'jest',
-    configFiles: ['jest.config.js', 'jest.config.ts', 'jest.config.json', 'jest.config.cjs', 'jest.config.mjs'],
+    configFiles: [
+      'jest.config.js',
+      'jest.config.ts',
+      'jest.config.json',
+      'jest.config.cjs',
+      'jest.config.mjs',
+    ],
     binaryName: 'jest',
   },
   {
@@ -54,7 +66,12 @@ const testFrameworks: TestFramework[] = [
   {
     name: 'vitest',
     configFiles: [
-      'vitest.config.js', 'vitest.config.ts', 'vitest.config.mjs', 'vitest.config.mts', 'vitest.config.cjs', 'vitest.config.cts'
+      'vitest.config.js',
+      'vitest.config.ts',
+      'vitest.config.mjs',
+      'vitest.config.mts',
+      'vitest.config.cjs',
+      'vitest.config.cts',
     ],
     binaryName: 'vitest',
   },
@@ -62,7 +79,11 @@ const testFrameworks: TestFramework[] = [
 
 export type TestFrameworkName = 'jest' | 'vitest' | 'cypress' | 'playwright';
 
-function isFrameworkUsedIn(directoryPath: string, frameworkName: string, cache: Map<string, boolean>): boolean {
+function isFrameworkUsedIn(
+  directoryPath: string,
+  frameworkName: string,
+  cache: Map<string, boolean>,
+): boolean {
   if (cache.has(directoryPath)) {
     return cache.get(directoryPath)!;
   }
@@ -75,7 +96,12 @@ function isFrameworkUsedIn(directoryPath: string, frameworkName: string, cache: 
 
     const possibleBinaryPaths = [
       path.join(directoryPath, 'node_modules', '.bin', framework.binaryName),
-      path.join(directoryPath, 'node_modules', '.bin', `${framework.binaryName}.cmd`),
+      path.join(
+        directoryPath,
+        'node_modules',
+        '.bin',
+        `${framework.binaryName}.cmd`,
+      ),
     ];
 
     for (const binPath of possibleBinaryPaths) {
@@ -95,7 +121,10 @@ function isFrameworkUsedIn(directoryPath: string, frameworkName: string, cache: 
     if (frameworkName === 'vitest') {
       for (const viteConfig of viteConfigFiles) {
         const viteConfigPath = path.join(directoryPath, viteConfig);
-        if (fs.existsSync(viteConfigPath) && viteConfigHasTestAttribute(viteConfigPath)) {
+        if (
+          fs.existsSync(viteConfigPath) &&
+          viteConfigHasTestAttribute(viteConfigPath)
+        ) {
           cache.set(directoryPath, true);
           return true;
         }
@@ -105,7 +134,9 @@ function isFrameworkUsedIn(directoryPath: string, frameworkName: string, cache: 
     const packageJsonPath = path.join(directoryPath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
       try {
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const packageJson = JSON.parse(
+          fs.readFileSync(packageJsonPath, 'utf8'),
+        );
 
         if (
           packageJson.dependencies?.[frameworkName] ||
@@ -137,7 +168,9 @@ export function isVitestUsedIn(directoryPath: string): boolean {
   return isFrameworkUsedIn(directoryPath, 'vitest', vitestDetectionCache);
 }
 
-export function detectTestFramework(directoryPath: string): TestFrameworkName | undefined {
+export function detectTestFramework(
+  directoryPath: string,
+): TestFrameworkName | undefined {
   const packageJsonPath = path.join(directoryPath, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
     try {
@@ -149,9 +182,9 @@ export function detectTestFramework(directoryPath: string): TestFrameworkName | 
         if (
           framework &&
           (packageJson.dependencies?.[framework.name] ||
-          packageJson.devDependencies?.[framework.name] ||
-          packageJson.peerDependencies?.[framework.name] ||
-          packageJson[framework.name])
+            packageJson.devDependencies?.[framework.name] ||
+            packageJson.peerDependencies?.[framework.name] ||
+            packageJson[framework.name])
         ) {
           return framework.name as TestFrameworkName;
         }
@@ -173,7 +206,10 @@ export function detectTestFramework(directoryPath: string): TestFrameworkName | 
       if (frameworkName === 'vitest') {
         for (const viteConfig of viteConfigFiles) {
           const viteConfigPath = path.join(directoryPath, viteConfig);
-          if (fs.existsSync(viteConfigPath) && viteConfigHasTestAttribute(viteConfigPath)) {
+          if (
+            fs.existsSync(viteConfigPath) &&
+            viteConfigHasTestAttribute(viteConfigPath)
+          ) {
             return 'vitest';
           }
         }
@@ -183,8 +219,17 @@ export function detectTestFramework(directoryPath: string): TestFrameworkName | 
 
   for (const framework of testFrameworks) {
     if (
-      fs.existsSync(path.join(directoryPath, 'node_modules', '.bin', framework.binaryName)) ||
-      fs.existsSync(path.join(directoryPath, 'node_modules', '.bin', `${framework.binaryName}.cmd`))
+      fs.existsSync(
+        path.join(directoryPath, 'node_modules', '.bin', framework.binaryName),
+      ) ||
+      fs.existsSync(
+        path.join(
+          directoryPath,
+          'node_modules',
+          '.bin',
+          `${framework.binaryName}.cmd`,
+        ),
+      )
     ) {
       return framework.name as TestFrameworkName;
     }
@@ -193,9 +238,14 @@ export function detectTestFramework(directoryPath: string): TestFrameworkName | 
   return undefined;
 }
 
-export function findTestFrameworkDirectory(filePath: string, targetFramework?: 'jest' | 'vitest'): { directory: string; framework: TestFrameworkName } | undefined {
+export function findTestFrameworkDirectory(
+  filePath: string,
+  targetFramework?: 'jest' | 'vitest',
+): { directory: string; framework: TestFrameworkName } | undefined {
   let currentDir = path.dirname(filePath);
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+    vscode.Uri.file(filePath),
+  );
 
   if (!workspaceFolder) return undefined;
 
@@ -252,11 +302,262 @@ export function findVitestDirectory(filePath: string): string | undefined {
   return result?.directory;
 }
 
-export function isJestTestFile(filePath: string): boolean {
-  const fileName = path.basename(filePath);
-  const testPattern = /\.(test|spec)\.(js|jsx|ts|tsx)$/i;
+/**
+ * Extracts testMatch patterns from Jest config file
+ */
+export function getTestMatchFromJestConfig(
+  configPath: string,
+): string[] | undefined {
+  try {
+    const content = fs.readFileSync(configPath, 'utf8');
 
-  if (!testPattern.test(fileName)) {
+    // Try to extract testMatch array from config
+    // Support both CommonJS (module.exports) and ES6 (export default) formats
+    // We need to handle nested brackets in patterns like [mc] and [jt]
+    // Find testMatch: [ and then match until the closing ]
+    const testMatchStart = content.indexOf('testMatch');
+    if (testMatchStart !== -1) {
+      const arrayStart = content.indexOf('[', testMatchStart);
+      if (arrayStart !== -1) {
+        // Find the matching closing bracket by counting brackets
+        let bracketCount = 1;
+        let arrayEnd = arrayStart + 1;
+        while (arrayEnd < content.length && bracketCount > 0) {
+          const char = content[arrayEnd];
+          if (char === '[') bracketCount++;
+          else if (char === ']') bracketCount--;
+          arrayEnd++;
+        }
+
+        if (bracketCount === 0) {
+          const arrayContent = content.substring(arrayStart + 1, arrayEnd - 1);
+          // Extract quoted strings from the array - handle single, double, and template strings
+          const patterns: string[] = [];
+          const stringRegex = /['"`]((?:\\.|[^'"`\\])*?)['"`]/g;
+          let stringMatch;
+          while ((stringMatch = stringRegex.exec(arrayContent)) !== null) {
+            patterns.push(stringMatch[1]);
+          }
+          if (patterns.length > 0) {
+            logDebug(
+              `Found testMatch patterns in ${configPath}: ${patterns.join(', ')}`,
+            );
+            return patterns;
+          }
+        }
+      }
+    }
+
+    // Also check for testMatch in package.json's jest config section
+    if (configPath.endsWith('package.json')) {
+      try {
+        const pkg = JSON.parse(content);
+        if (pkg.jest?.testMatch) {
+          return Array.isArray(pkg.jest.testMatch)
+            ? pkg.jest.testMatch
+            : undefined;
+        }
+      } catch {
+        // Not valid JSON or no jest config
+      }
+    }
+
+    return undefined;
+  } catch (error) {
+    logError(`Error reading Jest config file: ${configPath}`, error);
+    return undefined;
+  }
+}
+
+/**
+ * Extracts include patterns from Vitest/Vite config file
+ */
+export function getIncludeFromVitestConfig(
+  configPath: string,
+): string[] | undefined {
+  try {
+    const content = fs.readFileSync(configPath, 'utf8');
+
+    // Find the test config block and extract include patterns
+    // This approach handles nested objects properly
+    const testBlockRegex = /test\s*:\s*\{/;
+    const testBlockMatch = content.match(testBlockRegex);
+
+    if (!testBlockMatch) {
+      return undefined;
+    }
+
+    // Find the start of the test block
+    let startIndex = testBlockMatch.index! + testBlockMatch[0].length;
+    let braceDepth = 1;
+    let endIndex = startIndex;
+
+    // Find the end of the test block by tracking braces
+    for (let i = startIndex; i < content.length && braceDepth > 0; i++) {
+      if (content[i] === '{') {
+        braceDepth++;
+      } else if (content[i] === '}') {
+        braceDepth--;
+      }
+      if (braceDepth === 0) {
+        endIndex = i;
+        break;
+      }
+    }
+
+    const testBlockContent = content.substring(startIndex, endIndex);
+
+    // Now extract the include array from the test block
+    // Look for include that's not inside a nested object like coverage
+    const includeRegex = /include\s*:\s*\[([^\]]*)\]/;
+    const includeMatch = testBlockContent.match(includeRegex);
+
+    if (includeMatch) {
+      const arrayContent = includeMatch[1];
+      // Extract quoted strings from the array
+      const patterns: string[] = [];
+      const stringRegex = /['"`]((?:\\.|[^'"`\\])*?)['"`]/g;
+      let stringMatch;
+      while ((stringMatch = stringRegex.exec(arrayContent)) !== null) {
+        patterns.push(stringMatch[1]);
+      }
+      if (patterns.length > 0) {
+        logDebug(
+          `Found include patterns in ${configPath}: ${patterns.join(', ')}`,
+        );
+        return patterns;
+      }
+    }
+
+    return undefined;
+  } catch (error) {
+    logError(`Error reading Vitest config file: ${configPath}`, error);
+    return undefined;
+  }
+}
+
+/**
+ * Gets test file patterns from framework config
+ * Returns both the patterns and the config directory for correct relative path calculation
+ */
+function getTestFilePatternsForFile(filePath: string): {
+	patterns: string[];
+	configDir: string;
+} {
+	// Try to read patterns from test framework config
+	// We need to find the framework directory by looking for config files, not by checking if it's a test file
+	const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+		vscode.Uri.file(filePath),
+	);
+	if (!workspaceFolder) {
+		return {
+			patterns: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+			configDir: path.dirname(filePath),
+		};
+	}
+
+	let currentDir = path.dirname(filePath);
+	const rootPath = workspaceFolder.uri.fsPath;
+
+	// Search up the directory tree for test framework configs
+	while (currentDir && currentDir.startsWith(rootPath)) {
+		const framework = detectTestFramework(currentDir);
+
+		if (framework === 'jest') {
+			// Try Jest config files
+			const jestConfigFiles = [
+				'jest.config.js',
+				'jest.config.ts',
+				'jest.config.json',
+				'jest.config.cjs',
+				'jest.config.mjs',
+			];
+			for (const configFile of jestConfigFiles) {
+				const configPath = path.join(currentDir, configFile);
+				if (fs.existsSync(configPath)) {
+					const patterns = getTestMatchFromJestConfig(configPath);
+					if (patterns) {
+						return { patterns, configDir: currentDir };
+					}
+				}
+			}
+
+			// Also check package.json for jest config
+			const packageJsonPath = path.join(currentDir, 'package.json');
+			if (fs.existsSync(packageJsonPath)) {
+				const patterns = getTestMatchFromJestConfig(packageJsonPath);
+				if (patterns) {
+					return { patterns, configDir: currentDir };
+				}
+			}
+
+			// If we found Jest but no testMatch, break and use defaults
+			break;
+		} else if (framework === 'vitest') {
+			// Try Vitest config files
+			const vitestConfigFiles = [
+				'vitest.config.js',
+				'vitest.config.ts',
+				'vitest.config.mjs',
+				'vitest.config.mts',
+				'vitest.config.cjs',
+				'vitest.config.cts',
+				'vite.config.js',
+				'vite.config.ts',
+				'vite.config.mjs',
+				'vite.config.mts',
+				'vite.config.cjs',
+				'vite.config.cts',
+			];
+			for (const configFile of vitestConfigFiles) {
+				const configPath = path.join(currentDir, configFile);
+				if (fs.existsSync(configPath)) {
+					const patterns = getIncludeFromVitestConfig(configPath);
+					if (patterns) {
+						return { patterns, configDir: currentDir };
+					}
+				}
+			}
+
+			// If we found Vitest but no include, break and use defaults
+			break;
+		}
+
+		const parentDir = path.dirname(currentDir);
+		if (parentDir === currentDir) break;
+		currentDir = parentDir;
+	}
+
+	// Fall back to default pattern
+	return {
+		patterns: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+		configDir: rootPath,
+	};
+}
+
+export function matchesTestFilePattern(filePath: string): boolean {
+	const { patterns, configDir } = getTestFilePatternsForFile(filePath);
+
+	// Calculate relative path from the config directory
+	// This is important because patterns in configs are relative to the config file location
+	let pathToMatch = path.relative(configDir, filePath);
+
+	// Normalize path separators to forward slashes for consistent glob matching
+	// Glob patterns always use forward slashes, even on Windows
+	pathToMatch = pathToMatch.replace(/\\/g, '/');
+
+  // Check if path matches any of the patterns
+  for (const pattern of patterns) {
+    if (mm.isMatch(pathToMatch, pattern, { nocase: true })) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isJestTestFile(filePath: string): boolean {
+  if (!matchesTestFilePattern(filePath)) {
     return false;
   }
 
@@ -264,10 +565,7 @@ export function isJestTestFile(filePath: string): boolean {
 }
 
 export function isVitestTestFile(filePath: string): boolean {
-  const fileName = path.basename(filePath);
-  const testPattern = /\.(test|spec)\.(js|jsx|ts|tsx)$/i;
-
-  if (!testPattern.test(fileName)) {
+  if (!matchesTestFilePattern(filePath)) {
     return false;
   }
 
@@ -275,17 +573,16 @@ export function isVitestTestFile(filePath: string): boolean {
 }
 
 export function isTestFile(filePath: string): boolean {
-  const fileName = path.basename(filePath);
-  const testPattern = /\.(test|spec)\.(js|jsx|ts|tsx)$/i;
-
-  if (!testPattern.test(fileName)) {
+  if (!matchesTestFilePattern(filePath)) {
     return false;
   }
 
   return !!findTestFrameworkDirectory(filePath);
 }
 
-export function getTestFrameworkForFile(filePath: string): TestFrameworkName | undefined {
+export function getTestFrameworkForFile(
+  filePath: string,
+): TestFrameworkName | undefined {
   const result = findTestFrameworkDirectory(filePath);
   return result?.framework;
 }

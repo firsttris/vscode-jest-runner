@@ -12,12 +12,24 @@ describe('TestRunner', () => {
 
   beforeEach(() => {
     mockConfig = {
-      get jestCommand() { return 'node jest'; },
-      get vitestCommand() { return 'npx vitest'; },
-      get jestBinPath() { return 'node_modules/.bin/jest'; },
-      get cwd() { return '/workspace'; },
-      get changeDirectoryToWorkspaceRoot() { return false; },
-      get preserveEditorFocus() { return false; },
+      get jestCommand() {
+        return 'node jest';
+      },
+      get vitestCommand() {
+        return 'npx vitest';
+      },
+      get jestBinPath() {
+        return 'node_modules/.bin/jest';
+      },
+      get cwd() {
+        return '/workspace';
+      },
+      get changeDirectoryToWorkspaceRoot() {
+        return false;
+      },
+      get preserveEditorFocus() {
+        return false;
+      },
       getJestConfigPath: jest.fn().mockReturnValue(''),
       getVitestConfigPath: jest.fn().mockReturnValue(''),
       getTestFramework: jest.fn().mockReturnValue('jest'),
@@ -29,14 +41,16 @@ describe('TestRunner', () => {
         args.push(...options);
         return args;
       }),
-      buildVitestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
-        const args = ['run', filePath];
-        if (testName) {
-          args.push('-t', testName);
-        }
-        args.push(...options);
-        return args;
-      }),
+      buildVitestArgs: jest.fn(
+        (filePath, testName, withQuotes, options = []) => {
+          const args = ['run', filePath];
+          if (testName) {
+            args.push('-t', testName);
+          }
+          args.push(...options);
+          return args;
+        },
+      ),
       getDebugConfiguration: jest.fn(() => ({
         console: 'integratedTerminal',
         internalConsoleOptions: 'neverOpen',
@@ -47,11 +61,21 @@ describe('TestRunner', () => {
         cwd: '/workspace',
         args: ['--no-install', 'jest', '--runInBand'],
       })),
-      get runOptions() { return null; },
-      get debugOptions() { return {}; },
-      get isRunInExternalNativeTerminal() { return false; },
-      get isYarnPnpSupportEnabled() { return false; },
-      get getYarnPnpCommand() { return ''; },
+      get runOptions() {
+        return null;
+      },
+      get debugOptions() {
+        return {};
+      },
+      get isRunInExternalNativeTerminal() {
+        return false;
+      },
+      get isYarnPnpSupportEnabled() {
+        return false;
+      },
+      get getYarnPnpCommand() {
+        return '';
+      },
     } as any;
 
     mockTerminal = {
@@ -118,7 +142,9 @@ describe('TestRunner', () => {
         isEmpty: true,
         active: { line: 5 },
       } as any;
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(mockEditor as any);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(mockEditor as any);
     });
 
     it('should save the document before running', async () => {
@@ -136,7 +162,9 @@ describe('TestRunner', () => {
     });
 
     it('should return early if no active editor', async () => {
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(undefined);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(undefined);
       await jestRunner.runCurrentTest();
       expect(mockTerminal.sendText).not.toHaveBeenCalled();
     });
@@ -159,7 +187,9 @@ describe('TestRunner', () => {
       mockDocument.fileName = '/workspace/test.ts';
       mockDocument.save = jest.fn().mockResolvedValue(true);
       mockEditor = new TextEditor(mockDocument) as any;
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(mockEditor as any);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(mockEditor as any);
     });
 
     it('should save the document before running', async () => {
@@ -176,7 +206,9 @@ describe('TestRunner', () => {
     });
 
     it('should return early if no active editor', async () => {
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(undefined);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(undefined);
       await jestRunner.runCurrentFile();
       expect(mockTerminal.sendText).not.toHaveBeenCalled();
     });
@@ -198,7 +230,9 @@ describe('TestRunner', () => {
       mockDocument.fileName = '/workspace/test.ts';
       mockDocument.save = jest.fn().mockResolvedValue(true);
       mockEditor = new TextEditor(mockDocument) as any;
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(mockEditor as any);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(mockEditor as any);
     });
 
     it('should run the previous command', async () => {
@@ -216,7 +250,9 @@ describe('TestRunner', () => {
     });
 
     it('should return early if no active editor', async () => {
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(undefined);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(undefined);
       await jestRunner.runPreviousTest();
       expect(mockTerminal.sendText).not.toHaveBeenCalled();
     });
@@ -230,7 +266,8 @@ describe('TestRunner', () => {
 
     it('should create debug configuration with correct parameters', async () => {
       await jestRunner.debugTestsOnPath('/workspace/test.ts');
-      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[0];
+      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock
+        .calls[0];
       const config = debugCall[1];
       expect(config.type).toBe('node');
       expect(config.request).toBe('launch');
@@ -251,7 +288,9 @@ describe('TestRunner', () => {
         isEmpty: true,
         active: { line: 5 },
       } as any;
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(mockEditor as any);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(mockEditor as any);
     });
 
     it('should save the document before debugging', async () => {
@@ -262,13 +301,16 @@ describe('TestRunner', () => {
     it('should start debugging session with test name', async () => {
       await jestRunner.debugCurrentTest('My Test');
       expect(vscode.debug.startDebugging).toHaveBeenCalled();
-      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[0];
+      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock
+        .calls[0];
       const config = debugCall[1];
       expect(config.args).toContain('-t');
     });
 
     it('should return early if no active editor', async () => {
-      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(undefined);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(undefined);
       await jestRunner.debugCurrentTest();
       expect(vscode.debug.startDebugging).not.toHaveBeenCalled();
     });
@@ -278,13 +320,17 @@ describe('TestRunner', () => {
     it('should change directory when option is enabled', async () => {
       mockConfig = {
         ...mockConfig,
-        get changeDirectoryToWorkspaceRoot() { return true; },
-        get cwd() { return '/different/path'; },
+        get changeDirectoryToWorkspaceRoot() {
+          return true;
+        },
+        get cwd() {
+          return '/different/path';
+        },
       } as any;
       jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.runTestsOnPath('/workspace/test.ts');
-      
+
       const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
       expect(calls.length).toBe(2);
       expect(calls[0][0]).toContain('cd');
@@ -294,12 +340,14 @@ describe('TestRunner', () => {
     it('should not change directory when option is disabled', async () => {
       mockConfig = {
         ...mockConfig,
-        get changeDirectoryToWorkspaceRoot() { return false; },
+        get changeDirectoryToWorkspaceRoot() {
+          return false;
+        },
       } as any;
       jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.runTestsOnPath('/workspace/test.ts');
-      
+
       const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
       expect(calls.length).toBe(1);
       expect(calls[0][0]).not.toContain('cd');
@@ -310,7 +358,9 @@ describe('TestRunner', () => {
     it('should preserve focus when option is enabled', async () => {
       mockConfig = {
         ...mockConfig,
-        get preserveEditorFocus() { return true; },
+        get preserveEditorFocus() {
+          return true;
+        },
       } as any;
       jestRunner = new TestRunner(mockConfig);
 
@@ -321,7 +371,9 @@ describe('TestRunner', () => {
     it('should not preserve focus when option is disabled', async () => {
       mockConfig = {
         ...mockConfig,
-        get preserveEditorFocus() { return false; },
+        get preserveEditorFocus() {
+          return false;
+        },
       } as any;
       jestRunner = new TestRunner(mockConfig);
 
@@ -334,8 +386,12 @@ describe('TestRunner', () => {
     it('should use yarn command when enabled', async () => {
       mockConfig = {
         ...mockConfig,
-        get isYarnPnpSupportEnabled() { return true; },
-        get getYarnPnpCommand() { return 'yarn-3.2.0.cjs'; },
+        get isYarnPnpSupportEnabled() {
+          return true;
+        },
+        get getYarnPnpCommand() {
+          return 'yarn-3.2.0.cjs';
+        },
         getDebugConfiguration: jest.fn(() => ({
           console: 'integratedTerminal',
           internalConsoleOptions: 'neverOpen',
@@ -350,8 +406,9 @@ describe('TestRunner', () => {
       jestRunner = new TestRunner(mockConfig);
 
       await jestRunner.debugTestsOnPath('/workspace/test.ts');
-      
-      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[0];
+
+      const debugCall = (vscode.debug.startDebugging as jest.Mock).mock
+        .calls[0];
       const config = debugCall[1];
       expect(config.program).toContain('.yarn/releases/');
       expect(config.args).toContain('jest');
@@ -363,9 +420,9 @@ describe('TestRunner', () => {
       const windowMock = vscode.window as any;
       expect(windowMock.onDidCloseTerminal).toHaveBeenCalled();
       const callback = windowMock.onDidCloseTerminal.mock.calls[0][0];
-      
+
       expect(typeof callback).toBe('function');
-      
+
       expect(callback).toBeDefined();
     });
   });

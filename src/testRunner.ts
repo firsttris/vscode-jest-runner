@@ -66,7 +66,10 @@ export class TestRunner {
     const finalOptions = options;
     if (collectCoverageFromCurrentFile) {
       const targetFileDir = getDirName(filePath);
-      const targetFileName = getFileName(filePath).replace(/\.(test|spec)\./, '.');
+      const targetFileName = getFileName(filePath).replace(
+        /\.(test|spec)\./,
+        '.',
+      );
 
       const coverageTarget = fs.existsSync(`${targetFileDir}/${targetFileName}`)
         ? `**/${targetFileName}`
@@ -78,7 +81,11 @@ export class TestRunner {
 
     const testName = currentTestName || this.findCurrentTestName(editor);
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const command = this.buildJestCommand(filePath, resolvedTestName, finalOptions);
+    const command = this.buildJestCommand(
+      filePath,
+      resolvedTestName,
+      finalOptions,
+    );
     const framework = this.config.getTestFramework(filePath);
 
     this.previousCommand = command;
@@ -117,7 +124,10 @@ export class TestRunner {
 
     if (typeof this.previousCommand === 'string') {
       await this.goToCwd();
-      await this.runTerminalCommand(this.previousCommand, this.previousFramework);
+      await this.runTerminalCommand(
+        this.previousCommand,
+        this.previousFramework,
+      );
     } else {
       await this.executeDebugCommand(this.previousCommand);
     }
@@ -126,10 +136,11 @@ export class TestRunner {
   public async debugTestsOnPath(filePath: string): Promise<void> {
     const debugConfig = this.config.getDebugConfiguration(filePath);
     const framework = this.config.getTestFramework(filePath);
-    
-    const standardArgs = framework === 'vitest'
-      ? this.config.buildVitestArgs(filePath, undefined, false)
-      : this.config.buildJestArgs(filePath, undefined, false);
+
+    const standardArgs =
+      framework === 'vitest'
+        ? this.config.buildVitestArgs(filePath, undefined, false)
+        : this.config.buildJestArgs(filePath, undefined, false);
     pushMany(debugConfig.args, standardArgs);
 
     await this.goToCwd();
@@ -152,10 +163,11 @@ export class TestRunner {
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
     const debugConfig = this.config.getDebugConfiguration(filePath);
     const framework = this.config.getTestFramework(filePath);
-    
-    const standardArgs = framework === 'vitest'
-      ? this.config.buildVitestArgs(filePath, resolvedTestName, false)
-      : this.config.buildJestArgs(filePath, resolvedTestName, false);
+
+    const standardArgs =
+      framework === 'vitest'
+        ? this.config.buildVitestArgs(filePath, resolvedTestName, false)
+        : this.config.buildJestArgs(filePath, resolvedTestName, false);
     pushMany(debugConfig.args, standardArgs);
 
     await this.goToCwd();
@@ -167,7 +179,9 @@ export class TestRunner {
 
   private async executeDebugCommand(debugCommand: DebugCommand) {
     if (this.isExecuting) {
-      vscode.window.showWarningMessage('Another debug session is already starting. Please wait.');
+      vscode.window.showWarningMessage(
+        'Another debug session is already starting. Please wait.',
+      );
       return;
     }
 
@@ -200,18 +214,26 @@ export class TestRunner {
     return fullTestName ? escapeRegExp(fullTestName) : undefined;
   }
 
-  private buildJestCommand(filePath: string, testName?: string, options?: string[]): string {
+  private buildJestCommand(
+    filePath: string,
+    testName?: string,
+    options?: string[],
+  ): string {
     const framework = this.config.getTestFramework(filePath);
-    
+
     if (framework === 'vitest') {
       return this.buildVitestCommand(filePath, testName, options);
     }
-    
+
     const args = this.config.buildJestArgs(filePath, testName, true, options);
     return `${this.config.jestCommand} ${args.join(' ')}`;
   }
 
-  private buildVitestCommand(filePath: string, testName?: string, options?: string[]): string {
+  private buildVitestCommand(
+    filePath: string,
+    testName?: string,
+    options?: string[],
+  ): string {
     const args = this.config.buildVitestArgs(filePath, testName, true, options);
     return `${this.config.vitestCommand} ${args.join(' ')}`;
   }
@@ -225,26 +247,31 @@ export class TestRunner {
 
   private async runTerminalCommand(command: string, framework?: string) {
     const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
-    
-    if (!this.terminal || (this.currentTerminalName && this.currentTerminalName !== terminalName)) {
+
+    if (
+      !this.terminal ||
+      (this.currentTerminalName && this.currentTerminalName !== terminalName)
+    ) {
       if (this.terminal) {
         this.terminal.dispose();
       }
       this.terminal = vscode.window.createTerminal(terminalName);
       this.currentTerminalName = terminalName;
     }
-    
+
     this.terminal.show(this.config.preserveEditorFocus);
     this.terminal.sendText(command);
   }
 
   private setup() {
-    const terminalCloseHandler = vscode.window.onDidCloseTerminal((closedTerminal: vscode.Terminal) => {
-      if (this.terminal === closedTerminal) {
-        this.terminal = null;
-        this.currentTerminalName = undefined;
-      }
-    });
+    const terminalCloseHandler = vscode.window.onDidCloseTerminal(
+      (closedTerminal: vscode.Terminal) => {
+        if (this.terminal === closedTerminal) {
+          this.terminal = null;
+          this.currentTerminalName = undefined;
+        }
+      },
+    );
     this.disposables.push(terminalCloseHandler);
   }
 

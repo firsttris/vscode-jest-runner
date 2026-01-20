@@ -1,8 +1,8 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import * as mm from 'micromatch';
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import { ParsedNode } from 'jest-editor-support';
+import * as fs from 'node:fs';
+import type { ParsedNode } from 'jest-editor-support';
 import { isTestFile } from './testDetection';
 
 let outputChannel: vscode.OutputChannel | undefined;
@@ -19,8 +19,11 @@ export function logInfo(message: string): void {
 }
 
 export function logError(message: string, error?: unknown): void {
-  const errorDetails = error instanceof Error ? error.stack || error.message : String(error);
-  getOutputChannel().appendLine(`[ERROR] ${message}${error ? ': ' + errorDetails : ''}`);
+  const errorDetails =
+    error instanceof Error ? error.stack || error.message : String(error);
+  getOutputChannel().appendLine(
+    `[ERROR] ${message}${error ? ': ' + errorDetails : ''}`,
+  );
 }
 
 export function logWarning(message: string): void {
@@ -65,7 +68,10 @@ export function escapeRegExpForPath(s: string): string {
   return s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&');
 }
 
-export function findFullTestName(selectedLine: number, children: TestNode[]): string | undefined {
+export function findFullTestName(
+  selectedLine: number,
+  children: TestNode[],
+): string | undefined {
   if (!children) {
     return;
   }
@@ -73,7 +79,11 @@ export function findFullTestName(selectedLine: number, children: TestNode[]): st
     if (element.type === 'describe' && selectedLine === element.start.line) {
       return resolveTestNameStringInterpolation(element.name);
     }
-    if (element.type !== 'describe' && selectedLine >= element.start.line && selectedLine <= element.end.line) {
+    if (
+      element.type !== 'describe' &&
+      selectedLine >= element.start.line &&
+      selectedLine <= element.end.line
+    ) {
       return resolveTestNameStringInterpolation(element.name);
     }
   }
@@ -122,14 +132,29 @@ export function pushMany<T>(arr: T[], items: T[]): number {
   return Array.prototype.push.apply(arr, items);
 }
 
-export type CodeLensOption = 'run' | 'debug' | 'watch' | 'coverage' | 'current-test-coverage';
+export type CodeLensOption =
+  | 'run'
+  | 'debug'
+  | 'watch'
+  | 'coverage'
+  | 'current-test-coverage';
 
 function isCodeLensOption(option: string): option is CodeLensOption {
-  return ['run', 'debug', 'watch', 'coverage', 'current-test-coverage'].includes(option);
+  return [
+    'run',
+    'debug',
+    'watch',
+    'coverage',
+    'current-test-coverage',
+  ].includes(option);
 }
 
-export function validateCodeLensOptions(maybeCodeLensOptions: string[]): CodeLensOption[] {
-  return [...new Set(maybeCodeLensOptions)].filter((value) => isCodeLensOption(value)) as CodeLensOption[];
+export function validateCodeLensOptions(
+  maybeCodeLensOptions: string[],
+): CodeLensOption[] {
+  return [...new Set(maybeCodeLensOptions)].filter((value) =>
+    isCodeLensOption(value),
+  ) as CodeLensOption[];
 }
 
 export function updateTestNameIfUsingProperties(receivedTestName?: string) {
@@ -138,7 +163,10 @@ export function updateTestNameIfUsingProperties(receivedTestName?: string) {
   }
 
   const namePropertyRegex = /(?<=\S)\\.name/g;
-  const testNameWithoutNameProperty = receivedTestName.replace(namePropertyRegex, '');
+  const testNameWithoutNameProperty = receivedTestName.replace(
+    namePropertyRegex,
+    '',
+  );
 
   const prototypePropertyRegex = /\w*\\.prototype\\./g;
   return testNameWithoutNameProperty.replace(prototypePropertyRegex, '');
@@ -151,7 +179,9 @@ export function resolveConfigPathOrMapping(
   if (['string', 'undefined'].includes(typeof configPathOrMapping)) {
     return configPathOrMapping as string | undefined;
   }
-  for (const [key, value] of Object.entries(configPathOrMapping as Record<string, string>)) {
+  for (const [key, value] of Object.entries(
+    configPathOrMapping as Record<string, string>,
+  )) {
     const isMatch = mm.matcher(key);
     if (isMatch(targetPath) || isMatch(normalizePath(targetPath))) {
       return normalizePath(value);
@@ -173,12 +203,16 @@ export function searchPathToParent<T>(
 ) {
   let currentFolderPath: string;
   try {
-    currentFolderPath = fs.statSync(startingPath).isDirectory() ? startingPath : path.dirname(startingPath);
+    currentFolderPath = fs.statSync(startingPath).isDirectory()
+      ? startingPath
+      : path.dirname(startingPath);
   } catch (error) {
-    logWarning(`Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`);
+    logWarning(
+      `Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`,
+    );
     currentFolderPath = path.dirname(startingPath);
   }
-  
+
   const endPath = path.dirname(ancestorPath);
   const resolvedStart = path.resolve(currentFolderPath);
   const resolvedEnd = path.resolve(endPath);
@@ -199,33 +233,38 @@ export function searchPathToParent<T>(
   return false;
 }
 
-export function shouldIncludeFile(filePath: string, workspaceFolderPath: string): boolean {
-  const config = vscode.workspace.getConfiguration('jestrunner');
-  const include = config.get<string[]>('include', []);
-  const exclude = config.get<string[]>('exclude', []);
+export function shouldIncludeFile(
+	filePath: string,
+	workspaceFolderPath: string,
+): boolean {
+	const config = vscode.workspace.getConfiguration('jestrunner');
+	const include = config.get<string[]>('include', []);
+	const exclude = config.get<string[]>('exclude', []);
 
-  if (include.length === 0 && exclude.length === 0) {
-    return isTestFile(filePath);
-  }
+	if (include.length === 0 && exclude.length === 0) {
+		return isTestFile(filePath);
+	}
 
-  const normalizedPath = normalizePath(filePath);
-  const normalizedFolderPath = normalizePath(workspaceFolderPath);
-  
-  const relativePath = path.relative(normalizedFolderPath, normalizedPath);
+	const normalizedPath = normalizePath(filePath);
+	const normalizedFolderPath = normalizePath(workspaceFolderPath);
 
-  if (include.length > 0) {
-    const includeMatch = mm.isMatch(relativePath, include) || mm.isMatch(normalizedPath, include);
-    if (!includeMatch) {
-      return false;
-    }
-  }
+	const relativePath = path.relative(normalizedFolderPath, normalizedPath);
 
-  if (exclude.length > 0) {
-    const excludeMatch = mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude);
-    if (excludeMatch) {
-      return false;
-    }
-  }
+	if (include.length > 0) {
+		const includeMatch =
+			mm.isMatch(relativePath, include) || mm.isMatch(normalizedPath, include);
+		if (!includeMatch) {
+			return false;
+		}
+	}
 
-  return true;
+	if (exclude.length > 0) {
+		const excludeMatch =
+			mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude);
+		if (excludeMatch) {
+			return false;
+		}
+	}
+
+	return true;
 }
