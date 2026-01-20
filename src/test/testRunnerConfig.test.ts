@@ -806,7 +806,7 @@ describe('TestRunnerConfig', () => {
         const result = jestRunnerConfig.getJestConfigPath(targetPath);
 
         // Should return the standard config, not the custom one
-        expect(result).toBe(standardConfigPath);
+        expect(normalizePath(result)).toBe(normalizePath(standardConfigPath));
       });
 
       it('should use custom config when it exists', () => {
@@ -836,7 +836,7 @@ describe('TestRunnerConfig', () => {
         const result = jestRunnerConfig.getJestConfigPath(targetPath);
 
         // Should use the custom config
-        expect(result).toBe(customConfigFullPath);
+        expect(normalizePath(result)).toBe(normalizePath(customConfigFullPath));
       });
     });
   });
@@ -1909,7 +1909,7 @@ describe('TestRunnerConfig', () => {
       const result = jestRunnerConfig.getVitestConfigPath(targetPath);
 
       // Should return the standard config, not the custom one
-      expect(result).toBe(standardConfigPath);
+      expect(normalizePath(result)).toBe(normalizePath(standardConfigPath));
     });
 
     it('should use custom Vitest config when it exists', () => {
@@ -1938,7 +1938,7 @@ describe('TestRunnerConfig', () => {
       const result = jestRunnerConfig.getVitestConfigPath(targetPath);
 
       // Should use the custom config
-      expect(result).toBe(customConfigFullPath);
+      expect(normalizePath(result)).toBe(normalizePath(customConfigFullPath));
     });
   });
 
