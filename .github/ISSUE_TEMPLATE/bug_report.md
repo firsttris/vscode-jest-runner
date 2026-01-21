@@ -19,6 +19,8 @@ Please describe the issue you are experiencing with the VSCode extension.
 - **Shell:** <!-- e.g., bash, zsh, PowerShell, cmd -->
 - **Project Structure:** <!-- MonoRepo / Single Project -->
 - **VSCode Version:** <!-- e.g., 1.90.0 -->
+- **Extension Version:** <!-- e..g 0.4.93 -->
+- **Last Working Extension Version:** <!-- e..g 0.4.93 -->
 
 ---
 
