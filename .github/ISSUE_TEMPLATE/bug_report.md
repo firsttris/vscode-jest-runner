@@ -1,51 +1,104 @@
 ---
 name: 🐛 Bug Report
 about: Create a report to help us improve the VSCode extension
-title: ''
+title: '[Bug]: '
 labels: bug
 assignees: ''
 
 ---
 
-## Description
+## 📝 Description
 
-Please describe the issue you are experiencing with the VSCode extension.
+**What's happening?**  
+<!-- A clear and concise description of the bug you're experiencing. -->
 
----
 
-## Environment
-
-- **Operating System:** <!-- e.g., Windows 11, macOS 13, Ubuntu 22.04 -->
-- **Shell:** <!-- e.g., bash, zsh, PowerShell, cmd -->
-- **Project Framework:** <!-- nx, nextjs, tanstack, nestjs etc.. -->
-- **Project Structure:** <!-- Folderstructure, where is jest config locatedm where are your tests? Monorepo or Single-App?>
-- **VSCode Version:** <!-- e.g., 1.90.0 -->
-- **Extension Version:** <!-- e..g 0.4.93 -->
-- **Last Working Extension Version:** <!-- e..g 0.4.93 -->
 
 ---
 
-## Steps to Reproduce
+## 🖥️ Environment
 
-1. 
-2. 
-3. 
+Help us understand your setup by providing the following details:
+
+| Item | Value |
+|------|-------|
+| **Operating System** | Windows 11, macOS 14, Ubuntu 22.04 |
+| **Shell** | bash, zsh, PowerShell, cmd |
+| **Project Framework** | Nx, Next.js, NestJS, Create React App, Vite |
+| **Test Framework** | Jest or Vitest |
+| **Project Type** | Monorepo or Single App |
+| **VSCode Version** | 1.95.0 |
+| **Extension Version** | 0.4.93 |
+| **Last Working Version** | 0.4.92 |
+
+**📁 Project Structure**  
+<!-- Where is your jest/vitest config located? Where are your test files? Any special setup? -->
+
+```
+Example:
+├── jest.config.js (root level)
+├── src/
+│   └── components/
+│       └── Button.test.tsx
+```
 
 ---
 
-## Expected Behavior
+## 🔄 Steps to Reproduce
 
-Describe what you expected to happen.
+Please provide detailed steps to reproduce the issue:
 
----
-
-## Actual Behavior
-
-Describe what actually happened.
+1. <!-- First step -->
+2. <!-- Second step -->
+3. <!-- Third step -->
 
 ---
 
-## Test Command Output
+## ✅ Expected Behavior
 
-If applicable, please provide the full output of the test command you ran.
+<!-- What did you expect to happen? -->
+
+
+
+---
+
+## ❌ Actual Behavior
+
+<!-- What actually happened instead? -->
+
+
+
+---
+
+## 📋 Test Command Output
+
+**Console/Terminal Output:**  
+<!-- If applicable, paste the full output from running your test command -->
+
+<details>
+<summary>Click to expand output</summary>
+
+```
+Paste your test command output here
+```
+
+</details>
+
+---
+
+## 📸 Screenshots or Recordings
+
+<!-- If applicable, add screenshots or screen recordings to help explain the problem -->
+
+
+
+---
+
+## 💡 Additional Context
+
+<!-- Add any other context about the problem here. For example:
+- Does this happen with all tests or specific ones?
+- Did this start after updating VSCode/the extension/your dependencies?
+- Any relevant configuration from your jest.config.js or vitest.config.ts?
+-->
 
