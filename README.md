@@ -74,6 +74,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 - ⚙️ **Multiple configurations** with glob-based config resolution
 - 🔌 **Yarn 2 Plug'n'Play** - automatically detected, no configuration needed
 - ⚛️ **Create React App** and similar abstraction layers
+- 🛠️ **Framework support** including Nx, Next.js, and NestJS
 
 </td>
 </tr>

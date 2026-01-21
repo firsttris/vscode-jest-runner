@@ -4,6 +4,7 @@ export const JEST_CONFIG_FILES = [
   'jest.config.mjs',
   'jest.config.cjs',
   'jest.config.json',
+  'test/jest-e2e.json',
 ] as const;
 
 export const VITEST_CONFIG_FILES = [
