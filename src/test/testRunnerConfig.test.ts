@@ -1609,7 +1609,7 @@ describe('TestRunnerConfig', () => {
 
       expect(config.runtimeExecutable).toBe('node');
       expect(config.runtimeArgs).toEqual([]);
-      expect(config.program).toBe('./node_modules/jest/bin/jest.js');
+      expect(config.program).toBe(path.resolve('/home/user/project', './node_modules/jest/bin/jest.js'));
       expect(config.args).toEqual([]);
     });
 
@@ -1627,7 +1627,7 @@ describe('TestRunnerConfig', () => {
 
       expect(config.runtimeExecutable).toBe('node');
       expect(config.runtimeArgs).toEqual(['--experimental-vm-modules']);
-      expect(config.program).toBe('node_modules/jest/bin/jest.js');
+      expect(config.program).toBe(path.resolve('/home/user/project', 'node_modules/jest/bin/jest.js'));
       expect(config.args).toEqual([]);
     });
 
@@ -1646,8 +1646,26 @@ describe('TestRunnerConfig', () => {
 
       expect(config.runtimeExecutable).toBe('node');
       expect(config.runtimeArgs).toEqual([]);
-      expect(config.program).toBe('node_modules/.bin/jest');
+      expect(config.program).toBe(path.resolve('/home/user/project', 'node_modules/.bin/jest'));
       expect(config.args).toEqual(['--config=jest.config.js']);
+    });
+
+    it('should support ${workspaceFolder} variable in jestCommand', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.jestCommand': 'node --experimental-vm-modules ${workspaceFolder}/node_modules/jest/bin/jest.js',
+        }),
+      );
+
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.runtimeExecutable).toBe('node');
+      expect(config.runtimeArgs).toEqual(['--experimental-vm-modules']);
+      expect(config.program).toBe('/home/user/project/node_modules/jest/bin/jest.js');
+      expect(config.args).toEqual([]);
     });
 
     it('should merge custom debugOptions', () => {
@@ -1712,7 +1730,7 @@ describe('TestRunnerConfig', () => {
 
       expect(config.runtimeExecutable).toBe('node');
       expect(config.runtimeArgs).toEqual([]);
-      expect(config.program).toBe('./custom-jest.js');
+      expect(config.program).toBe(path.resolve('/home/user/project', './custom-jest.js'));
       expect(config.args).toEqual([]);
     });
 
@@ -1748,7 +1766,7 @@ describe('TestRunnerConfig', () => {
 
       expect(config.runtimeExecutable).toBe('npx');
       expect(config.runtimeArgs).toEqual(['cross-env', 'NODE_OPTIONS=--experimental-vm-modules', 'node']);
-      expect(config.program).toBe('node_modules/jest/bin/jest.js');
+      expect(config.program).toBe(path.resolve('/home/user/project', 'node_modules/jest/bin/jest.js'));
       expect(config.args).toEqual([]);
     });
 
@@ -1765,7 +1783,7 @@ describe('TestRunnerConfig', () => {
       const config = jestRunnerConfig.getDebugConfiguration();
 
       expect(config.runtimeExecutable).toBeUndefined();
-      expect(config.program).toBe('./scripts/run-tests.sh');
+      expect(config.program).toBe(path.resolve('/home/user/project', './scripts/run-tests.sh'));
       expect(config.args).toEqual(['--verbose']);
     });
   });

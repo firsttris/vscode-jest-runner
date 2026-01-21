@@ -94,10 +94,17 @@ export class TestRunnerConfig {
     return vscode.workspace.getConfiguration().get(key, defaultValue);
   }
 
+  private replaceVSCodeVariables(str: string): string {
+    const workspaceFolder = this.currentWorkspaceFolderPath;
+    return str
+      .replace(/\$\{workspaceFolder\}/g, workspaceFolder)
+      .replace(/\$\{workspaceRoot\}/g, workspaceFolder);
+  }
+
   public get jestCommand(): string {
     const customCommand = this.getConfig<string>('jestrunner.jestCommand');
     if (customCommand) {
-      return customCommand;
+      return this.replaceVSCodeVariables(customCommand);
     }
 
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
@@ -111,7 +118,7 @@ export class TestRunnerConfig {
   public get vitestCommand(): string {
     const customCommand = this.getConfig<string>('jestrunner.vitestCommand');
     if (customCommand) {
-      return customCommand;
+      return this.replaceVSCodeVariables(customCommand);
     }
 
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
@@ -447,7 +454,8 @@ export class TestRunnerConfig {
       : 'jestrunner.jestCommand';
     const customCommand = this.getConfig(customCommandKey);
     if (customCommand && typeof customCommand === 'string') {
-      const parts = parseShellCommand(customCommand);
+      const resolvedCommand = this.replaceVSCodeVariables(customCommand);
+      const parts = parseShellCommand(resolvedCommand);
       if (parts.length > 0) {
         const firstPart = parts[0];
         const isFilePath = firstPart.includes('/') || firstPart.includes('\\') || firstPart.startsWith('.');
@@ -455,7 +463,7 @@ export class TestRunnerConfig {
         if (isFilePath) {
           // First part is a file path - use it as program
           delete debugConfig.runtimeExecutable;
-          debugConfig.program = firstPart;
+          debugConfig.program = path.resolve(this.currentWorkspaceFolderPath, firstPart);
           debugConfig.args = isVitest
             ? [...parts.slice(1), 'run']
             : parts.slice(1);
@@ -470,7 +478,7 @@ export class TestRunnerConfig {
             // Found a script path
             debugConfig.runtimeExecutable = firstPart;
             debugConfig.runtimeArgs = parts.slice(1, scriptIndex);
-            debugConfig.program = parts[scriptIndex];
+            debugConfig.program = path.resolve(this.currentWorkspaceFolderPath, parts[scriptIndex]);
             debugConfig.args = isVitest
               ? [...parts.slice(scriptIndex + 1), 'run']
               : parts.slice(scriptIndex + 1);

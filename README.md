@@ -235,6 +235,17 @@ For projects requiring `--experimental-vm-modules`:
 }
 ```
 
+Alternatively, use `${workspaceFolder}` for explicit paths (recommended for monorepos):
+
+```json
+"jestrunner.jestCommand": "node --experimental-vm-modules ${workspaceFolder}/node_modules/jest/bin/jest.js",
+"jestrunner.debugOptions": {
+  "runtimeArgs": ["--experimental-vm-modules"]
+}
+```
+
+> **Note:** Relative paths are automatically resolved. Use `${workspaceFolder}` for explicit control in multi-workspace setups.
+
 > **Note:** `jestrunner.runOptions` passes arguments to Jest, not Node. Use `jestrunner.jestCommand` with `NODE_OPTIONS` for Node flags.
 
 </details>
