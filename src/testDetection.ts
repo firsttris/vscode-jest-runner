@@ -528,7 +528,10 @@ export function matchesTestFilePattern(filePath: string): boolean {
 	pathToMatch = pathToMatch.replace(/\\/g, '/');
 
   for (const pattern of patterns) {
-    if (mm.isMatch(pathToMatch, pattern, { nocase: true })) {
+    // Normalize Jest patterns: remove <rootDir>/ prefix if present
+    const normalizedPattern = pattern.replace(/^<rootDir>\//i, '');
+    
+    if (mm.isMatch(pathToMatch, normalizedPattern, { nocase: true })) {
       return true;
     }
   }

@@ -1479,6 +1479,26 @@ module.exports = {
       expect(result).toEqual(['**/*.test.ts', '**/*.spec.ts']);
     });
 
+    it('should extract testMatch from TypeScript export default config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default {
+  displayName: 'test',
+  preset: './jest.preset.js',
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
+    '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
+  ],
+};
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.ts');
+
+      expect(result).toEqual([
+        '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
+        '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
+      ]);
+    });
+
     it('should extract testMatch patterns with complex globs', () => {
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
 module.exports = {
@@ -3241,6 +3261,50 @@ module.exports = {
         customConfigFullPath,
         'utf8',
       );
+    });
+
+    it('should handle testMatch patterns with <rootDir> placeholder', () => {
+      const rootPath = '/workspace/project';
+      const testFile = path.join(rootPath, 'src', '__tests__', 'component.test.ts');
+      const configPath = path.join(rootPath, 'jest.config.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn(() => undefined),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        return (
+          pathStr === configPath ||
+          pathStr === path.join(rootPath, 'node_modules', '.bin', 'jest')
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr === configPath) {
+          return `
+export default {
+  preset: './jest.preset.js',
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
+    '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
+  ],
+};
+          `;
+        }
+        return '';
+      }) as any;
+
+      const { matchesTestFilePattern } = require('../testDetection');
+
+      const result = matchesTestFilePattern(testFile);
+
+      expect(result).toBe(true);
     });
   });
 });
