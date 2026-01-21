@@ -229,7 +229,7 @@ Add the following command to settings:
 For projects requiring `--experimental-vm-modules`:
 
 ```json
-"jestrunner.jestCommand": "npx cross-env NODE_OPTIONS=\"--experimental-vm-modules\" node 'node_modules/jest/bin/jest.js'",
+"jestrunner.jestCommand": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
 "jestrunner.debugOptions": {
   "runtimeArgs": ["--experimental-vm-modules"]
 }
