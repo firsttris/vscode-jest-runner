@@ -230,7 +230,7 @@ Add the following command to settings:
 For projects requiring `--experimental-vm-modules`:
 
 ```json
-"jestrunner.jestCommand": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+"jestrunner.jestCommand": "node --experimental-vm-modules ${workspaceFolder}/node_modules/jest/bin/jest.js",
 "jestrunner.debugOptions": {
   "runtimeArgs": ["--experimental-vm-modules"]
 }
