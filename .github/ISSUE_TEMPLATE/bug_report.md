@@ -31,6 +31,14 @@ Help us understand your setup by providing the following details:
 | **Extension Version** | 0.4.93 |
 | **Last Working Version** | 0.4.92 |
 
+**🔧 Debug Logging**
+
+Please set `jestrunner.enableDebugLogs` to `true` in your VSCode settings and include any relevant debug output below. This helps us diagnose issues more effectively.
+
+```
+Paste relevant debug logs here (from the Jest Runner output channel)
+```
+
 **📁 Project Structure**  
 <!-- Where is your jest/vitest config located? Where are your test files? Any special setup? -->
 
