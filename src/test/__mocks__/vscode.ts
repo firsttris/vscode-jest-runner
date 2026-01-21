@@ -59,7 +59,6 @@ type JestRunnerConfigProps = {
   'jestrunner.projectPath'?: string;
   'jestrunner.configPath'?: string | Record<string, string>;
   'jestrunner.useNearestConfig'?: boolean;
-  'jestrunner.checkRelativePathForJest'?: boolean;
   'jestrunner.include'?: string[];
   'jestrunner.exclude'?: string[];
   'jestrunner.runOptions'?: string[];
@@ -68,10 +67,7 @@ type JestRunnerConfigProps = {
   'jestrunner.vitestCommand'?: string;
   'jestrunner.vitestConfigPath'?: string | Record<string, string>;
   'jestrunner.vitestRunOptions'?: string[];
-  'jestrunner.enableYarnPnpSupport'?: boolean;
-  'jestrunner.yarnPnpCommand'?: string;
   'jestrunner.enableCodeLens'?: boolean;
-  'jestrunner.disableCodeLens'?: boolean;
   'jestrunner.changeDirectoryToWorkspaceRoot'?: boolean;
 };
 class WorkspaceConfiguration {

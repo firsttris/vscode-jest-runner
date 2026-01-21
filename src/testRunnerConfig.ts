@@ -14,9 +14,31 @@ import {
 } from './util';
 import {
   getTestFrameworkForFile,
+  findTestFrameworkDirectory,
   type TestFrameworkName,
 } from './testDetection';
 import { JEST_CONFIG_FILES, VITEST_CONFIG_FILES } from './constants';
+
+export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
+  const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
+
+  if (!fs.existsSync(yarnReleasesPath)) {
+    return { enabled: false };
+  }
+
+  try {
+    const files = fs.readdirSync(yarnReleasesPath);
+    const yarnBinary = files.find(file => file.startsWith('yarn-') && file.endsWith('.cjs'));
+
+    if (yarnBinary) {
+      return { enabled: true, yarnBinary };
+    }
+  } catch (error) {
+    // If we can't read the directory, assume PnP is not enabled
+  }
+
+  return { enabled: false };
+}
 
 function parseShellCommand(command: string): string[] {
   const args: string[] = [];
@@ -78,7 +100,8 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    if (this.isYarnPnpSupportEnabled) {
+    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    if (yarnPnp.enabled) {
       return `yarn jest`;
     }
 
@@ -91,7 +114,8 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    if (this.isYarnPnpSupportEnabled) {
+    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    if (yarnPnp.enabled) {
       return `yarn vitest`;
     }
 
@@ -155,22 +179,8 @@ export class TestRunnerConfig {
       return '';
     }
 
-    const checkRelativePathForJest = this.getConfig<boolean>('jestrunner.checkRelativePathForJest');
-    const foundPath = searchPathToParent<string>(
-      path.dirname(editor.document.uri.fsPath),
-      this.currentWorkspaceFolderPath,
-      (currentFolderPath: string) => {
-        const pkg = path.join(currentFolderPath, 'package.json');
-        const jest = path.join(currentFolderPath, 'node_modules', 'jest');
-        if (
-          fs.existsSync(pkg) &&
-          (fs.existsSync(jest) || !checkRelativePathForJest)
-        ) {
-          return currentFolderPath;
-        }
-      },
-    );
-    return foundPath ? normalizePath(foundPath) : '';
+    const result = findTestFrameworkDirectory(editor.document.uri.fsPath);
+    return result ? normalizePath(result.directory) : '';
   }
 
   private get currentWorkspaceFolderPath(): string {
@@ -215,16 +225,16 @@ export class TestRunnerConfig {
           configPath,
         ),
       );
-      
+
       if (fs.existsSync(resolvedPath)) {
         return resolvedPath;
       }
-      
+
       const foundPath = this.findConfigPath(targetPath, undefined, framework);
       if (foundPath) {
         return foundPath;
       }
-      
+
       return resolvedPath;
     }
 
@@ -251,7 +261,7 @@ export class TestRunnerConfig {
 
     const foundPath = searchPathToParent<string>(
       targetPath ||
-        path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
+      path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         for (const configFilename of configFiles) {
@@ -296,11 +306,6 @@ export class TestRunnerConfig {
   }
 
   public get isCodeLensEnabled(): boolean {
-    const disableCodeLens = this.getConfig<boolean>('jestrunner.disableCodeLens');
-    if (disableCodeLens !== undefined) {
-      return !disableCodeLens;
-    }
-
     return this.getConfig('jestrunner.enableCodeLens', true);
   }
 
@@ -317,13 +322,6 @@ export class TestRunnerConfig {
     // Actual filtering is done by shouldIncludeFile() which reads patterns
     // from framework configs (Jest testMatch / Vitest include)
     return '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}';
-  }
-
-  public get isYarnPnpSupportEnabled(): boolean {
-    return this.getConfig('jestrunner.enableYarnPnpSupport', false);
-  }
-  public get getYarnPnpCommand(): string {
-    return this.getConfig('jestrunner.yarnPnpCommand');
   }
 
   public buildJestArgs(
@@ -436,9 +434,10 @@ export class TestRunnerConfig {
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
-    if (this.isYarnPnpSupportEnabled) {
+    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    if (yarnPnp.enabled && yarnPnp.yarnBinary) {
       delete debugConfig.runtimeExecutable;
-      debugConfig.program = `.yarn/releases/${this.getYarnPnpCommand}`;
+      debugConfig.program = `.yarn/releases/${yarnPnp.yarnBinary}`;
       debugConfig.args = isVitest ? ['vitest', 'run'] : ['jest'];
       return debugConfig;
     }
@@ -450,11 +449,41 @@ export class TestRunnerConfig {
     if (customCommand && typeof customCommand === 'string') {
       const parts = parseShellCommand(customCommand);
       if (parts.length > 0) {
-        delete debugConfig.runtimeExecutable;
-        debugConfig.program = parts[0];
-        debugConfig.args = isVitest
-          ? [...parts.slice(1), 'run']
-          : parts.slice(1);
+        const firstPart = parts[0];
+        const isFilePath = firstPart.includes('/') || firstPart.includes('\\') || firstPart.startsWith('.');
+
+        if (isFilePath) {
+          // First part is a file path - use it as program
+          delete debugConfig.runtimeExecutable;
+          debugConfig.program = firstPart;
+          debugConfig.args = isVitest
+            ? [...parts.slice(1), 'run']
+            : parts.slice(1);
+        } else {
+          // First part is an executable name (node, npx, bun, etc.) - use runtimeExecutable
+          // Find the first argument that looks like a script path (not a flag or env setter)
+          const scriptIndex = parts.slice(1).findIndex(arg =>
+            !arg.startsWith('-') && (arg.includes('/') || arg.includes('\\') || arg.startsWith('.'))
+          ) + 1;
+
+          if (scriptIndex > 0) {
+            // Found a script path
+            debugConfig.runtimeExecutable = firstPart;
+            debugConfig.runtimeArgs = parts.slice(1, scriptIndex);
+            debugConfig.program = parts[scriptIndex];
+            debugConfig.args = isVitest
+              ? [...parts.slice(scriptIndex + 1), 'run']
+              : parts.slice(scriptIndex + 1);
+          } else {
+            // No script path found, use all remaining as args
+            debugConfig.runtimeExecutable = firstPart;
+            debugConfig.runtimeArgs = [];
+            delete debugConfig.program;
+            debugConfig.args = isVitest
+              ? [...parts.slice(1), 'run']
+              : parts.slice(1);
+          }
+        }
       }
       return debugConfig;
     }
