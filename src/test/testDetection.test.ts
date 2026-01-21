@@ -1527,6 +1527,65 @@ module.exports = {
 
       expect(result).toBeUndefined();
     });
+
+    it('should extract testRegex from JSON config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "testRegex": ".e2e-spec.ts$"
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
+
+      expect(result).toEqual(['**/*.e2e-spec.ts']);
+    });
+
+    it('should extract testRegex from NestJS E2E config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\\\.(t|j)s$": "ts-jest"
+  }
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
+
+      expect(result).toEqual(['**/*.e2e-spec.ts']);
+    });
+
+    it('should extract testRegex array from JSON config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "testRegex": [".test.ts$", ".spec.ts$"]
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.json');
+
+      expect(result).toEqual(['**/*.test.ts']);
+    });
+
+    it('should extract testRegex from JS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+module.exports = {
+  testRegex: '.e2e-spec.ts$'
+};
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.js');
+
+      expect(result).toEqual(['**/*.e2e-spec.ts']);
+    });
+
+    it('should prefer testMatch over testRegex', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "testMatch": ["**/*.test.ts"],
+  "testRegex": ".e2e-spec.ts$"
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.json');
+
+      expect(result).toEqual(['**/*.test.ts']);
+    });
   });
 
   describe('findVitestDirectory', () => {

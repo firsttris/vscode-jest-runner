@@ -29,6 +29,7 @@ function binaryExists(directoryPath: string, binaryName: string): boolean {
   const possibleBinaryPaths = [
     path.join(directoryPath, 'node_modules', '.bin', binaryName),
     path.join(directoryPath, 'node_modules', '.bin', `${binaryName}.cmd`),
+    path.join(directoryPath, 'node_modules', binaryName, 'package.json'),
   ];
   return possibleBinaryPaths.some(fs.existsSync);
 }
@@ -65,6 +66,7 @@ const testFrameworks: TestFramework[] = [
       'jest.config.json',
       'jest.config.cjs',
       'jest.config.mjs',
+      'test/jest-e2e.json',
     ],
     binaryName: 'jest',
   },
@@ -271,12 +273,58 @@ export function findVitestDirectory(filePath: string): string | undefined {
   return result?.directory;
 }
 
+function convertTestRegexToGlob(regex: string): string {
+  // Remove start anchor (^) and wildcard patterns at the beginning
+  let pattern = regex.replace(/^\^/, '');
+  
+  // Remove .* or ** at the very beginning, but preserve the dot in filenames
+  pattern = pattern.replace(/^(\.\*|\*\*)/, '');
+  
+  // Remove end anchor ($)
+  pattern = pattern.replace(/\$$/, '');
+  
+  return `**/*${pattern}`;
+}
+
+function extractTestRegex(config: any): string | undefined {
+  if (!config.testRegex) return undefined;
+  
+  return typeof config.testRegex === 'string'
+    ? config.testRegex
+    : Array.isArray(config.testRegex)
+    ? config.testRegex[0]
+    : undefined;
+}
+
 export function getTestMatchFromJestConfig(
   configPath: string,
 ): string[] | undefined {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
 
+    // Try to parse as JSON first (for .json files and package.json)
+    if (configPath.endsWith('.json')) {
+      try {
+        const config = configPath.endsWith('package.json') ? JSON.parse(content).jest : JSON.parse(content);
+        if (!config) return undefined;
+
+        if (config.testMatch && Array.isArray(config.testMatch)) {
+          logDebug(`Found testMatch in ${configPath}: ${config.testMatch.join(', ')}`);
+          return config.testMatch;
+        }
+
+        const regex = extractTestRegex(config);
+        if (regex) {
+          const pattern = convertTestRegexToGlob(regex);
+          logDebug(`Found testRegex in ${configPath}: ${regex}, converted to: ${pattern}`);
+          return [pattern];
+        }
+      } catch {
+        // If JSON parsing fails, continue with text parsing below
+      }
+    }
+
+    // Parse testMatch from JS/TS config files
     const testMatchStart = content.indexOf('testMatch');
     if (testMatchStart !== -1) {
       const arrayStart = content.indexOf('[', testMatchStart);
@@ -308,16 +356,13 @@ export function getTestMatchFromJestConfig(
       }
     }
 
-    if (configPath.endsWith('package.json')) {
-      try {
-        const pkg = JSON.parse(content);
-        if (pkg.jest?.testMatch) {
-          return Array.isArray(pkg.jest.testMatch)
-            ? pkg.jest.testMatch
-            : undefined;
-        }
-      } catch {
-      }
+    // Parse testRegex from JS/TS config files
+    const testRegexMatch = content.match(/testRegex['":]?\s*[:=]\s*['"]([^'"]+)['"]/);
+    if (testRegexMatch) {
+      const regex = testRegexMatch[1];
+      const pattern = convertTestRegexToGlob(regex);
+      logDebug(`Found testRegex in ${configPath}: ${regex}, converted to: ${pattern}`);
+      return [pattern];
     }
 
     return undefined;
