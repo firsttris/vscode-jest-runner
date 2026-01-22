@@ -1577,7 +1577,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
 
-      expect(result).toEqual({ patterns: ['.e2e-spec.ts$'], isRegex: true });
+      expect(result).toEqual({ patterns: ['.e2e-spec.ts$'], isRegex: true, rootDir: '.' });
     });
 
     it('should extract testRegex array from JSON config', () => {

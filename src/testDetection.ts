@@ -20,6 +20,7 @@ const DEFAULT_TEST_PATTERNS = ['**/*.{test,spec}.{js,jsx,ts,tsx}'];
 interface TestPatterns {
   patterns: string[];
   isRegex: boolean;
+  rootDir?: string;
 }
 
 export function viteConfigHasTestAttribute(configPath: string): boolean {
@@ -292,11 +293,21 @@ function extractTestRegex(config: any): string[] | undefined {
   return undefined;
 }
 
+function extractRootDir(content: string): string | undefined {
+  // Try to extract rootDir from JS/TS config
+  const rootDirMatch = content.match(/rootDir['":]?\s*[:=]\s*['"]([^'"]+)['"]/);
+  if (rootDirMatch) {
+    return rootDirMatch[1];
+  }
+  return undefined;
+}
+
 export function getTestMatchFromJestConfig(
   configPath: string,
 ): TestPatterns | undefined {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
+    let rootDir: string | undefined;
 
     // Try to parse as JSON first (for .json files and package.json)
     if (configPath.endsWith('.json')) {
@@ -304,19 +315,30 @@ export function getTestMatchFromJestConfig(
         const config = configPath.endsWith('package.json') ? JSON.parse(content).jest : JSON.parse(content);
         if (!config) return undefined;
 
+        rootDir = config.rootDir;
+        if (rootDir) {
+          logDebug(`Found rootDir in ${configPath}: ${rootDir}`);
+        }
+
         if (config.testMatch && Array.isArray(config.testMatch)) {
           logDebug(`Found testMatch in ${configPath}: ${config.testMatch.join(', ')}`);
-          return { patterns: config.testMatch, isRegex: false };
+          return { patterns: config.testMatch, isRegex: false, rootDir };
         }
 
         const regexPatterns = extractTestRegex(config);
         if (regexPatterns) {
           logDebug(`Found testRegex in ${configPath}: ${regexPatterns.join(', ')}`);
-          return { patterns: regexPatterns, isRegex: true };
+          return { patterns: regexPatterns, isRegex: true, rootDir };
         }
       } catch {
         // If JSON parsing fails, continue with text parsing below
       }
+    }
+
+    // Extract rootDir from JS/TS config
+    rootDir = extractRootDir(content);
+    if (rootDir) {
+      logDebug(`Found rootDir in ${configPath}: ${rootDir}`);
     }
 
     // Parse testMatch from JS/TS config files
@@ -345,7 +367,7 @@ export function getTestMatchFromJestConfig(
             logDebug(
               `Found testMatch patterns in ${configPath}: ${patterns.join(', ')}`,
             );
-            return { patterns, isRegex: false };
+            return { patterns, isRegex: false, rootDir };
           }
         }
       }
@@ -357,7 +379,7 @@ export function getTestMatchFromJestConfig(
       // Unescape JavaScript string escapes (e.g., \\\\ -> \\, \\. -> .)
       const regex = testRegexMatch[1].replace(/\\\\/g, '\\');
       logDebug(`Found testRegex in ${configPath}: ${regex}`);
-      return { patterns: [regex], isRegex: true };
+      return { patterns: [regex], isRegex: true, rootDir };
     }
 
     return undefined;
@@ -428,6 +450,7 @@ function getTestFilePatternsForFile(filePath: string): {
 	patterns: string[];
 	configDir: string;
 	isRegex: boolean;
+	isVitest: boolean;
 } {
 	const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
 	if (!workspaceFolder) {
@@ -435,6 +458,7 @@ function getTestFilePatternsForFile(filePath: string): {
 			patterns: DEFAULT_TEST_PATTERNS,
 			configDir: path.dirname(filePath),
 			isRegex: false,
+			isVitest: false,
 		};
 	}
 
@@ -443,21 +467,26 @@ function getTestFilePatternsForFile(filePath: string): {
 	const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
 	if (jestConfigPath) {
 		const result = getTestMatchFromJestConfig(jestConfigPath);
-		// Use rootPath as configDir for custom configs to avoid relative paths starting with ".."
-		// which don't match glob patterns correctly
+		// If rootDir is specified in config, resolve it relative to the config file
+		// Otherwise use the workspace root (where Jest is typically run from)
+		let configDir = rootPath;
+		if (result?.rootDir) {
+			configDir = path.resolve(path.dirname(jestConfigPath), result.rootDir);
+			logDebug(`Resolved rootDir for Jest: ${configDir}`);
+		}
 		return {
 			patterns: result?.patterns ?? DEFAULT_TEST_PATTERNS,
-			configDir: rootPath,
+			configDir,
 			isRegex: result?.isRegex ?? false,
+			isVitest: false,
 		};
 	}
 
 	const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
 	if (vitestConfigPath) {
 		const patterns = getIncludeFromVitestConfig(vitestConfigPath);
-		// Use rootPath as configDir for custom configs to avoid relative paths starting with ".."
-		// which don't match glob patterns correctly
-		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: rootPath, isRegex: false };
+		// Use the workspace root for pattern matching (where Vitest is typically run from)
+		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: rootPath, isRegex: false, isVitest: true };
 	}
 
 	let currentDir = path.dirname(filePath);
@@ -470,10 +499,18 @@ function getTestFilePatternsForFile(filePath: string): {
 				const configPath = path.join(currentDir, configFile);
 				if (fs.existsSync(configPath)) {
 					const result = getTestMatchFromJestConfig(configPath);
-					if (result) return { patterns: result.patterns, configDir: currentDir, isRegex: result.isRegex };
+					if (result) {
+						// If rootDir is specified, resolve it relative to the config file
+						let resolvedConfigDir = currentDir;
+						if (result.rootDir) {
+							resolvedConfigDir = path.resolve(currentDir, result.rootDir);
+							logDebug(`Resolved rootDir for Jest: ${resolvedConfigDir}`);
+						}
+						return { patterns: result.patterns, configDir: resolvedConfigDir, isRegex: result.isRegex, isVitest: false };
+					}
 				}
 			}
-			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir, isRegex: false };
+			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir, isRegex: false, isVitest: false };
 		} else if (framework === 'vitest') {
 			const vitestFramework = testFrameworks.find((f) => f.name === 'vitest');
 			const allConfigs = [...vitestFramework!.configFiles, ...viteConfigFiles];
@@ -481,10 +518,10 @@ function getTestFilePatternsForFile(filePath: string): {
 				const configPath = path.join(currentDir, configFile);
 				if (fs.existsSync(configPath)) {
 					const patterns = getIncludeFromVitestConfig(configPath);
-					if (patterns) return { patterns, configDir: currentDir, isRegex: false };
+					if (patterns) return { patterns, configDir: currentDir, isRegex: false, isVitest: true };
 				}
 			}
-			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir, isRegex: false };
+			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir, isRegex: false, isVitest: true };
 		}
 
 		const parentDir = path.dirname(currentDir);
@@ -496,6 +533,7 @@ function getTestFilePatternsForFile(filePath: string): {
 		patterns: DEFAULT_TEST_PATTERNS,
 		configDir: rootPath,
 		isRegex: false,
+		isVitest: false,
 	};
 }
 
@@ -518,20 +556,26 @@ function resolveAndValidateCustomConfig(
 }
 
 export function matchesTestFilePattern(filePath: string): boolean {
-	const { patterns, isRegex } = getTestFilePatternsForFile(filePath);
+	const { patterns, configDir, isRegex, isVitest } = getTestFilePatternsForFile(filePath);
 
-	// Get workspace root - all testMatch/testRegex patterns are relative to this
-	const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
-	const workspaceRoot = workspaceFolder?.uri.fsPath ?? path.dirname(filePath);
+	// For Vitest: patterns are relative to the config directory (root)
+	// For Jest testMatch: patterns are relative to rootDir (which defaults to config directory)
+	//   - configDir now contains the resolved rootDir if specified in the Jest config
+	// For Jest testRegex: patterns match against ABSOLUTE file path
+	const baseDir = configDir;
 
-	// Both testMatch (glob) and testRegex patterns are always relative to workspace root
-	const pathToMatch = path.relative(workspaceRoot, filePath).replace(/\\/g, '/');
-  logDebug(`Matching file: ${filePath}`);
-  logDebug(`Using patterns: ${patterns.join(', ')} (isRegex: ${isRegex})`);
-  logDebug(`Path to match: ${pathToMatch}`);
+	// For regex patterns (Jest testRegex), use absolute path
+	// For glob patterns (Jest testMatch, Vitest include), use relative path
+	const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
+	const pathToMatch = isRegex ? filePath.replace(/\\/g, '/') : relativePath;
+
+	logDebug(`Matching file: ${filePath}`);
+	logDebug(`Using patterns: ${patterns.join(', ')} (isRegex: ${isRegex}, isVitest: ${isVitest})`);
+	logDebug(`Base dir: ${baseDir}`);
+	logDebug(`Path to match: ${pathToMatch}`);
 	for (const pattern of patterns) {
 		if (isRegex) {
-			// Use pattern directly as regex
+			// Jest testRegex: match against absolute file path
 			try {
 				const regex = new RegExp(pattern);
 				if (regex.test(pathToMatch)) {
