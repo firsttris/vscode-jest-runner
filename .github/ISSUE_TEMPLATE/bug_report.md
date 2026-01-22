@@ -27,7 +27,7 @@ Help us understand your setup by providing the following details:
 | **Project Framework** | Nx, Next.js, NestJS, Create React App, Vite |
 | **Test Framework** | Jest or Vitest |
 | **Project Type** | Monorepo or Single App |
-| **VSCode Version** | 1.95.0 |
+| **VSCode Version** | 1.100.0 (lowest supported version) |
 | **Extension Version** | 0.4.93 |
 | **Last Working Version** | 0.4.92 |
 
