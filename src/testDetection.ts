@@ -448,13 +448,17 @@ function getTestFilePatternsForFile(filePath: string): {
 	const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
 	if (jestConfigPath) {
 		const patterns = getTestMatchFromJestConfig(jestConfigPath);
-		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: path.dirname(jestConfigPath) };
+		// Use rootPath as configDir for custom configs to avoid relative paths starting with ".."
+		// which don't match glob patterns correctly
+		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: rootPath };
 	}
 
 	const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
 	if (vitestConfigPath) {
 		const patterns = getIncludeFromVitestConfig(vitestConfigPath);
-		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: path.dirname(vitestConfigPath) };
+		// Use rootPath as configDir for custom configs to avoid relative paths starting with ".."
+		// which don't match glob patterns correctly
+		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: rootPath };
 	}
 
 	let currentDir = path.dirname(filePath);

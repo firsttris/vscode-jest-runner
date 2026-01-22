@@ -3298,6 +3298,101 @@ module.exports = {
       );
     });
 
+    it('should match test files when custom config is in a subdirectory (monorepo structure)', () => {
+      // This tests the bug fix for GitHub issue #427
+      // When custom config is in a subdirectory (e.g., src/tests/configs/jest.config.ts)
+      // and test files are in a different subdirectory (e.g., src/services/__tests__/),
+      // the relative path from config dir would start with ".." which doesn't match glob patterns
+      const rootPath = '/workspace/monorepo';
+      const customConfigPath = 'src/tests/configs/jest.config.ts';
+      const customConfigFullPath = path.join(rootPath, customConfigPath);
+      // Test file is in a DIFFERENT subdirectory than the config
+      const testFile = path.join(rootPath, 'src', 'services', '__tests__', 'api.spec.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        }),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        return pathStr === customConfigFullPath;
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr === customConfigFullPath) {
+          return `
+            module.exports = {
+              testMatch: ['**/*.spec.ts', '**/*.test.ts']
+            };
+          `;
+        }
+        return '';
+      }) as any;
+
+      const { matchesTestFilePattern } = require('../testDetection');
+
+      const result = matchesTestFilePattern(testFile);
+
+      // Should match because we use rootPath as configDir, not path.dirname(customConfigFullPath)
+      // Without the fix, path.relative would produce "../../services/__tests__/api.spec.ts"
+      // which doesn't match "**/*.spec.ts"
+      expect(result).toBe(true);
+    });
+
+    it('should match test files when custom config is in a subdirectory - Windows', () => {
+      // Same test as above but for Windows paths
+      const rootPath = 'C:\\Users\\dev\\monorepo';
+      const customConfigPath = 'src\\tests\\configs\\jest.config.ts';
+      const customConfigFullPath = path.join(rootPath, customConfigPath);
+      const testFile = path.join(rootPath, 'src', 'services', '__tests__', 'api.spec.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        }),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        return pathStr === customConfigFullPath;
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr === customConfigFullPath) {
+          return `
+            module.exports = {
+              testMatch: ['**/*.spec.ts', '**/*.test.ts']
+            };
+          `;
+        }
+        return '';
+      }) as any;
+
+      const { matchesTestFilePattern } = require('../testDetection');
+
+      const result = matchesTestFilePattern(testFile);
+
+      expect(result).toBe(true);
+    });
+
     it('should handle testMatch patterns with <rootDir> placeholder', () => {
       const rootPath = '/workspace/project';
       const testFile = path.join(rootPath, 'src', '__tests__', 'component.test.ts');
