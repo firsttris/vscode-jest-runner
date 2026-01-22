@@ -4,16 +4,27 @@ on:
   push:
     branches: [master]
     paths-ignore:
-      - 'README.md'
+      - '**.md'
   pull_request:
     branches: [master]
     paths-ignore:
-      - 'README.md'
+      - '**.md'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    if: github.event_name != 'workflow_dispatch'
 
     strategy:
       matrix:
@@ -32,6 +43,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name != 'workflow_dispatch'
 
     steps:
       - uses: actions/checkout@v4
@@ -42,26 +54,54 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  publish:
+  release:
     runs-on: ubuntu-latest
-    needs: build
     if: github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
+
       - name: Configure Git
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
+
       - run: npm ci
-      - run: npm run build
-      - run: npm run publish
+
+      - name: Build Extension
+        run: npm run build
+
+      - name: Package Extension
+        run: npm run package
+
+      - name: Publish to Marketplace
+        run: npm run publish
         env:
+          VERSION: ${{ inputs.version }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-          OVSX_PAT: ${{ secrets.OVSX_PAT}}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+      - name: Push Version Commit and Tags
+        run: |
+          git push
+          git push --tags
+
+      - name: Get New Version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: '*.vsix'
+          generate_release_notes: true
+          tag_name: v${{ steps.version.outputs.version }}

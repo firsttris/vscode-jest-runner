@@ -268,9 +268,7 @@
     "build": "vite build",
     "watch": "vite build --watch",
     "test": "jest .src/test",
-    "vsce:publish": "vsce publish patch -m '%s [skip ci]' && git push",
-    "ovsx:publish": "ovsx publish",
-    "publish": "npm run vsce:publish && npm run ovsx:publish",
+    "publish": "vsce publish $VERSION -m '%s [skip ci]' && ovsx publish",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write ."
