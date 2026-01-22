@@ -62,7 +62,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 ### 🎯 Smart Test Detection
 
 - 🤖 **Automatic framework detection** - distinguishes between Jest and Vitest
-- 🔍 **Reads test patterns from framework configs** - automatically uses `testMatch` from Jest config or `include` from Vitest config
+- 🔍 **Reads test patterns from framework configs** - automatically uses `testMatch` or `testRegex` from Jest config or `include` from Vitest config
 - 🎚️ **Include/exclude patterns** for fine-grained control over which tests appear
 
 </td>
