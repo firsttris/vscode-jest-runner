@@ -15,6 +15,8 @@ const viteConfigFiles = [
   'vite.config.cts',
 ];
 
+const DEFAULT_TEST_PATTERNS = ['**/*.{test,spec}.{js,jsx,ts,tsx}'];
+
 export function viteConfigHasTestAttribute(configPath: string): boolean {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
@@ -436,27 +438,23 @@ function getTestFilePatternsForFile(filePath: string): {
 	const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
 	if (!workspaceFolder) {
 		return {
-			patterns: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+			patterns: DEFAULT_TEST_PATTERNS,
 			configDir: path.dirname(filePath),
 		};
 	}
 
 	const rootPath = workspaceFolder.uri.fsPath;
 
-	const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', 'jest', filePath);
+	const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
 	if (jestConfigPath) {
 		const patterns = getTestMatchFromJestConfig(jestConfigPath);
-		if (patterns) {
-			return { patterns, configDir: path.dirname(jestConfigPath) };
-		}
+		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: path.dirname(jestConfigPath) };
 	}
 
-	const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', 'vitest', filePath);
+	const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
 	if (vitestConfigPath) {
 		const patterns = getIncludeFromVitestConfig(vitestConfigPath);
-		if (patterns) {
-			return { patterns, configDir: path.dirname(vitestConfigPath) };
-		}
+		return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: path.dirname(vitestConfigPath) };
 	}
 
 	let currentDir = path.dirname(filePath);
@@ -472,7 +470,7 @@ function getTestFilePatternsForFile(filePath: string): {
 					if (patterns) return { patterns, configDir: currentDir };
 				}
 			}
-			break;
+			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir };
 		} else if (framework === 'vitest') {
 			const vitestFramework = testFrameworks.find((f) => f.name === 'vitest');
 			const allConfigs = [...vitestFramework!.configFiles, ...viteConfigFiles];
@@ -483,7 +481,7 @@ function getTestFilePatternsForFile(filePath: string): {
 					if (patterns) return { patterns, configDir: currentDir };
 				}
 			}
-			break;
+			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir };
 		}
 
 		const parentDir = path.dirname(currentDir);
@@ -492,32 +490,27 @@ function getTestFilePatternsForFile(filePath: string): {
 	}
 
 	return {
-		patterns: ['**/*.{test,spec}.{js,jsx,ts,tsx}'],
+		patterns: DEFAULT_TEST_PATTERNS,
 		configDir: rootPath,
 	};
 }
 
 function resolveAndValidateCustomConfig(
 	configKey: string,
-	frameworkType: 'jest' | 'vitest',
 	filePath: string,
 ): string | undefined {
 	const customConfigPath = vscode.workspace.getConfiguration().get(configKey) as string | Record<string, string> | undefined;
-	
+
 	const resolvedConfigPath = resolveConfigPathOrMapping(customConfigPath, filePath);
 	if (!resolvedConfigPath) return undefined;
-	
+
 	const basePath = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath;
 	if (!basePath) return undefined;
-	
+
 	const fullConfigPath = path.resolve(basePath, resolvedConfigPath);
 	if (!fs.existsSync(fullConfigPath)) return undefined;
 
-	const patterns = frameworkType === 'jest'
-		? getTestMatchFromJestConfig(fullConfigPath)
-		: getIncludeFromVitestConfig(fullConfigPath);
-	
-	return patterns?.length ? fullConfigPath : undefined;
+	return fullConfigPath;
 }
 
 export function matchesTestFilePattern(filePath: string): boolean {
@@ -545,7 +538,7 @@ export function isJestTestFile(filePath: string): boolean {
   }
 
   const hasJestDir = !!findJestDirectory(filePath);
-  const hasCustomConfig = !!resolveAndValidateCustomConfig('jestrunner.configPath', 'jest', filePath);
+  const hasCustomConfig = !!resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
   
   return hasJestDir || hasCustomConfig;
 }
@@ -556,7 +549,7 @@ export function isVitestTestFile(filePath: string): boolean {
   }
 
   const hasVitestDir = !!findVitestDirectory(filePath);
-  const hasCustomConfig = !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', 'vitest', filePath);
+  const hasCustomConfig = !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
   
   return hasVitestDir || hasCustomConfig;
 }
@@ -568,8 +561,8 @@ export function isTestFile(filePath: string): boolean {
 
   const hasFrameworkDir = !!findTestFrameworkDirectory(filePath);
   const hasCustomConfig = 
-    !!resolveAndValidateCustomConfig('jestrunner.configPath', 'jest', filePath) ||
-    !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', 'vitest', filePath);
+    !!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
+    !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
   
   return hasFrameworkDir || hasCustomConfig;
 }

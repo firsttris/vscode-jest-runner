@@ -858,7 +858,7 @@ describe('jestDetection', () => {
         expect(result).toBe(true);
       });
 
-      it('should return false when custom config has no testMatch patterns', () => {
+      it('should use default patterns when custom config has no testMatch patterns', () => {
         const testFile = path.join(rootPath, 'src', 'component.test.ts');
         const customConfigPath = 'jest.config.custom.js';
         const customConfigFullPath = path.resolve(rootPath, customConfigPath);
@@ -870,7 +870,7 @@ describe('jestDetection', () => {
           return undefined;
         });
 
-        // Custom config exists but has no testMatch patterns
+        // Custom config exists but has no testMatch patterns - should use defaults
         mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
           const pathStr = fsPath.toString();
           return pathStr === customConfigFullPath;
@@ -890,7 +890,7 @@ describe('jestDetection', () => {
 
         const result = isJestTestFile(testFile);
 
-        expect(result).toBe(false);
+        expect(result).toBe(true);
       });
 
       it('should fallback to standard config when custom config does not exist', () => {
@@ -2064,7 +2064,7 @@ module.exports = {
         expect(result).toBe(true);
       });
 
-      it('should return false when custom config has no include patterns', () => {
+      it('should use default patterns when custom config has no include patterns', () => {
         const rootPath = '/workspace/project';
         const testFile = path.join(rootPath, 'src', 'component.test.ts');
         const customConfigPath = 'vitest.config.custom.ts';
@@ -2081,7 +2081,7 @@ module.exports = {
           return undefined;
         });
 
-        // Custom config exists but has no include patterns
+        // Custom config exists but has no include patterns - should use defaults
         mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
           const pathStr = fsPath.toString();
           return pathStr === customConfigFullPath;
@@ -2103,7 +2103,7 @@ module.exports = {
 
         const result = isVitestTestFile(testFile);
 
-        expect(result).toBe(false);
+        expect(result).toBe(true);
       });
 
       it('should fallback to standard config when custom config does not exist', () => {
@@ -2199,6 +2199,41 @@ module.exports = {
       const result = isTestFile(filePath);
 
       expect(result).toBe(false);
+    });
+
+    it('should use default patterns when no config file found but Jest detected via package.json', () => {
+      const filePath = '/workspace/project/src/component.test.ts';
+      const rootPath = '/workspace/project';
+      const packageJsonPath = path.join(rootPath, 'package.json');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      // No jest.config.js, but package.json with jest dependency exists
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        return pathStr === packageJsonPath;
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr === packageJsonPath) {
+          return JSON.stringify({
+            devDependencies: {
+              jest: '^29.0.0',
+            },
+          });
+        }
+        return '';
+      }) as any;
+
+      const result = isTestFile(filePath);
+
+      // Should return true because:
+      // 1. Jest is detected via package.json
+      // 2. Default patterns (**/*.{test,spec}.{js,jsx,ts,tsx}) match the file
+      expect(result).toBe(true);
     });
 
     describe('with custom testFilePattern', () => {
