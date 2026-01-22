@@ -1476,7 +1476,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual(['**/*.test.ts', '**/*.spec.ts']);
+      expect(result).toEqual({ patterns: ['**/*.test.ts', '**/*.spec.ts'], isRegex: false });
     });
 
     it('should extract testMatch from TypeScript export default config', () => {
@@ -1493,10 +1493,13 @@ export default {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.ts');
 
-      expect(result).toEqual([
-        '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
-        '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
-      ]);
+      expect(result).toEqual({
+        patterns: [
+          '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
+          '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
+        ],
+        isRegex: false,
+      });
     });
 
     it('should extract testMatch patterns with complex globs', () => {
@@ -1508,10 +1511,13 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual([
-        '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
-        '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
-      ]);
+      expect(result).toEqual({
+        patterns: [
+          '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
+          '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
+        ],
+        isRegex: false,
+      });
     });
 
     it('should handle single quotes', () => {
@@ -1523,7 +1529,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual(['**/*.test.ts']);
+      expect(result).toEqual({ patterns: ['**/*.test.ts'], isRegex: false });
     });
 
     it('should return undefined if no testMatch is found', () => {
@@ -1555,7 +1561,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
 
-      expect(result).toEqual(['**/*.e2e-spec.ts']);
+      expect(result).toEqual({ patterns: ['.e2e-spec.ts$'], isRegex: true });
     });
 
     it('should extract testRegex from NestJS E2E config', () => {
@@ -1571,7 +1577,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
 
-      expect(result).toEqual(['**/*.e2e-spec.ts']);
+      expect(result).toEqual({ patterns: ['.e2e-spec.ts$'], isRegex: true, rootDir: '.' });
     });
 
     it('should extract testRegex array from JSON config', () => {
@@ -1581,7 +1587,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.json');
 
-      expect(result).toEqual(['**/*.test.ts']);
+      expect(result).toEqual({ patterns: ['.test.ts$', '.spec.ts$'], isRegex: true });
     });
 
     it('should extract testRegex from JS config', () => {
@@ -1593,7 +1599,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual(['**/*.e2e-spec.ts']);
+      expect(result).toEqual({ patterns: ['.e2e-spec.ts$'], isRegex: true });
     });
 
     it('should prefer testMatch over testRegex', () => {
@@ -1604,7 +1610,30 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.json');
 
-      expect(result).toEqual(['**/*.test.ts']);
+      expect(result).toEqual({ patterns: ['**/*.test.ts'], isRegex: false });
+    });
+
+    it('should extract rootDir from TypeScript config with relative path', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default {
+  rootDir: '../../tests/',
+  testMatch: [
+    '<rootDir>/**/*.ts?(x)',
+    '**/?(.)+(spec|test).ts?(x)',
+  ],
+};
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/configs/jest.config.ts');
+
+      expect(result).toEqual({
+        patterns: [
+          '<rootDir>/**/*.ts?(x)',
+          '**/?(.)+(spec|test).ts?(x)',
+        ],
+        isRegex: false,
+        rootDir: '../../tests/',
+      });
     });
   });
 
@@ -3424,6 +3453,106 @@ export default {
     '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
     '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
   ],
+};
+          `;
+        }
+        return '';
+      }) as any;
+
+      const { matchesTestFilePattern } = require('../testDetection');
+
+      const result = matchesTestFilePattern(testFile);
+
+      expect(result).toBe(true);
+    });
+
+    it('should handle jest.config.ts in nested subdirectory with rootDir pointing to parent', () => {
+      // Structure:
+      // ├── src/
+      // │   └── tests/
+      // │       └── configs/
+      // │          └── jest.config.ts
+      // │       └── integration/
+      // │          └── getUrls.test.ts
+      // Config has: rootDir: '../../tests/', testMatch: ['<rootDir>/**/*.ts?(x)', '**/?(.)+(spec|test).ts?(x)']
+      const rootPath = '/workspace/project';
+      const configDir = path.join(rootPath, 'src', 'tests', 'configs');
+      const configPath = path.join(configDir, 'jest.config.ts');
+      const testFile = path.join(rootPath, 'src', 'tests', 'integration', 'getUrls.test.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn(() => undefined),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        return (
+          pathStr === configPath ||
+          pathStr === path.join(configDir, 'node_modules', '.bin', 'jest')
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr === configPath) {
+          return `
+export default {
+  rootDir: '../../tests/',
+  testMatch: [
+    '<rootDir>/**/*.ts?(x)',
+    '**/?(.)+(spec|test).ts?(x)',
+  ],
+};
+          `;
+        }
+        return '';
+      }) as any;
+
+      const { matchesTestFilePattern } = require('../testDetection');
+
+      const result = matchesTestFilePattern(testFile);
+
+      expect(result).toBe(true);
+    });
+
+    it('should handle testRegex with rootDir at project root', () => {
+      // Structure:
+      // ├── jest.config.ts (root level)
+      // ├── src/
+      // │   └── components/
+      // │       └── Button.spec.tsx
+      // Config has: testRegex: 'src/.*\\.spec\\.[tj]sx?', rootDir: '.'
+      const rootPath = '/workspace/project';
+      const configPath = path.join(rootPath, 'jest.config.ts');
+      const testFile = path.join(rootPath, 'src', 'components', 'Button.spec.tsx');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn(() => undefined),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        return (
+          pathStr === configPath ||
+          pathStr === path.join(rootPath, 'node_modules', '.bin', 'jest')
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr === configPath) {
+          return `
+export default {
+  rootDir: '.',
+  testRegex: 'src/.*\\\\.spec\\\\.[tj]sx?',
 };
           `;
         }

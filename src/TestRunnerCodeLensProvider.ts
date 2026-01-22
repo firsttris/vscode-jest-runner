@@ -4,7 +4,6 @@ import {
   CodeLensProvider,
   Range,
   TextDocument,
-  window,
   workspace,
 } from 'vscode';
 import {
@@ -79,39 +78,33 @@ function getTestsBlocks(
 }
 
 export class TestRunnerCodeLensProvider implements CodeLensProvider {
-  private lastSuccessfulCodeLens: CodeLens[] = [];
+  private lastSuccessfulCodeLens: Map<string, CodeLens[]> = new Map();
 
   constructor(private readonly codeLensOptions: CodeLensOption[]) {}
 
-  private get currentWorkspaceFolderPath(): string | undefined {
-    const editor = window.activeTextEditor;
-    if (!editor) {
-      return undefined;
-    }
-    const workspaceFolder = workspace.getWorkspaceFolder(editor.document.uri);
-    return workspaceFolder?.uri.fsPath;
-  }
-
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
-      const workspaceFolderPath = this.currentWorkspaceFolderPath;
+      const workspaceFolder = workspace.getWorkspaceFolder(document.uri);
+      const workspaceFolderPath = workspaceFolder?.uri.fsPath;
       if (
         !workspaceFolderPath ||
         !shouldIncludeFile(document.fileName, workspaceFolderPath)
       ) {
-        return this.lastSuccessfulCodeLens;
+        return [];
       }
 
       const parseResults = parse(document.fileName, document.getText(), {
         plugins: { decorators: 'legacy' },
       }).root.children;
-      
-      this.lastSuccessfulCodeLens = parseResults.flatMap((parseResult) =>
+
+      const codeLenses = parseResults.flatMap((parseResult) =>
         getTestsBlocks(parseResult, parseResults, this.codeLensOptions),
       );
+      this.lastSuccessfulCodeLens.set(document.fileName, codeLenses);
+      return codeLenses;
     } catch (e) {
       logError('jest-editor-support parser returned error', e);
     }
-    return this.lastSuccessfulCodeLens;
+    return this.lastSuccessfulCodeLens.get(document.fileName) ?? [];
   }
 }
