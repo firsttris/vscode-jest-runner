@@ -133,6 +133,13 @@ export class TestRunnerConfig {
     return this.jestCommand;
   }
 
+  public getEnvironmentForRun(filePath: string): Record<string, string> | undefined {
+    if (isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath))) {
+      return { NODE_OPTIONS: '--experimental-vm-modules' };
+    }
+    return undefined;
+  }
+
   public getTestFramework(filePath?: string): TestFrameworkName | undefined {
     if (filePath) {
       return getTestFrameworkForFile(filePath);
@@ -437,7 +444,12 @@ export class TestRunnerConfig {
 
     // Auto-detect ESM for Jest (Vitest is ESM-native, no flag needed)
     if (!isVitest && isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath || ''))) {
+      // For ESM, we need node --experimental-vm-modules to run jest directly
+      // runtimeArgs go to node, program is the jest binary
+      delete debugConfig.runtimeExecutable;
       debugConfig.runtimeArgs = ['--experimental-vm-modules'];
+      debugConfig.program = path.join(this.cwd, 'node_modules', 'jest', 'bin', 'jest.js');
+      debugConfig.args = ['--runInBand'];  // Remove npx-specific args
     }
 
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
