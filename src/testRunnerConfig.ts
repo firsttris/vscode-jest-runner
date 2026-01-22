@@ -15,6 +15,7 @@ import {
 import {
   getTestFrameworkForFile,
   findTestFrameworkDirectory,
+  isEsmProject,
   type TestFrameworkName,
 } from './testDetection';
 import { JEST_CONFIG_FILES, VITEST_CONFIG_FILES } from './constants';
@@ -433,6 +434,11 @@ export class TestRunnerConfig {
         : ['--no-install', 'jest', '--runInBand'],
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
+
+    // Auto-detect ESM for Jest (Vitest is ESM-native, no flag needed)
+    if (!isVitest && isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath || ''))) {
+      debugConfig.runtimeArgs = ['--experimental-vm-modules'];
+    }
 
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
     if (yarnPnp.enabled && yarnPnp.yarnBinary) {
