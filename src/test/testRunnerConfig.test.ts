@@ -90,78 +90,78 @@ describe('TestRunnerConfig', () => {
           expectedPath: string,
         ]
       > = [
-          [
-            'linux',
-            'configPath is an absolute path',
-            'returned path is only the specified config path',
-            '/home/user/workspace',
-            './jestProject',
-            '/home/user/notWorkspace/notJestProject/jest.config.js',
-            '/home/user/workspace/jestProject/src/index.test.js',
-            '/home/user/notWorkspace/notJestProject/jest.config.js',
-          ],
-          [
-            'linux',
-            'configPath is a relative path, project path is set',
-            'returned path is resolved against workspace and project path',
-            '/home/user/workspace',
-            './jestProject',
-            './jest.config.js',
-            '/home/user/workspace/jestProject/src/index.test.js',
-            '/home/user/workspace/jestProject/jest.config.js',
-          ],
-          [
-            'linux',
-            'configPath is a relative path, projectPath is not set',
-            'returned path is resolved against workspace path',
-            '/home/user/workspace',
-            undefined,
-            './jest.config.js',
-            '/home/user/workspace/jestProject/src/index.test.js',
-            '/home/user/workspace/jest.config.js',
-          ],
+        [
+          'linux',
+          'configPath is an absolute path',
+          'returned path is only the specified config path',
+          '/home/user/workspace',
+          './jestProject',
+          '/home/user/notWorkspace/notJestProject/jest.config.js',
+          '/home/user/workspace/jestProject/src/index.test.js',
+          '/home/user/notWorkspace/notJestProject/jest.config.js',
+        ],
+        [
+          'linux',
+          'configPath is a relative path, project path is set',
+          'returned path is resolved against workspace and project path',
+          '/home/user/workspace',
+          './jestProject',
+          './jest.config.js',
+          '/home/user/workspace/jestProject/src/index.test.js',
+          '/home/user/workspace/jestProject/jest.config.js',
+        ],
+        [
+          'linux',
+          'configPath is a relative path, projectPath is not set',
+          'returned path is resolved against workspace path',
+          '/home/user/workspace',
+          undefined,
+          './jest.config.js',
+          '/home/user/workspace/jestProject/src/index.test.js',
+          '/home/user/workspace/jest.config.js',
+        ],
 
-          [
-            'windows',
-            'configPath is an absolute path (with \\)',
-            'returned path is only the specified config path',
-            'C:/workspace',
-            './jestProject',
-            'C:\\notWorkspace\\notJestProject\\jest.config.js',
-            'C:/workspace/jestProject/src/index.test.js',
-            'C:/notWorkspace/notJestProject/jest.config.js',
-          ],
-          [
-            'windows',
-            'configPath is an absolute path (with /)',
-            'returned path is only the (normalized) specified config path',
-            'C:/workspace',
-            './jestProject',
-            'C:/notWorkspace/notJestProject/jest.config.js',
-            'C:/workspace/jestProject/src/index.test.js',
-            'C:/notWorkspace/notJestProject/jest.config.js',
-          ],
-          [
-            'windows',
-            'configPath is a relative path, project path is set',
-            'returned path is resolved against workspace and project path',
-            'C:/workspace',
-            './jestProject',
-            './jest.config.js',
-            'C:/workspace/jestProject/src/index.test.js',
-            'C:/workspace/jestProject/jest.config.js',
-          ],
-          [
-            'windows',
-            'configPath is a relative path, projectPath is not set',
-            'returned path is resolved against workspace path',
-            'C:/workspace',
-            undefined,
-            './jest.config.js',
-            'C:/workspace/jestProject/src/index.test.js',
-            'C:/workspace/jest.config.js',
-          ],
-        ];
+        [
+          'windows',
+          'configPath is an absolute path (with \\)',
+          'returned path is only the specified config path',
+          'C:/workspace',
+          './jestProject',
+          'C:\\notWorkspace\\notJestProject\\jest.config.js',
+          'C:/workspace/jestProject/src/index.test.js',
+          'C:/notWorkspace/notJestProject/jest.config.js',
+        ],
+        [
+          'windows',
+          'configPath is an absolute path (with /)',
+          'returned path is only the (normalized) specified config path',
+          'C:/workspace',
+          './jestProject',
+          'C:/notWorkspace/notJestProject/jest.config.js',
+          'C:/workspace/jestProject/src/index.test.js',
+          'C:/notWorkspace/notJestProject/jest.config.js',
+        ],
+        [
+          'windows',
+          'configPath is a relative path, project path is set',
+          'returned path is resolved against workspace and project path',
+          'C:/workspace',
+          './jestProject',
+          './jest.config.js',
+          'C:/workspace/jestProject/src/index.test.js',
+          'C:/workspace/jestProject/jest.config.js',
+        ],
+        [
+          'windows',
+          'configPath is a relative path, projectPath is not set',
+          'returned path is resolved against workspace path',
+          'C:/workspace',
+          undefined,
+          './jest.config.js',
+          'C:/workspace/jestProject/src/index.test.js',
+          'C:/workspace/jest.config.js',
+        ],
+      ];
       describe.each(scenarios)(
         '%s: %s',
         (
@@ -217,247 +217,247 @@ describe('TestRunnerConfig', () => {
             useNearestConfig?: boolean,
           ]
         > = [
-            [
-              'linux',
-              'matched glob specifies an absolute path',
-              'returned path is only the specified config path',
-              '/home/user/workspace',
-              './jestProject',
-              {
-                '**/*.test.js': '/home/user/workspace/jestProject/jest.config.js',
-              },
-              '/home/user/workspace/jestProject/src/index.test.js',
-              '/home/user/workspace/jestProject/jest.config.js',
-            ],
-            [
-              'linux',
-              'matched glob specifies a relative path',
-              'returned path is resolved against workspace and project path',
-              '/home/user/workspace',
-              './jestProject',
-              { '**/*.test.js': './jest.config.js' },
-              '/home/user/workspace/jestProject/src/index.test.js',
-              '/home/user/workspace/jestProject/jest.config.js',
-            ],
-            [
-              'linux',
-              'matched glob specifies a relative path, projectPath is not set',
-              'returned path is resolved against workspace path',
-              '/home/user/workspace',
-              undefined,
-              { '**/*.test.js': './jest.config.js' },
-              '/home/user/workspace/jestProject/src/index.test.js',
-              '/home/user/workspace/jest.config.js',
-            ],
-            [
-              'linux',
-              'matched glob specifies a relative path, useNearestConfig is true',
-              'returned path is the nearest config in project',
-              '/home/user/workspace',
-              undefined,
-              { '**/*.test.js': './jest.config.js' },
-              '/home/user/workspace/jestProject/src/index.test.js',
-              '/home/user/workspace/jestProject/jest.config.js',
-              true,
-            ],
-            [
-              'linux',
-              'first matched glob takes precedence, relative path',
-              'returned path is resolved against workspace and project path',
-              '/home/user/workspace',
-              './jestProject',
-              {
-                '**/*.test.js': './jest.config.js',
-                '**/*.spec.js': './jest.unit-config.js',
-                '**/*.it.spec.js': './jest.it-config.js',
-              },
-              '/home/user/workspace/jestProject/src/index.it.spec.js',
-              '/home/user/workspace/jestProject/jest.unit-config.js',
-            ],
-            [
-              'linux',
-              'first matched glob takes precedence, relative path, useNearestConfig is true',
-              'returned path is the nearest config in project',
-              '/home/user/workspace',
-              './aDifferentProject',
-              {
-                '**/*.test.js': './jest.config.js',
-                '**/*.spec.js': './jest.unit-config.js',
-                '**/*.it.spec.js': './jest.it-config.js',
-              },
-              '/home/user/workspace/jestProject/src/index.it.spec.js',
-              '/home/user/workspace/jestProject/jest.unit-config.js',
-              true,
-            ],
-            [
-              'linux',
-              'first matched glob takes precedence, absolute path',
-              'returned path is only the specified config path',
-              '/home/user/workspace',
-              './jestProject',
-              {
-                '**/*.test.js':
-                  '/home/user/notWorkspace/notJestProject/jest.config.js',
-                '**/*.spec.js':
-                  '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
-                '**/*.it.spec.js':
-                  '/home/user/notWorkspace/notJestProject/jest.it-config.js',
-              },
-              '/home/user/workspace/jestProject/src/index.it.spec.js',
-              '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
-            ],
-            [
-              'linux',
-              'first matched glob takes precedence, useNearestConfig falls back to absolute path',
-              'returned path is only the specified config path',
-              '/home/user/workspace',
-              './jestProject',
-              {
-                '**/*.test.js':
-                  '/home/user/notWorkspace/notJestProject/jest.config.js',
-                '**/*.spec.js':
-                  '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
-                '**/*.it.spec.js':
-                  '/home/user/notWorkspace/notJestProject/jest.it-config.js',
-              },
-              '/home/user/workspace/jestProject/src/index.it.spec.js',
-              '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
-              true,
-            ],
-            [
-              'windows',
-              'matched glob specifies an absolute path (with \\)',
-              'returned path is only the specified (normalized) config path',
-              'C:/workspace',
-              './jestProject',
-              {
-                '**/*.test.js':
-                  'C:\\notWorkspace\\notJestProject\\jest.config.js',
-              },
-              'C:/workspace/jestProject/src/index.test.js',
-              'C:/notWorkspace/notJestProject/jest.config.js',
-            ],
-            [
-              'windows',
-              'matched glob specifies an absolute path (with /)',
-              'returned path is only the specified (normalized) config path',
-              'C:/workspace',
-              './jestProject',
-              { '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js' },
-              'C:/workspace/jestProject/src/index.test.js',
-              'C:/notWorkspace/notJestProject/jest.config.js',
-            ],
-            [
-              'windows',
-              'matched glob specifies a relative path, projectPath is set',
-              'returned (normalized) path is resolved against workspace and project path',
-              'C:/workspace',
-              './jestProject',
-              { '**/*.test.js': './jest.config.js' },
-              'C:/workspace/jestProject/src/index.test.js',
-              'C:/workspace/jestProject/jest.config.js',
-            ],
-            [
-              'windows',
-              'matched glob specifies a relative path, projectPath is not set',
-              'returned (normalized) path is resolved against workspace path',
-              'C:/workspace',
-              undefined,
-              { '**/*.test.js': './jest.config.js' },
-              'C:/workspace/jestProject/src/index.test.js',
-              'C:/workspace/jest.config.js',
-            ],
-            [
-              'windows',
-              'matched glob specifies a relative path, useNearestConfig is true',
-              'returned path is the nearest config in project',
-              'C:/workspace',
-              undefined,
-              { '**/*.test.js': './jest.config.js' },
-              'C:/workspace/jestProject/src/index.test.js',
-              'C:/workspace/jestProject/jest.config.js',
-              true,
-            ],
-            [
-              'windows',
-              'first matched glob takes precedence, relative path',
-              'returned(normalized) path is resolved against workspace and project path',
-              'C:\\workspace',
-              './jestProject',
-              {
-                '**/*.test.js': './jest.config.js',
-                '**/*.spec.js': './jest.unit-config.js',
-                '**/*.it.spec.js': './jest.it-config.js',
-              },
-              'C:/workspace/jestProject/src/index.it.spec.js',
-              'C:/workspace/jestProject/jest.unit-config.js',
-            ],
-            [
-              'windows',
-              'first matched glob takes precedence, relative path, useNearestConfig is true',
-              'returned path is the nearest config in project',
-              'C:/workspace',
-              './aDifferentProject',
-              {
-                '**/*.test.js': './jest.config.js',
-                '**/*.spec.js': './jest.unit-config.js',
-                '**/*.it.spec.js': './jest.it-config.js',
-              },
-              'C:/workspace/jestProject/src/index.it.spec.js',
-              'C:/workspace/jestProject/jest.unit-config.js',
-              true,
-            ],
-            [
-              'windows',
-              'first matched glob takes precedence, absolute path (with \\)',
-              'returned (normalized) path is only the (normalized) specified config path',
-              'C:/workspace',
-              './jestProject',
-              {
-                '**/*.test.js':
-                  'C:\\notWorkspace\\notJestProject\\jest.config.js',
-                '**/*.spec.js':
-                  'C:\\notWorkspace\\notJestProject\\jest.unit-config.js',
-                '**/*.it.spec.js':
-                  'C:\\notWorkspace\\notJestProject\\jest.it-config.js',
-              },
-              'C:/workspace/jestProject/src/index.it.spec.js',
-              'C:/notWorkspace/notJestProject/jest.unit-config.js',
-            ],
-            [
-              'windows',
-              'first matched glob takes precedence, absolute path (with /)',
-              'returned (normalized) path is only the specified config path',
-              'C:/workspace',
-              './jestProject',
-              {
-                '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
-                '**/*.spec.js':
-                  'C:/notWorkspace/notJestProject/jest.unit-config.js',
-                '**/*.it.spec.js':
-                  'C:/notWorkspace/notJestProject/jest.it-config.js',
-              },
-              'C:/workspace/jestProject/src/index.it.spec.js',
-              'C:/notWorkspace/notJestProject/jest.unit-config.js',
-            ],
-            [
-              'windows',
-              'first matched glob takes precedence, useNearestConfig falls back to absolute path',
-              'returned path is only the specified config path',
-              'C:/workspace',
-              './jestProject',
-              {
-                '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
-                '**/*.spec.js':
-                  'C:/notWorkspace/notJestProject/jest.unit-config.js',
-                '**/*.it.spec.js':
-                  'C:/notWorkspace/notJestProject/jest.it-config.js',
-              },
-              'C:/workspace/jestProject/src/index.it.spec.js',
-              'C:/notWorkspace/notJestProject/jest.unit-config.js',
-              true,
-            ],
-          ];
+          [
+            'linux',
+            'matched glob specifies an absolute path',
+            'returned path is only the specified config path',
+            '/home/user/workspace',
+            './jestProject',
+            {
+              '**/*.test.js': '/home/user/workspace/jestProject/jest.config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.test.js',
+            '/home/user/workspace/jestProject/jest.config.js',
+          ],
+          [
+            'linux',
+            'matched glob specifies a relative path',
+            'returned path is resolved against workspace and project path',
+            '/home/user/workspace',
+            './jestProject',
+            { '**/*.test.js': './jest.config.js' },
+            '/home/user/workspace/jestProject/src/index.test.js',
+            '/home/user/workspace/jestProject/jest.config.js',
+          ],
+          [
+            'linux',
+            'matched glob specifies a relative path, projectPath is not set',
+            'returned path is resolved against workspace path',
+            '/home/user/workspace',
+            undefined,
+            { '**/*.test.js': './jest.config.js' },
+            '/home/user/workspace/jestProject/src/index.test.js',
+            '/home/user/workspace/jest.config.js',
+          ],
+          [
+            'linux',
+            'matched glob specifies a relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            '/home/user/workspace',
+            undefined,
+            { '**/*.test.js': './jest.config.js' },
+            '/home/user/workspace/jestProject/src/index.test.js',
+            '/home/user/workspace/jestProject/jest.config.js',
+            true,
+          ],
+          [
+            'linux',
+            'first matched glob takes precedence, relative path',
+            'returned path is resolved against workspace and project path',
+            '/home/user/workspace',
+            './jestProject',
+            {
+              '**/*.test.js': './jest.config.js',
+              '**/*.spec.js': './jest.unit-config.js',
+              '**/*.it.spec.js': './jest.it-config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.it.spec.js',
+            '/home/user/workspace/jestProject/jest.unit-config.js',
+          ],
+          [
+            'linux',
+            'first matched glob takes precedence, relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            '/home/user/workspace',
+            './aDifferentProject',
+            {
+              '**/*.test.js': './jest.config.js',
+              '**/*.spec.js': './jest.unit-config.js',
+              '**/*.it.spec.js': './jest.it-config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.it.spec.js',
+            '/home/user/workspace/jestProject/jest.unit-config.js',
+            true,
+          ],
+          [
+            'linux',
+            'first matched glob takes precedence, absolute path',
+            'returned path is only the specified config path',
+            '/home/user/workspace',
+            './jestProject',
+            {
+              '**/*.test.js':
+                '/home/user/notWorkspace/notJestProject/jest.config.js',
+              '**/*.spec.js':
+                '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+              '**/*.it.spec.js':
+                '/home/user/notWorkspace/notJestProject/jest.it-config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.it.spec.js',
+            '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+          ],
+          [
+            'linux',
+            'first matched glob takes precedence, useNearestConfig falls back to absolute path',
+            'returned path is only the specified config path',
+            '/home/user/workspace',
+            './jestProject',
+            {
+              '**/*.test.js':
+                '/home/user/notWorkspace/notJestProject/jest.config.js',
+              '**/*.spec.js':
+                '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+              '**/*.it.spec.js':
+                '/home/user/notWorkspace/notJestProject/jest.it-config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.it.spec.js',
+            '/home/user/notWorkspace/notJestProject/jest.unit-config.js',
+            true,
+          ],
+          [
+            'windows',
+            'matched glob specifies an absolute path (with \\)',
+            'returned path is only the specified (normalized) config path',
+            'C:/workspace',
+            './jestProject',
+            {
+              '**/*.test.js':
+                'C:\\notWorkspace\\notJestProject\\jest.config.js',
+            },
+            'C:/workspace/jestProject/src/index.test.js',
+            'C:/notWorkspace/notJestProject/jest.config.js',
+          ],
+          [
+            'windows',
+            'matched glob specifies an absolute path (with /)',
+            'returned path is only the specified (normalized) config path',
+            'C:/workspace',
+            './jestProject',
+            { '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js' },
+            'C:/workspace/jestProject/src/index.test.js',
+            'C:/notWorkspace/notJestProject/jest.config.js',
+          ],
+          [
+            'windows',
+            'matched glob specifies a relative path, projectPath is set',
+            'returned (normalized) path is resolved against workspace and project path',
+            'C:/workspace',
+            './jestProject',
+            { '**/*.test.js': './jest.config.js' },
+            'C:/workspace/jestProject/src/index.test.js',
+            'C:/workspace/jestProject/jest.config.js',
+          ],
+          [
+            'windows',
+            'matched glob specifies a relative path, projectPath is not set',
+            'returned (normalized) path is resolved against workspace path',
+            'C:/workspace',
+            undefined,
+            { '**/*.test.js': './jest.config.js' },
+            'C:/workspace/jestProject/src/index.test.js',
+            'C:/workspace/jest.config.js',
+          ],
+          [
+            'windows',
+            'matched glob specifies a relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            'C:/workspace',
+            undefined,
+            { '**/*.test.js': './jest.config.js' },
+            'C:/workspace/jestProject/src/index.test.js',
+            'C:/workspace/jestProject/jest.config.js',
+            true,
+          ],
+          [
+            'windows',
+            'first matched glob takes precedence, relative path',
+            'returned(normalized) path is resolved against workspace and project path',
+            'C:\\workspace',
+            './jestProject',
+            {
+              '**/*.test.js': './jest.config.js',
+              '**/*.spec.js': './jest.unit-config.js',
+              '**/*.it.spec.js': './jest.it-config.js',
+            },
+            'C:/workspace/jestProject/src/index.it.spec.js',
+            'C:/workspace/jestProject/jest.unit-config.js',
+          ],
+          [
+            'windows',
+            'first matched glob takes precedence, relative path, useNearestConfig is true',
+            'returned path is the nearest config in project',
+            'C:/workspace',
+            './aDifferentProject',
+            {
+              '**/*.test.js': './jest.config.js',
+              '**/*.spec.js': './jest.unit-config.js',
+              '**/*.it.spec.js': './jest.it-config.js',
+            },
+            'C:/workspace/jestProject/src/index.it.spec.js',
+            'C:/workspace/jestProject/jest.unit-config.js',
+            true,
+          ],
+          [
+            'windows',
+            'first matched glob takes precedence, absolute path (with \\)',
+            'returned (normalized) path is only the (normalized) specified config path',
+            'C:/workspace',
+            './jestProject',
+            {
+              '**/*.test.js':
+                'C:\\notWorkspace\\notJestProject\\jest.config.js',
+              '**/*.spec.js':
+                'C:\\notWorkspace\\notJestProject\\jest.unit-config.js',
+              '**/*.it.spec.js':
+                'C:\\notWorkspace\\notJestProject\\jest.it-config.js',
+            },
+            'C:/workspace/jestProject/src/index.it.spec.js',
+            'C:/notWorkspace/notJestProject/jest.unit-config.js',
+          ],
+          [
+            'windows',
+            'first matched glob takes precedence, absolute path (with /)',
+            'returned (normalized) path is only the specified config path',
+            'C:/workspace',
+            './jestProject',
+            {
+              '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
+              '**/*.spec.js':
+                'C:/notWorkspace/notJestProject/jest.unit-config.js',
+              '**/*.it.spec.js':
+                'C:/notWorkspace/notJestProject/jest.it-config.js',
+            },
+            'C:/workspace/jestProject/src/index.it.spec.js',
+            'C:/notWorkspace/notJestProject/jest.unit-config.js',
+          ],
+          [
+            'windows',
+            'first matched glob takes precedence, useNearestConfig falls back to absolute path',
+            'returned path is only the specified config path',
+            'C:/workspace',
+            './jestProject',
+            {
+              '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
+              '**/*.spec.js':
+                'C:/notWorkspace/notJestProject/jest.unit-config.js',
+              '**/*.it.spec.js':
+                'C:/notWorkspace/notJestProject/jest.it-config.js',
+            },
+            'C:/workspace/jestProject/src/index.it.spec.js',
+            'C:/notWorkspace/notJestProject/jest.unit-config.js',
+            true,
+          ],
+        ];
         describe.each(scenarios)(
           '%s: %s',
           (
@@ -493,7 +493,7 @@ describe('TestRunnerConfig', () => {
                 return (
                   filePath === expectedPath ||
                   normalizePath(filePath as string) ===
-                  normalizePath(expectedPath)
+                    normalizePath(expectedPath)
                 );
               });
             });
@@ -529,59 +529,59 @@ describe('TestRunnerConfig', () => {
             expectedPath: string,
           ]
         > = [
-            [
-              'linux',
-              'projectPath is relative',
-              'returns the found jest config path (traversing up from target path)',
-              '/home/user/workspace',
-              './jestProject',
-              {
-                '**/*.test.js': './jest.config.js',
-              },
-              '/home/user/workspace/jestProject/src/index.unit.spec.js',
-              '/home/user/workspace/jestProject/jest.config.mjs',
-              '/home/user/workspace/jestProject/jest.config.mjs',
-            ],
-            [
-              'linux',
-              'projectPath is not set',
-              'returns the found jest config path (traversing up from target path)',
-              '/home/user/workspace',
-              undefined,
-              {
-                '**/*.test.js': './jest.config.js',
-              },
-              '/home/user/workspace/src/index.unit.spec.js',
-              '/home/user/workspace/jest.config.mjs',
-              '/home/user/workspace/jest.config.mjs',
-            ],
-            [
-              'windows',
-              'projectPath is relative',
-              'returns the (normalized) found jest config (traversing up from target path)',
-              'C:\\workspace',
-              './jestProject',
-              {
-                '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
-              },
-              'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-              'C:\\workspace\\jestProject\\jest.config.mjs',
-              'C:/workspace/jestProject/jest.config.mjs',
-            ],
-            [
-              'windows',
-              'projectPath is not set',
-              'returns the (normalized) found jest config path (traversing up from target path)',
-              'C:\\workspace',
-              undefined,
-              {
-                '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
-              },
-              'C:\\workspace\\src\\index.it.spec.js',
-              'C:\\workspace\\jest.config.mjs',
-              'C:/workspace/jest.config.mjs',
-            ],
-          ];
+          [
+            'linux',
+            'projectPath is relative',
+            'returns the found jest config path (traversing up from target path)',
+            '/home/user/workspace',
+            './jestProject',
+            {
+              '**/*.test.js': './jest.config.js',
+            },
+            '/home/user/workspace/jestProject/src/index.unit.spec.js',
+            '/home/user/workspace/jestProject/jest.config.mjs',
+            '/home/user/workspace/jestProject/jest.config.mjs',
+          ],
+          [
+            'linux',
+            'projectPath is not set',
+            'returns the found jest config path (traversing up from target path)',
+            '/home/user/workspace',
+            undefined,
+            {
+              '**/*.test.js': './jest.config.js',
+            },
+            '/home/user/workspace/src/index.unit.spec.js',
+            '/home/user/workspace/jest.config.mjs',
+            '/home/user/workspace/jest.config.mjs',
+          ],
+          [
+            'windows',
+            'projectPath is relative',
+            'returns the (normalized) found jest config (traversing up from target path)',
+            'C:\\workspace',
+            './jestProject',
+            {
+              '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
+            },
+            'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+            'C:\\workspace\\jestProject\\jest.config.mjs',
+            'C:/workspace/jestProject/jest.config.mjs',
+          ],
+          [
+            'windows',
+            'projectPath is not set',
+            'returns the (normalized) found jest config path (traversing up from target path)',
+            'C:\\workspace',
+            undefined,
+            {
+              '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
+            },
+            'C:\\workspace\\src\\index.it.spec.js',
+            'C:\\workspace\\jest.config.mjs',
+            'C:/workspace/jest.config.mjs',
+          ],
+        ];
         describe.each(scenarios)(
           '%s: %s',
           (
@@ -645,79 +645,79 @@ describe('TestRunnerConfig', () => {
           expectedPath: string,
         ]
       > = [
-          [
-            'linux',
-            'without project path',
-            'returns the found jest config path (traversing up from target path)',
-            '/home/user/workspace',
-            undefined,
-            '/home/user/workspace/jestProject/src/index.unit.spec.js',
-            '/home/user/workspace/jestProject/jest.config.mjs',
-          ],
-          [
-            'linux',
-            'with projectPath defined',
-            'returns the found jest config path (traversing up from target path)',
-            '/home/user/workspace',
-            './anotherProject',
-            '/home/user/workspace/jestProject/src/index.unit.spec.js',
-            '/home/user/workspace/jestProject/jest.config.mjs',
-          ],
-          [
-            'linux',
-            'with projectPath defined and no config in project',
-            'returns the found jest config path in workspace (traversing up from target path)',
-            '/home/user/workspace',
-            './anotherProject',
-            '/home/user/workspace/anotherProject/src/index.unit.spec.js',
-            '/home/user/workspace/jest.config.mjs',
-          ],
-          [
-            'linux',
-            'with no configs found',
-            'returns an empty string',
-            '/home/user/workspace',
-            './anotherProject',
-            '/home/user/workspace/anotherProject/src/index.unit.spec.js',
-            '',
-          ],
-          [
-            'windows',
-            'without project path',
-            'returns the found jest config path (traversing up from target path)',
-            'C:\\workspace',
-            undefined,
-            'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
-            'C:/workspace/jestProject/jest.config.mjs',
-          ],
-          [
-            'windows',
-            'with projectPath defined',
-            'returns the found jest config path (traversing up from target path)',
-            'C:\\workspace',
-            './anotherProject',
-            'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
-            'C:/workspace/jestProject/jest.config.mjs',
-          ],
-          [
-            'windows',
-            'with projectPath defined and no config in project',
-            'returns the found jest config path in workspace (traversing up from target path)',
-            'C:\\workspace',
-            './anotherProject',
-            'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
-            'C:/workspace/jest.config.mjs',
-          ],
-          [
-            'windows',
-            'with no configs found',
-            'returns an empty string',
-            'C:\\workspace',
-            './anotherProject',
-            'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
-            '',
-          ],
-        ];
+        [
+          'linux',
+          'without project path',
+          'returns the found jest config path (traversing up from target path)',
+          '/home/user/workspace',
+          undefined,
+          '/home/user/workspace/jestProject/src/index.unit.spec.js',
+          '/home/user/workspace/jestProject/jest.config.mjs',
+        ],
+        [
+          'linux',
+          'with projectPath defined',
+          'returns the found jest config path (traversing up from target path)',
+          '/home/user/workspace',
+          './anotherProject',
+          '/home/user/workspace/jestProject/src/index.unit.spec.js',
+          '/home/user/workspace/jestProject/jest.config.mjs',
+        ],
+        [
+          'linux',
+          'with projectPath defined and no config in project',
+          'returns the found jest config path in workspace (traversing up from target path)',
+          '/home/user/workspace',
+          './anotherProject',
+          '/home/user/workspace/anotherProject/src/index.unit.spec.js',
+          '/home/user/workspace/jest.config.mjs',
+        ],
+        [
+          'linux',
+          'with no configs found',
+          'returns an empty string',
+          '/home/user/workspace',
+          './anotherProject',
+          '/home/user/workspace/anotherProject/src/index.unit.spec.js',
+          '',
+        ],
+        [
+          'windows',
+          'without project path',
+          'returns the found jest config path (traversing up from target path)',
+          'C:\\workspace',
+          undefined,
+          'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
+          'C:/workspace/jestProject/jest.config.mjs',
+        ],
+        [
+          'windows',
+          'with projectPath defined',
+          'returns the found jest config path (traversing up from target path)',
+          'C:\\workspace',
+          './anotherProject',
+          'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
+          'C:/workspace/jestProject/jest.config.mjs',
+        ],
+        [
+          'windows',
+          'with projectPath defined and no config in project',
+          'returns the found jest config path in workspace (traversing up from target path)',
+          'C:\\workspace',
+          './anotherProject',
+          'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
+          'C:/workspace/jest.config.mjs',
+        ],
+        [
+          'windows',
+          'with no configs found',
+          'returns an empty string',
+          'C:\\workspace',
+          './anotherProject',
+          'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
+          '',
+        ],
+      ];
       describe.each(scenarios)(
         '%s: %s',
         (
@@ -752,7 +752,7 @@ describe('TestRunnerConfig', () => {
               return (
                 filePath === expectedPath ||
                 normalizePath(filePath as string) ===
-                normalizePath(expectedPath)
+                  normalizePath(expectedPath)
               );
             });
           });
@@ -852,87 +852,87 @@ describe('TestRunnerConfig', () => {
         installedPath: string | undefined,
       ]
     > = [
-        [
-          'linux',
-          'jest dep installed in same path as the opened file',
-          'returns the folder path of the opened file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/index.test.js',
-          '/home/user/workspace/jestProject',
-        ],
-        [
-          'linux',
-          'jest dep installed in parent path of the opened file',
-          'returns the folder path of the parent of the opened file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/src/index.test.js',
-          '/home/user/workspace/jestProject',
-        ],
-        [
-          'linux',
-          'jest dep installed in an ancestor path of the opened file',
-          'returns the folder path of the ancestor of the opened file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          '/home/user/workspace/jestProject',
-        ],
-        [
-          'linux',
-          'jest dep installed in the workspace of the opened file',
-          "returns the folder path of the opened file's workspace",
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          '/home/user/workspace',
-        ],
-        [
-          'linux',
-          'jest dep not installed',
-          'returns empty string',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          undefined,
-        ],
-        [
-          'windows',
-          'jest dep installed in same path as the opened file',
-          'returns the (normalized) folder path of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject\\src',
-        ],
-        [
-          'windows',
-          'jest dep installed in parent path of the opened file',
-          'returns the (normalized) folder path of the parent of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject',
-        ],
-        [
-          'windows',
-          'jest dep installed in an ancestor path of the opened file',
-          'returns the (normalized) folder path of the ancestor of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\deeply\\nested\\package\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject',
-        ],
-        [
-          'windows',
-          'jest dep installed in the workspace of the opened file',
-          "returns the (normalized) folder path of the opened file's workspace",
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace',
-        ],
-        [
-          'windows',
-          'jest dep not installed',
-          'returns empty string',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          undefined,
-        ],
-      ];
+      [
+        'linux',
+        'jest dep installed in same path as the opened file',
+        'returns the folder path of the opened file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/index.test.js',
+        '/home/user/workspace/jestProject',
+      ],
+      [
+        'linux',
+        'jest dep installed in parent path of the opened file',
+        'returns the folder path of the parent of the opened file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/src/index.test.js',
+        '/home/user/workspace/jestProject',
+      ],
+      [
+        'linux',
+        'jest dep installed in an ancestor path of the opened file',
+        'returns the folder path of the ancestor of the opened file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        '/home/user/workspace/jestProject',
+      ],
+      [
+        'linux',
+        'jest dep installed in the workspace of the opened file',
+        "returns the folder path of the opened file's workspace",
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        '/home/user/workspace',
+      ],
+      [
+        'linux',
+        'jest dep not installed',
+        'returns empty string',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        undefined,
+      ],
+      [
+        'windows',
+        'jest dep installed in same path as the opened file',
+        'returns the (normalized) folder path of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject\\src',
+      ],
+      [
+        'windows',
+        'jest dep installed in parent path of the opened file',
+        'returns the (normalized) folder path of the parent of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject',
+      ],
+      [
+        'windows',
+        'jest dep installed in an ancestor path of the opened file',
+        'returns the (normalized) folder path of the ancestor of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\deeply\\nested\\package\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject',
+      ],
+      [
+        'windows',
+        'jest dep installed in the workspace of the opened file',
+        "returns the (normalized) folder path of the opened file's workspace",
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace',
+      ],
+      [
+        'windows',
+        'jest dep not installed',
+        'returns empty string',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        undefined,
+      ],
+    ];
 
     describe.each(scenarios)(
       '%s: %s',
@@ -954,7 +954,7 @@ describe('TestRunnerConfig', () => {
           jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
             isDirectory: () => !openedFilePath.endsWith('.ts'),
           }));
-
+          
           // Mock findTestFrameworkDirectory to return the installed path
           jest
             .spyOn(require('../testDetection'), 'findTestFrameworkDirectory')
@@ -989,97 +989,97 @@ describe('TestRunnerConfig', () => {
         configFileName: string | undefined,
       ]
     > = [
-        [
-          'linux',
-          'jest config located in same path as the opened file',
-          'returns the filename path of the found config file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/index.test.js',
-          '/home/user/workspace/jestProject',
-          'jest.config.cjs',
-        ],
-        [
-          'linux',
-          'jest config located in parent path of the opened file',
-          'returns the filename path of the found config file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/src/index.test.js',
-          '/home/user/workspace/jestProject',
-          'jest.config.json',
-        ],
-        [
-          'linux',
-          'jest config located in an ancestor path of the opened file',
-          'returns the filename path of the found config file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          '/home/user/workspace/jestProject',
-          'jest.config.js',
-        ],
-        [
-          'linux',
-          'jest config located in the workspace of the opened file',
-          'returns the filename path of the found config file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          '/home/user/workspace',
-          'jest.config.ts',
-        ],
-        [
-          'linux',
-          'jest config not located',
-          'returns empty string',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          undefined,
-          undefined,
-        ],
-        [
-          'windows',
-          'jest config located in same path as the opened file',
-          'returns the (normalized) folder path of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject\\src',
-          'jest.config.cjs',
-        ],
-        [
-          'windows',
-          'jest config located in parent path of the opened file',
-          'returns the (normalized) folder path of the parent of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject',
-          'jest.config.json',
-        ],
-        [
-          'windows',
-          'jest config located in an ancestor path of the opened file',
-          'returns the (normalized) folder path of the ancestor of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\deeply\\nested\\package\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject',
-          'jest.config.js',
-        ],
-        [
-          'windows',
-          'jest config located in the workspace of the opened file',
-          "returns the (normalized) folder path of the opened file's workspace",
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace',
-          'jest.config.ts',
-        ],
-        [
-          'windows',
-          'jest config not located',
-          'returns empty string',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          undefined,
-          undefined,
-        ],
-      ];
+      [
+        'linux',
+        'jest config located in same path as the opened file',
+        'returns the filename path of the found config file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/index.test.js',
+        '/home/user/workspace/jestProject',
+        'jest.config.cjs',
+      ],
+      [
+        'linux',
+        'jest config located in parent path of the opened file',
+        'returns the filename path of the found config file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/src/index.test.js',
+        '/home/user/workspace/jestProject',
+        'jest.config.json',
+      ],
+      [
+        'linux',
+        'jest config located in an ancestor path of the opened file',
+        'returns the filename path of the found config file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        '/home/user/workspace/jestProject',
+        'jest.config.js',
+      ],
+      [
+        'linux',
+        'jest config located in the workspace of the opened file',
+        'returns the filename path of the found config file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        '/home/user/workspace',
+        'jest.config.ts',
+      ],
+      [
+        'linux',
+        'jest config not located',
+        'returns empty string',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        undefined,
+        undefined,
+      ],
+      [
+        'windows',
+        'jest config located in same path as the opened file',
+        'returns the (normalized) folder path of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject\\src',
+        'jest.config.cjs',
+      ],
+      [
+        'windows',
+        'jest config located in parent path of the opened file',
+        'returns the (normalized) folder path of the parent of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject',
+        'jest.config.json',
+      ],
+      [
+        'windows',
+        'jest config located in an ancestor path of the opened file',
+        'returns the (normalized) folder path of the ancestor of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\deeply\\nested\\package\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject',
+        'jest.config.js',
+      ],
+      [
+        'windows',
+        'jest config located in the workspace of the opened file',
+        "returns the (normalized) folder path of the opened file's workspace",
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace',
+        'jest.config.ts',
+      ],
+      [
+        'windows',
+        'jest config not located',
+        'returns empty string',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        undefined,
+        undefined,
+      ],
+    ];
 
     describe('targetPath is not provided', () => {
       describe.each(scenarios)(
@@ -1595,7 +1595,7 @@ describe('TestRunnerConfig', () => {
       expect(config.runtimeExecutable).toBeUndefined();
     });
 
-    it('should parse custom jest command with node runtime', () => {
+    it('should parse custom jest command', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.jestCommand': 'node ./node_modules/jest/bin/jest.js',
@@ -1607,28 +1607,9 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.runtimeExecutable).toBe('node');
-      expect(config.runtimeArgs).toEqual([]);
-      expect(config.program).toBe('./node_modules/jest/bin/jest.js');
-      expect(config.args).toEqual([]);
-    });
-
-    it('should parse custom jest command with node runtime and flags (Issue #422)', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.jestCommand': 'node --experimental-vm-modules node_modules/jest/bin/jest.js',
-        }),
-      );
-
-      // Mock no Yarn PnP
-      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-
-      const config = jestRunnerConfig.getDebugConfiguration();
-
-      expect(config.runtimeExecutable).toBe('node');
-      expect(config.runtimeArgs).toEqual(['--experimental-vm-modules']);
-      expect(config.program).toBe('node_modules/jest/bin/jest.js');
-      expect(config.args).toEqual([]);
+      expect(config.program).toBe('node');
+      expect(config.args).toEqual(['./node_modules/jest/bin/jest.js']);
+      expect(config.runtimeExecutable).toBeUndefined();
     });
 
     it('should parse custom jest command with quoted arguments', () => {
@@ -1644,10 +1625,11 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.runtimeExecutable).toBe('node');
-      expect(config.runtimeArgs).toEqual([]);
-      expect(config.program).toBe('node_modules/.bin/jest');
-      expect(config.args).toEqual(['--config=jest.config.js']);
+      expect(config.program).toBe('node');
+      expect(config.args).toEqual([
+        'node_modules/.bin/jest',
+        '--config=jest.config.js',
+      ]);
     });
 
     it('should merge custom debugOptions', () => {
@@ -1710,63 +1692,8 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.runtimeExecutable).toBe('node');
-      expect(config.runtimeArgs).toEqual([]);
-      expect(config.program).toBe('./custom-jest.js');
-      expect(config.args).toEqual([]);
-    });
-
-    it('should handle executable without path as runtimeExecutable', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.jestCommand': 'npm run test --',
-        }),
-      );
-
-      // Mock no Yarn PnP
-      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-
-      const config = jestRunnerConfig.getDebugConfiguration();
-
-      expect(config.runtimeExecutable).toBe('npm');
-      expect(config.runtimeArgs).toEqual([]);
-      expect(config.program).toBeUndefined();
-      expect(config.args).toEqual(['run', 'test', '--']);
-    });
-
-    it('should handle npx cross-env ESM command from README', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.jestCommand': 'npx cross-env NODE_OPTIONS="--experimental-vm-modules" node \'node_modules/jest/bin/jest.js\'',
-        }),
-      );
-
-      // Mock no Yarn PnP
-      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-
-      const config = jestRunnerConfig.getDebugConfiguration();
-
-      expect(config.runtimeExecutable).toBe('npx');
-      expect(config.runtimeArgs).toEqual(['cross-env', 'NODE_OPTIONS=--experimental-vm-modules', 'node']);
-      expect(config.program).toBe('node_modules/jest/bin/jest.js');
-      expect(config.args).toEqual([]);
-    });
-
-    it('should handle file path as program', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({
-          'jestrunner.jestCommand': './scripts/run-tests.sh --verbose',
-        }),
-      );
-
-      // Mock no Yarn PnP
-      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-
-      const config = jestRunnerConfig.getDebugConfiguration();
-
-      expect(config.runtimeExecutable).toBeUndefined();
-      expect(config.program).toBe('./scripts/run-tests.sh');
-      expect(config.args).toEqual(['--verbose']);
+      expect(config.program).toBe('node');
+      expect(config.args).toEqual(['./custom-jest.js']);
     });
   });
 
