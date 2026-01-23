@@ -2,8 +2,15 @@
 .vscode-test/**
 out/**
 src/**
+docs/**
 .gitignore
 tsconfig.json
-vsc-extension-quickstart.md
 node_modules/**
 webpack.config.js
+coverage/**
+biome.json 
+jest.config.js
+vite.config.ts
+.claude/**
+.github/**
+examples/**
