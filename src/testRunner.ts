@@ -213,32 +213,45 @@ export class TestRunner {
 
   private async executeCommand(command: string, filePath: string): Promise<void> {
     const framework = this.config.getTestFramework(filePath);
+    const env = this.config.getEnvironmentForRun(filePath);
     this.previousCommand = command;
     this.previousFramework = framework;
 
-    await this.goToCwd();
-    await this.runTerminalCommand(command, framework);
+    await this.goToCwd(env);
+    await this.runTerminalCommand(command, framework, env);
   }
 
-  private async goToCwd() {
+  private async goToCwd(env?: Record<string, string>) {
     const command = `cd ${quote(this.config.cwd)}`;
     if (this.config.changeDirectoryToWorkspaceRoot) {
-      await this.runTerminalCommand(command);
+      await this.runTerminalCommand(command, undefined, env);
     }
   }
 
-  private async runTerminalCommand(command: string, framework?: string) {
+  private currentTerminalEnv: Record<string, string> | undefined;
+
+  private async runTerminalCommand(
+    command: string,
+    framework?: string,
+    env?: Record<string, string>,
+  ) {
     const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
+    const envChanged = JSON.stringify(env) !== JSON.stringify(this.currentTerminalEnv);
 
     if (
       !this.terminal ||
-      (this.currentTerminalName && this.currentTerminalName !== terminalName)
+      (this.currentTerminalName && this.currentTerminalName !== terminalName) ||
+      envChanged
     ) {
       if (this.terminal) {
         this.terminal.dispose();
       }
-      this.terminal = vscode.window.createTerminal(terminalName);
+      this.terminal = vscode.window.createTerminal({
+        name: terminalName,
+        env,
+      });
       this.currentTerminalName = terminalName;
+      this.currentTerminalEnv = env;
     }
 
     this.terminal.show(this.config.preserveEditorFocus);

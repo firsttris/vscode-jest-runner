@@ -320,6 +320,7 @@ export class JestTestController {
     token: vscode.CancellationToken,
     tests: vscode.TestItem[],
     run: vscode.TestRun,
+    additionalEnv?: Record<string, string>,
   ): Promise<string | null> {
     return new Promise((resolve) => {
       const maxBufferSize =
@@ -331,7 +332,7 @@ export class JestTestController {
 
       const jestProcess = spawn(command, args, {
         cwd: this.jestConfig.cwd,
-        env: { ...process.env, FORCE_COLOR: 'true' },
+        env: { ...process.env, FORCE_COLOR: 'true', ...additionalEnv },
         shell: true,
       });
 
@@ -798,8 +799,11 @@ export class JestTestController {
       const command = commandParts[0];
       const commandArgs = [...commandParts.slice(1), ...args];
 
+      // Get ESM environment if needed (only for Jest, Vitest is ESM-native)
+      const esmEnv = isVitest ? undefined : this.jestConfig.getEnvironmentForRun(allFiles[0]);
+
       logInfo(
-        `Running batched ${framework} command: ${command} ${commandArgs.join(' ')} (${allTests.length} tests across ${allFiles.length} files)`,
+        `Running batched ${framework} command: ${command} ${commandArgs.join(' ')} (${allTests.length} tests across ${allFiles.length} files)${esmEnv ? ' [ESM mode]' : ''}`,
       );
 
       const output = await this.executeJestCommand(
@@ -808,6 +812,7 @@ export class JestTestController {
         token,
         allTests,
         run,
+        esmEnv,
       );
 
       if (output === null) {

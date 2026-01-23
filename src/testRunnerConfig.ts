@@ -15,28 +15,29 @@ import {
 import {
   getTestFrameworkForFile,
   findTestFrameworkDirectory,
+  isEsmProject,
   type TestFrameworkName,
 } from './testDetection';
 import { JEST_CONFIG_FILES, VITEST_CONFIG_FILES } from './constants';
 
 export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
   const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
-
+  
   if (!fs.existsSync(yarnReleasesPath)) {
     return { enabled: false };
   }
-
+  
   try {
     const files = fs.readdirSync(yarnReleasesPath);
     const yarnBinary = files.find(file => file.startsWith('yarn-') && file.endsWith('.cjs'));
-
+    
     if (yarnBinary) {
       return { enabled: true, yarnBinary };
     }
   } catch (error) {
     // If we can't read the directory, assume PnP is not enabled
   }
-
+  
   return { enabled: false };
 }
 
@@ -132,6 +133,13 @@ export class TestRunnerConfig {
     return this.jestCommand;
   }
 
+  public getEnvironmentForRun(filePath: string): Record<string, string> | undefined {
+    if (isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath))) {
+      return { NODE_OPTIONS: '--experimental-vm-modules' };
+    }
+    return undefined;
+  }
+
   public getTestFramework(filePath?: string): TestFrameworkName | undefined {
     if (filePath) {
       return getTestFrameworkForFile(filePath);
@@ -225,16 +233,16 @@ export class TestRunnerConfig {
           configPath,
         ),
       );
-
+      
       if (fs.existsSync(resolvedPath)) {
         return resolvedPath;
       }
-
+      
       const foundPath = this.findConfigPath(targetPath, undefined, framework);
       if (foundPath) {
         return foundPath;
       }
-
+      
       return resolvedPath;
     }
 
@@ -261,7 +269,7 @@ export class TestRunnerConfig {
 
     const foundPath = searchPathToParent<string>(
       targetPath ||
-      path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
+        path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         for (const configFilename of configFiles) {
@@ -434,6 +442,16 @@ export class TestRunnerConfig {
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
+    // Auto-detect ESM for Jest (Vitest is ESM-native, no flag needed)
+    if (!isVitest && isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath || ''))) {
+      // For ESM, we need node --experimental-vm-modules to run jest directly
+      // runtimeArgs go to node, program is the jest binary
+      delete debugConfig.runtimeExecutable;
+      debugConfig.runtimeArgs = ['--experimental-vm-modules'];
+      debugConfig.program = path.join(this.cwd, 'node_modules', 'jest', 'bin', 'jest.js');
+      debugConfig.args = ['--runInBand'];  // Remove npx-specific args
+    }
+
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
     if (yarnPnp.enabled && yarnPnp.yarnBinary) {
       delete debugConfig.runtimeExecutable;
@@ -449,41 +467,11 @@ export class TestRunnerConfig {
     if (customCommand && typeof customCommand === 'string') {
       const parts = parseShellCommand(customCommand);
       if (parts.length > 0) {
-        const firstPart = parts[0];
-        const isFilePath = firstPart.includes('/') || firstPart.includes('\\') || firstPart.startsWith('.');
-
-        if (isFilePath) {
-          // First part is a file path - use it as program
-          delete debugConfig.runtimeExecutable;
-          debugConfig.program = firstPart;
-          debugConfig.args = isVitest
-            ? [...parts.slice(1), 'run']
-            : parts.slice(1);
-        } else {
-          // First part is an executable name (node, npx, bun, etc.) - use runtimeExecutable
-          // Find the first argument that looks like a script path (not a flag or env setter)
-          const scriptIndex = parts.slice(1).findIndex(arg =>
-            !arg.startsWith('-') && (arg.includes('/') || arg.includes('\\') || arg.startsWith('.'))
-          ) + 1;
-
-          if (scriptIndex > 0) {
-            // Found a script path
-            debugConfig.runtimeExecutable = firstPart;
-            debugConfig.runtimeArgs = parts.slice(1, scriptIndex);
-            debugConfig.program = parts[scriptIndex];
-            debugConfig.args = isVitest
-              ? [...parts.slice(scriptIndex + 1), 'run']
-              : parts.slice(scriptIndex + 1);
-          } else {
-            // No script path found, use all remaining as args
-            debugConfig.runtimeExecutable = firstPart;
-            debugConfig.runtimeArgs = [];
-            delete debugConfig.program;
-            debugConfig.args = isVitest
-              ? [...parts.slice(1), 'run']
-              : parts.slice(1);
-          }
-        }
+        delete debugConfig.runtimeExecutable;
+        debugConfig.program = parts[0];
+        debugConfig.args = isVitest
+          ? [...parts.slice(1), 'run']
+          : parts.slice(1);
       }
       return debugConfig;
     }

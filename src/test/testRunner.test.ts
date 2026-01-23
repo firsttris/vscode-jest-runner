@@ -33,6 +33,7 @@ describe('TestRunner', () => {
       getJestConfigPath: jest.fn().mockReturnValue(''),
       getVitestConfigPath: jest.fn().mockReturnValue(''),
       getTestFramework: jest.fn().mockReturnValue('jest'),
+      getEnvironmentForRun: jest.fn().mockReturnValue(undefined),
       buildJestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
         const args = [filePath];
         if (testName) {
@@ -113,14 +114,14 @@ describe('TestRunner', () => {
 
     it('should create a terminal if none exists', async () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
-      expect(vscode.window.createTerminal).toHaveBeenCalledWith('jest');
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith({ name: 'jest', env: undefined });
     });
 
     it('should create a terminal with vitest name for vitest tests', async () => {
       (mockConfig.getTestFramework as jest.Mock).mockReturnValue('vitest');
       (vscode.window.createTerminal as jest.Mock).mockClear();
       await jestRunner.runTestsOnPath('/workspace/test.spec.ts');
-      expect(vscode.window.createTerminal).toHaveBeenCalledWith('vitest');
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith({ name: 'vitest', env: undefined });
     });
 
     it('should show the terminal', async () => {

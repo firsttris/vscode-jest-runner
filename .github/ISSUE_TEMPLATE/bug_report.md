@@ -26,6 +26,7 @@ Help us understand your setup by providing the following details:
 | **Shell** | bash, zsh, PowerShell, cmd |
 | **Project Framework** | Nx, Next.js, NestJS, Create React App, Vite |
 | **Test Framework** | Jest or Vitest |
+| **Jest/Vitest Config** | jest.config.js, jest.config.ts, vitest.config.ts |
 | **Project Type** | Monorepo or Single App |
 | **VSCode Version** | 1.100.0 (lowest supported version) |
 | **Extension Version** | 0.4.93 |

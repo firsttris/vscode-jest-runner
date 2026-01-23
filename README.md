@@ -229,16 +229,12 @@ Add the following command to settings:
 
 **ESM (ECMAScript Modules)**
 
-For projects requiring `--experimental-vm-modules`:
+ESM is automatically detected and configured. The extension checks for:
+- `"type": "module"` in package.json
+- `extensionsToTreatAsEsm` in jest.config
+- `useESM: true` in ts-jest config
 
-```json
-"jestrunner.jestCommand": "node --experimental-vm-modules ${workspaceFolder}/node_modules/jest/bin/jest.js",
-"jestrunner.debugOptions": {
-  "runtimeArgs": ["--experimental-vm-modules"]
-}
-```
-
-> **Note:** `jestrunner.runOptions` passes arguments to Jest, not Node. Use `jestrunner.jestCommand` with `NODE_OPTIONS` for Node flags.
+When ESM is detected, `--experimental-vm-modules` is automatically added for debugging. No manual configuration required!
 
 </details>
 
