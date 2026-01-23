@@ -179,12 +179,6 @@ export function resolveConfigPathOrMapping(
       return normalizePath(value);
     }
   }
-  if (Object.keys(configPathOrMapping).length > 0) {
-    vscode.window.showWarningMessage(
-      `None of the glob patterns in the configPath mapping matched the target file. Make sure you're using correct glob pattern syntax. Jest-runner uses the same library (micromatch) for evaluating glob patterns as Jest uses to evaluate it's 'testMatch' configuration.`,
-    );
-  }
-
   return undefined;
 }
 
