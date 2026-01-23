@@ -169,6 +169,12 @@
             "description": "Preserve focus on editor when running tests",
             "scope": "window"
           },
+          "jestrunner.enableDebugLogs": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable debug logging to the 'Jest Runner' output channel for troubleshooting",
+            "scope": "window"
+          },
           "jestrunner.include": {
             "type": "array",
             "default": [],

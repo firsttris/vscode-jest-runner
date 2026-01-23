@@ -302,7 +302,6 @@ describe('resolveConfigPathOrMapping', () => {
   });
 
   it('should return undefined if no glob matches', () => {
-    jest.spyOn(vscode.window, 'showWarningMessage').mockReturnValue(undefined);
     const mapping = {
       '**/*.test.ts': './jest.test.config.js',
     };
@@ -311,27 +310,8 @@ describe('resolveConfigPathOrMapping', () => {
     ).toBeUndefined();
   });
 
-  it('should show warning message when no glob matches', () => {
-    const showWarning = jest
-      .spyOn(vscode.window, 'showWarningMessage')
-      .mockReturnValue(undefined);
-    const mapping = {
-      '**/*.test.ts': './jest.test.config.js',
-    };
-    resolveConfigPathOrMapping(mapping, '/path/to/my.spec.ts');
-    expect(showWarning).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'None of the glob patterns in the configPath mapping matched',
-      ),
-    );
-  });
-
-  it('should not show warning for empty mapping', () => {
-    const showWarning = jest
-      .spyOn(vscode.window, 'showWarningMessage')
-      .mockReturnValue(undefined);
-    resolveConfigPathOrMapping({}, '/path/to/my.spec.ts');
-    expect(showWarning).not.toHaveBeenCalled();
+  it('should return undefined for empty mapping', () => {
+    expect(resolveConfigPathOrMapping({}, '/path/to/my.spec.ts')).toBeUndefined();
   });
 });
 

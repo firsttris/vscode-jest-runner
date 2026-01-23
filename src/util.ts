@@ -179,6 +179,9 @@ export function resolveConfigPathOrMapping(
       return normalizePath(value);
     }
   }
+  if (Object.keys(configPathOrMapping).length > 0) {
+    logDebug(`No glob pattern in configPath mapping matched: ${targetPath}`);
+  }
   return undefined;
 }
 
