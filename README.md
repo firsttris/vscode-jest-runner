@@ -4,7 +4,7 @@
 
 **Run and debug tests with ease, right from your editor**
 
-![Extension Example](./public/screenshot.png)
+![Extension Example](./docs/screenshot.png)
 
 [![Build](https://img.shields.io/github/actions/workflow/status/firsttris/vscode-jest-runner/master.yml?branch=master&label=Build&logo=github&style=flat-square)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml)
 [![VS Marketplace Version](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
