@@ -82,7 +82,7 @@ Key settings (see [package.json](../package.json) contributions):
 All commands use `wrapCommandHandler()` (extension.ts) for consistent error handling and user-facing error messages.
 
 ### Test Detection in Files
-`shouldIncludeFile()` (util.ts) checks against test patterns from framework configs using micromatch. Sets `jestrunner.isJestFile` context for menu visibility.
+Sets `jestrunner.isJestFile` context for menu visibility.
 
 ### Logging
 Use `logInfo()`/`logError()`/`logDebug()` from util.ts. Debug logs gated by `jestrunner.enableDebugLogs` setting. Output channel: "Jest Runner".
