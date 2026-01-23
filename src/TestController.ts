@@ -978,6 +978,9 @@ export class JestTestController {
       if (vscode.workspace.workspaceFolders) {
         for (const workspaceFolder of vscode.workspace.workspaceFolders) {
           if (uri.fsPath.startsWith(workspaceFolder.uri.fsPath)) {
+            if (!shouldIncludeFile(uri.fsPath, workspaceFolder.uri.fsPath)) {
+              return;
+            }
             const relativePath = path.relative(
               workspaceFolder.uri.fsPath,
               uri.fsPath,
