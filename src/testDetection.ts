@@ -7,22 +7,18 @@ import { JEST_CONFIG_FILES } from './constants';
 
 const testDetectionCache = new Map<string, boolean>();
 
-const viteConfigFiles = [
-  'vite.config.js',
-  'vite.config.ts',
-  'vite.config.mjs',
-  'vite.config.mts',
-  'vite.config.cjs',
-  'vite.config.cts',
+const DEFAULT_TEST_PATTERNS = [
+  '**/*.{test,spec}.?(c|m)[jt]s?(x)',
+  '**/__tests__/**/*.?(c|m)[jt]s?(x)',
 ];
-
-const DEFAULT_TEST_PATTERNS = ['**/*.{test,spec}.{js,jsx,ts,tsx}'];
 
 interface TestPatterns {
   patterns: string[];
   isRegex: boolean;
   rootDir?: string;
 }
+
+export type TestFrameworkName = 'jest' | 'vitest';
 
 export function viteConfigHasTestAttribute(configPath: string): boolean {
   try {
@@ -43,11 +39,24 @@ function binaryExists(directoryPath: string, binaryName: string): boolean {
   return possibleBinaryPaths.some(fs.existsSync);
 }
 
-function checkVitestViteConfig(directoryPath: string): boolean {
-  return viteConfigFiles.some((viteConfig) => {
-    const viteConfigPath = path.join(directoryPath, viteConfig);
-    return fs.existsSync(viteConfigPath) && viteConfigHasTestAttribute(viteConfigPath);
-  });
+function getConfigPath(directoryPath: string, frameworkName: TestFrameworkName): string | undefined {
+  const framework = testFrameworks.find((f) => f.name === frameworkName)!;
+
+  for (const configFile of framework.configFiles) {
+    const configPath = path.join(directoryPath, configFile);
+    if (!fs.existsSync(configPath)) continue;
+
+    // vite.config.* ist nur gültig wenn test-Attribut vorhanden
+    if (configFile.startsWith('vite.config.')) {
+      if (viteConfigHasTestAttribute(configPath)) {
+        return configPath;
+      }
+    } else {
+      return configPath;
+    }
+  }
+
+  return undefined;
 }
 
 const vitestDetectionCache = new Map<string, boolean>();
@@ -68,6 +77,25 @@ interface TestFramework {
 
 const testFrameworks: TestFramework[] = [
   {
+    name: 'vitest',
+    configFiles: [
+      'vitest.config.js',
+      'vitest.config.ts',
+      'vitest.config.mjs',
+      'vitest.config.mts',
+      'vitest.config.cjs',
+      'vitest.config.cts',
+      // vite.config.* nur gültig wenn test-Attribut vorhanden (wird in getConfigPath geprüft)
+      'vite.config.js',
+      'vite.config.ts',
+      'vite.config.mjs',
+      'vite.config.mts',
+      'vite.config.cjs',
+      'vite.config.cts',
+    ],
+    binaryName: 'vitest',
+  },
+  {
     name: 'jest',
     configFiles: [
       'jest.config.js',
@@ -79,35 +107,11 @@ const testFrameworks: TestFramework[] = [
     ],
     binaryName: 'jest',
   },
-  {
-    name: 'cypress',
-    configFiles: ['cypress.config.js', 'cypress.config.ts', 'cypress.json'],
-    binaryName: 'cypress',
-  },
-  {
-    name: 'playwright',
-    configFiles: ['playwright.config.js', 'playwright.config.ts'],
-    binaryName: 'playwright',
-  },
-  {
-    name: 'vitest',
-    configFiles: [
-      'vitest.config.js',
-      'vitest.config.ts',
-      'vitest.config.mjs',
-      'vitest.config.mts',
-      'vitest.config.cjs',
-      'vitest.config.cts',
-    ],
-    binaryName: 'vitest',
-  },
 ];
-
-export type TestFrameworkName = 'jest' | 'vitest' | 'cypress' | 'playwright';
 
 function isFrameworkUsedIn(
   directoryPath: string,
-  frameworkName: string,
+  frameworkName: TestFrameworkName,
   cache: Map<string, boolean>,
 ): boolean {
   if (cache.has(directoryPath)) {
@@ -125,12 +129,7 @@ function isFrameworkUsedIn(
       return true;
     }
 
-    if (framework.configFiles.some((cfg) => fs.existsSync(path.join(directoryPath, cfg)))) {
-      cache.set(directoryPath, true);
-      return true;
-    }
-
-    if (frameworkName === 'vitest' && checkVitestViteConfig(directoryPath)) {
+    if (getConfigPath(directoryPath, frameworkName)) {
       cache.set(directoryPath, true);
       return true;
     }
@@ -172,21 +171,46 @@ export function isVitestUsedIn(directoryPath: string): boolean {
 
 export function detectTestFramework(
   directoryPath: string,
+  filePath?: string,
 ): TestFrameworkName | undefined {
+  // Check if both Jest and Vitest configs exist - if so, use pattern matching
+  const jestConfigPath = getConfigPath(directoryPath, 'jest');
+  const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
+
+  if (jestConfigPath && vitestConfigPath && filePath) {
+    // Both configs exist - determine framework by pattern matching
+    const frameworkByPattern = detectFrameworkByPatternMatch(directoryPath, filePath, jestConfigPath, vitestConfigPath);
+    if (frameworkByPattern) {
+      logDebug(`Detected ${frameworkByPattern} for ${filePath} by pattern matching`);
+      return frameworkByPattern;
+    }
+  }
+
+  // Check config files - if only one exists, use that
+  if (jestConfigPath && !vitestConfigPath) {
+    return 'jest';
+  }
+  if (vitestConfigPath && !jestConfigPath) {
+    return 'vitest';
+  }
+  // If both exist but pattern matching didn't resolve it (or no filePath provided),
+  // return jest as the first config found (arbitrary but consistent)
+  if (jestConfigPath && vitestConfigPath) {
+    return 'jest';
+  }
+
+  // Check package.json dependencies
   const packageJsonPath = path.join(directoryPath, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
     try {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-      const frameworkOrder = ['vitest', 'jest', 'cypress', 'playwright'];
-      for (const frameworkName of frameworkOrder) {
-        const framework = testFrameworks.find((f) => f.name === frameworkName);
+      for (const framework of testFrameworks) {
         if (
-          framework &&
-          (packageJson.dependencies?.[framework.name] ||
-            packageJson.devDependencies?.[framework.name] ||
-            packageJson.peerDependencies?.[framework.name] ||
-            packageJson[framework.name])
+          packageJson.dependencies?.[framework.name] ||
+          packageJson.devDependencies?.[framework.name] ||
+          packageJson.peerDependencies?.[framework.name] ||
+          packageJson[framework.name]
         ) {
           return framework.name as TestFrameworkName;
         }
@@ -196,19 +220,7 @@ export function detectTestFramework(
     }
   }
 
-  const configOrder = ['vitest', 'jest', 'cypress', 'playwright'];
-  for (const frameworkName of configOrder) {
-    const framework = testFrameworks.find((f) => f.name === frameworkName);
-    if (framework) {
-      if (framework.configFiles.some((cfg) => fs.existsSync(path.join(directoryPath, cfg)))) {
-        return framework.name as TestFrameworkName;
-      }
-      if (frameworkName === 'vitest' && checkVitestViteConfig(directoryPath)) {
-        return 'vitest';
-      }
-    }
-  }
-
+  // Finally check for binaries
   for (const framework of testFrameworks) {
     if (binaryExists(directoryPath, framework.binaryName)) {
       return framework.name as TestFrameworkName;
@@ -218,11 +230,124 @@ export function detectTestFramework(
   return undefined;
 }
 
+function detectFrameworkByPatternMatch(
+  directoryPath: string,
+  filePath: string,
+  jestConfigPath: string,
+  vitestConfigPath: string,
+): 'jest' | 'vitest' | undefined {
+  // Get patterns from both configs
+  const jestPatterns = getTestMatchFromJestConfig(jestConfigPath);
+  const vitestPatterns = getIncludeFromVitestConfig(vitestConfigPath);
+
+  const jestHasExplicitPatterns = jestPatterns && jestPatterns.patterns.length > 0;
+  const vitestHasExplicitPatterns = vitestPatterns && vitestPatterns.length > 0;
+
+  logDebug(`Pattern matching for ${filePath}: jestPatterns=${jestPatterns?.patterns?.join(',') ?? 'none'}, vitestPatterns=${vitestPatterns?.join(',') ?? 'none'}`);
+
+  // If neither has explicit patterns, we can't determine by pattern matching
+  if (!jestHasExplicitPatterns && !vitestHasExplicitPatterns) {
+    logDebug('Neither config has explicit patterns - cannot determine framework by pattern');
+    return undefined;
+  }
+
+  // Check if file matches each framework's explicit patterns (don't use defaults here)
+  const jestMatches = jestHasExplicitPatterns
+    ? fileMatchesPatternsExplicit(filePath, directoryPath, jestPatterns.patterns, jestPatterns.isRegex, jestPatterns.rootDir)
+    : false;
+  const vitestMatches = vitestHasExplicitPatterns
+    ? fileMatchesPatternsExplicit(filePath, directoryPath, vitestPatterns, false, undefined)
+    : false;
+
+  logDebug(`Pattern matching results: jest=${jestMatches} (explicit: ${jestHasExplicitPatterns}), vitest=${vitestMatches} (explicit: ${vitestHasExplicitPatterns})`);
+
+  // If both have explicit patterns, use standard matching
+  if (jestHasExplicitPatterns && vitestHasExplicitPatterns) {
+    if (jestMatches && !vitestMatches) return 'jest';
+    if (vitestMatches && !jestMatches) return 'vitest';
+    // Both match or neither match - ambiguous
+    return undefined;
+  }
+
+  // Only one has explicit patterns
+  if (jestHasExplicitPatterns) {
+    // Jest has explicit patterns
+    if (jestMatches) return 'jest';
+    // Jest patterns don't match - this file is likely for Vitest
+    return 'vitest';
+  }
+
+  if (vitestHasExplicitPatterns) {
+    // Vitest has explicit patterns
+    if (vitestMatches) return 'vitest';
+    // Vitest patterns don't match - this file is likely for Jest
+    return 'jest';
+  }
+
+  return undefined;
+}
+
+/**
+ * Matches a file against patterns WITHOUT using default patterns.
+ * Used for framework detection where we need to distinguish between
+ * "config has no patterns" and "config has patterns that don't match".
+ */
+function fileMatchesPatternsExplicit(
+  filePath: string,
+  configDir: string,
+  patterns: string[],
+  isRegex: boolean,
+  rootDir: string | undefined,
+): boolean {
+  // Resolve the base directory for pattern matching
+  const baseDir = rootDir ? path.resolve(configDir, rootDir) : configDir;
+  const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
+  const pathToMatch = isRegex ? filePath.replace(/\\/g, '/') : relativePath;
+
+  for (const pattern of patterns) {
+    if (isRegex) {
+      try {
+        const regex = new RegExp(pattern);
+        if (regex.test(pathToMatch)) {
+          return true;
+        }
+      } catch {
+        // Invalid regex, skip
+      }
+    } else {
+      const normalizedPattern = pattern.replace(/^<rootDir>\//i, '');
+      if (mm.isMatch(pathToMatch, normalizedPattern, { nocase: true })) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Matches a file against patterns, using default patterns if none specified.
+ * Used for general test file matching.
+ */
+function fileMatchesPatterns(
+  filePath: string,
+  configDir: string,
+  patterns: string[] | undefined,
+  isRegex: boolean,
+  rootDir: string | undefined,
+): boolean {
+  if (!patterns || patterns.length === 0) {
+    // No patterns specified - use default patterns
+    return fileMatchesPatternsExplicit(filePath, configDir, DEFAULT_TEST_PATTERNS, false, rootDir);
+  }
+
+  return fileMatchesPatternsExplicit(filePath, configDir, patterns, isRegex, rootDir);
+}
+
 export function findTestFrameworkDirectory(
   filePath: string,
   targetFramework?: 'jest' | 'vitest',
 ): { directory: string; framework: TestFrameworkName } | undefined {
-  let currentDir = path.dirname(filePath);
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(
     vscode.Uri.file(filePath),
   );
@@ -231,21 +356,53 @@ export function findTestFrameworkDirectory(
 
   const rootPath = workspaceFolder.uri.fsPath;
 
-  while (currentDir && currentDir.startsWith(rootPath)) {
-    const framework = detectTestFramework(currentDir);
+  // Check custom config paths first - they take highest priority
+  const customJestConfig = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
+  const customVitestConfig = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
 
-    if (framework) {
-      if (targetFramework) {
-        if (framework === targetFramework) {
-          return { directory: currentDir, framework };
-        }
-        return undefined;
-      } else {
-        if (framework === 'jest' || framework === 'vitest') {
-          return { directory: currentDir, framework };
+  if (customJestConfig || customVitestConfig) {
+    // If both custom configs are set, use pattern matching to determine framework
+    if (customJestConfig && customVitestConfig) {
+      const frameworkByPattern = detectFrameworkByPatternMatch(
+        rootPath,
+        filePath,
+        customJestConfig,
+        customVitestConfig,
+      );
+      if (frameworkByPattern) {
+        logDebug(`Detected ${frameworkByPattern} for ${filePath} via custom config pattern matching`);
+        if (!targetFramework || targetFramework === frameworkByPattern) {
+          return { directory: rootPath, framework: frameworkByPattern };
         }
         return undefined;
       }
+      // If pattern matching didn't resolve, fall back to jest (arbitrary but consistent)
+      if (!targetFramework || targetFramework === 'jest') {
+        return { directory: rootPath, framework: 'jest' };
+      }
+      return undefined;
+    }
+
+    // Only one custom config is set
+    if (customJestConfig && (!targetFramework || targetFramework === 'jest')) {
+      return { directory: rootPath, framework: 'jest' };
+    }
+    if (customVitestConfig && (!targetFramework || targetFramework === 'vitest')) {
+      return { directory: rootPath, framework: 'vitest' };
+    }
+  }
+
+  // Walk up directory tree looking for framework configs
+  let currentDir = path.dirname(filePath);
+
+  while (currentDir && currentDir.startsWith(rootPath)) {
+    const framework = detectTestFramework(currentDir, filePath);
+
+    if (framework) {
+      if (!targetFramework || framework === targetFramework) {
+        return { directory: currentDir, framework };
+      }
+      return undefined;
     }
 
     const parentDir = path.dirname(currentDir);
@@ -296,7 +453,8 @@ function extractTestRegex(config: any): string[] | undefined {
 
 function extractRootDir(content: string): string | undefined {
   // Try to extract rootDir from JS/TS config
-  const rootDirMatch = content.match(/rootDir['":]?\s*[:=]\s*['"]([^'"]+)['"]/);
+  // Handle: rootDir: 'value' or "rootDir": "value"
+  const rootDirMatch = content.match(/['"]?rootDir['"]?\s*:\s*['"]([^'"]+)['"]/);
   if (rootDirMatch) {
     return rootDirMatch[1];
   }
@@ -375,7 +533,8 @@ export function getTestMatchFromJestConfig(
     }
 
     // Parse testRegex from JS/TS config files
-    const testRegexMatch = content.match(/testRegex['":]?\s*[:=]\s*['"]([^'"]+)['"]/);
+    // Handle: testRegex: 'value' or "testRegex": "value"
+    const testRegexMatch = content.match(/['"]?testRegex['"]?\s*:\s*['"]([^'"]+)['"]/);
     if (testRegexMatch) {
       // Unescape JavaScript string escapes (e.g., \\\\ -> \\, \\. -> .)
       const regex = testRegexMatch[1].replace(/\\\\/g, '\\');
@@ -464,6 +623,42 @@ function getTestFilePatternsForFile(filePath: string): {
 	const rootPath = workspaceFolder.uri.fsPath;
 
 	const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
+	const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
+
+	// If both configs are set, determine which one matches this file
+	if (jestConfigPath && vitestConfigPath) {
+		const frameworkByPattern = detectFrameworkByPatternMatch(rootPath, filePath, jestConfigPath, vitestConfigPath);
+
+		if (frameworkByPattern === 'vitest') {
+			const patterns = getIncludeFromVitestConfig(vitestConfigPath);
+			return { patterns: patterns ?? DEFAULT_TEST_PATTERNS, configDir: rootPath, isRegex: false };
+		} else if (frameworkByPattern === 'jest') {
+			const result = getTestMatchFromJestConfig(jestConfigPath);
+			let configDir = rootPath;
+			if (result?.rootDir) {
+				configDir = path.resolve(path.dirname(jestConfigPath), result.rootDir);
+			}
+			return {
+				patterns: result?.patterns ?? DEFAULT_TEST_PATTERNS,
+				configDir,
+				isRegex: result?.isRegex ?? false,
+			};
+		}
+		// If pattern matching didn't resolve, try both patterns combined
+		const jestResult = getTestMatchFromJestConfig(jestConfigPath);
+		const vitestPatterns = getIncludeFromVitestConfig(vitestConfigPath);
+		// Combine patterns - use defaults if both are empty
+		const combinedPatterns = [
+			...(jestResult?.patterns ?? []),
+			...(vitestPatterns ?? []),
+		];
+		return {
+			patterns: combinedPatterns.length > 0 ? combinedPatterns : DEFAULT_TEST_PATTERNS,
+			configDir: rootPath,
+			isRegex: false, // Can't mix regex and glob, so treat as glob
+		};
+	}
+
 	if (jestConfigPath) {
 		const result = getTestMatchFromJestConfig(jestConfigPath);
 		// If rootDir is specified in config, resolve it relative to the config file
@@ -480,7 +675,6 @@ function getTestFilePatternsForFile(filePath: string): {
 		};
 	}
 
-	const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
 	if (vitestConfigPath) {
 		const patterns = getIncludeFromVitestConfig(vitestConfigPath);
 		// Use the workspace root for pattern matching (where Vitest is typically run from)
@@ -489,7 +683,7 @@ function getTestFilePatternsForFile(filePath: string): {
 
 	let currentDir = path.dirname(filePath);
 	while (currentDir && currentDir.startsWith(rootPath)) {
-		const framework = detectTestFramework(currentDir);
+		const framework = detectTestFramework(currentDir, filePath);
 
 		if (framework === 'jest') {
 			const jestFramework = testFrameworks.find((f) => f.name === 'jest');
@@ -510,9 +704,8 @@ function getTestFilePatternsForFile(filePath: string): {
 			}
 			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir, isRegex: false };
 		} else if (framework === 'vitest') {
-			const vitestFramework = testFrameworks.find((f) => f.name === 'vitest');
-			const allConfigs = [...vitestFramework!.configFiles, ...viteConfigFiles];
-			for (const configFile of allConfigs) {
+			const vitestFramework = testFrameworks.find((f) => f.name === 'vitest')!;
+			for (const configFile of vitestFramework.configFiles) {
 				const configPath = path.join(currentDir, configFile);
 				if (fs.existsSync(configPath)) {
 					const patterns = getIncludeFromVitestConfig(configPath);
@@ -555,45 +748,11 @@ function resolveAndValidateCustomConfig(
 export function matchesTestFilePattern(filePath: string): boolean {
 	const { patterns, configDir, isRegex } = getTestFilePatternsForFile(filePath);
 
-	// For Vitest: patterns are relative to the config directory (root)
-	// For Jest testMatch: patterns are relative to rootDir (which defaults to config directory)
-	//   - configDir now contains the resolved rootDir if specified in the Jest config
-	// For Jest testRegex: patterns match against ABSOLUTE file path
-	const baseDir = configDir;
-
-	// For regex patterns (Jest testRegex), use absolute path
-	// For glob patterns (Jest testMatch, Vitest include), use relative path
-	const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
-	const pathToMatch = isRegex ? filePath.replace(/\\/g, '/') : relativePath;
-
 	logDebug(`Matching file: ${filePath}`);
 	logDebug(`Using patterns: ${patterns.join(', ')} (isRegex: ${isRegex})`);
-	logDebug(`Base dir: ${baseDir}`);
-	logDebug(`Path to match: ${pathToMatch}`);
-	for (const pattern of patterns) {
-		if (isRegex) {
-			// Jest testRegex: match against absolute file path
-			try {
-				const regex = new RegExp(pattern);
-				if (regex.test(pathToMatch)) {
-					return true;
-				}
-			} catch (error) {
-				logError(`Invalid testRegex pattern: ${pattern}`, error);
-			}
-		} else {
-			// Use pattern as glob with micromatch
-			// Normalize Jest patterns: remove <rootDir>/ prefix if present
-			const normalizedPattern = pattern.replace(/^<rootDir>\//i, '');
+	logDebug(`Config dir: ${configDir}`);
 
-			if (mm.isMatch(pathToMatch, normalizedPattern, { nocase: true })) {
-        logDebug(`File ${filePath} matched pattern ${pattern}`);
-				return true;
-			}
-		}
-	}
-
-	return false;
+	return fileMatchesPatterns(filePath, configDir, patterns, isRegex, undefined);
 }
 
 export function isJestTestFile(filePath: string): boolean {
