@@ -4,7 +4,7 @@ import { TestRunner } from './testRunner';
 import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { JestTestController } from './TestController';
-import { shouldIncludeFile, logError } from './util';
+import { isTestFile, logError } from './util';
 
 function wrapCommandHandler<T extends unknown[]>(
   handler: (...args: T) => Promise<void> | void,
@@ -50,9 +50,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const workspaceFolder = vscode.workspace.getWorkspaceFolder(
         editor.document.uri,
       )?.uri.fsPath;
-      const shouldInclude = workspaceFolder
-        ? shouldIncludeFile(filePath, workspaceFolder)
-        : false;
+      const shouldInclude = isTestFile(filePath);
       vscode.commands.executeCommand(
         'setContext',
         'jestrunner.isJestFile',

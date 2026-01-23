@@ -116,7 +116,7 @@ describe('JestTestController', () => {
       },
     } as any);
 
-    jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(true);
+    jest.spyOn(util, 'isTestFile').mockReturnValue(true);
     jest
       .spyOn(util, 'updateTestNameIfUsingProperties')
       .mockImplementation((name) => name);

@@ -175,18 +175,6 @@
             "description": "Enable debug logging to the 'Jest Runner' output channel for troubleshooting",
             "scope": "window"
           },
-          "jestrunner.include": {
-            "type": "array",
-            "default": [],
-            "description": "File globs to include",
-            "scope": "window"
-          },
-          "jestrunner.exclude": {
-            "type": "array",
-            "default": [],
-            "description": "File globs to exclude",
-            "scope": "window"
-          },
           "jestrunner.maxBufferSize": {
             "type": "number",
             "default": 50,

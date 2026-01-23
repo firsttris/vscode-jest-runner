@@ -7,7 +7,7 @@ import {
   updateTestNameIfUsingProperties,
   pushMany,
   TestNode,
-  shouldIncludeFile,
+  isTestFile,
   logInfo,
   logError,
   logWarning,
@@ -267,7 +267,7 @@ export class JestTestController {
 
     return files
       .map((file) => file.fsPath)
-      .filter((filePath) => shouldIncludeFile(filePath, folderPath));
+      .filter((filePath) => isTestFile(filePath));
   }
 
   private processTestResults(
@@ -983,7 +983,7 @@ export class JestTestController {
       if (vscode.workspace.workspaceFolders) {
         for (const workspaceFolder of vscode.workspace.workspaceFolders) {
           if (uri.fsPath.startsWith(workspaceFolder.uri.fsPath)) {
-            if (!shouldIncludeFile(uri.fsPath, workspaceFolder.uri.fsPath)) {
+            if (!isTestFile(uri.fsPath)) {
               return;
             }
             const relativePath = path.relative(

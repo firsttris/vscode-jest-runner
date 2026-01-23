@@ -11,7 +11,7 @@ import {
   escapeRegExp,
   CodeLensOption,
   TestNode,
-  shouldIncludeFile,
+  isTestFile,
   logError,
 } from './util';
 
@@ -86,10 +86,7 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
     try {
       const workspaceFolder = workspace.getWorkspaceFolder(document.uri);
       const workspaceFolderPath = workspaceFolder?.uri.fsPath;
-      if (
-        !workspaceFolderPath ||
-        !shouldIncludeFile(document.fileName, workspaceFolderPath)
-      ) {
+      if (!workspaceFolderPath || !isTestFile(document.fileName)) {
         return [];
       }
 

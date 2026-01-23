@@ -327,7 +327,7 @@ export class TestRunnerConfig {
 
   public getTestFilePattern(): string {
     // Return a broad pattern to catch all potential test files
-    // Actual filtering is done by shouldIncludeFile() which reads patterns
+    // Actual filtering is done by isTestFile() which reads patterns
     // from framework configs (Jest testMatch / Vitest include)
     return '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}';
   }
