@@ -16,7 +16,10 @@ const viteConfigFiles = [
   'vite.config.cts',
 ];
 
-const DEFAULT_TEST_PATTERNS = ['**/*.{test,spec}.{js,jsx,ts,tsx}'];
+const DEFAULT_TEST_PATTERNS = [
+  '**/*.{test,spec}.?(c|m)[jt]s?(x)',
+  '**/__tests__/**/*.?(c|m)[jt]s?(x)',
+];
 
 interface TestPatterns {
   patterns: string[];
