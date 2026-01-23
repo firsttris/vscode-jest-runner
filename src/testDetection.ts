@@ -7,15 +7,6 @@ import { JEST_CONFIG_FILES } from './constants';
 
 const testDetectionCache = new Map<string, boolean>();
 
-const viteConfigFiles = [
-  'vite.config.js',
-  'vite.config.ts',
-  'vite.config.mjs',
-  'vite.config.mts',
-  'vite.config.cjs',
-  'vite.config.cts',
-];
-
 const DEFAULT_TEST_PATTERNS = [
   '**/*.{test,spec}.?(c|m)[jt]s?(x)',
   '**/__tests__/**/*.?(c|m)[jt]s?(x)',
@@ -26,6 +17,8 @@ interface TestPatterns {
   isRegex: boolean;
   rootDir?: string;
 }
+
+export type TestFrameworkName = 'jest' | 'vitest';
 
 export function viteConfigHasTestAttribute(configPath: string): boolean {
   try {
@@ -46,43 +39,23 @@ function binaryExists(directoryPath: string, binaryName: string): boolean {
   return possibleBinaryPaths.some(fs.existsSync);
 }
 
-function checkVitestViteConfig(directoryPath: string): boolean {
-  return viteConfigFiles.some((viteConfig) => {
-    const viteConfigPath = path.join(directoryPath, viteConfig);
-    return fs.existsSync(viteConfigPath) && viteConfigHasTestAttribute(viteConfigPath);
-  });
-}
+function getConfigPath(directoryPath: string, frameworkName: TestFrameworkName): string | undefined {
+  const framework = testFrameworks.find((f) => f.name === frameworkName)!;
 
-function getVitestConfigPath(directoryPath: string): string | undefined {
-  const vitestFramework = testFrameworks.find((f) => f.name === 'vitest');
-  if (vitestFramework) {
-    for (const configFile of vitestFramework.configFiles) {
-      const configPath = path.join(directoryPath, configFile);
-      if (fs.existsSync(configPath)) {
+  for (const configFile of framework.configFiles) {
+    const configPath = path.join(directoryPath, configFile);
+    if (!fs.existsSync(configPath)) continue;
+
+    // vite.config.* ist nur gültig wenn test-Attribut vorhanden
+    if (configFile.startsWith('vite.config.')) {
+      if (viteConfigHasTestAttribute(configPath)) {
         return configPath;
       }
-    }
-  }
-  // Check vite.config.* with test attribute
-  for (const viteConfig of viteConfigFiles) {
-    const configPath = path.join(directoryPath, viteConfig);
-    if (fs.existsSync(configPath) && viteConfigHasTestAttribute(configPath)) {
+    } else {
       return configPath;
     }
   }
-  return undefined;
-}
 
-function getJestConfigPath(directoryPath: string): string | undefined {
-  const jestFramework = testFrameworks.find((f) => f.name === 'jest');
-  if (jestFramework) {
-    for (const configFile of jestFramework.configFiles) {
-      const configPath = path.join(directoryPath, configFile);
-      if (fs.existsSync(configPath)) {
-        return configPath;
-      }
-    }
-  }
   return undefined;
 }
 
@@ -104,6 +77,25 @@ interface TestFramework {
 
 const testFrameworks: TestFramework[] = [
   {
+    name: 'vitest',
+    configFiles: [
+      'vitest.config.js',
+      'vitest.config.ts',
+      'vitest.config.mjs',
+      'vitest.config.mts',
+      'vitest.config.cjs',
+      'vitest.config.cts',
+      // vite.config.* nur gültig wenn test-Attribut vorhanden (wird in getConfigPath geprüft)
+      'vite.config.js',
+      'vite.config.ts',
+      'vite.config.mjs',
+      'vite.config.mts',
+      'vite.config.cjs',
+      'vite.config.cts',
+    ],
+    binaryName: 'vitest',
+  },
+  {
     name: 'jest',
     configFiles: [
       'jest.config.js',
@@ -115,35 +107,11 @@ const testFrameworks: TestFramework[] = [
     ],
     binaryName: 'jest',
   },
-  {
-    name: 'cypress',
-    configFiles: ['cypress.config.js', 'cypress.config.ts', 'cypress.json'],
-    binaryName: 'cypress',
-  },
-  {
-    name: 'playwright',
-    configFiles: ['playwright.config.js', 'playwright.config.ts'],
-    binaryName: 'playwright',
-  },
-  {
-    name: 'vitest',
-    configFiles: [
-      'vitest.config.js',
-      'vitest.config.ts',
-      'vitest.config.mjs',
-      'vitest.config.mts',
-      'vitest.config.cjs',
-      'vitest.config.cts',
-    ],
-    binaryName: 'vitest',
-  },
 ];
-
-export type TestFrameworkName = 'jest' | 'vitest' | 'cypress' | 'playwright';
 
 function isFrameworkUsedIn(
   directoryPath: string,
-  frameworkName: string,
+  frameworkName: TestFrameworkName,
   cache: Map<string, boolean>,
 ): boolean {
   if (cache.has(directoryPath)) {
@@ -161,12 +129,7 @@ function isFrameworkUsedIn(
       return true;
     }
 
-    if (framework.configFiles.some((cfg) => fs.existsSync(path.join(directoryPath, cfg)))) {
-      cache.set(directoryPath, true);
-      return true;
-    }
-
-    if (frameworkName === 'vitest' && checkVitestViteConfig(directoryPath)) {
+    if (getConfigPath(directoryPath, frameworkName)) {
       cache.set(directoryPath, true);
       return true;
     }
@@ -211,8 +174,8 @@ export function detectTestFramework(
   filePath?: string,
 ): TestFrameworkName | undefined {
   // Check if both Jest and Vitest configs exist - if so, use pattern matching
-  const jestConfigPath = getJestConfigPath(directoryPath);
-  const vitestConfigPath = getVitestConfigPath(directoryPath);
+  const jestConfigPath = getConfigPath(directoryPath, 'jest');
+  const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
 
   if (jestConfigPath && vitestConfigPath && filePath) {
     // Both configs exist - determine framework by pattern matching
@@ -236,29 +199,18 @@ export function detectTestFramework(
     return 'jest';
   }
 
-  // Check other frameworks' config files
-  for (const framework of testFrameworks) {
-    if (framework.name === 'jest' || framework.name === 'vitest') continue;
-    if (framework.configFiles.some((cfg) => fs.existsSync(path.join(directoryPath, cfg)))) {
-      return framework.name as TestFrameworkName;
-    }
-  }
-
-  // Then check package.json dependencies
+  // Check package.json dependencies
   const packageJsonPath = path.join(directoryPath, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
     try {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-      const frameworkOrder = ['vitest', 'jest', 'cypress', 'playwright'];
-      for (const frameworkName of frameworkOrder) {
-        const framework = testFrameworks.find((f) => f.name === frameworkName);
+      for (const framework of testFrameworks) {
         if (
-          framework &&
-          (packageJson.dependencies?.[framework.name] ||
-            packageJson.devDependencies?.[framework.name] ||
-            packageJson.peerDependencies?.[framework.name] ||
-            packageJson[framework.name])
+          packageJson.dependencies?.[framework.name] ||
+          packageJson.devDependencies?.[framework.name] ||
+          packageJson.peerDependencies?.[framework.name] ||
+          packageJson[framework.name]
         ) {
           return framework.name as TestFrameworkName;
         }
@@ -447,17 +399,10 @@ export function findTestFrameworkDirectory(
     const framework = detectTestFramework(currentDir, filePath);
 
     if (framework) {
-      if (targetFramework) {
-        if (framework === targetFramework) {
-          return { directory: currentDir, framework };
-        }
-        return undefined;
-      } else {
-        if (framework === 'jest' || framework === 'vitest') {
-          return { directory: currentDir, framework };
-        }
-        return undefined;
+      if (!targetFramework || framework === targetFramework) {
+        return { directory: currentDir, framework };
       }
+      return undefined;
     }
 
     const parentDir = path.dirname(currentDir);
@@ -759,9 +704,8 @@ function getTestFilePatternsForFile(filePath: string): {
 			}
 			return { patterns: DEFAULT_TEST_PATTERNS, configDir: currentDir, isRegex: false };
 		} else if (framework === 'vitest') {
-			const vitestFramework = testFrameworks.find((f) => f.name === 'vitest');
-			const allConfigs = [...vitestFramework!.configFiles, ...viteConfigFiles];
-			for (const configFile of allConfigs) {
+			const vitestFramework = testFrameworks.find((f) => f.name === 'vitest')!;
+			for (const configFile of vitestFramework.configFiles) {
 				const configPath = path.join(currentDir, configFile);
 				if (fs.existsSync(configPath)) {
 					const patterns = getIncludeFromVitestConfig(configPath);
