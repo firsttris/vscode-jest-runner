@@ -735,7 +735,7 @@ function getTestFilePatternsForFile(filePath: string): {
 
 	let currentDir = path.dirname(filePath);
 	while (currentDir && currentDir.startsWith(rootPath)) {
-		const framework = detectTestFramework(currentDir);
+		const framework = detectTestFramework(currentDir, filePath);
 
 		if (framework === 'jest') {
 			const jestFramework = testFrameworks.find((f) => f.name === 'jest');
