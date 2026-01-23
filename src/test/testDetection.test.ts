@@ -3084,7 +3084,7 @@ export default {
       expect(result).toBeUndefined();
     });
 
-    it('should detect Vitest from vite.config.ts with test attribute even when jest.config.js also exists', () => {
+    it('should detect Jest when jest.config.js exists (config files take priority)', () => {
       const testDir = '/test/project';
 
       mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
@@ -3103,7 +3103,325 @@ export default {
 
       const result = detectTestFramework(testDir);
 
+      // Config files are checked first; jest.config.js is found before checking vite.config.ts
+      expect(result).toBe('jest');
+    });
+  });
+
+  describe('detectTestFramework with pattern matching (monorepo support)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      clearTestDetectionCache();
+      clearVitestDetectionCache();
+      mockedFs.existsSync = jest.fn().mockReturnValue(false);
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should detect Jest for file matching Jest testMatch patterns when both configs exist', () => {
+      const testDir = '/workspace/monorepo';
+      const testFile = '/workspace/monorepo/backend/api.test.ts';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === path.join(testDir, 'jest.config.js') ||
+          fsPath === path.join(testDir, 'vitest.config.ts')
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr.includes('jest.config.js')) {
+          return `module.exports = { testMatch: ['**/backend/**/*.test.ts'] };`;
+        }
+        if (pathStr.includes('vitest.config.ts')) {
+          return `
+            export default defineConfig({
+              test: {
+                include: ['**/frontend/**/*.test.ts'],
+              },
+            });
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = detectTestFramework(testDir, testFile);
+
+      expect(result).toBe('jest');
+    });
+
+    it('should detect Vitest for file matching Vitest include patterns when both configs exist', () => {
+      const testDir = '/workspace/monorepo';
+      const testFile = '/workspace/monorepo/frontend/component.test.ts';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === path.join(testDir, 'jest.config.js') ||
+          fsPath === path.join(testDir, 'vitest.config.ts')
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr.includes('jest.config.js')) {
+          return `module.exports = { testMatch: ['**/backend/**/*.test.ts'] };`;
+        }
+        if (pathStr.includes('vitest.config.ts')) {
+          return `
+            export default defineConfig({
+              test: {
+                include: ['**/frontend/**/*.test.ts'],
+              },
+            });
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = detectTestFramework(testDir, testFile);
+
       expect(result).toBe('vitest');
+    });
+
+    it('should detect Jest for file matching Jest testRegex patterns when both configs exist', () => {
+      const testDir = '/workspace/monorepo';
+      const testFile = '/workspace/monorepo/server/handler.spec.ts';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === path.join(testDir, 'jest.config.js') ||
+          fsPath === path.join(testDir, 'vitest.config.ts')
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr.includes('jest.config.js')) {
+          return `module.exports = { testRegex: 'server/.*\\\\.spec\\\\.ts$' };`;
+        }
+        if (pathStr.includes('vitest.config.ts')) {
+          return `
+            export default defineConfig({
+              test: {
+                include: ['**/frontend/**/*.test.ts'],
+              },
+            });
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = detectTestFramework(testDir, testFile);
+
+      expect(result).toBe('jest');
+    });
+
+    it('should fallback to jest when both configs exist but file matches neither pattern', () => {
+      const testDir = '/workspace/monorepo';
+      const testFile = '/workspace/monorepo/shared/util.test.ts';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === path.join(testDir, 'jest.config.js') ||
+          fsPath === path.join(testDir, 'vitest.config.ts')
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr.includes('jest.config.js')) {
+          return `module.exports = { testMatch: ['**/backend/**/*.test.ts'] };`;
+        }
+        if (pathStr.includes('vitest.config.ts')) {
+          return `
+            export default defineConfig({
+              test: {
+                include: ['**/frontend/**/*.test.ts'],
+              },
+            });
+          `;
+        }
+        return '';
+      }) as any;
+
+      // When file matches neither pattern, fallback to jest (first config found)
+      const result = detectTestFramework(testDir, testFile);
+
+      expect(result).toBe('jest');
+    });
+  });
+
+  describe('findTestFrameworkDirectory with custom config paths (monorepo)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      clearTestDetectionCache();
+      clearVitestDetectionCache();
+      mockedFs.existsSync = jest.fn().mockReturnValue(false);
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should detect Jest when file matches custom Jest config patterns', () => {
+      const rootPath = '/workspace/monorepo';
+      const testFile = '/workspace/monorepo/backend/api.test.ts';
+      const jestConfigPath = 'config/jest.config.js';
+      const vitestConfigPath = 'config/vitest.config.ts';
+      const jestConfigFullPath = path.resolve(rootPath, jestConfigPath);
+      const vitestConfigFullPath = path.resolve(rootPath, vitestConfigPath);
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn((key: string) => {
+          if (key === 'jestrunner.configPath') return jestConfigPath;
+          if (key === 'jestrunner.vitestConfigPath') return vitestConfigPath;
+          return undefined;
+        }),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === jestConfigFullPath ||
+          fsPath === vitestConfigFullPath
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr.includes('jest.config.js')) {
+          return `module.exports = { testMatch: ['**/backend/**/*.test.ts'] };`;
+        }
+        if (pathStr.includes('vitest.config.ts')) {
+          return `
+            export default defineConfig({
+              test: {
+                include: ['**/frontend/**/*.test.ts'],
+              },
+            });
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = findTestFrameworkDirectory(testFile);
+
+      expect(result?.framework).toBe('jest');
+      expect(result?.directory).toBe(rootPath);
+    });
+
+    it('should detect Vitest when file matches custom Vitest config patterns', () => {
+      const rootPath = '/workspace/monorepo';
+      const testFile = '/workspace/monorepo/frontend/component.test.ts';
+      const jestConfigPath = 'config/jest.config.js';
+      const vitestConfigPath = 'config/vitest.config.ts';
+      const jestConfigFullPath = path.resolve(rootPath, jestConfigPath);
+      const vitestConfigFullPath = path.resolve(rootPath, vitestConfigPath);
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn((key: string) => {
+          if (key === 'jestrunner.configPath') return jestConfigPath;
+          if (key === 'jestrunner.vitestConfigPath') return vitestConfigPath;
+          return undefined;
+        }),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === jestConfigFullPath ||
+          fsPath === vitestConfigFullPath
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = fsPath.toString();
+        if (pathStr.includes('jest.config.js')) {
+          return `module.exports = { testMatch: ['**/backend/**/*.test.ts'] };`;
+        }
+        if (pathStr.includes('vitest.config.ts')) {
+          return `
+            export default defineConfig({
+              test: {
+                include: ['**/frontend/**/*.test.ts'],
+              },
+            });
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = findTestFrameworkDirectory(testFile);
+
+      expect(result?.framework).toBe('vitest');
+      expect(result?.directory).toBe(rootPath);
+    });
+
+    it('should use Jest when only custom Jest config is set', () => {
+      const rootPath = '/workspace/project';
+      const testFile = '/workspace/project/src/app.test.ts';
+      const jestConfigPath = 'config/jest.config.js';
+      const jestConfigFullPath = path.resolve(rootPath, jestConfigPath);
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn((key: string) => {
+          if (key === 'jestrunner.configPath') return jestConfigPath;
+          return undefined;
+        }),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === jestConfigFullPath;
+      });
+
+      mockedFs.readFileSync = jest.fn().mockReturnValue(
+        `module.exports = { testMatch: ['**/*.test.ts'] };`
+      );
+
+      const result = findTestFrameworkDirectory(testFile);
+
+      expect(result?.framework).toBe('jest');
+    });
+
+    it('should use Vitest when only custom Vitest config is set', () => {
+      const rootPath = '/workspace/project';
+      const testFile = '/workspace/project/src/app.test.ts';
+      const vitestConfigPath = 'config/vitest.config.ts';
+      const vitestConfigFullPath = path.resolve(rootPath, vitestConfigPath);
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      (vscode.workspace.getConfiguration as jest.Mock) = jest.fn(() => ({
+        get: jest.fn((key: string) => {
+          if (key === 'jestrunner.vitestConfigPath') return vitestConfigPath;
+          return undefined;
+        }),
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === vitestConfigFullPath;
+      });
+
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        export default defineConfig({
+          test: {
+            include: ['**/*.test.ts'],
+          },
+        });
+      `);
+
+      const result = findTestFrameworkDirectory(testFile);
+
+      expect(result?.framework).toBe('vitest');
     });
   });
 
