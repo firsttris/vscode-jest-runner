@@ -12,6 +12,22 @@ import { type TestFrameworkName } from './testDetection';
 
 export function parseJestOutput(output: string): JestResults | undefined {
   try {
+    // First try to parse the entire output as JSON - Jest with --json --coverage
+    // includes coverage data inline in the JSON structure
+    const trimmed = output.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === 'object' && 'testResults' in parsed) {
+          logDebug('Successfully parsed complete Jest JSON output');
+          return parsed;
+        }
+      } catch (e) {
+        logDebug(`Failed to parse complete output as JSON: ${e}`);
+      }
+    }
+
+    // Fallback to regex extraction for cases where output has extra text
     const jsonRegex = /({"numFailedTestSuites":.*?"wasInterrupted":.*?})/s;
     const jsonMatch = output.match(jsonRegex);
 
