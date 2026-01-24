@@ -50,10 +50,8 @@ function matchesExcludePatterns(
  * Resolves <rootDir> token in a pattern.
  */
 function resolveRootDirToken(pattern: string, rootDir: string | undefined): string {
-  if (!rootDir) {
-    return pattern.replace(/^<rootDir>\//i, '');
-  }
-  return pattern.replace(/<rootDir>/gi, rootDir);
+  const resolved = pattern.replace(/<rootDir>/gi, rootDir || '');
+  return resolved.replace(/^\/+/, '');
 }
 
 /**

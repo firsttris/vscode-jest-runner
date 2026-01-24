@@ -167,6 +167,25 @@ describe('patternMatching', () => {
 
         expect(result).toBe(true);
       });
+
+      it('should include files when roots contains <rootDir> and rootDir is undefined', () => {
+        const filePath = '/project/src/test.spec.ts';
+        const configDir = '/project';
+        const patterns = ['**/*.spec.ts'];
+
+        const result = fileMatchesPatternsExplicit(
+          filePath,
+          configDir,
+          patterns,
+          false,
+          undefined,  // rootDir
+          undefined,
+          undefined,
+          ['<rootDir>'],  // roots
+        );
+
+        expect(result).toBe(true);
+      });
     });
 
     describe('regex patterns', () => {
