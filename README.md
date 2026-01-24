@@ -65,7 +65,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 
 - 🤖 **Automatic framework detection** - distinguishes between Jest and Vitest
 - 🔍 **Reads test patterns from framework configs** - see [Supported Jest/Vitest Config Options](#-supported-config-options)
-- 🎚️ **Include/exclude patterns** for fine-grained control over which tests appear
+- 🎚️ **Include/exclude patterns** configured via framework configs for fine-grained control over which tests appear
 
 </td>
 <td width="50%">
@@ -76,7 +76,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 - ⚙️ **Multiple configurations** with glob-based config resolution
 - 🔌 **Yarn 2 Plug'n'Play** - automatically detected, no configuration needed
 - ⚛️ **Create React App** and similar abstraction layers
-- 🛠️ **Framework support** including Nx, Next.js, and NestJS
+- 🛠️ **Framework support** including Vite, Tanstack Start, Nx, Next.js, and NestJS
 
 </td>
 </tr>
@@ -180,7 +180,7 @@ Customize the test runner for your project:
 
 
 <details>
-<summary><b>📋 Supported Jest/Vitest Config Options</b></summary>
+<summary><b>📋 Supported Framework Config Options</b></summary>
 <br>
 
 The extension **automatically reads configuration** from your framework config files. No manual setup required!
