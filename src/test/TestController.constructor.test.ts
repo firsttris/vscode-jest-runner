@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import { JestTestController } from '../TestController';
 import * as parser from '../parser';
+import { DetailedFileCoverage } from '../coverageProvider';
 import {
   setupTestController,
-  createMockContext,
   TestControllerSetup,
 } from './testControllerSetup';
 
@@ -65,6 +65,71 @@ describe('JestTestController - constructor and dispose', () => {
       );
     });
 
+    it('should set loadDetailedCoverage on coverage profile', () => {
+      const mockTestController = (
+        vscode.tests.createTestController as jest.Mock
+      ).mock.results[0].value;
+      const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
+        .mock.results[2].value;
+
+      expect(coverageProfile.loadDetailedCoverage).toBeDefined();
+      expect(typeof coverageProfile.loadDetailedCoverage).toBe('function');
+    });
+
+    it('should return empty array for non-DetailedFileCoverage', async () => {
+      const mockTestController = (
+        vscode.tests.createTestController as jest.Mock
+      ).mock.results[0].value;
+      const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
+        .mock.results[2].value;
+
+      const mockTestRun = {} as vscode.TestRun;
+      const regularFileCoverage = { uri: vscode.Uri.file('/test.ts') };
+      const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+
+      const result = await coverageProfile.loadDetailedCoverage(
+        mockTestRun,
+        regularFileCoverage,
+        mockToken,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('should call coverageProvider.loadDetailedCoverage for DetailedFileCoverage', async () => {
+      const mockTestController = (
+        vscode.tests.createTestController as jest.Mock
+      ).mock.results[0].value;
+      const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
+        .mock.results[2].value;
+
+      const mockTestRun = {} as vscode.TestRun;
+      const detailedCoverage = new DetailedFileCoverage(
+        vscode.Uri.file('/test.ts'),
+        new vscode.TestCoverageCount(10, 8),
+        new vscode.TestCoverageCount(5, 4),
+        new vscode.TestCoverageCount(3, 2),
+        {
+          path: '/test.ts',
+          statementMap: {},
+          fnMap: {},
+          branchMap: {},
+          s: {},
+          f: {},
+          b: {},
+        },
+      );
+      const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+
+      const result = await coverageProfile.loadDetailedCoverage(
+        mockTestRun,
+        detailedCoverage,
+        mockToken,
+      );
+
+      expect(Array.isArray(result)).toBe(true);
+    });
+
     it('should discover tests for all workspace folders', () => {
       expect(vscode.workspace.findFiles).toHaveBeenCalled();
     });
@@ -90,6 +155,104 @@ describe('JestTestController - constructor and dispose', () => {
       expect(mockTestController.dispose).toHaveBeenCalled();
       expect(mockWatcher.dispose).toHaveBeenCalled();
     });
+  });
+});
+
+describe('JestTestController - configuration watcher', () => {
+  let setup: TestControllerSetup;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setup = setupTestController();
+  });
+
+  afterEach(() => {
+    setup.controller?.dispose();
+    jest.restoreAllMocks();
+  });
+
+  it('should refresh tests when jestrunner configuration changes', async () => {
+    const onDidChangeConfig = (
+      vscode.workspace.onDidChangeConfiguration as jest.Mock
+    ).mock.calls[0][0];
+
+    const mockEvent = {
+      affectsConfiguration: (section: string) => section === 'jestrunner',
+    };
+
+    (vscode.workspace.findFiles as jest.Mock).mockClear();
+
+    await onDidChangeConfig(mockEvent);
+
+    expect(vscode.workspace.findFiles).toHaveBeenCalled();
+  });
+
+  it('should refresh tests when vitest configuration changes', async () => {
+    const onDidChangeConfig = (
+      vscode.workspace.onDidChangeConfiguration as jest.Mock
+    ).mock.calls[0][0];
+
+    const mockEvent = {
+      affectsConfiguration: (section: string) => section === 'vitest',
+    };
+
+    (vscode.workspace.findFiles as jest.Mock).mockClear();
+
+    await onDidChangeConfig(mockEvent);
+
+    expect(vscode.workspace.findFiles).toHaveBeenCalled();
+  });
+
+  it('should refresh tests when jest configuration changes', async () => {
+    const onDidChangeConfig = (
+      vscode.workspace.onDidChangeConfiguration as jest.Mock
+    ).mock.calls[0][0];
+
+    const mockEvent = {
+      affectsConfiguration: (section: string) => section === 'jest',
+    };
+
+    (vscode.workspace.findFiles as jest.Mock).mockClear();
+
+    await onDidChangeConfig(mockEvent);
+
+    expect(vscode.workspace.findFiles).toHaveBeenCalled();
+  });
+
+  it('should not refresh tests for unrelated configuration changes', async () => {
+    const onDidChangeConfig = (
+      vscode.workspace.onDidChangeConfiguration as jest.Mock
+    ).mock.calls[0][0];
+
+    const mockEvent = {
+      affectsConfiguration: () => false,
+    };
+
+    (vscode.workspace.findFiles as jest.Mock).mockClear();
+
+    await onDidChangeConfig(mockEvent);
+
+    expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
+  });
+
+  it('should clear all test items before refreshing', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+
+    const onDidChangeConfig = (
+      vscode.workspace.onDidChangeConfiguration as jest.Mock
+    ).mock.calls[0][0];
+
+    const mockEvent = {
+      affectsConfiguration: (section: string) => section === 'jestrunner',
+    };
+
+    const replaceSpy = jest.spyOn(mockTestController.items, 'replace');
+
+    await onDidChangeConfig(mockEvent);
+
+    expect(replaceSpy).toHaveBeenCalledWith([]);
   });
 });
 

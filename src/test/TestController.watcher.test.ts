@@ -101,4 +101,26 @@ describe('JestTestController - file watcher', () => {
 
     expect(parser.parse).not.toHaveBeenCalled();
   });
+
+  it('should not add non-test files on create', () => {
+    const mockWatcher = (
+      vscode.workspace.createFileSystemWatcher as jest.Mock
+    ).mock.results[0].value;
+    const createCallback = (mockWatcher.onDidCreate as jest.Mock).mock
+      .calls[0][0];
+
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+
+    jest.spyOn(require('../util'), 'isTestFile').mockReturnValue(false);
+
+    const initialItemCount = mockTestController.items.size;
+    (parser.parse as jest.Mock).mockClear();
+
+    createCallback(vscode.Uri.file('/workspace/regular-file.ts'));
+
+    expect(parser.parse).not.toHaveBeenCalled();
+    expect(mockTestController.items.size).toBe(initialItemCount);
+  });
 });

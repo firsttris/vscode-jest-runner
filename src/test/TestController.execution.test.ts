@@ -383,6 +383,133 @@ describe('JestTestController - test execution', () => {
     expect(spawnArgs).toContain('--coverage');
   });
 
+  it('should handle coverage data processing errors gracefully', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
+      .mock.calls[2][2];
+
+    const { spawn } = require('child_process');
+    const mockProcess = createMockProcess();
+    spawn.mockReturnValue(mockProcess);
+
+    const CoverageProvider = require('../coverageProvider').CoverageProvider;
+    jest
+      .spyOn(CoverageProvider.prototype, 'readCoverageFromFile')
+      .mockRejectedValue(new Error('Coverage read error'));
+
+    const runPromise = coverageProfile(mockRequest, mockToken);
+
+    setTimeout(() => {
+      mockProcess.stdout.emit(
+        'data',
+        JSON.stringify({
+          success: true,
+          testResults: [{ assertionResults: [] }],
+        }),
+      );
+      mockProcess.emit('close', 0);
+    }, 10);
+
+    await runPromise;
+
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
+  it('should handle null coverage map gracefully', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
+      .mock.calls[2][2];
+
+    const { spawn } = require('child_process');
+    const mockProcess = createMockProcess();
+    spawn.mockReturnValue(mockProcess);
+
+    const CoverageProvider = require('../coverageProvider').CoverageProvider;
+    jest
+      .spyOn(CoverageProvider.prototype, 'readCoverageFromFile')
+      .mockResolvedValue(null);
+
+    const runPromise = coverageProfile(mockRequest, mockToken);
+
+    setTimeout(() => {
+      mockProcess.stdout.emit(
+        'data',
+        JSON.stringify({
+          success: true,
+          testResults: [{ assertionResults: [] }],
+        }),
+      );
+      mockProcess.emit('close', 0);
+    }, 10);
+
+    await runPromise;
+
+    expect(mockRun.addCoverage).not.toHaveBeenCalled();
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
+  it('should add coverage data when coverage map is available', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
+      .mock.calls[2][2];
+
+    const { spawn } = require('child_process');
+    const mockProcess = createMockProcess();
+    spawn.mockReturnValue(mockProcess);
+
+    const mockCoverageMap = {
+      '/workspace/test.ts': {
+        path: '/workspace/test.ts',
+        statementMap: { '0': { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } } },
+        fnMap: {},
+        branchMap: {},
+        s: { '0': 1 },
+        f: {},
+        b: {},
+      },
+    };
+
+    const mockFileCoverage = { uri: vscode.Uri.file('/workspace/test.ts') };
+
+    const CoverageProvider = require('../coverageProvider').CoverageProvider;
+    jest
+      .spyOn(CoverageProvider.prototype, 'readCoverageFromFile')
+      .mockResolvedValue(mockCoverageMap);
+    jest
+      .spyOn(CoverageProvider.prototype, 'convertToVSCodeCoverage')
+      .mockReturnValue([mockFileCoverage]);
+
+    const runPromise = coverageProfile(mockRequest, mockToken);
+
+    setTimeout(() => {
+      mockProcess.stdout.emit(
+        'data',
+        JSON.stringify({
+          success: true,
+          testResults: [{ assertionResults: [] }],
+        }),
+      );
+      mockProcess.emit('close', 0);
+    }, 10);
+
+    await runPromise;
+
+    expect(mockRun.addCoverage).toHaveBeenCalledWith(mockFileCoverage);
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
   it('should pass -u flag for update snapshots profile', async () => {
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
@@ -414,5 +541,145 @@ describe('JestTestController - test execution', () => {
     expect(spawn).toHaveBeenCalled();
     const spawnArgs = spawn.mock.calls[0][1];
     expect(spawnArgs).toContain('-u');
+  });
+
+  it('should end run early when cancellation is requested before test execution', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[0][2];
+
+    const preCancelledToken = {
+      isCancellationRequested: true,
+      onCancellationRequested: jest.fn(),
+    };
+
+    const { spawn } = require('child_process');
+
+    await runProfile(mockRequest, preCancelledToken);
+
+    expect(spawn).not.toHaveBeenCalled();
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
+  it('should end run when no files to test', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+
+    const emptyTestItem = new TestItem('empty', 'Empty', undefined as any);
+    const emptyRequest = { include: [emptyTestItem], exclude: [] } as any;
+
+    const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[0][2];
+
+    const { spawn } = require('child_process');
+
+    await runProfile(emptyRequest, mockToken);
+
+    expect(spawn).not.toHaveBeenCalled();
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
+  it('should fail tests when workspace folder cannot be determined', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    jest
+      .spyOn(vscode.workspace, 'getWorkspaceFolder')
+      .mockReturnValue(undefined);
+
+    const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[0][2];
+
+    await runProfile(mockRequest, mockToken);
+
+    expect(mockRun.failed).toHaveBeenCalledWith(
+      mockTestItem,
+      expect.objectContaining({
+        message: 'Could not determine workspace folder',
+      }),
+    );
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
+  it('should handle exception during test execution', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[0][2];
+
+    const { spawn } = require('child_process');
+    spawn.mockImplementation(() => {
+      throw new Error('Spawn failed');
+    });
+
+    await runProfile(mockRequest, mockToken);
+
+    expect(mockRun.failed).toHaveBeenCalledWith(
+      mockTestItem,
+      expect.objectContaining({
+        message: 'Spawn failed',
+      }),
+    );
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
+  it('should handle non-Error exception during test execution', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[0][2];
+
+    const { spawn } = require('child_process');
+    spawn.mockImplementation(() => {
+      throw 'String error';
+    });
+
+    await runProfile(mockRequest, mockToken);
+
+    expect(mockRun.failed).toHaveBeenCalledWith(
+      mockTestItem,
+      expect.objectContaining({
+        message: 'String error',
+      }),
+    );
+    expect(mockRun.end).toHaveBeenCalled();
+  });
+
+  it('should handle undefined error during test execution', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    mockTestController.items.add(mockTestItem);
+
+    const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[0][2];
+
+    const { spawn } = require('child_process');
+    spawn.mockImplementation(() => {
+      throw undefined;
+    });
+
+    await runProfile(mockRequest, mockToken);
+
+    expect(mockRun.failed).toHaveBeenCalledWith(
+      mockTestItem,
+      expect.objectContaining({
+        message: 'Test execution failed',
+      }),
+    );
+    expect(mockRun.end).toHaveBeenCalled();
   });
 });

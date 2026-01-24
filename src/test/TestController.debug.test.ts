@@ -228,4 +228,53 @@ describe('JestTestController - debug handler', () => {
     expect(config.args).toContain('-c');
     expect(config.args).toContain('/workspace/vitest.config.ts');
   });
+
+  it('should debug all tests when request.include is undefined', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[1][2];
+
+    const testItem = new TestItem(
+      'test1',
+      'Test 1',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    mockTestController.items.add(testItem);
+
+    const requestWithoutInclude = { include: undefined, exclude: [] } as any;
+
+    await debugProfile(requestWithoutInclude, mockToken);
+
+    expect(vscode.debug.startDebugging).toHaveBeenCalled();
+  });
+
+  it('should skip excluded tests in debug handler', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[1][2];
+
+    const test1 = new TestItem(
+      'test1',
+      'Test 1',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    const test2 = new TestItem(
+      'test2',
+      'Test 2',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+
+    const requestWithExclude = {
+      include: [test1, test2],
+      exclude: [test1],
+    } as any;
+
+    await debugProfile(requestWithExclude, mockToken);
+
+    expect(vscode.debug.startDebugging).toHaveBeenCalledTimes(1);
+  });
 });
