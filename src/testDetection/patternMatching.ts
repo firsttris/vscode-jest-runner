@@ -82,7 +82,7 @@ export function fileMatchesPatternsExplicit(
 
   // If roots are specified, check if file is within any of the roots
   if (roots && roots.length > 0) {
-    const absolutePath = filePath.replace(/\\/g, '/');
+    const absolutePath = path.resolve(filePath).replace(/\\/g, '/');
     const isInRoots = roots.some(root => {
       const resolvedRoot = path.resolve(configDir, resolveRootDirToken(root, rootDir)).replace(/\\/g, '/');
       return absolutePath.startsWith(resolvedRoot);
