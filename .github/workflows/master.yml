@@ -38,7 +38,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
-      - run: npm run test
+      - name: Run tests with coverage
+        run: npm run test -- --coverage
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && github.ref == 'refs/heads/master'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   build:
     runs-on: ubuntu-latest
