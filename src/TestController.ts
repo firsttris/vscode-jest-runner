@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { pushMany, isTestFile, logInfo, logError } from './util';
+import { pushMany, isTestFile, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { getTestFrameworkForFile } from './testDetection';
 import {
@@ -331,7 +331,7 @@ export class JestTestController {
 
   private async debugTest(test: vscode.TestItem): Promise<boolean | undefined> {
     const filePath = test.uri!.fsPath;
-    const testName = test.children.size === 0 ? test.label : undefined;
+    const testName = test.children.size === 0 ? escapeRegExp(updateTestNameIfUsingProperties(test.label)) : undefined;
 
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!);
     if (!workspaceFolder) {

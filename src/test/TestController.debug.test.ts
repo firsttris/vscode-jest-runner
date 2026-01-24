@@ -277,4 +277,28 @@ describe('JestTestController - debug handler', () => {
 
     expect(vscode.debug.startDebugging).toHaveBeenCalledTimes(1);
   });
+
+  it('should escape special regex characters in test names', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[1][2];
+
+    const testWithSpecialChars = new TestItem(
+      'testSpecial',
+      'Test with + and * chars',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    const requestWithSpecialChars = {
+      include: [testWithSpecialChars],
+      exclude: [],
+    } as any;
+
+    await debugProfile(requestWithSpecialChars, mockToken);
+
+    const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[0][1];
+    expect(debugCall.args).toContain('-t');
+    expect(debugCall.args).toContain('Test with \\+ and \\* chars');
+  });
 });
