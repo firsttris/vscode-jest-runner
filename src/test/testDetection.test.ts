@@ -16,6 +16,7 @@ import {
   detectTestFramework,
   viteConfigHasTestAttribute,
   getIncludeFromVitestConfig,
+  getVitestConfig,
   getTestMatchFromJestConfig,
   isEsmProject,
 } from '../testDetection';
@@ -1602,6 +1603,243 @@ export default {
         isRegex: false,
         rootDir: '../../tests/',
       });
+    });
+
+    it('should extract roots from JSON config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "roots": ["<rootDir>/src", "<rootDir>/tests"],
+  "testMatch": ["**/*.test.ts"]
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.json');
+
+      expect(result).toEqual({
+        patterns: ['**/*.test.ts'],
+        isRegex: false,
+        roots: ['<rootDir>/src', '<rootDir>/tests'],
+      });
+    });
+
+    it('should extract roots from JS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+module.exports = {
+  roots: ['<rootDir>/src', '<rootDir>/lib'],
+  testMatch: ['**/*.spec.ts']
+};
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.js');
+
+      expect(result).toEqual({
+        patterns: ['**/*.spec.ts'],
+        isRegex: false,
+        roots: ['<rootDir>/src', '<rootDir>/lib'],
+      });
+    });
+
+    it('should extract testPathIgnorePatterns from JSON config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "testMatch": ["**/*.test.ts"],
+  "testPathIgnorePatterns": ["/node_modules/", "/fixtures/", "/__mocks__/"]
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.json');
+
+      expect(result).toEqual({
+        patterns: ['**/*.test.ts'],
+        isRegex: false,
+        ignorePatterns: ['/node_modules/', '/fixtures/', '/__mocks__/'],
+      });
+    });
+
+    it('should extract testPathIgnorePatterns from JS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+module.exports = {
+  testMatch: ['**/*.test.ts'],
+  testPathIgnorePatterns: ['<rootDir>/build/', '<rootDir>/dist/']
+};
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.js');
+
+      expect(result).toEqual({
+        patterns: ['**/*.test.ts'],
+        isRegex: false,
+        ignorePatterns: ['<rootDir>/build/', '<rootDir>/dist/'],
+      });
+    });
+
+    it('should extract all config options together', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "rootDir": ".",
+  "roots": ["<rootDir>/src", "<rootDir>/tests"],
+  "testMatch": ["**/*.test.ts", "**/*.spec.ts"],
+  "testPathIgnorePatterns": ["/node_modules/", "/fixtures/"]
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.json');
+
+      expect(result).toEqual({
+        patterns: ['**/*.test.ts', '**/*.spec.ts'],
+        isRegex: false,
+        rootDir: '.',
+        roots: ['<rootDir>/src', '<rootDir>/tests'],
+        ignorePatterns: ['/node_modules/', '/fixtures/'],
+      });
+    });
+
+    it('should return roots and ignorePatterns even without explicit patterns', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "roots": ["<rootDir>/src"],
+  "testPathIgnorePatterns": ["/fixtures/"]
+}`);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.json');
+
+      expect(result).toEqual({
+        patterns: [],
+        isRegex: false,
+        roots: ['<rootDir>/src'],
+        ignorePatterns: ['/fixtures/'],
+      });
+    });
+  });
+
+  describe('getVitestConfig', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should extract include and exclude patterns', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    include: ['**/*.test.ts'],
+    exclude: ['**/node_modules/**', '**/e2e/**']
+  }
+});
+      `);
+
+      const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toEqual({
+        patterns: ['**/*.test.ts'],
+        isRegex: false,
+        excludePatterns: ['**/node_modules/**', '**/e2e/**'],
+      });
+    });
+
+    it('should extract dir from test config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    dir: 'src',
+    include: ['**/*.test.ts']
+  }
+});
+      `);
+
+      const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toEqual({
+        patterns: ['**/*.test.ts'],
+        isRegex: false,
+        dir: 'src',
+      });
+    });
+
+    it('should extract root from top-level config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  root: './packages/app',
+  test: {
+    include: ['**/*.spec.ts']
+  }
+});
+      `);
+
+      const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toEqual({
+        patterns: ['**/*.spec.ts'],
+        isRegex: false,
+        rootDir: './packages/app',
+      });
+    });
+
+    it('should extract all config options together', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  root: '.',
+  test: {
+    dir: 'src',
+    include: ['**/*.{test,spec}.ts'],
+    exclude: ['**/node_modules/**', '**/fixtures/**']
+  }
+});
+      `);
+
+      const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toEqual({
+        patterns: ['**/*.{test,spec}.ts'],
+        isRegex: false,
+        rootDir: '.',
+        excludePatterns: ['**/node_modules/**', '**/fixtures/**'],
+        dir: 'src',
+      });
+    });
+
+    it('should return undefined when no test config is present', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: []
+});
+      `);
+
+      const result = getVitestConfig('/test/vite.config.ts');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return config with only exclude patterns', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    exclude: ['**/e2e/**', '**/integration/**']
+  }
+});
+      `);
+
+      const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toEqual({
+        patterns: [],
+        isRegex: false,
+        excludePatterns: ['**/e2e/**', '**/integration/**'],
+      });
+    });
+
+    it('should return undefined on file read error', () => {
+      mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
+      const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toBeUndefined();
     });
   });
 

@@ -62,7 +62,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 ### 🎯 Smart Test Detection
 
 - 🤖 **Automatic framework detection** - distinguishes between Jest and Vitest
-- 🔍 **Reads test patterns from framework configs** - automatically uses `testMatch` or `testRegex` from Jest config or `include` from Vitest config
+- 🔍 **Reads test patterns from framework configs** - see [Supported Config Options](#-supported-config-options)
 - 🎚️ **Include/exclude patterns** for fine-grained control over which tests appear
 
 </td>
@@ -173,38 +173,66 @@ Customize the test runner for your project:
 
 
 <details>
-<summary><b>🔧 Advanced Configuration Examples</b></summary>
+<summary><b>📋 Supported Config Options</b></summary>
 <br>
 
-**Custom Test File Patterns**
+The extension **automatically reads configuration** from your framework config files. No manual setup required!
 
-The extension **automatically reads test file patterns** from your framework configuration:
+### Jest Config Options
 
-- **Jest**: Reads `testMatch` from `jest.config.js/ts/json` or `package.json`
-- **Vitest**: Reads `include` from `vitest.config.ts` or `vite.config.ts` (within the `test` section)
+| Option | Type | Description |
+|--------|------|-------------|
+| `rootDir` | `string` | Root directory for resolving paths |
+| `roots` | `string[]` | Directories to search for test files (e.g., `["<rootDir>/src", "<rootDir>/tests"]`) |
+| `testMatch` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
+| `testRegex` | `string \| string[]` | Regex patterns for test files |
+| `testPathIgnorePatterns` | `string[]` | Regex patterns to exclude files (e.g., `["/fixtures/", "/node_modules/"]`) |
 
 **Example Jest Config:**
 
 ```javascript
-// jest.config.js - Extension reads this automatically!
+// jest.config.js
 module.exports = {
-  testMatch: [
-    '**/?(*.)+(spec|test|integrationtest).?([mc])[jt]s?(x)',
-    '**/__tests__/**/*.?([mc])[jt]s?(x)',
-  ],
+  rootDir: '.',
+  roots: ['<rootDir>/src', '<rootDir>/tests'],
+  testMatch: ['**/?(*.)+(spec|test).ts?(x)'],
+  testPathIgnorePatterns: ['/node_modules/', '/fixtures/', '/__mocks__/'],
 };
 ```
+
+### Vitest Config Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `root` | `string` | Project root directory |
+| `test.dir` | `string` | Base directory for test file discovery |
+| `test.include` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
+| `test.exclude` | `string[]` | Glob patterns to exclude (e.g., `["**/e2e/**"]`) |
 
 **Example Vitest Config:**
 
 ```typescript
-// vitest.config.ts - Extension reads this automatically!
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
 export default defineConfig({
+  root: '.',
   test: {
-    include: ['**/*.{test,spec,integrationtest}.{js,jsx,ts,tsx}'],
+    dir: 'src',
+    include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    exclude: ['**/node_modules/**', '**/e2e/**', '**/fixtures/**'],
   },
 });
 ```
+
+> **Note:** `projects` (monorepo/workspace support) is not yet supported but planned for a future release.
+
+</details>
+
+
+<details>
+<summary><b>🔧 Advanced Configuration Examples</b></summary>
+<br>
 
 **Usage with CRA or similar abstractions**
 

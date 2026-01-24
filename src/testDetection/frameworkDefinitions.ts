@@ -10,12 +10,19 @@ export interface TestPatterns {
   patterns: string[];
   isRegex: boolean;
   rootDir?: string;
+  roots?: string[];              // Jest: multiple search directories
+  ignorePatterns?: string[];     // Jest: testPathIgnorePatterns (regex)
+  excludePatterns?: string[];    // Vitest: exclude (glob)
+  dir?: string;                  // Vitest: base directory for test discovery
 }
 
 export type TestPatternResult = {
   patterns: string[];
   configDir: string;
   isRegex: boolean;
+  roots?: string[];              // Jest: resolved roots directories
+  ignorePatterns?: string[];     // Jest: testPathIgnorePatterns (regex)
+  excludePatterns?: string[];    // Vitest: exclude (glob)
 };
 
 export type FrameworkResult = {

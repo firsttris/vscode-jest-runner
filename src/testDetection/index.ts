@@ -24,6 +24,7 @@ export {
   binaryExists,
   getConfigPath,
   getTestMatchFromJestConfig,
+  getVitestConfig,
   getIncludeFromVitestConfig,
   resolveAndValidateCustomConfig,
 } from './configParsing';

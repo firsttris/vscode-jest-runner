@@ -55,6 +55,22 @@ function extractTestRegex(config: any): string[] | undefined {
   return undefined;
 }
 
+function extractRoots(config: any): string[] | undefined {
+  if (!config.roots) return undefined;
+  if (Array.isArray(config.roots)) {
+    return config.roots;
+  }
+  return undefined;
+}
+
+function extractTestPathIgnorePatterns(config: any): string[] | undefined {
+  if (!config.testPathIgnorePatterns) return undefined;
+  if (Array.isArray(config.testPathIgnorePatterns)) {
+    return config.testPathIgnorePatterns;
+  }
+  return undefined;
+}
+
 function extractRootDir(content: string): string | undefined {
   const rootDirMatch = content.match(/['"]?rootDir['"]?\s*:\s*['"]([^'"]+)['"]/);
   if (rootDirMatch) {
@@ -78,6 +94,38 @@ const findMatchingBracket = (content: string, startIndex: number): number | unde
 const extractStringsFromArray = (arrayContent: string): string[] =>
   [...arrayContent.matchAll(/['"`]((?:\\.|[^'"`\\])*?)['"`]/g)].map((m) => m[1]);
 
+const extractRootsFromText = (content: string): string[] | undefined => {
+  const rootsStart = content.indexOf('roots');
+  if (rootsStart === -1) return undefined;
+
+  const arrayStart = content.indexOf('[', rootsStart);
+  if (arrayStart === -1) return undefined;
+
+  const arrayEnd = findMatchingBracket(content, arrayStart);
+  if (!arrayEnd) return undefined;
+
+  const arrayContent = content.substring(arrayStart + 1, arrayEnd - 1);
+  const roots = extractStringsFromArray(arrayContent);
+
+  return roots.length > 0 ? roots : undefined;
+};
+
+const extractTestPathIgnorePatternsFromText = (content: string): string[] | undefined => {
+  const ignoreStart = content.indexOf('testPathIgnorePatterns');
+  if (ignoreStart === -1) return undefined;
+
+  const arrayStart = content.indexOf('[', ignoreStart);
+  if (arrayStart === -1) return undefined;
+
+  const arrayEnd = findMatchingBracket(content, arrayStart);
+  if (!arrayEnd) return undefined;
+
+  const arrayContent = content.substring(arrayStart + 1, arrayEnd - 1);
+  const patterns = extractStringsFromArray(arrayContent);
+
+  return patterns.length > 0 ? patterns : undefined;
+};
+
 const parseJsonConfig = (
   content: string,
   configPath: string
@@ -94,15 +142,30 @@ const parseJsonConfig = (
       logDebug(`Found rootDir in ${configPath}: ${rootDir}`);
     }
 
+    const roots = extractRoots(config);
+    if (roots) {
+      logDebug(`Found roots in ${configPath}: ${roots.join(', ')}`);
+    }
+
+    const ignorePatterns = extractTestPathIgnorePatterns(config);
+    if (ignorePatterns) {
+      logDebug(`Found testPathIgnorePatterns in ${configPath}: ${ignorePatterns.join(', ')}`);
+    }
+
     if (config.testMatch && Array.isArray(config.testMatch)) {
       logDebug(`Found testMatch in ${configPath}: ${config.testMatch.join(', ')}`);
-      return { patterns: config.testMatch, isRegex: false, rootDir };
+      return { patterns: config.testMatch, isRegex: false, rootDir, roots, ignorePatterns };
     }
 
     const regexPatterns = extractTestRegex(config);
     if (regexPatterns) {
       logDebug(`Found testRegex in ${configPath}: ${regexPatterns.join(', ')}`);
-      return { patterns: regexPatterns, isRegex: true, rootDir };
+      return { patterns: regexPatterns, isRegex: true, rootDir, roots, ignorePatterns };
+    }
+
+    // Return config with roots/ignorePatterns even if no explicit patterns found
+    if (roots || ignorePatterns) {
+      return { patterns: [], isRegex: false, rootDir, roots, ignorePatterns };
     }
 
     return undefined;
@@ -156,10 +219,30 @@ const parseJsConfig = (
     logDebug(`Found rootDir in ${configPath}: ${rootDir}`);
   }
 
-  return (
+  const roots = extractRootsFromText(content);
+  if (roots) {
+    logDebug(`Found roots in ${configPath}: ${roots.join(', ')}`);
+  }
+
+  const ignorePatterns = extractTestPathIgnorePatternsFromText(content);
+  if (ignorePatterns) {
+    logDebug(`Found testPathIgnorePatterns in ${configPath}: ${ignorePatterns.join(', ')}`);
+  }
+
+  const baseResult =
     parseTestMatchFromText(content, configPath, rootDir) ??
-    parseTestRegexFromText(content, configPath, rootDir)
-  );
+    parseTestRegexFromText(content, configPath, rootDir);
+
+  if (baseResult) {
+    return { ...baseResult, roots, ignorePatterns };
+  }
+
+  // Return config with roots/ignorePatterns even if no explicit patterns found
+  if (roots || ignorePatterns) {
+    return { patterns: [], isRegex: false, rootDir, roots, ignorePatterns };
+  }
+
+  return undefined;
 };
 
 export function getTestMatchFromJestConfig(
@@ -214,16 +297,73 @@ const extractIncludePatterns = (
   return patterns;
 };
 
-export function getIncludeFromVitestConfig(configPath: string): string[] | undefined {
+const extractExcludePatterns = (
+  testBlockContent: string,
+  configPath: string
+): string[] | undefined => {
+  const excludeMatch = testBlockContent.match(/exclude\s*:\s*\[([^\]]*)\]/);
+  if (!excludeMatch) return undefined;
+
+  const patterns = extractStringsFromArray(excludeMatch[1]);
+  if (patterns.length === 0) return undefined;
+
+  logDebug(`Found exclude patterns in ${configPath}: ${patterns.join(', ')}`);
+  return patterns;
+};
+
+const extractVitestRoot = (content: string): string | undefined => {
+  // root is at the top level of defineConfig, not inside test block
+  const rootMatch = content.match(/['"]?root['"]?\s*:\s*['"]([^'"]+)['"]/);
+  if (rootMatch) {
+    logDebug(`Found Vitest root: ${rootMatch[1]}`);
+    return rootMatch[1];
+  }
+  return undefined;
+};
+
+const extractVitestDir = (
+  testBlockContent: string,
+  configPath: string
+): string | undefined => {
+  const dirMatch = testBlockContent.match(/['"]?dir['"]?\s*:\s*['"]([^'"]+)['"]/);
+  if (dirMatch) {
+    logDebug(`Found dir in ${configPath}: ${dirMatch[1]}`);
+    return dirMatch[1];
+  }
+  return undefined;
+};
+
+export function getVitestConfig(configPath: string): TestPatterns | undefined {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
     const testBlockContent = extractTestBlockContent(content);
 
-    return testBlockContent ? extractIncludePatterns(testBlockContent, configPath) : undefined;
+    const rootDir = extractVitestRoot(content);
+    const patterns = testBlockContent ? extractIncludePatterns(testBlockContent, configPath) : undefined;
+    const excludePatterns = testBlockContent ? extractExcludePatterns(testBlockContent, configPath) : undefined;
+    const dir = testBlockContent ? extractVitestDir(testBlockContent, configPath) : undefined;
+
+    if (!patterns && !excludePatterns && !dir && !rootDir) {
+      return undefined;
+    }
+
+    return {
+      patterns: patterns ?? [],
+      isRegex: false,
+      rootDir,
+      excludePatterns,
+      dir,
+    };
   } catch (error) {
     logError(`Error reading Vitest config file: ${configPath}`, error);
     return undefined;
   }
+}
+
+// Backwards compatibility - keep the old function name
+export function getIncludeFromVitestConfig(configPath: string): string[] | undefined {
+  const config = getVitestConfig(configPath);
+  return config?.patterns && config.patterns.length > 0 ? config.patterns : undefined;
 }
 
 export function resolveAndValidateCustomConfig(
