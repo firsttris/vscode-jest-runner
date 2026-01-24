@@ -30,6 +30,8 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 
 > ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
 
+> ⚠️ **Important Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to create a GitHub issue.
+
 ## ✨ Features
 
 <table>
@@ -119,6 +121,15 @@ export default defineConfig({
   },
 });
 ```
+
+**Coverage Directory Detection**
+
+The extension automatically detects the coverage directory from your framework configuration:
+
+- **Jest**: Reads the `coverageDirectory` option from your Jest config
+- **Vitest**: Reads the `reportsDirectory` option from your Vitest coverage config
+
+If not specified, it defaults to `coverage/` in your project root.
 
 **Running Tests with Coverage**
 
