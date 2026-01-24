@@ -1746,7 +1746,7 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should return broad pattern for VS Code APIs', () => {
-      expect(jestRunnerConfig.getTestFilePattern()).toBe(
+      expect(jestRunnerConfig.getAllPotentialSourceFiles()).toBe(
         '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}',
       );
     });

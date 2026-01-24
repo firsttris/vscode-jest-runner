@@ -110,7 +110,7 @@ export async function findTestFiles(
 ): Promise<string[]> {
   const pattern = new vscode.RelativePattern(
     folderPath,
-    jestConfig.getTestFilePattern(),
+    jestConfig.getAllPotentialSourceFiles(),
   );
   const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
 

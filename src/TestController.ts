@@ -347,7 +347,7 @@ export class JestTestController {
   }
 
   private setupFileWatcher(): void {
-    const pattern = this.jestConfig.getTestFilePattern();
+    const pattern = this.jestConfig.getAllPotentialSourceFiles();
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
     watcher.onDidChange((uri) => {

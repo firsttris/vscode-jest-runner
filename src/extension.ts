@@ -177,7 +177,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   if (config.isCodeLensEnabled) {
     const docSelectors: vscode.DocumentFilter[] = [
-      { pattern: config.getTestFilePattern() },
+      { pattern: config.getAllPotentialSourceFiles() },
     ];
     context.subscriptions.push(
       vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider),
