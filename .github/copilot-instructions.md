@@ -72,8 +72,7 @@ Auto-detected in [testRunnerConfig.ts](../src/testRunnerConfig.ts#L23-L41) via `
 Key settings (see [package.json](../package.json) contributions):
 - `jestrunner.enableTestExplorer` - Toggle new Test Explorer vs CodeLens (default: false)
 - `jestrunner.configPath`/`vitestConfigPath` - Config resolution (string or glob object)
-- `jestrunner.projectPath` - Override workspace root for monorepos
-- `jestrunner.changeDirectoryToWorkspaceRoot` - CWD behavior (priority: projectPath → nearest package.json → workspace)
+- `jestrunner.changeDirectoryToWorkspaceRoot` - CWD behavior (priority: nearest package.json → workspace)
 - `jestrunner.runOptions`/`vitestRunOptions` - Additional CLI flags array
 
 ## Common Patterns

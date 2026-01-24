@@ -32,7 +32,6 @@ describe('TestRunnerConfig', () => {
           name: string,
           behavior: string,
           workspacePath: string,
-          projectPath: string | undefined,
           configPath: string,
           targetPath: string,
           expectedPath: string,
@@ -43,27 +42,15 @@ describe('TestRunnerConfig', () => {
           'configPath is an absolute path',
           'returned path is only the specified config path',
           '/home/user/workspace',
-          './jestProject',
           '/home/user/notWorkspace/notJestProject/jest.config.js',
           '/home/user/workspace/jestProject/src/index.test.js',
           '/home/user/notWorkspace/notJestProject/jest.config.js',
         ],
         [
           'linux',
-          'configPath is a relative path, project path is set',
-          'returned path is resolved against workspace and project path',
-          '/home/user/workspace',
-          './jestProject',
-          './jest.config.js',
-          '/home/user/workspace/jestProject/src/index.test.js',
-          '/home/user/workspace/jestProject/jest.config.js',
-        ],
-        [
-          'linux',
-          'configPath is a relative path, projectPath is not set',
+          'configPath is a relative path',
           'returned path is resolved against workspace path',
           '/home/user/workspace',
-          undefined,
           './jest.config.js',
           '/home/user/workspace/jestProject/src/index.test.js',
           '/home/user/workspace/jest.config.js',
@@ -74,7 +61,6 @@ describe('TestRunnerConfig', () => {
           'configPath is an absolute path (with \\)',
           'returned path is only the specified config path',
           'C:/workspace',
-          './jestProject',
           'C:\\notWorkspace\\notJestProject\\jest.config.js',
           'C:/workspace/jestProject/src/index.test.js',
           'C:/notWorkspace/notJestProject/jest.config.js',
@@ -84,27 +70,15 @@ describe('TestRunnerConfig', () => {
           'configPath is an absolute path (with /)',
           'returned path is only the (normalized) specified config path',
           'C:/workspace',
-          './jestProject',
           'C:/notWorkspace/notJestProject/jest.config.js',
           'C:/workspace/jestProject/src/index.test.js',
           'C:/notWorkspace/notJestProject/jest.config.js',
         ],
         [
           'windows',
-          'configPath is a relative path, project path is set',
-          'returned path is resolved against workspace and project path',
-          'C:/workspace',
-          './jestProject',
-          './jest.config.js',
-          'C:/workspace/jestProject/src/index.test.js',
-          'C:/workspace/jestProject/jest.config.js',
-        ],
-        [
-          'windows',
-          'configPath is a relative path, projectPath is not set',
+          'configPath is a relative path',
           'returned path is resolved against workspace path',
           'C:/workspace',
-          undefined,
           './jest.config.js',
           'C:/workspace/jestProject/src/index.test.js',
           'C:/workspace/jest.config.js',
@@ -117,7 +91,6 @@ describe('TestRunnerConfig', () => {
           _name,
           behavior,
           workspacePath,
-          projectPath,
           configPath,
           targetPath,
           expectedPath,
@@ -137,7 +110,6 @@ describe('TestRunnerConfig', () => {
           its[_os](behavior, async () => {
             jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
               new WorkspaceConfiguration({
-                'jestrunner.projectPath': projectPath,
                 'jestrunner.configPath': configPath,
                 'jestrunner.useNearestConfig': useNearestConfig,
               }),
@@ -158,7 +130,6 @@ describe('TestRunnerConfig', () => {
             name: string,
             behavior: string,
             workspacePath: string,
-            projectPath: string | undefined,
             configPath: Record<string, string>,
             targetPath: string,
             expectedPath: string,
@@ -170,7 +141,6 @@ describe('TestRunnerConfig', () => {
             'matched glob specifies an absolute path',
             'returned path is only the specified config path',
             '/home/user/workspace',
-            './jestProject',
             {
               '**/*.test.js': '/home/user/workspace/jestProject/jest.config.js',
             },
@@ -180,19 +150,8 @@ describe('TestRunnerConfig', () => {
           [
             'linux',
             'matched glob specifies a relative path',
-            'returned path is resolved against workspace and project path',
-            '/home/user/workspace',
-            './jestProject',
-            { '**/*.test.js': './jest.config.js' },
-            '/home/user/workspace/jestProject/src/index.test.js',
-            '/home/user/workspace/jestProject/jest.config.js',
-          ],
-          [
-            'linux',
-            'matched glob specifies a relative path, projectPath is not set',
             'returned path is resolved against workspace path',
             '/home/user/workspace',
-            undefined,
             { '**/*.test.js': './jest.config.js' },
             '/home/user/workspace/jestProject/src/index.test.js',
             '/home/user/workspace/jest.config.js',
@@ -202,7 +161,6 @@ describe('TestRunnerConfig', () => {
             'matched glob specifies a relative path, useNearestConfig is true',
             'returned path is the nearest config in project',
             '/home/user/workspace',
-            undefined,
             { '**/*.test.js': './jest.config.js' },
             '/home/user/workspace/jestProject/src/index.test.js',
             '/home/user/workspace/jestProject/jest.config.js',
@@ -211,23 +169,21 @@ describe('TestRunnerConfig', () => {
           [
             'linux',
             'first matched glob takes precedence, relative path',
-            'returned path is resolved against workspace and project path',
+            'returned path is resolved against workspace path',
             '/home/user/workspace',
-            './jestProject',
             {
               '**/*.test.js': './jest.config.js',
               '**/*.spec.js': './jest.unit-config.js',
               '**/*.it.spec.js': './jest.it-config.js',
             },
             '/home/user/workspace/jestProject/src/index.it.spec.js',
-            '/home/user/workspace/jestProject/jest.unit-config.js',
+            '/home/user/workspace/jest.unit-config.js',
           ],
           [
             'linux',
             'first matched glob takes precedence, relative path, useNearestConfig is true',
             'returned path is the nearest config in project',
             '/home/user/workspace',
-            './aDifferentProject',
             {
               '**/*.test.js': './jest.config.js',
               '**/*.spec.js': './jest.unit-config.js',
@@ -242,7 +198,6 @@ describe('TestRunnerConfig', () => {
             'first matched glob takes precedence, absolute path',
             'returned path is only the specified config path',
             '/home/user/workspace',
-            './jestProject',
             {
               '**/*.test.js':
                 '/home/user/notWorkspace/notJestProject/jest.config.js',
@@ -259,7 +214,6 @@ describe('TestRunnerConfig', () => {
             'first matched glob takes precedence, useNearestConfig falls back to absolute path',
             'returned path is only the specified config path',
             '/home/user/workspace',
-            './jestProject',
             {
               '**/*.test.js':
                 '/home/user/notWorkspace/notJestProject/jest.config.js',
@@ -277,7 +231,6 @@ describe('TestRunnerConfig', () => {
             'matched glob specifies an absolute path (with \\)',
             'returned path is only the specified (normalized) config path',
             'C:/workspace',
-            './jestProject',
             {
               '**/*.test.js':
                 'C:\\notWorkspace\\notJestProject\\jest.config.js',
@@ -290,27 +243,15 @@ describe('TestRunnerConfig', () => {
             'matched glob specifies an absolute path (with /)',
             'returned path is only the specified (normalized) config path',
             'C:/workspace',
-            './jestProject',
             { '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js' },
             'C:/workspace/jestProject/src/index.test.js',
             'C:/notWorkspace/notJestProject/jest.config.js',
           ],
           [
             'windows',
-            'matched glob specifies a relative path, projectPath is set',
-            'returned (normalized) path is resolved against workspace and project path',
-            'C:/workspace',
-            './jestProject',
-            { '**/*.test.js': './jest.config.js' },
-            'C:/workspace/jestProject/src/index.test.js',
-            'C:/workspace/jestProject/jest.config.js',
-          ],
-          [
-            'windows',
-            'matched glob specifies a relative path, projectPath is not set',
+            'matched glob specifies a relative path',
             'returned (normalized) path is resolved against workspace path',
             'C:/workspace',
-            undefined,
             { '**/*.test.js': './jest.config.js' },
             'C:/workspace/jestProject/src/index.test.js',
             'C:/workspace/jest.config.js',
@@ -320,7 +261,6 @@ describe('TestRunnerConfig', () => {
             'matched glob specifies a relative path, useNearestConfig is true',
             'returned path is the nearest config in project',
             'C:/workspace',
-            undefined,
             { '**/*.test.js': './jest.config.js' },
             'C:/workspace/jestProject/src/index.test.js',
             'C:/workspace/jestProject/jest.config.js',
@@ -329,23 +269,21 @@ describe('TestRunnerConfig', () => {
           [
             'windows',
             'first matched glob takes precedence, relative path',
-            'returned(normalized) path is resolved against workspace and project path',
+            'returned(normalized) path is resolved against workspace path',
             'C:\\workspace',
-            './jestProject',
             {
               '**/*.test.js': './jest.config.js',
               '**/*.spec.js': './jest.unit-config.js',
               '**/*.it.spec.js': './jest.it-config.js',
             },
             'C:/workspace/jestProject/src/index.it.spec.js',
-            'C:/workspace/jestProject/jest.unit-config.js',
+            'C:/workspace/jest.unit-config.js',
           ],
           [
             'windows',
             'first matched glob takes precedence, relative path, useNearestConfig is true',
             'returned path is the nearest config in project',
             'C:/workspace',
-            './aDifferentProject',
             {
               '**/*.test.js': './jest.config.js',
               '**/*.spec.js': './jest.unit-config.js',
@@ -360,7 +298,6 @@ describe('TestRunnerConfig', () => {
             'first matched glob takes precedence, absolute path (with \\)',
             'returned (normalized) path is only the (normalized) specified config path',
             'C:/workspace',
-            './jestProject',
             {
               '**/*.test.js':
                 'C:\\notWorkspace\\notJestProject\\jest.config.js',
@@ -377,7 +314,6 @@ describe('TestRunnerConfig', () => {
             'first matched glob takes precedence, absolute path (with /)',
             'returned (normalized) path is only the specified config path',
             'C:/workspace',
-            './jestProject',
             {
               '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
               '**/*.spec.js':
@@ -393,7 +329,6 @@ describe('TestRunnerConfig', () => {
             'first matched glob takes precedence, useNearestConfig falls back to absolute path',
             'returned path is only the specified config path',
             'C:/workspace',
-            './jestProject',
             {
               '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
               '**/*.spec.js':
@@ -413,7 +348,6 @@ describe('TestRunnerConfig', () => {
             _name,
             behavior,
             workspacePath,
-            projectPath,
             configPath,
             targetPath,
             expectedPath,
@@ -449,7 +383,6 @@ describe('TestRunnerConfig', () => {
             its[_os](behavior, async () => {
               jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
                 new WorkspaceConfiguration({
-                  'jestrunner.projectPath': projectPath,
                   'jestrunner.configPath': configPath,
                   'jestrunner.useNearestConfig': useNearestConfig,
                 }),
@@ -470,7 +403,6 @@ describe('TestRunnerConfig', () => {
             name: string,
             behavior: string,
             workspacePath: string,
-            projectPath: string | undefined,
             configPath: Record<string, string>,
             targetPath: string,
             foundPath: string,
@@ -479,10 +411,9 @@ describe('TestRunnerConfig', () => {
         > = [
           [
             'linux',
-            'projectPath is relative',
+            'no matching glob',
             'returns the found jest config path (traversing up from target path)',
             '/home/user/workspace',
-            './jestProject',
             {
               '**/*.test.js': './jest.config.js',
             },
@@ -491,43 +422,16 @@ describe('TestRunnerConfig', () => {
             '/home/user/workspace/jestProject/jest.config.mjs',
           ],
           [
-            'linux',
-            'projectPath is not set',
-            'returns the found jest config path (traversing up from target path)',
-            '/home/user/workspace',
-            undefined,
-            {
-              '**/*.test.js': './jest.config.js',
-            },
-            '/home/user/workspace/src/index.unit.spec.js',
-            '/home/user/workspace/jest.config.mjs',
-            '/home/user/workspace/jest.config.mjs',
-          ],
-          [
             'windows',
-            'projectPath is relative',
+            'no matching glob',
             'returns the (normalized) found jest config (traversing up from target path)',
             'C:\\workspace',
-            './jestProject',
             {
               '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
             },
             'C:\\workspace\\jestProject\\src\\index.it.spec.js',
             'C:\\workspace\\jestProject\\jest.config.mjs',
             'C:/workspace/jestProject/jest.config.mjs',
-          ],
-          [
-            'windows',
-            'projectPath is not set',
-            'returns the (normalized) found jest config path (traversing up from target path)',
-            'C:\\workspace',
-            undefined,
-            {
-              '**/*.test.js': 'C:/notWorkspace/notJestProject/jest.config.js',
-            },
-            'C:\\workspace\\src\\index.it.spec.js',
-            'C:\\workspace\\jest.config.mjs',
-            'C:/workspace/jest.config.mjs',
           ],
         ];
         describe.each(scenarios)(
@@ -537,7 +441,6 @@ describe('TestRunnerConfig', () => {
             _name,
             behavior,
             workspacePath,
-            projectPath,
             configPath,
             targetPath,
             foundPath,
@@ -565,7 +468,6 @@ describe('TestRunnerConfig', () => {
             its[_os](behavior, async () => {
               jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
                 new WorkspaceConfiguration({
-                  'jestrunner.projectPath': projectPath,
                   'jestrunner.configPath': configPath,
                 }),
               );
@@ -588,35 +490,23 @@ describe('TestRunnerConfig', () => {
           name: string,
           behavior: string,
           workspacePath: string,
-          projectPath: string | undefined,
           targetPath: string,
           expectedPath: string,
         ]
       > = [
         [
           'linux',
-          'without project path',
+          'config found in project',
           'returns the found jest config path (traversing up from target path)',
           '/home/user/workspace',
-          undefined,
           '/home/user/workspace/jestProject/src/index.unit.spec.js',
           '/home/user/workspace/jestProject/jest.config.mjs',
         ],
         [
           'linux',
-          'with projectPath defined',
-          'returns the found jest config path (traversing up from target path)',
-          '/home/user/workspace',
-          './anotherProject',
-          '/home/user/workspace/jestProject/src/index.unit.spec.js',
-          '/home/user/workspace/jestProject/jest.config.mjs',
-        ],
-        [
-          'linux',
-          'with projectPath defined and no config in project',
+          'config found in workspace',
           'returns the found jest config path in workspace (traversing up from target path)',
           '/home/user/workspace',
-          './anotherProject',
           '/home/user/workspace/anotherProject/src/index.unit.spec.js',
           '/home/user/workspace/jest.config.mjs',
         ],
@@ -625,34 +515,22 @@ describe('TestRunnerConfig', () => {
           'with no configs found',
           'returns an empty string',
           '/home/user/workspace',
-          './anotherProject',
           '/home/user/workspace/anotherProject/src/index.unit.spec.js',
           '',
         ],
         [
           'windows',
-          'without project path',
+          'config found in project',
           'returns the found jest config path (traversing up from target path)',
           'C:\\workspace',
-          undefined,
           'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
           'C:/workspace/jestProject/jest.config.mjs',
         ],
         [
           'windows',
-          'with projectPath defined',
-          'returns the found jest config path (traversing up from target path)',
-          'C:\\workspace',
-          './anotherProject',
-          'C:\\workspace\\jestProject\\src\\index.unit.spec.js',
-          'C:/workspace/jestProject/jest.config.mjs',
-        ],
-        [
-          'windows',
-          'with projectPath defined and no config in project',
+          'config found in workspace',
           'returns the found jest config path in workspace (traversing up from target path)',
           'C:\\workspace',
-          './anotherProject',
           'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
           'C:/workspace/jest.config.mjs',
         ],
@@ -661,7 +539,6 @@ describe('TestRunnerConfig', () => {
           'with no configs found',
           'returns an empty string',
           'C:\\workspace',
-          './anotherProject',
           'C:\\workspace\\anotherProject\\src\\index.unit.spec.js',
           '',
         ],
@@ -673,7 +550,6 @@ describe('TestRunnerConfig', () => {
           _name,
           behavior,
           workspacePath,
-          projectPath,
           targetPath,
           expectedPath,
         ) => {
@@ -708,7 +584,6 @@ describe('TestRunnerConfig', () => {
           its[_os](behavior, async () => {
             jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
               new WorkspaceConfiguration({
-                'jestrunner.projectPath': projectPath,
                 'jestrunner.configPath': undefined,
               }),
             );

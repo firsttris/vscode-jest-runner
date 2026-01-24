@@ -60,12 +60,6 @@
             "description": "Absolute path to jest bin file (e.g. /usr/lib/node_modules/jest/bin/jest.js)",
             "scope": "window"
           },
-          "jestrunner.projectPath": {
-            "type": "string",
-            "default": "",
-            "description": "Absolute path to project directory (e.g. /home/me/project/sub-folder)",
-            "scope": "window"
-          },
           "jestrunner.debugOptions": {
             "type": "object",
             "default": {},
@@ -160,7 +154,7 @@
           "jestrunner.changeDirectoryToWorkspaceRoot": {
             "type": "boolean",
             "default": true,
-            "description": "Changes directory before execution. The fallback order is:\n1. `jestrunner.projectPath`\n2. the nearest `package.json`\n3. `${workspaceFolder}`",
+            "description": "Changes directory before execution. The fallback order is:\n1. the nearest `package.json`\n2. `${workspaceFolder}`",
             "scope": "window"
           },
           "jestrunner.preserveEditorFocus": {
