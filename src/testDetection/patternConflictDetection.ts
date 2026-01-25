@@ -22,13 +22,6 @@ function patternsAreEqual(patterns1: string[], patterns2: string[]): boolean {
 }
 
 /**
- * Checks if patterns match the default patterns
- */
-function isDefaultPatterns(patterns: string[]): boolean {
-  return patternsAreEqual(patterns, DEFAULT_TEST_PATTERNS);
-}
-
-/**
  * Gets the effective patterns for a config (explicit or default)
  */
 function getEffectivePatterns(config: TestPatterns | undefined): string[] {
