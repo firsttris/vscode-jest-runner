@@ -48,6 +48,8 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
           const testDirPath = path.resolve(dir, testDir);
+          console.log('testDirPath', testDirPath);
+          console.log('filePath', filePath);
           if (filePath.startsWith(testDirPath + path.sep) || filePath === testDirPath) {
             return true;
           }
