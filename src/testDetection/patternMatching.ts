@@ -3,6 +3,7 @@ import * as mm from 'micromatch';
 import { logDebug } from '../util';
 import { DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
 import { getTestMatchFromJestConfig, getVitestConfig } from './configParsing';
+import { detectPatternConflict, showPatternConflictWarning } from './patternConflictDetection';
 
 /**
  * Checks if a file matches any of the exclude patterns.
@@ -146,6 +147,12 @@ export function detectFrameworkByPatternMatch(
   const vitestHasExplicitPatterns = vitestConfig && vitestConfig.patterns.length > 0;
 
   logDebug(`Pattern matching for ${filePath}: jestPatterns=${jestConfig?.patterns?.join(',') ?? 'none'}, vitestPatterns=${vitestConfig?.patterns?.join(',') ?? 'none'}`);
+
+  // Check for pattern conflicts and warn user
+  const conflictInfo = detectPatternConflict(jestConfig, vitestConfig);
+  if (conflictInfo.hasConflict) {
+    showPatternConflictWarning(directoryPath, conflictInfo);
+  }
 
   if (!jestHasExplicitPatterns && !vitestHasExplicitPatterns) {
     logDebug('Neither config has explicit patterns - cannot determine framework by pattern');

@@ -10,6 +10,10 @@ import {
   fileMatchesPatterns,
   detectFrameworkByPatternMatch,
 } from '../../testDetection/patternMatching';
+import {
+  clearPatternConflictWarnings,
+  hasWarnedForDirectory,
+} from '../../testDetection/patternConflictDetection';
 
 jest.mock('fs');
 jest.mock('vscode');
@@ -309,6 +313,7 @@ describe('patternMatching', () => {
   describe('detectFrameworkByPatternMatch', () => {
     beforeEach(() => {
       jest.clearAllMocks();
+      clearPatternConflictWarnings();
       mockedFs.existsSync = jest.fn().mockReturnValue(true);
     });
 
@@ -544,6 +549,135 @@ describe('patternMatching', () => {
       );
 
       expect(result).toBeUndefined();
+    });
+
+    describe('pattern conflict warnings', () => {
+      it('should trigger warning when neither config has explicit patterns', () => {
+        const directoryPath = '/project';
+        const filePath = '/project/src/test.spec.ts';
+        const jestConfigPath = '/project/jest.config.js';
+        const vitestConfigPath = '/project/vitest.config.ts';
+
+        mockedFs.readFileSync = jest.fn().mockImplementation((p: string) => {
+          if (p === jestConfigPath) {
+            return 'module.exports = {};';
+          }
+          if (p === vitestConfigPath) {
+            return 'export default {};';
+          }
+          return '';
+        }) as any;
+
+        detectFrameworkByPatternMatch(
+          directoryPath,
+          filePath,
+          jestConfigPath,
+          vitestConfigPath,
+        );
+
+        expect(hasWarnedForDirectory(directoryPath)).toBe(true);
+      });
+
+      it('should trigger warning when both configs have identical patterns', () => {
+        const directoryPath = '/project';
+        const filePath = '/project/src/test.spec.ts';
+        const jestConfigPath = '/project/jest.config.js';
+        const vitestConfigPath = '/project/vitest.config.ts';
+
+        mockedFs.readFileSync = jest.fn().mockImplementation((p: string) => {
+          if (p === jestConfigPath) {
+            return "module.exports = { testMatch: ['**/*.test.ts'] };";
+          }
+          if (p === vitestConfigPath) {
+            return "export default { test: { include: ['**/*.test.ts'] } };";
+          }
+          return '';
+        }) as any;
+
+        detectFrameworkByPatternMatch(
+          directoryPath,
+          filePath,
+          jestConfigPath,
+          vitestConfigPath,
+        );
+
+        expect(hasWarnedForDirectory(directoryPath)).toBe(true);
+      });
+
+      it('should not trigger warning when configs have different patterns', () => {
+        const directoryPath = '/project';
+        const filePath = '/project/src/test.spec.ts';
+        const jestConfigPath = '/project/jest.config.js';
+        const vitestConfigPath = '/project/vitest.config.ts';
+
+        mockedFs.readFileSync = jest.fn().mockImplementation((p: string) => {
+          if (p === jestConfigPath) {
+            return "module.exports = { testMatch: ['**/*.spec.ts'] };";
+          }
+          if (p === vitestConfigPath) {
+            return "export default { test: { include: ['**/*.test.ts'] } };";
+          }
+          return '';
+        }) as any;
+
+        detectFrameworkByPatternMatch(
+          directoryPath,
+          filePath,
+          jestConfigPath,
+          vitestConfigPath,
+        );
+
+        expect(hasWarnedForDirectory(directoryPath)).toBe(false);
+      });
+
+      it('should only warn once per directory (deduplication via hasWarnedForDirectory)', () => {
+        const directoryPath = '/project';
+        const filePath1 = '/project/src/test1.spec.ts';
+        const filePath2 = '/project/src/test2.spec.ts';
+        const jestConfigPath = '/project/jest.config.js';
+        const vitestConfigPath = '/project/vitest.config.ts';
+
+        mockedFs.readFileSync = jest.fn().mockImplementation((p: string) => {
+          if (p === jestConfigPath) {
+            return 'module.exports = {};';
+          }
+          if (p === vitestConfigPath) {
+            return 'export default {};';
+          }
+          return '';
+        }) as any;
+
+        // First call sets warning flag
+        detectFrameworkByPatternMatch(directoryPath, filePath1, jestConfigPath, vitestConfigPath);
+        expect(hasWarnedForDirectory(directoryPath)).toBe(true);
+
+        // Second call should not change state (still true, but no duplicate warning)
+        detectFrameworkByPatternMatch(directoryPath, filePath2, jestConfigPath, vitestConfigPath);
+        expect(hasWarnedForDirectory(directoryPath)).toBe(true);
+      });
+
+      it('should warn for different directories separately', () => {
+        const jestConfigPath1 = '/project1/jest.config.js';
+        const vitestConfigPath1 = '/project1/vitest.config.ts';
+        const jestConfigPath2 = '/project2/jest.config.js';
+        const vitestConfigPath2 = '/project2/vitest.config.ts';
+
+        mockedFs.readFileSync = jest.fn().mockImplementation((p: string) => {
+          if (p.includes('jest.config')) {
+            return 'module.exports = {};';
+          }
+          if (p.includes('vitest.config')) {
+            return 'export default {};';
+          }
+          return '';
+        }) as any;
+
+        detectFrameworkByPatternMatch('/project1', '/project1/test.ts', jestConfigPath1, vitestConfigPath1);
+        detectFrameworkByPatternMatch('/project2', '/project2/test.ts', jestConfigPath2, vitestConfigPath2);
+
+        expect(hasWarnedForDirectory('/project1')).toBe(true);
+        expect(hasWarnedForDirectory('/project2')).toBe(true);
+      });
     });
   });
 
