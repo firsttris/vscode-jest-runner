@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as mm from 'micromatch';
 import { logDebug } from '../util';
 import {
   TestFrameworkName,
@@ -14,6 +15,8 @@ import {
   getTestMatchFromJestConfig,
   getVitestConfig,
   resolveAndValidateCustomConfig,
+  getPlaywrightTestDir,
+  getCypressSpecPattern,
 } from './configParsing';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
@@ -30,7 +33,7 @@ const createDefaultResult = (configDir: string): TestPatternResult => ({
   isRegex: false,
 });
 
-function hasConflictingTestFramework(filePath: string): boolean {
+function hasConflictingTestFramework(filePath: string, currentFramework: TestFrameworkName): boolean {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
   if (!workspaceFolder) return false;
 
@@ -39,10 +42,48 @@ function hasConflictingTestFramework(filePath: string): boolean {
 
   for (const dir of dirs) {
     for (const framework of allTestFrameworks) {
-      // Überspringe Jest und Vitest, da sie unterstützt werden
-      if (framework.name === 'jest' || framework.name === 'vitest') continue;
+      // Überspringe das aktuelle Framework
+      if (framework.name === currentFramework) continue;
 
-      if (framework.configFiles.some(configFile => fs.existsSync(path.join(dir, configFile)))) {
+      const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
+      if (!configPath) continue;
+
+      // Für Playwright, prüfe ob filePath im testDir ist
+      if (framework.name === 'playwright') {
+        const testDir = getPlaywrightTestDir(configPath);
+        if (testDir) {
+          const testDirPath = path.resolve(dir, testDir);
+          if (filePath.startsWith(testDirPath + path.sep) || filePath === testDirPath) {
+            logDebug(`File ${filePath} is in Playwright testDir ${testDirPath}, conflicting with ${currentFramework}`);
+            return true;
+          }
+        } else {
+          // Fallback: wenn kein testDir, deaktiviere im gesamten dir
+          logDebug(`Playwright config found in ${dir}, no testDir specified, conflicting with ${currentFramework}`);
+          return true;
+        }
+      } else if (framework.name === 'cypress') {
+        const specPatterns = getCypressSpecPattern(configPath);
+        if (specPatterns) {
+          for (const pattern of specPatterns) {
+            // Use micromatch to check if filePath matches the glob pattern
+            const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
+            if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+              logDebug(`File ${filePath} matches Cypress specPattern ${pattern}, conflicting with ${currentFramework}`);
+              return true;
+            }
+          }
+        } else {
+          // Fallback: standard Cypress verzeichnis
+          const cypressDir = path.join(dir, 'cypress');
+          if (filePath.startsWith(cypressDir + path.sep) || filePath === cypressDir) {
+            logDebug(`File ${filePath} is in default Cypress dir ${cypressDir}, conflicting with ${currentFramework}`);
+            return true;
+          }
+        }
+      } else {
+        // Für andere Frameworks, deaktiviere im gesamten dir
+        logDebug(`Conflicting test framework ${framework.name} found in ${dir} for ${filePath}`);
         return true;
       }
     }
@@ -257,11 +298,16 @@ export function isTestFile(filePath: string): boolean {
     return false;
   }
 
-  if (hasConflictingTestFramework(filePath)) {
+  const frameworkResult = findTestFrameworkDirectory(filePath);
+  if (!frameworkResult) {
     return false;
   }
 
-  const hasFrameworkDir = !!findTestFrameworkDirectory(filePath);
+  if (hasConflictingTestFramework(filePath, frameworkResult.framework)) {
+    return false;
+  }
+
+  const hasFrameworkDir = !!frameworkResult;
   const hasCustomConfig =
     !!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
     !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
@@ -275,3 +321,6 @@ export function getTestFrameworkForFile(
   const result = findTestFrameworkDirectory(filePath);
   return result?.framework;
 }
+
+// Export for testing
+export { hasConflictingTestFramework };

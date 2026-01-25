@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { logError, logDebug, resolveConfigPathOrMapping } from '../util';
-import { TestPatterns, testFrameworks, TestFrameworkName } from './frameworkDefinitions';
+import { TestPatterns, testFrameworks, allTestFrameworks, TestFrameworkName } from './frameworkDefinitions';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
   try {
@@ -34,8 +34,9 @@ export function binaryExists(directoryPath: string, binaryName: string): boolean
   return possibleBinaryPaths.some(fs.existsSync);
 }
 
-export function getConfigPath(directoryPath: string, frameworkName: TestFrameworkName): string | undefined {
-  const framework = testFrameworks.find((f) => f.name === frameworkName)!;
+export function getConfigPath(directoryPath: string, frameworkName: string): string | undefined {
+  const framework = allTestFrameworks.find((f) => f.name === frameworkName);
+  if (!framework) return undefined;
 
   for (const configFile of framework.configFiles) {
     const configPath = path.join(directoryPath, configFile);
@@ -86,10 +87,14 @@ function extractTestPathIgnorePatterns(config: any): string[] | undefined {
   return undefined;
 }
 
-function extractRootDir(content: string): string | undefined {
-  const rootDirMatch = content.match(/['"]?rootDir['"]?\s*:\s*['"]([^'"]+)['"]/);
+function extractRootDir(content: string, configPath: string): string | undefined {
+  const rootDirMatch = content.match(/['"]?rootDir['"]?\s*:\s*(['"]([^'"]+)['"]|__dirname)/);
   if (rootDirMatch) {
-    return rootDirMatch[1];
+    const value = rootDirMatch[1];
+    if (value === '__dirname') {
+      return path.dirname(configPath);
+    }
+    return rootDirMatch[2]; // the captured string inside quotes
   }
   return undefined;
 }
@@ -229,7 +234,7 @@ const parseJsConfig = (
   content: string,
   configPath: string
 ): TestPatterns | undefined => {
-  const rootDir = extractRootDir(content);
+  const rootDir = extractRootDir(content, configPath);
   if (rootDir) {
     logDebug(`Found rootDir in ${configPath}: ${rootDir}`);
   }
@@ -413,4 +418,65 @@ export function resolveAndValidateCustomConfig(
   if (!fs.existsSync(fullConfigPath)) return undefined;
 
   return fullConfigPath;
+}
+
+export function getPlaywrightTestDir(configPath: string): string | undefined {
+  try {
+    const content = fs.readFileSync(configPath, 'utf8');
+
+    if (configPath.endsWith('.json')) {
+      const config = JSON.parse(content);
+      return config.testDir;
+    }
+
+    // For JS/TS configs, parse testDir
+    const testDirMatch = content.match(/['"]?testDir['"]?\s*:\s*(['"]([^'"]+)['"]|['"]?([^'"\s,]+)['"]?)/);
+    if (testDirMatch) {
+      return testDirMatch[2] || testDirMatch[3];
+    }
+
+    return undefined;
+  } catch (error) {
+    logError(`Error reading Playwright config file: ${configPath}`, error);
+    return undefined;
+  }
+}
+
+export function getCypressSpecPattern(configPath: string): string[] | undefined {
+  try {
+    const content = fs.readFileSync(configPath, 'utf8');
+
+    if (configPath.endsWith('.json')) {
+      const config = JSON.parse(content);
+      return config.e2e?.specPattern || config.specPattern;
+    }
+
+    // For JS/TS configs, parse e2e.specPattern or specPattern
+    const specPatternMatch = content.match(/['"]?specPattern['"]?\s*:\s*(['"]([^'"]+)['"]|\[([^\]]+)\])/);
+    if (specPatternMatch) {
+      const value = specPatternMatch[2] || specPatternMatch[3];
+      if (value.startsWith('[')) {
+        // Array
+        return extractStringsFromArray(value);
+      } else {
+        return [value];
+      }
+    }
+
+    // Also check e2e.specPattern
+    const e2eMatch = content.match(/e2e\s*:\s*\{[^}]*['"]?specPattern['"]?\s*:\s*(['"]([^'"]+)['"]|\[([^\]]+)\])/);
+    if (e2eMatch) {
+      const value = e2eMatch[2] || e2eMatch[3];
+      if (value.startsWith('[')) {
+        return extractStringsFromArray(value);
+      } else {
+        return [value];
+      }
+    }
+
+    return undefined;
+  } catch (error) {
+    logError(`Error reading Cypress config file: ${configPath}`, error);
+    return undefined;
+  }
 }

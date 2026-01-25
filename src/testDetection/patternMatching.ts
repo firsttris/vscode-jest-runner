@@ -36,7 +36,7 @@ function matchesExcludePatterns(
   // Vitest: exclude are glob patterns matched against relative path
   if (excludePatterns && excludePatterns.length > 0) {
     for (const pattern of excludePatterns) {
-      if (mm.isMatch(relativePath, pattern, { nocase: true })) {
+      if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
         logDebug(`File ${filePath} excluded by exclude pattern: ${pattern}`);
         return true;
       }
@@ -103,7 +103,7 @@ export function fileMatchesPatternsExplicit(
       }
     } else {
       const normalizedPattern = resolveRootDirToken(pattern, rootDir);
-      if (mm.isMatch(pathToMatch, normalizedPattern, { nocase: true })) {
+      if (mm.isMatch(pathToMatch, normalizedPattern, { nocase: true, extended: true })) {
         return true;
       }
     }

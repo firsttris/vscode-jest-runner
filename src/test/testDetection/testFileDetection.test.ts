@@ -9,6 +9,7 @@ import {
   isTestFile,
   getTestFrameworkForFile,
   findTestFrameworkDirectory,
+  hasConflictingTestFramework,
 } from '../../testDetection';
 
 jest.mock('fs');
@@ -1061,6 +1062,128 @@ export default defineConfig({
       const testFile = '/workspace/examples/src/utils.test.ts';
       const testResult = findTestFrameworkDirectory(testFile);
       expect(testResult?.framework).toBe('vitest');
+    });
+  });
+
+  describe('hasConflictingTestFramework', () => {
+    const rootPath = '/workspace/project';
+
+    beforeEach(() => {
+      mockedFs.existsSync.mockReturnValue(false);
+      mockedFs.readFileSync.mockReturnValue('');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+    });
+
+    it('should return false when no conflicting frameworks are found', () => {
+      const filePath = '/workspace/project/src/utils.test.js';
+      mockedFs.existsSync.mockReturnValue(false);
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when Playwright config is found and file is in testDir', () => {
+      const filePath = '/workspace/project/test/login.spec.ts';
+      const playwrightConfigPath = '/workspace/project/playwright.config.ts';
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === playwrightConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === playwrightConfigPath) {
+          return 'export default { testDir: "test" };';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when Playwright config is found but file is not in testDir', () => {
+      const filePath = '/workspace/project/src/utils.test.js';
+      const playwrightConfigPath = '/workspace/project/playwright.config.ts';
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === playwrightConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === playwrightConfigPath) {
+          return 'export default { testDir: "test" };';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when Cypress config is found and file matches specPattern', () => {
+      const filePath = '/workspace/project/cypress/e2e/login.cy.js';
+      const cypressConfigPath = '/workspace/project/cypress.config.js';
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === cypressConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === cypressConfigPath) {
+          return 'module.exports = { e2e: { specPattern: "cypress/e2e/**/*.cy.js" } };';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when Cypress config is found but file does not match specPattern', () => {
+      const filePath = '/workspace/project/src/utils.test.js';
+      const cypressConfigPath = '/workspace/project/cypress.config.js';
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === cypressConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === cypressConfigPath) {
+          return 'module.exports = { e2e: { specPattern: "cypress/e2e/**/*.cy.js" } };';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when Cypress config is found and file is in default cypress dir', () => {
+      const filePath = '/workspace/project/cypress/integration/login.spec.js';
+      const cypressConfigPath = '/workspace/project/cypress.config.js';
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === cypressConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === cypressConfigPath) {
+          return 'module.exports = {};'; // No specPattern
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(true);
     });
   });
 });

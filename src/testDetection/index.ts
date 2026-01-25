@@ -55,6 +55,7 @@ export {
   isVitestTestFile,
   isTestFile,
   getTestFrameworkForFile,
+  hasConflictingTestFramework,
 } from './testFileDetection';
 
 // ESM detection
