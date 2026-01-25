@@ -110,10 +110,10 @@ export function detectPatternConflict(
  * Shows a warning to the user about pattern conflicts.
  * Only shows the warning once per directory to avoid spam.
  */
-export function showPatternConflictWarning(
+export async function showPatternConflictWarning(
   directoryPath: string,
   conflictInfo: PatternConflictInfo,
-): void {
+): Promise<void> {
   if (warnedDirectories.has(directoryPath)) {
     return;
   }
@@ -139,17 +139,16 @@ export function showPatternConflictWarning(
 
   logWarning(fullMessage);
 
-  vscode.window.showWarningMessage(
+  const selection = await vscode.window.showWarningMessage(
     fullMessage,
     'Open Output',
     'Configure Settings',
-  ).then(selection => {
-    if (selection === 'Open Output') {
-      getOutputChannel().show();
-    } else if (selection === 'Configure Settings') {
-      vscode.commands.executeCommand('workbench.action.openSettings', 'jestrunner');
-    }
-  });
+  );
+  if (selection === 'Open Output') {
+    getOutputChannel().show();
+  } else if (selection === 'Configure Settings') {
+    vscode.commands.executeCommand('workbench.action.openSettings', 'jestrunner');
+  }
 
   logDebug(`Pattern conflict details: Jest patterns=[${conflictInfo.jestPatterns.join(', ')}] (default=${conflictInfo.jestIsDefault}), Vitest patterns=[${conflictInfo.vitestPatterns.join(', ')}] (default=${conflictInfo.vitestIsDefault})`);
 }
@@ -184,18 +183,18 @@ function clearWarningForDirectory(directoryPath: string): void {
 /**
  * Handles config file changes by clearing the warning for that directory and re-checking for conflicts.
  */
-function onConfigFileChanged(uri: vscode.Uri): void {
+async function onConfigFileChanged(uri: vscode.Uri): Promise<void> {
   const directoryPath = path.dirname(uri.fsPath);
   clearWarningForDirectory(directoryPath);
   // Immediately re-check for conflicts after clearing the warning
-  checkAndShowPatternConflictForDirectory(directoryPath);
+  await checkAndShowPatternConflictForDirectory(directoryPath);
 }
 
 /**
  * Checks for pattern conflicts in a directory and shows warning if needed.
  * Called when config files change to immediately re-evaluate conflicts.
  */
-export function checkAndShowPatternConflictForDirectory(directoryPath: string): void {
+export async function checkAndShowPatternConflictForDirectory(directoryPath: string): Promise<void> {
   const jestConfigPath = getConfigPath(directoryPath, 'jest');
   const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
 
@@ -208,7 +207,7 @@ export function checkAndShowPatternConflictForDirectory(directoryPath: string): 
 
   const conflictInfo = detectPatternConflict(jestConfig, vitestConfig);
   if (conflictInfo.hasConflict) {
-    showPatternConflictWarning(directoryPath, conflictInfo);
+    await showPatternConflictWarning(directoryPath, conflictInfo);
   }
 }
 

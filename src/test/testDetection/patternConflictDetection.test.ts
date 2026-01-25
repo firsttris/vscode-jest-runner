@@ -5,12 +5,26 @@ import {
   clearPatternConflictWarnings,
   hasWarnedForDirectory,
   PatternConflictInfo,
+  initConfigFileWatcher,
+  disposeConfigFileWatcher,
 } from '../../testDetection/patternConflictDetection';
 import { DEFAULT_TEST_PATTERNS, TestPatterns } from '../../testDetection/frameworkDefinitions';
+
+// Mock the util module
+const mockOutputChannel = {
+  appendLine: jest.fn(),
+  show: jest.fn(),
+};
+jest.mock('../../util', () => ({
+  logWarning: jest.fn(),
+  logDebug: jest.fn(),
+  getOutputChannel: jest.fn(() => mockOutputChannel),
+}));
 
 jest.mock('vscode');
 
 const mockedVscode = vscode as jest.Mocked<typeof vscode>;
+const mockedUtil = require('../../util');
 
 describe('patternConflictDetection', () => {
   beforeEach(() => {
@@ -178,10 +192,15 @@ describe('patternConflictDetection', () => {
 
   describe('showPatternConflictWarning', () => {
     let showWarningMessageMock: jest.Mock;
+    let executeCommandMock: jest.Mock;
 
     beforeEach(() => {
+      jest.clearAllMocks();
+      clearPatternConflictWarnings();
       showWarningMessageMock = jest.fn().mockResolvedValue(undefined);
+      executeCommandMock = jest.fn().mockResolvedValue(undefined);
       (mockedVscode.window.showWarningMessage as jest.Mock) = showWarningMessageMock;
+      (mockedVscode.commands.executeCommand as jest.Mock) = executeCommandMock;
     });
 
     it('should show warning for both_default conflict', () => {
@@ -308,6 +327,42 @@ describe('patternConflictDetection', () => {
         'Configure Settings',
       );
     });
+
+    it('should execute Open Output callback when selected', async () => {
+      const conflictInfo: PatternConflictInfo = {
+        hasConflict: true,
+        reason: 'both_default',
+        jestPatterns: DEFAULT_TEST_PATTERNS,
+        vitestPatterns: DEFAULT_TEST_PATTERNS,
+        jestIsDefault: true,
+        vitestIsDefault: true,
+      };
+
+      showWarningMessageMock.mockResolvedValue('Open Output');
+
+      await showPatternConflictWarning('/project', conflictInfo);
+
+      expect(showWarningMessageMock).toHaveBeenCalled();
+      expect(mockOutputChannel.show).toHaveBeenCalled();
+    });
+
+    it('should execute Configure Settings callback when selected', async () => {
+      const conflictInfo: PatternConflictInfo = {
+        hasConflict: true,
+        reason: 'both_default',
+        jestPatterns: DEFAULT_TEST_PATTERNS,
+        vitestPatterns: DEFAULT_TEST_PATTERNS,
+        jestIsDefault: true,
+        vitestIsDefault: true,
+      };
+
+      showWarningMessageMock.mockResolvedValue('Configure Settings');
+
+      await showPatternConflictWarning('/project', conflictInfo);
+
+      expect(showWarningMessageMock).toHaveBeenCalled();
+      expect(executeCommandMock).toHaveBeenCalledWith('workbench.action.openSettings', 'jestrunner');
+    });
   });
 
   describe('clearPatternConflictWarnings', () => {
@@ -356,6 +411,39 @@ describe('patternConflictDetection', () => {
       showPatternConflictWarning('/some/path', conflictInfo);
 
       expect(hasWarnedForDirectory('/some/path')).toBe(true);
+    });
+  });
+});
+
+describe('configFileWatcher', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('disposeConfigFileWatcher', () => {
+    it('should dispose the config file watcher if it exists', () => {
+      const mockWatcher = {
+        dispose: jest.fn(),
+        onDidChange: jest.fn(() => ({ dispose: jest.fn() })),
+        onDidCreate: jest.fn(() => ({ dispose: jest.fn() })),
+        onDidDelete: jest.fn(() => ({ dispose: jest.fn() })),
+      };
+      (mockedVscode.workspace.createFileSystemWatcher as jest.Mock).mockReturnValue(mockWatcher);
+
+      // Initialize watcher
+      initConfigFileWatcher();
+
+      // Dispose it
+      disposeConfigFileWatcher();
+
+      expect(mockWatcher.dispose).toHaveBeenCalled();
+    });
+
+    it('should do nothing if no watcher exists', () => {
+      // Dispose without initializing
+      disposeConfigFileWatcher();
+
+      // Should not throw or do anything
     });
   });
 });
