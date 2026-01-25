@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as mm from 'micromatch';
+import { logDebug, normalizePath } from '../util';
 import {
   TestFrameworkName,
   TestPatternResult,
@@ -33,47 +34,77 @@ const createDefaultResult = (configDir: string): TestPatternResult => ({
 });
 
 function hasConflictingTestFramework(filePath: string, currentFramework: TestFrameworkName): boolean {
+  console.log(`hasConflictingTestFramework called with filePath: ${filePath}, currentFramework: ${currentFramework}`);
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
-  if (!workspaceFolder) return false;
+  if (!workspaceFolder) {
+    console.log('No workspace folder found');
+    return false;
+  }
 
   const rootPath = workspaceFolder.uri.fsPath;
+  console.log(`rootPath: ${rootPath}`);
   const dirs = getParentDirectories(path.dirname(filePath), rootPath);
+  console.log(`dirs: ${dirs.join(', ')}`);
 
   for (const dir of dirs) {
+    console.log(`Checking dir: ${dir}`);
     for (const framework of allTestFrameworks) {
       if (framework.name === currentFramework) continue;
+      console.log(`Checking framework: ${framework.name}`);
       const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
+      console.log(`configPath for ${framework.name}: ${configPath}`);
       if (!configPath) continue;
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
+        console.log(`playwright testDir: ${testDir}`);
         if (testDir) {
-          const testDirPath = path.resolve(dir, testDir);
-          if (filePath.startsWith(testDirPath + path.sep) || filePath === testDirPath) {
+          const testDirPath = normalizePath(path.resolve(dir, testDir));
+          const normalizedFilePath = normalizePath(filePath);
+          console.log(`testDirPath: ${testDirPath}`);
+          console.log(`normalizedFilePath: ${normalizedFilePath}`);
+          console.log(`normalizedFilePath.startsWith(testDirPath + '/'): ${normalizedFilePath.startsWith(testDirPath + '/')}`);
+          console.log(`normalizedFilePath === testDirPath: ${normalizedFilePath === testDirPath}`);
+          if (normalizedFilePath.startsWith(testDirPath + '/') || normalizedFilePath === testDirPath) {
+            console.log('Returning true for playwright testDir match');
             return true;
           }
         } else {
+          console.log('No testDir found, returning true for playwright config presence');
           return true;
         }
       } else if (framework.name === 'cypress') {
         const specPatterns = getCypressSpecPattern(configPath);
+        console.log(`cypress specPatterns: ${specPatterns}`);
         if (specPatterns) {
           for (const pattern of specPatterns) {
+            console.log(`Checking pattern: ${pattern}`);
             const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
-            if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+            console.log(`relativePath: ${relativePath}`);
+            const isMatch = mm.isMatch(relativePath, pattern, { nocase: true, extended: true });
+            console.log(`mm.isMatch: ${isMatch}`);
+            if (isMatch) {
+              console.log('Returning true for cypress specPattern match');
               return true;
             }
           }
         } else {
-          const cypressDir = path.join(dir, 'cypress');
-          if (filePath.startsWith(cypressDir + path.sep) || filePath === cypressDir) {
+          const cypressDir = normalizePath(path.join(dir, 'cypress'));
+          const normalizedFilePath = normalizePath(filePath);
+          console.log(`cypressDir: ${cypressDir}`);
+          console.log(`normalizedFilePath.startsWith(cypressDir + '/'): ${normalizedFilePath.startsWith(cypressDir + '/')}`);
+          console.log(`normalizedFilePath === cypressDir: ${normalizedFilePath === cypressDir}`);
+          if (normalizedFilePath.startsWith(cypressDir + '/') || normalizedFilePath === cypressDir) {
+            console.log('Returning true for cypress dir match');
             return true;
           }
         }
       } else {
+        console.log('Returning true for other framework config presence');
         return true;
       }
     }
   }
+  console.log('Returning false, no conflicts found');
   return false;
 }
 
