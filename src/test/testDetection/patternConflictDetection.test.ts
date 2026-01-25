@@ -102,6 +102,17 @@ describe('patternConflictDetection', () => {
     });
 
     describe('explicit_matches_default conflict', () => {
+          it('should detect conflict when Jest has explicit pattern overlapping Vitest default', () => {
+            const jestConfig: TestPatterns = {
+              patterns: ['**/*.test.js', '**/__tests__/**/*.js'],
+              isRegex: false,
+            };
+            const result = detectPatternConflict(jestConfig, undefined);
+            expect(result.hasConflict).toBe(true);
+            expect(result.reason).toBe('explicit_matches_default');
+            expect(result.jestIsDefault).toBe(false);
+            expect(result.vitestIsDefault).toBe(true);
+          });
       it('should detect conflict when Jest has explicit patterns equal to defaults and Vitest uses defaults', () => {
         const jestConfig: TestPatterns = {
           patterns: [...DEFAULT_TEST_PATTERNS],
@@ -193,14 +204,20 @@ describe('patternConflictDetection', () => {
   describe('showPatternConflictWarning', () => {
     let showWarningMessageMock: jest.Mock;
     let executeCommandMock: jest.Mock;
+    let openTextDocumentMock: jest.Mock;
+    let showTextDocumentMock: jest.Mock;
 
     beforeEach(() => {
       jest.clearAllMocks();
       clearPatternConflictWarnings();
       showWarningMessageMock = jest.fn().mockResolvedValue(undefined);
       executeCommandMock = jest.fn().mockResolvedValue(undefined);
+      openTextDocumentMock = jest.fn().mockResolvedValue({});
+      showTextDocumentMock = jest.fn().mockResolvedValue(undefined);
       (mockedVscode.window.showWarningMessage as jest.Mock) = showWarningMessageMock;
       (mockedVscode.commands.executeCommand as jest.Mock) = executeCommandMock;
+      (mockedVscode.workspace.openTextDocument as jest.Mock) = openTextDocumentMock;
+      (mockedVscode.window.showTextDocument as jest.Mock) = showTextDocumentMock;
     });
 
     it('should show warning for both_default conflict', () => {
@@ -219,7 +236,6 @@ describe('patternConflictDetection', () => {
       expect(showWarningMessageMock).toHaveBeenCalledWith(
         expect.stringContaining('neither has explicit test patterns'),
         'Open Output',
-        'Configure Settings',
       );
     });
 
@@ -239,7 +255,6 @@ describe('patternConflictDetection', () => {
       expect(showWarningMessageMock).toHaveBeenCalledWith(
         expect.stringContaining('identical test patterns'),
         'Open Output',
-        'Configure Settings',
       );
     });
 
@@ -259,7 +274,6 @@ describe('patternConflictDetection', () => {
       expect(showWarningMessageMock).toHaveBeenCalledWith(
         expect.stringContaining('overlapping test patterns'),
         'Open Output',
-        'Configure Settings',
       );
     });
 
@@ -324,7 +338,6 @@ describe('patternConflictDetection', () => {
       expect(showWarningMessageMock).toHaveBeenCalledWith(
         expect.stringContaining('/my/custom/path'),
         'Open Output',
-        'Configure Settings',
       );
     });
 
@@ -346,7 +359,7 @@ describe('patternConflictDetection', () => {
       expect(mockOutputChannel.show).toHaveBeenCalled();
     });
 
-    it('should execute Configure Settings callback when selected', async () => {
+    it('should show Open Jest Config button when jestConfigPath is provided', () => {
       const conflictInfo: PatternConflictInfo = {
         hasConflict: true,
         reason: 'both_default',
@@ -356,12 +369,88 @@ describe('patternConflictDetection', () => {
         vitestIsDefault: true,
       };
 
-      showWarningMessageMock.mockResolvedValue('Configure Settings');
+      showPatternConflictWarning('/project', conflictInfo, '/path/to/jest.config.js');
 
-      await showPatternConflictWarning('/project', conflictInfo);
+      expect(showWarningMessageMock).toHaveBeenCalledWith(
+        expect.stringContaining('neither has explicit test patterns'),
+        'Open Output',
+        'Open Jest Config',
+      );
+    });
 
-      expect(showWarningMessageMock).toHaveBeenCalled();
-      expect(executeCommandMock).toHaveBeenCalledWith('workbench.action.openSettings', 'jestrunner');
+    it('should show Open Vitest Config button when vitestConfigPath is provided', () => {
+      const conflictInfo: PatternConflictInfo = {
+        hasConflict: true,
+        reason: 'both_default',
+        jestPatterns: DEFAULT_TEST_PATTERNS,
+        vitestPatterns: DEFAULT_TEST_PATTERNS,
+        jestIsDefault: true,
+        vitestIsDefault: true,
+      };
+
+      showPatternConflictWarning('/project', conflictInfo, undefined, '/path/to/vitest.config.ts');
+
+      expect(showWarningMessageMock).toHaveBeenCalledWith(
+        expect.stringContaining('neither has explicit test patterns'),
+        'Open Output',
+        'Open Vitest Config',
+      );
+    });
+
+    it('should show both config buttons when both paths are provided', () => {
+      const conflictInfo: PatternConflictInfo = {
+        hasConflict: true,
+        reason: 'both_default',
+        jestPatterns: DEFAULT_TEST_PATTERNS,
+        vitestPatterns: DEFAULT_TEST_PATTERNS,
+        jestIsDefault: true,
+        vitestIsDefault: true,
+      };
+
+      showPatternConflictWarning('/project', conflictInfo, '/path/to/jest.config.js', '/path/to/vitest.config.ts');
+
+      expect(showWarningMessageMock).toHaveBeenCalledWith(
+        expect.stringContaining('neither has explicit test patterns'),
+        'Open Output',
+        'Open Jest Config',
+        'Open Vitest Config',
+      );
+    });
+
+    it('should open Jest config file when Open Jest Config is selected', async () => {
+      const conflictInfo: PatternConflictInfo = {
+        hasConflict: true,
+        reason: 'both_default',
+        jestPatterns: DEFAULT_TEST_PATTERNS,
+        vitestPatterns: DEFAULT_TEST_PATTERNS,
+        jestIsDefault: true,
+        vitestIsDefault: true,
+      };
+
+      showWarningMessageMock.mockResolvedValue('Open Jest Config');
+
+      await showPatternConflictWarning('/project', conflictInfo, '/path/to/jest.config.js');
+
+      expect(openTextDocumentMock).toHaveBeenCalledWith(mockedVscode.Uri.file('/path/to/jest.config.js'));
+      expect(showTextDocumentMock).toHaveBeenCalled();
+    });
+
+    it('should open Vitest config file when Open Vitest Config is selected', async () => {
+      const conflictInfo: PatternConflictInfo = {
+        hasConflict: true,
+        reason: 'both_default',
+        jestPatterns: DEFAULT_TEST_PATTERNS,
+        vitestPatterns: DEFAULT_TEST_PATTERNS,
+        jestIsDefault: true,
+        vitestIsDefault: true,
+      };
+
+      showWarningMessageMock.mockResolvedValue('Open Vitest Config');
+
+      await showPatternConflictWarning('/project', conflictInfo, undefined, '/path/to/vitest.config.ts');
+
+      expect(openTextDocumentMock).toHaveBeenCalledWith(mockedVscode.Uri.file('/path/to/vitest.config.ts'));
+      expect(showTextDocumentMock).toHaveBeenCalled();
     });
   });
 

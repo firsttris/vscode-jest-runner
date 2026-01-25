@@ -3,6 +3,7 @@ import * as path from 'path';
 import { logWarning, logDebug, getOutputChannel } from '../util';
 import { DEFAULT_TEST_PATTERNS, TestPatterns } from './frameworkDefinitions';
 import { getTestMatchFromJestConfig, getVitestConfig, getConfigPath } from './configParsing';
+import * as mm from 'micromatch';
 
 // Track which directories have already shown a warning to avoid spam
 const warnedDirectories = new Set<string>();
@@ -84,20 +85,33 @@ export function detectPatternConflict(
     };
   }
 
-  // Case 3: One has explicit patterns that match the other's default
-  if (!jestIsDefault && vitestIsDefault && isDefaultPatterns(jestPatterns)) {
-    return {
-      ...baseInfo,
-      hasConflict: true,
-      reason: 'explicit_matches_default',
-    };
+
+  // Case 3: One has explicit patterns that match or overlap the other's default
+  const vitestDefaultPatterns = DEFAULT_TEST_PATTERNS;
+  if (!jestIsDefault && vitestIsDefault) {
+    // Check if any Jest pattern matches any Vitest default pattern via glob
+    const overlap = jestPatterns.some(jp =>
+      vitestDefaultPatterns.some(vp => mm.isMatch(jp, vp) || mm.isMatch(vp, jp))
+    );
+    if (overlap) {
+      return {
+        ...baseInfo,
+        hasConflict: true,
+        reason: 'explicit_matches_default',
+      };
+    }
   }
-  if (jestIsDefault && !vitestIsDefault && isDefaultPatterns(vitestPatterns)) {
-    return {
-      ...baseInfo,
-      hasConflict: true,
-      reason: 'explicit_matches_default',
-    };
+  if (jestIsDefault && !vitestIsDefault) {
+    const overlap = vitestPatterns.some(vp =>
+      vitestDefaultPatterns.some(dp => mm.isMatch(vp, dp) || mm.isMatch(dp, vp))
+    );
+    if (overlap) {
+      return {
+        ...baseInfo,
+        hasConflict: true,
+        reason: 'explicit_matches_default',
+      };
+    }
   }
 
   return {
@@ -113,6 +127,8 @@ export function detectPatternConflict(
 export async function showPatternConflictWarning(
   directoryPath: string,
   conflictInfo: PatternConflictInfo,
+  jestConfigPath?: string,
+  vitestConfigPath?: string,
 ): Promise<void> {
   if (warnedDirectories.has(directoryPath)) {
     return;
@@ -134,20 +150,29 @@ export async function showPatternConflictWarning(
       return;
   }
 
-  const suggestion = 'Configure distinct testMatch/testRegex (Jest) or test.include (Vitest) patterns to resolve this.';
+  const suggestion = 'Configure distinct testMatch (Jest) or test.include (Vitest) patterns to resolve this.';
   const fullMessage = `${message} ${suggestion}`;
 
   logWarning(fullMessage);
 
+  const buttons = ['Open Output'];
+  if (jestConfigPath) buttons.push('Open Jest Config');
+  if (vitestConfigPath) buttons.push('Open Vitest Config');
+
   const selection = await vscode.window.showWarningMessage(
     fullMessage,
-    'Open Output',
-    'Configure Settings',
+    ...buttons,
   );
   if (selection === 'Open Output') {
     getOutputChannel().show();
-  } else if (selection === 'Configure Settings') {
-    vscode.commands.executeCommand('workbench.action.openSettings', 'jestrunner');
+  } else if (selection === 'Open Jest Config' && jestConfigPath) {
+    const uri = vscode.Uri.file(jestConfigPath);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(doc);
+  } else if (selection === 'Open Vitest Config' && vitestConfigPath) {
+    const uri = vscode.Uri.file(vitestConfigPath);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.window.showTextDocument(doc);
   }
 
   logDebug(`Pattern conflict details: Jest patterns=[${conflictInfo.jestPatterns.join(', ')}] (default=${conflictInfo.jestIsDefault}), Vitest patterns=[${conflictInfo.vitestPatterns.join(', ')}] (default=${conflictInfo.vitestIsDefault})`);
@@ -170,22 +195,11 @@ export function hasWarnedForDirectory(directoryPath: string): boolean {
 }
 
 /**
- * Clears the warning for a specific directory.
- * Called when a config file in that directory changes.
- */
-function clearWarningForDirectory(directoryPath: string): void {
-  if (warnedDirectories.has(directoryPath)) {
-    warnedDirectories.delete(directoryPath);
-    logDebug(`Cleared pattern conflict warning for ${directoryPath} due to config change`);
-  }
-}
-
-/**
  * Handles config file changes by clearing the warning for that directory and re-checking for conflicts.
  */
 async function onConfigFileChanged(uri: vscode.Uri): Promise<void> {
   const directoryPath = path.dirname(uri.fsPath);
-  clearWarningForDirectory(directoryPath);
+  clearPatternConflictWarnings();
   // Immediately re-check for conflicts after clearing the warning
   await checkAndShowPatternConflictForDirectory(directoryPath);
 }
@@ -207,7 +221,7 @@ export async function checkAndShowPatternConflictForDirectory(directoryPath: str
 
   const conflictInfo = detectPatternConflict(jestConfig, vitestConfig);
   if (conflictInfo.hasConflict) {
-    await showPatternConflictWarning(directoryPath, conflictInfo);
+    await showPatternConflictWarning(directoryPath, conflictInfo, jestConfigPath, vitestConfigPath);
   }
 }
 

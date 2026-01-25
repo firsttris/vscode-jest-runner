@@ -151,7 +151,7 @@ export function detectFrameworkByPatternMatch(
   // Check for pattern conflicts and warn user
   const conflictInfo = detectPatternConflict(jestConfig, vitestConfig);
   if (conflictInfo.hasConflict) {
-    showPatternConflictWarning(directoryPath, conflictInfo);
+    showPatternConflictWarning(directoryPath, conflictInfo, jestConfigPath, vitestConfigPath);
   }
 
   if (!jestHasExplicitPatterns && !vitestHasExplicitPatterns) {
