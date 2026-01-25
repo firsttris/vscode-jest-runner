@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { pushMany, isTestFile, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
-import { getTestFrameworkForFile } from './testDetection';
+import { getTestFrameworkForFile, clearTestDetectionCache, clearVitestDetectionCache, testFrameworks } from './testDetection';
 import {
   CoverageProvider,
   DetailedFileCoverage,
@@ -24,6 +24,7 @@ export class JestTestController {
   private disposables: vscode.Disposable[] = [];
   private jestConfig: TestRunnerConfig;
   private coverageProvider: CoverageProvider;
+  private customConfigWatchers: vscode.FileSystemWatcher[] = [];
 
   constructor(context: vscode.ExtensionContext) {
     this.jestConfig = new TestRunnerConfig();
@@ -97,6 +98,7 @@ export class JestTestController {
         e.affectsConfiguration('vitest') ||
         e.affectsConfiguration('jest')
       ) {
+        this.refreshCustomConfigWatchers();
         this.refreshAllTests();
       }
     });
@@ -104,9 +106,7 @@ export class JestTestController {
     this.disposables.push(configWatcher);
 
     const configFilePatterns = [
-      '**/jest.config.{js,ts,json,cjs,mjs}',
-      '**/vitest.config.{js,ts,mjs,mts,cjs,cts}',
-      '**/vite.config.{js,ts,mjs,mts,cjs,cts}',
+      ...testFrameworks.flatMap(f => f.configFiles.map(c => `**/${c}`)),
     ];
 
     const handleConfigChange = () => this.refreshAllTests();
@@ -118,9 +118,53 @@ export class JestTestController {
       watcher.onDidDelete(handleConfigChange);
       this.disposables.push(watcher);
     }
+
+    // Initial setup of custom config watchers
+    this.refreshCustomConfigWatchers();
+  }
+
+  private refreshCustomConfigWatchers(): void {
+    // Dispose existing custom watchers
+    this.customConfigWatchers.forEach(w => w.dispose());
+    this.customConfigWatchers = [];
+
+    const customPaths = new Set<string>();
+
+    const jestConfigPath = vscode.workspace.getConfiguration().get('jestrunner.configPath') as string | Record<string, string> | undefined;
+    const vitestConfigPath = vscode.workspace.getConfiguration().get('jestrunner.vitestConfigPath') as string | Record<string, string> | undefined;
+
+    const addPaths = (config: string | Record<string, string> | undefined) => {
+      if (typeof config === 'string') {
+        customPaths.add(config);
+      } else if (config && typeof config === 'object') {
+        Object.values(config).forEach(path => customPaths.add(path));
+      }
+    };
+
+    addPaths(jestConfigPath);
+    addPaths(vitestConfigPath);
+
+    const handleConfigChange = () => this.refreshAllTests();
+
+    for (const configPath of customPaths) {
+      if (configPath) {
+        const resolvedPath = path.isAbsolute(configPath)
+          ? configPath
+          : path.resolve(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', configPath);
+        const watcher = vscode.workspace.createFileSystemWatcher(resolvedPath);
+        watcher.onDidChange(handleConfigChange);
+        watcher.onDidCreate(handleConfigChange);
+        watcher.onDidDelete(handleConfigChange);
+        this.customConfigWatchers.push(watcher);
+      }
+    }
   }
 
   private async refreshAllTests(): Promise<void> {
+    // Clear detection caches to ensure fresh framework detection
+    clearTestDetectionCache();
+    clearVitestDetectionCache();
+
     this.testController.items.replace([]);
 
     if (vscode.workspace.workspaceFolders) {
@@ -393,6 +437,7 @@ export class JestTestController {
 
   public dispose(): void {
     this.disposables.forEach((d) => d.dispose());
+    this.customConfigWatchers.forEach((w) => w.dispose());
     this.testController.dispose();
   }
 }
