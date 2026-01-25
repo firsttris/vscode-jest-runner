@@ -36,10 +36,15 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
   if (!workspaceFolder) return false;
 
-  const rootPath = workspaceFolder.uri.fsPath;
+  // Always use forward slashes for path comparisons
+  const normalize = (p: string) => path.resolve(p).replace(/\\/g, '/');
+  const rootPath = normalize(workspaceFolder.uri.fsPath);
   const dirs = getParentDirectories(path.dirname(filePath), rootPath);
 
+  const normalizedFilePath = normalize(filePath);
+
   for (const dir of dirs) {
+    const normalizedDir = normalize(dir);
     for (const framework of allTestFrameworks) {
       if (framework.name === currentFramework) continue;
       const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
@@ -47,8 +52,8 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
-          const testDirPath = path.resolve(dir, testDir);
-          if (filePath.startsWith(testDirPath + path.sep) || filePath === testDirPath) {
+          const testDirPath = normalize(path.join(dir, testDir));
+          if (normalizedFilePath.startsWith(testDirPath + '/') || normalizedFilePath === testDirPath) {
             return true;
           }
         } else {
@@ -58,14 +63,16 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         const specPatterns = getCypressSpecPattern(configPath);
         if (specPatterns) {
           for (const pattern of specPatterns) {
+            // Normalize relativePath and pattern for micromatch
             const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
-            if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+            const normalizedPattern = pattern.replace(/\\/g, '/');
+            if (mm.isMatch(relativePath, normalizedPattern, { nocase: true, extended: true })) {
               return true;
             }
           }
         } else {
-          const cypressDir = path.join(dir, 'cypress');
-          if (filePath.startsWith(cypressDir + path.sep) || filePath === cypressDir) {
+          const cypressDir = normalize(path.join(dir, 'cypress'));
+          if (normalizedFilePath.startsWith(cypressDir + '/') || normalizedFilePath === cypressDir) {
             return true;
           }
         }
