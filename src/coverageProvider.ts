@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { logDebug, logError, logInfo, logWarning } from './util';
+import { logError, logInfo, logWarning } from './util';
 import { matchesTestFilePattern } from './testDetection';
 import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
 
@@ -14,9 +14,9 @@ export interface FileCoverageData {
   statementMap: { [id: string]: LocationRange };
   fnMap: { [id: string]: FunctionMapping };
   branchMap: { [id: string]: BranchMapping };
-  s: { [id: string]: number }; // statement execution counts
-  f: { [id: string]: number }; // function execution counts
-  b: { [id: string]: number[] }; // branch execution counts
+  s: { [id: string]: number }; 
+  f: { [id: string]: number }; 
+  b: { [id: string]: number[] }; 
 }
 
 export interface LocationRange {
@@ -67,11 +67,10 @@ export class CoverageProvider {
       const match = content.match(pattern);
       if (match) {
         const dir = match[1];
-        logDebug(`Found ${framework} coverage directory: ${dir}`);
         return path.isAbsolute(dir) ? dir : path.join(configDir, dir);
       }
     } catch (error) {
-      logDebug(`Could not parse ${framework} config: ${error}`);
+      logError(`Could not parse ${framework} config: ${error}`);
     }
     return undefined;
   }
@@ -83,8 +82,6 @@ export class CoverageProvider {
     if (!fs.existsSync(configPath)) {
       return undefined;
     }
-
-    logDebug(`Parsing coverage dir from config: ${configPath}`);
     return this.parseCoverageDirFromConfig(configPath, framework);
   }
 
@@ -133,11 +130,9 @@ export class CoverageProvider {
       if (!coverageDir) {
         const baseDir = configPath ? path.dirname(configPath) : workspaceFolder;
         coverageDir = path.join(baseDir, DEFAULT_COVERAGE_DIR);
-        logDebug(`Using default coverage directory: ${coverageDir}`);
       }
 
       const coveragePath = path.join(coverageDir, COVERAGE_FINAL_FILE);
-      logDebug(`Looking for coverage at: ${coveragePath}`);
 
       if (!fs.existsSync(coveragePath)) {
         logInfo(`Coverage file not found at: ${coveragePath}`);
@@ -146,8 +141,6 @@ export class CoverageProvider {
         );
         return undefined;
       }
-
-      logInfo(`Reading coverage from: ${coveragePath}`);
 
       const content = fs.readFileSync(coveragePath, 'utf-8');
 

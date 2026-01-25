@@ -4,7 +4,7 @@ import {
   JestAssertionResult,
 } from './testResultTypes';
 import {
-  logDebug,
+  logError,
   logWarning,
   resolveTestNameStringInterpolation,
 } from './util';
@@ -12,22 +12,18 @@ import { type TestFrameworkName } from './testDetection';
 
 export function parseJestOutput(output: string): JestResults | undefined {
   try {
-    // First try to parse the entire output as JSON - Jest with --json --coverage
-    // includes coverage data inline in the JSON structure
     const trimmed = output.trim();
     if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
       try {
         const parsed = JSON.parse(trimmed);
         if (parsed && typeof parsed === 'object' && 'testResults' in parsed) {
-          logDebug('Successfully parsed complete Jest JSON output');
           return parsed;
         }
       } catch (e) {
-        logDebug(`Failed to parse complete output as JSON: ${e}`);
+        logError(`Failed to parse complete output as JSON: ${e}`);
       }
     }
 
-    // Fallback to regex extraction for cases where output has extra text
     const jsonRegex = /({"numFailedTestSuites":.*?"wasInterrupted":.*?})/s;
     const jsonMatch = output.match(jsonRegex);
 
@@ -42,7 +38,7 @@ export function parseJestOutput(output: string): JestResults | undefined {
 
     return undefined;
   } catch (e) {
-    logDebug(`Failed to parse Jest JSON output: ${e}`);
+    logError(`Failed to parse Jest JSON output: ${e}`);
     return undefined;
   }
 }
@@ -68,7 +64,7 @@ export function parseVitestOutput(output: string): JestResults | undefined {
 
     return undefined;
   } catch (e) {
-    logDebug(`Failed to parse Vitest JSON output: ${e}`);
+    logError(`Failed to parse Vitest JSON output: ${e}`);
     return undefined;
   }
 }
@@ -200,14 +196,9 @@ const reportTestResult = (
   result: JestAssertionResult | undefined,
 ): void => {
   if (!result) {
-    logDebug(`No match found for test "${test.label}"`);
     run.skipped(test);
     return;
   }
-
-  logDebug(
-    `Found match for "${test.label}" at line ${test.range?.start.line}: ${result.status}`,
-  );
 
   switch (result.status) {
     case 'passed':
@@ -231,7 +222,6 @@ const reportTemplateTestResult = (
   test: vscode.TestItem,
   matches: IndexedResult[],
 ): void => {
-  logDebug(`Found ${matches.length} it.each results for "${test.label}"`);
 
   const results = matches.map((m) => m.result);
   const status = aggregateStatus(results);
@@ -266,10 +256,6 @@ function processTestResultsFromParsed(
     return;
   }
 
-  logDebug(
-    `Processing ${assertionResults.length} test results for ${tests.length} test items`,
-  );
-
   tests.reduce((usedIndices, test) => {
     const matches = findPotentialMatches(assertionResults, test);
 
@@ -285,12 +271,6 @@ function processTestResultsFromParsed(
       reportTemplateTestResult(run, test, matches);
       matches.forEach((m) => usedIndices.add(m.index));
       return usedIndices;
-    }
-
-    if (matches.length > 1) {
-      logDebug(
-        `Found ${matches.length} potential matches for "${test.label}", using location to match`,
-      );
     }
 
     const bestMatch =

@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { logError, logDebug, resolveConfigPathOrMapping } from '../util';
-import { TestPatterns, testFrameworks, allTestFrameworks, TestFrameworkName } from './frameworkDefinitions';
+import { logError, resolveConfigPathOrMapping } from '../util';
+import { TestPatterns, allTestFrameworks } from './frameworkDefinitions';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
   try {
@@ -41,8 +41,6 @@ export function getConfigPath(directoryPath: string, frameworkName: string): str
   for (const configFile of framework.configFiles) {
     const configPath = path.join(directoryPath, configFile);
     if (!fs.existsSync(configPath)) continue;
-
-    // vite.config.* ist nur gültig wenn test-Attribut vorhanden
     if (configFile.startsWith('vite.config.')) {
       if (viteConfigHasTestAttribute(configPath)) {
         return configPath;
@@ -94,7 +92,7 @@ function extractRootDir(content: string, configPath: string): string | undefined
     if (value === '__dirname') {
       return path.dirname(configPath);
     }
-    return rootDirMatch[2]; // the captured string inside quotes
+    return rootDirMatch[2];
   }
   return undefined;
 }
@@ -117,32 +115,24 @@ const extractStringsFromArray = (arrayContent: string): string[] =>
 const extractRootsFromText = (content: string): string[] | undefined => {
   const rootsStart = content.indexOf('roots');
   if (rootsStart === -1) return undefined;
-
   const arrayStart = content.indexOf('[', rootsStart);
   if (arrayStart === -1) return undefined;
-
   const arrayEnd = findMatchingBracket(content, arrayStart);
   if (!arrayEnd) return undefined;
-
   const arrayContent = content.substring(arrayStart + 1, arrayEnd - 1);
   const roots = extractStringsFromArray(arrayContent);
-
   return roots.length > 0 ? roots : undefined;
 };
 
 const extractTestPathIgnorePatternsFromText = (content: string): string[] | undefined => {
   const ignoreStart = content.indexOf('testPathIgnorePatterns');
   if (ignoreStart === -1) return undefined;
-
   const arrayStart = content.indexOf('[', ignoreStart);
   if (arrayStart === -1) return undefined;
-
   const arrayEnd = findMatchingBracket(content, arrayStart);
   if (!arrayEnd) return undefined;
-
   const arrayContent = content.substring(arrayStart + 1, arrayEnd - 1);
   const patterns = extractStringsFromArray(arrayContent);
-
   return patterns.length > 0 ? patterns : undefined;
 };
 
@@ -156,38 +146,19 @@ const parseJsonConfig = (
       : JSON.parse(content);
 
     if (!config) return undefined;
-
     const rootDir = config.rootDir;
-    if (rootDir) {
-      logDebug(`Found rootDir in ${configPath}: ${rootDir}`);
-    }
-
     const roots = extractRoots(config);
-    if (roots) {
-      logDebug(`Found roots in ${configPath}: ${roots.join(', ')}`);
-    }
-
     const ignorePatterns = extractTestPathIgnorePatterns(config);
-    if (ignorePatterns) {
-      logDebug(`Found testPathIgnorePatterns in ${configPath}: ${ignorePatterns.join(', ')}`);
-    }
-
     if (config.testMatch && Array.isArray(config.testMatch)) {
-      logDebug(`Found testMatch in ${configPath}: ${config.testMatch.join(', ')}`);
       return { patterns: config.testMatch, isRegex: false, rootDir, roots, ignorePatterns };
     }
-
     const regexPatterns = extractTestRegex(config);
     if (regexPatterns) {
-      logDebug(`Found testRegex in ${configPath}: ${regexPatterns.join(', ')}`);
       return { patterns: regexPatterns, isRegex: true, rootDir, roots, ignorePatterns };
     }
-
-    // Return config with roots/ignorePatterns even if no explicit patterns found
     if (roots || ignorePatterns) {
       return { patterns: [], isRegex: false, rootDir, roots, ignorePatterns };
     }
-
     return undefined;
   } catch {
     return undefined;
@@ -213,7 +184,6 @@ const parseTestMatchFromText = (
 
   if (patterns.length === 0) return undefined;
 
-  logDebug(`Found testMatch patterns in ${configPath}: ${patterns.join(', ')}`);
   return { patterns, isRegex: false, rootDir };
 };
 
@@ -224,9 +194,7 @@ const parseTestRegexFromText = (
 ): TestPatterns | undefined => {
   const testRegexMatch = content.match(/['"]?testRegex['"]?\s*:\s*['"]([^'"]+)['"]/);
   if (!testRegexMatch) return undefined;
-
   const regex = testRegexMatch[1].replace(/\\\\/g, '\\');
-  logDebug(`Found testRegex in ${configPath}: ${regex}`);
   return { patterns: [regex], isRegex: true, rootDir };
 };
 
@@ -235,20 +203,8 @@ const parseJsConfig = (
   configPath: string
 ): TestPatterns | undefined => {
   const rootDir = extractRootDir(content, configPath);
-  if (rootDir) {
-    logDebug(`Found rootDir in ${configPath}: ${rootDir}`);
-  }
-
   const roots = extractRootsFromText(content);
-  if (roots) {
-    logDebug(`Found roots in ${configPath}: ${roots.join(', ')}`);
-  }
-
   const ignorePatterns = extractTestPathIgnorePatternsFromText(content);
-  if (ignorePatterns) {
-    logDebug(`Found testPathIgnorePatterns in ${configPath}: ${ignorePatterns.join(', ')}`);
-  }
-
   const baseResult =
     parseTestMatchFromText(content, configPath, rootDir) ??
     parseTestRegexFromText(content, configPath, rootDir);
@@ -257,7 +213,6 @@ const parseJsConfig = (
     return { ...baseResult, roots, ignorePatterns };
   }
 
-  // Return config with roots/ignorePatterns even if no explicit patterns found
   if (roots || ignorePatterns) {
     return { patterns: [], isRegex: false, rootDir, roots, ignorePatterns };
   }
@@ -309,49 +264,34 @@ const extractIncludePatterns = (
 ): string[] | undefined => {
   const includeStart = testBlockContent.indexOf('include');
   if (includeStart === -1) return undefined;
-
   const arrayStart = testBlockContent.indexOf('[', includeStart);
   if (arrayStart === -1) return undefined;
-
   const arrayEnd = findMatchingBracket(testBlockContent, arrayStart);
   if (!arrayEnd) return undefined;
-
   const arrayContent = testBlockContent.substring(arrayStart + 1, arrayEnd - 1);
   const patterns = extractStringsFromArray(arrayContent);
-
   if (patterns.length === 0) return undefined;
-
-  logDebug(`Found include patterns in ${configPath}: ${patterns.join(', ')}`);
   return patterns;
 };
 
 const extractExcludePatterns = (
   testBlockContent: string,
-  configPath: string
 ): string[] | undefined => {
   const excludeStart = testBlockContent.indexOf('exclude');
   if (excludeStart === -1) return undefined;
-
   const arrayStart = testBlockContent.indexOf('[', excludeStart);
   if (arrayStart === -1) return undefined;
-
   const arrayEnd = findMatchingBracket(testBlockContent, arrayStart);
   if (!arrayEnd) return undefined;
-
   const arrayContent = testBlockContent.substring(arrayStart + 1, arrayEnd - 1);
   const patterns = extractStringsFromArray(arrayContent);
-
   if (patterns.length === 0) return undefined;
-
-  logDebug(`Found exclude patterns in ${configPath}: ${patterns.join(', ')}`);
   return patterns;
 };
 
 const extractVitestRoot = (content: string): string | undefined => {
-  // root is at the top level of defineConfig, not inside test block
   const rootMatch = content.match(/['"]?root['"]?\s*:\s*['"]([^'"]+)['"]/);
   if (rootMatch) {
-    logDebug(`Found Vitest root: ${rootMatch[1]}`);
     return rootMatch[1];
   }
   return undefined;
@@ -363,7 +303,6 @@ const extractVitestDir = (
 ): string | undefined => {
   const dirMatch = testBlockContent.match(/['"]?dir['"]?\s*:\s*['"]([^'"]+)['"]/);
   if (dirMatch) {
-    logDebug(`Found dir in ${configPath}: ${dirMatch[1]}`);
     return dirMatch[1];
   }
   return undefined;
@@ -376,7 +315,7 @@ export function getVitestConfig(configPath: string): TestPatterns | undefined {
 
     const rootDir = extractVitestRoot(content);
     const patterns = testBlockContent ? extractIncludePatterns(testBlockContent, configPath) : undefined;
-    const excludePatterns = testBlockContent ? extractExcludePatterns(testBlockContent, configPath) : undefined;
+    const excludePatterns = testBlockContent ? extractExcludePatterns(testBlockContent) : undefined;
     const dir = testBlockContent ? extractVitestDir(testBlockContent, configPath) : undefined;
 
     if (!patterns && !excludePatterns && !dir && !rootDir) {
@@ -423,18 +362,14 @@ export function resolveAndValidateCustomConfig(
 export function getPlaywrightTestDir(configPath: string): string | undefined {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
-
     if (configPath.endsWith('.json')) {
       const config = JSON.parse(content);
       return config.testDir;
     }
-
-    // For JS/TS configs, parse testDir
     const testDirMatch = content.match(/['"]?testDir['"]?\s*:\s*(['"]([^'"]+)['"]|['"]?([^'"\s,]+)['"]?)/);
     if (testDirMatch) {
       return testDirMatch[2] || testDirMatch[3];
     }
-
     return undefined;
   } catch (error) {
     logError(`Error reading Playwright config file: ${configPath}`, error);
@@ -451,7 +386,6 @@ export function getCypressSpecPattern(configPath: string): string[] | undefined 
       return config.e2e?.specPattern || config.specPattern;
     }
 
-    // For JS/TS configs, parse e2e.specPattern or specPattern
     const specPatternMatch = content.match(/['"]?specPattern['"]?\s*:\s*(['"]([^'"]+)['"]|\[([^\]]+)\])/);
     if (specPatternMatch) {
       const value = specPatternMatch[2] || specPatternMatch[3];
@@ -463,7 +397,6 @@ export function getCypressSpecPattern(configPath: string): string[] | undefined 
       }
     }
 
-    // Also check e2e.specPattern
     const e2eMatch = content.match(/e2e\s*:\s*\{[^}]*['"]?specPattern['"]?\s*:\s*(['"]([^'"]+)['"]|\[([^\]]+)\])/);
     if (e2eMatch) {
       const value = e2eMatch[2] || e2eMatch[3];

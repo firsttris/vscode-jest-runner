@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as mm from 'micromatch';
-import { logDebug } from '../util';
 import {
   TestFrameworkName,
   TestPatternResult,
@@ -42,48 +41,35 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
 
   for (const dir of dirs) {
     for (const framework of allTestFrameworks) {
-      // Überspringe das aktuelle Framework
       if (framework.name === currentFramework) continue;
-
       const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
       if (!configPath) continue;
-
-      // Für Playwright, prüfe ob filePath im testDir ist
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
           const testDirPath = path.resolve(dir, testDir);
           if (filePath.startsWith(testDirPath + path.sep) || filePath === testDirPath) {
-            logDebug(`File ${filePath} is in Playwright testDir ${testDirPath}, conflicting with ${currentFramework}`);
             return true;
           }
         } else {
-          // Fallback: wenn kein testDir, deaktiviere im gesamten dir
-          logDebug(`Playwright config found in ${dir}, no testDir specified, conflicting with ${currentFramework}`);
           return true;
         }
       } else if (framework.name === 'cypress') {
         const specPatterns = getCypressSpecPattern(configPath);
         if (specPatterns) {
           for (const pattern of specPatterns) {
-            // Use micromatch to check if filePath matches the glob pattern
             const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
             if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
-              logDebug(`File ${filePath} matches Cypress specPattern ${pattern}, conflicting with ${currentFramework}`);
               return true;
             }
           }
         } else {
-          // Fallback: standard Cypress verzeichnis
           const cypressDir = path.join(dir, 'cypress');
           if (filePath.startsWith(cypressDir + path.sep) || filePath === cypressDir) {
-            logDebug(`File ${filePath} is in default Cypress dir ${cypressDir}, conflicting with ${currentFramework}`);
             return true;
           }
         }
       } else {
-        // Für andere Frameworks, deaktiviere im gesamten dir
-        logDebug(`Conflicting test framework ${framework.name} found in ${dir} for ${filePath}`);
         return true;
       }
     }
@@ -99,10 +85,6 @@ const resolveJestResult = (
   const configDir = result?.rootDir
     ? path.resolve(path.dirname(configPath), result.rootDir)
     : defaultConfigDir;
-
-  if (result?.rootDir) {
-    logDebug(`Resolved rootDir for Jest: ${configDir}`);
-  }
 
   return {
     patterns: result?.patterns ?? DEFAULT_TEST_PATTERNS,
@@ -180,9 +162,6 @@ const findJestConfigInDir = (dir: string): TestPatternResult => {
   if (!found) return createDefaultResult(dir);
 
   const configDir = found.config.rootDir ? path.resolve(dir, found.config.rootDir) : dir;
-  if (found.config.rootDir) {
-    logDebug(`Resolved rootDir for Jest: ${configDir}`);
-  }
 
   return {
     patterns: found.config.patterns.length > 0 ? found.config.patterns : DEFAULT_TEST_PATTERNS,
@@ -260,14 +239,6 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult {
 
 export function matchesTestFilePattern(filePath: string): boolean {
   const { patterns, configDir, isRegex, roots, ignorePatterns, excludePatterns } = getTestFilePatternsForFile(filePath);
-
-  logDebug(`Matching file: ${filePath}`);
-  logDebug(`Using patterns: ${patterns.join(', ')} (isRegex: ${isRegex})`);
-  logDebug(`Config dir: ${configDir}`);
-  if (roots) logDebug(`Roots: ${roots.join(', ')}`);
-  if (ignorePatterns) logDebug(`Ignore patterns: ${ignorePatterns.join(', ')}`);
-  if (excludePatterns) logDebug(`Exclude patterns: ${excludePatterns.join(', ')}`);
-
   return fileMatchesPatterns(filePath, configDir, patterns, isRegex, undefined, ignorePatterns, excludePatterns, roots);
 }
 

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import { logError, logDebug } from '../util';
+import { logError } from '../util';
 import {
   TestFrameworkName,
   testFrameworks,
@@ -86,7 +86,6 @@ export function detectTestFramework(
   if (jestConfigPath && vitestConfigPath && filePath) {
     const frameworkByPattern = detectFrameworkByPatternMatch(directoryPath, filePath, jestConfigPath, vitestConfigPath);
     if (frameworkByPattern) {
-      logDebug(`Detected ${frameworkByPattern} for ${filePath} by pattern matching`);
       return frameworkByPattern;
     }
   }
@@ -162,7 +161,6 @@ const resolveCustomConfigs = (
     );
 
     if (frameworkByPattern) {
-      logDebug(`Detected ${frameworkByPattern} for ${filePath} via custom config pattern matching`);
       return matchesTarget(frameworkByPattern, targetFramework)
         ? { directory: rootPath, framework: frameworkByPattern }
         : undefined;

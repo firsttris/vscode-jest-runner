@@ -1,4 +1,3 @@
-// Types and definitions
 export {
   TestFrameworkName,
   TestFramework,
@@ -10,7 +9,6 @@ export {
   testFrameworks,
 } from './frameworkDefinitions';
 
-// Cache management
 export {
   testDetectionCache,
   vitestDetectionCache,
@@ -18,7 +16,6 @@ export {
   clearVitestDetectionCache,
 } from './cache';
 
-// Config parsing
 export {
   viteConfigHasTestAttribute,
   packageJsonHasJestConfig,
@@ -30,14 +27,12 @@ export {
   resolveAndValidateCustomConfig,
 } from './configParsing';
 
-// Pattern matching
 export {
   fileMatchesPatternsExplicit,
   fileMatchesPatterns,
   detectFrameworkByPatternMatch,
 } from './patternMatching';
 
-// Framework detection
 export {
   isJestUsedIn,
   isVitestUsedIn,
@@ -48,7 +43,6 @@ export {
   getParentDirectories,
 } from './frameworkDetection';
 
-// Test file detection
 export {
   matchesTestFilePattern,
   isJestTestFile,
@@ -58,5 +52,4 @@ export {
   hasConflictingTestFramework,
 } from './testFileDetection';
 
-// ESM detection
 export { isEsmProject } from './esmDetection';

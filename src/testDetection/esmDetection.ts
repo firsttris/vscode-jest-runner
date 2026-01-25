@@ -3,15 +3,7 @@ import * as path from 'path';
 import { logDebug, searchPathToParent } from '../util';
 import { testFrameworks } from './frameworkDefinitions';
 
-/**
- * Detects if a project uses ESM (ECMAScript Modules) for Jest.
- * Checks:
- * 1. package.json "type": "module"
- * 2. jest.config extensionsToTreatAsEsm
- * 3. ts-jest useESM: true
- */
 export function isEsmProject(projectDir: string, jestConfigPath?: string): boolean {
-  // Check package.json for "type": "module"
   const packageJsonPath = path.join(projectDir, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
     try {
@@ -26,7 +18,6 @@ export function isEsmProject(projectDir: string, jestConfigPath?: string): boole
     }
   }
 
-  // Check jest.config for ESM indicators
   const jestFramework = testFrameworks.find(f => f.name === 'jest');
   const configFiles = jestFramework ? jestFramework.configFiles : [];
 
@@ -46,13 +37,11 @@ export function isEsmProject(projectDir: string, jestConfigPath?: string): boole
     try {
       const content = fs.readFileSync(configPath, 'utf8');
 
-      // Check for extensionsToTreatAsEsm
       if (/extensionsToTreatAsEsm\s*[:=]/.test(content)) {
         logDebug(`ESM detected: jest.config has extensionsToTreatAsEsm`);
         return true;
       }
 
-      // Check for ts-jest useESM: true
       if (/useESM\s*[:=]\s*true/.test(content)) {
         logDebug(`ESM detected: jest.config has useESM: true`);
         return true;

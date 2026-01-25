@@ -250,7 +250,6 @@ export class TestRunnerConfig {
       const frameworkDef = testFrameworks.find(f => f.name === framework);
       configFiles = frameworkDef ? frameworkDef.configFiles : [];
     } else {
-      // Wenn kein Framework angegeben, suche nach allen unterstützten Frameworks
       configFiles = testFrameworks.flatMap(f => f.configFiles);
     }
 
@@ -259,7 +258,6 @@ export class TestRunnerConfig {
         path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
-        // 1. Direkt im aktuellen Verzeichnis nach allen configFiles suchen
         for (const configFilename of configFiles) {
           const currentFolderConfigPath = path.join(
             currentFolderPath,
@@ -269,7 +267,6 @@ export class TestRunnerConfig {
             return currentFolderConfigPath;
           }
         }
-        // 2. In typischen Test-Unterverzeichnissen nach allen configFiles suchen
         try {
           const subdirs = fs.readdirSync(currentFolderPath, { withFileTypes: true })
             .filter(d => d.isDirectory())
@@ -450,14 +447,11 @@ export class TestRunnerConfig {
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
-    // Auto-detect ESM for Jest (Vitest is ESM-native, no flag needed)
     if (!isVitest && isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath || ''))) {
-      // For ESM, we need node --experimental-vm-modules to run jest directly
-      // runtimeArgs go to node, program is the jest binary
       delete debugConfig.runtimeExecutable;
       debugConfig.runtimeArgs = ['--experimental-vm-modules'];
       debugConfig.program = path.join(this.cwd, 'node_modules', 'jest', 'bin', 'jest.js');
-      debugConfig.args = ['--runInBand'];  // Remove npx-specific args
+      debugConfig.args = ['--runInBand'];
     }
 
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
