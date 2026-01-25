@@ -287,10 +287,18 @@ const extractIncludePatterns = (
   testBlockContent: string,
   configPath: string
 ): string[] | undefined => {
-  const includeMatch = testBlockContent.match(/include\s*:\s*\[([^\]]*)\]/);
-  if (!includeMatch) return undefined;
+  const includeStart = testBlockContent.indexOf('include');
+  if (includeStart === -1) return undefined;
 
-  const patterns = extractStringsFromArray(includeMatch[1]);
+  const arrayStart = testBlockContent.indexOf('[', includeStart);
+  if (arrayStart === -1) return undefined;
+
+  const arrayEnd = findMatchingBracket(testBlockContent, arrayStart);
+  if (!arrayEnd) return undefined;
+
+  const arrayContent = testBlockContent.substring(arrayStart + 1, arrayEnd - 1);
+  const patterns = extractStringsFromArray(arrayContent);
+
   if (patterns.length === 0) return undefined;
 
   logDebug(`Found include patterns in ${configPath}: ${patterns.join(', ')}`);
@@ -301,10 +309,18 @@ const extractExcludePatterns = (
   testBlockContent: string,
   configPath: string
 ): string[] | undefined => {
-  const excludeMatch = testBlockContent.match(/exclude\s*:\s*\[([^\]]*)\]/);
-  if (!excludeMatch) return undefined;
+  const excludeStart = testBlockContent.indexOf('exclude');
+  if (excludeStart === -1) return undefined;
 
-  const patterns = extractStringsFromArray(excludeMatch[1]);
+  const arrayStart = testBlockContent.indexOf('[', excludeStart);
+  if (arrayStart === -1) return undefined;
+
+  const arrayEnd = findMatchingBracket(testBlockContent, arrayStart);
+  if (!arrayEnd) return undefined;
+
+  const arrayContent = testBlockContent.substring(arrayStart + 1, arrayEnd - 1);
+  const patterns = extractStringsFromArray(arrayContent);
+
   if (patterns.length === 0) return undefined;
 
   logDebug(`Found exclude patterns in ${configPath}: ${patterns.join(', ')}`);

@@ -532,14 +532,13 @@ module.exports = {
       mockedFs.readFileSync = jest.fn();
     });
 
-    it('should extract include and exclude patterns', () => {
+    it('should extract include patterns with brackets in the pattern', () => {
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['**/*.test.ts'],
-    exclude: ['**/node_modules/**', '**/e2e/**']
+    include: ['**/*.jest.?(c|m)[jt]s?(x)', '**/__tests__/**/*.?(c|m)[jt]s?(x)'],
   }
 });
       `);
@@ -547,9 +546,8 @@ export default defineConfig({
       const result = getVitestConfig('/test/vitest.config.ts');
 
       expect(result).toEqual({
-        patterns: ['**/*.test.ts'],
+        patterns: ['**/*.jest.?(c|m)[jt]s?(x)', '**/__tests__/**/*.?(c|m)[jt]s?(x)'],
         isRegex: false,
-        excludePatterns: ['**/node_modules/**', '**/e2e/**'],
       });
     });
 
