@@ -50,9 +50,8 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
           const testDirPath = path.resolve(dir, testDir);
-          console.log('testDirPath', testDirPath);
-          console.log('filePath', filePath);
-          if (filePath.startsWith(testDirPath + path.sep) || filePath === testDirPath) {
+          const relativePath = path.relative(testDirPath, filePath).replace(/\\/g, '/');
+          if (!relativePath.startsWith('../')) {
             return true;
           }
         } else {
@@ -69,7 +68,8 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
           }
         } else {
           const cypressDir = path.join(dir, 'cypress');
-          if (filePath.startsWith(cypressDir + path.sep) || filePath === cypressDir) {
+          const relativePath = path.relative(cypressDir, filePath).replace(/\\/g, '/');
+          if (!relativePath.startsWith('../')) {
             return true;
           }
         }

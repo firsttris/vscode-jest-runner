@@ -37,7 +37,8 @@ export function binaryExists(directoryPath: string, binaryName: string): boolean
 export function getConfigPath(directoryPath: string, frameworkName: string): string | undefined {
   const framework = allTestFrameworks.find((f) => f.name === frameworkName);
   if (!framework) return undefined;
-
+  console.log('allTestFrameworks', allTestFrameworks);
+  console.log('frameworkName', frameworkName);
   for (const configFile of framework.configFiles) {
     const configPath = path.join(directoryPath, configFile);
     if (!fs.existsSync(configPath)) continue;
