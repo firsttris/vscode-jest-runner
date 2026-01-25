@@ -235,7 +235,7 @@ export class TestRunnerConfig {
   }
 
   public getJestConfigPath(targetPath: string): string {
-    return this.getConfigPath(targetPath, 'jestrunner.configPath');
+    return this.getConfigPath(targetPath, 'jestrunner.configPath', 'jest');
   }
 
   public findConfigPath(
