@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo, logWarning } from './util';
-import { matchesTestFilePattern } from './testDetection';
+import { matchesTestFilePattern, parseCoverageDirectory } from './testDetection';
 import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
 
 export interface CoverageMap {
@@ -51,29 +51,6 @@ export class DetailedFileCoverage extends vscode.FileCoverage {
 }
 
 export class CoverageProvider {
-  private parseCoverageDirFromConfig(
-    configPath: string,
-    framework: 'jest' | 'vitest',
-  ): string | undefined {
-    try {
-      const content = fs.readFileSync(configPath, 'utf-8');
-      const configDir = path.dirname(configPath);
-
-      const pattern =
-        framework === 'vitest'
-          ? /reportsDirectory\s*[=:]\s*["']([^"']+)["']/
-          : /["']?coverageDirectory["']?\s*[=:]\s*["']([^"']+)["']/;
-
-      const match = content.match(pattern);
-      if (match) {
-        const dir = match[1];
-        return path.isAbsolute(dir) ? dir : path.join(configDir, dir);
-      }
-    } catch (error) {
-      logError(`Could not parse ${framework} config: ${error}`);
-    }
-    return undefined;
-  }
 
   private getCoverageDirFromConfigPath(
     configPath: string,
@@ -82,7 +59,7 @@ export class CoverageProvider {
     if (!fs.existsSync(configPath)) {
       return undefined;
     }
-    return this.parseCoverageDirFromConfig(configPath, framework);
+    return parseCoverageDirectory(configPath, framework);
   }
 
   private getCoverageDirectoryFromWorkspace(

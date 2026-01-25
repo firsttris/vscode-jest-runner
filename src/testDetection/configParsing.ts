@@ -413,3 +413,37 @@ export function getCypressSpecPattern(configPath: string): string[] | undefined 
     return undefined;
   }
 }
+
+export function parseCoverageDirectory(configPath: string, framework: 'jest' | 'vitest'): string | undefined {
+  try {
+    const content = fs.readFileSync(configPath, 'utf-8');
+    const configDir = path.dirname(configPath);
+
+    const pattern =
+      framework === 'vitest'
+        ? /reportsDirectory\s*[=:]\s*["']([^"']+)["']/
+        : /["']?coverageDirectory["']?\s*[=:]\s*["']([^"']+)["']/;
+
+    const match = content.match(pattern);
+    if (match) {
+      const dir = match[1];
+
+      if (framework === 'jest') {
+        // For Jest, coverageDirectory is relative to rootDir
+        const rootDirMatch = content.match(/"rootDir"\s*:\s*"([^"]+)"/);
+        const rootDir = rootDirMatch ? rootDirMatch[1] : '.';
+        const rootDirPath = path.isAbsolute(rootDir) ? rootDir : path.join(configDir, rootDir);
+        return path.isAbsolute(dir) ? dir : path.join(rootDirPath, dir);
+      } else {
+        // For Vitest, reportsDirectory is relative to root
+        const rootMatch = content.match(/root\s*[=:]\s*["']([^"']+)["']/);
+        const root = rootMatch ? rootMatch[1] : '.';
+        const rootPath = path.isAbsolute(root) ? root : path.join(configDir, root);
+        return path.isAbsolute(dir) ? dir : path.join(rootPath, dir);
+      }
+    }
+  } catch (error) {
+    logError(`Could not parse ${framework} config: ${error}`);
+  }
+  return undefined;
+}

@@ -8,6 +8,7 @@ export {
   DEFAULT_TEST_PATTERNS,
   testFrameworks,
 } from './frameworkDefinitions';
+export { parseCoverageDirectory } from './configParsing';
 
 export {
   testDetectionCache,
