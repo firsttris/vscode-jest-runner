@@ -43,8 +43,6 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
     for (const framework of allTestFrameworks) {
       if (framework.name === currentFramework) continue;
       const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
-      console.log('Checking for conflicting framework', framework.name, 'in', dir, 'for file', filePath);
-      console.log('Found config path:', configPath);
       if (!configPath) continue;
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
