@@ -52,7 +52,7 @@ export function parseVitestOutput(output: string): JestResults | undefined {
         try {
           const parsed = JSON.parse(trimmed);
           return convertVitestToJestResults(parsed);
-        } catch {}
+        } catch { }
       }
     }
 
@@ -142,9 +142,20 @@ const getTestName = (test: vscode.TestItem): string =>
 const matchesTest = (r: JestAssertionResult, test: vscode.TestItem): boolean => {
   const testName = getTestName(test);
   const fullPath = r.ancestorTitles?.concat(r.title).join(' ') ?? '';
+
+  const matchesWithSuffix = (actual: string, expected: string) => {
+    if (!actual.startsWith(expected)) {
+      return false;
+    }
+    const suffix = actual.slice(expected.length);
+    return /^ \(\d+\)$/.test(suffix);
+  };
+
   return (
     matchesTestLabel(r.title, test.label) ||
     matchesTestLabel(r.title, testName) ||
+    matchesWithSuffix(r.title, test.label) ||
+    matchesWithSuffix(fullPath, test.label) ||
     r.fullName === test.label ||
     matchesTestLabel(fullPath, test.label)
   );
@@ -248,7 +259,7 @@ function processTestResultsFromParsed(
   tests: vscode.TestItem[],
   run: vscode.TestRun,
 ): void {
-  const assertionResults = results?.testResults?.[0]?.assertionResults;
+  const assertionResults = results?.testResults?.flatMap((r) => r.assertionResults);
 
   if (!assertionResults) {
     logWarning('No assertion results found in test output');
