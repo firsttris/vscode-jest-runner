@@ -36,9 +36,12 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
   if (!workspaceFolder) return false;
 
-  const normalize = (p: string) => path.resolve(p).replace(/\\/g, '/');
+  // Use path.posix for Unix-like (mocked) paths, else native path
+  const isPosix = filePath.startsWith('/');
+  const p = isPosix ? path.posix : path;
+  const normalize = (pp: string) => p.resolve(pp).replace(/\\/g, '/');
   const rootPath = normalize(workspaceFolder.uri.fsPath);
-  const dirs = getParentDirectories(path.dirname(filePath), rootPath);
+  const dirs = getParentDirectories(p.dirname(filePath), rootPath);
 
   for (const dir of dirs) {
     for (const framework of allTestFrameworks) {
@@ -48,10 +51,9 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
-          const testDirPath = normalize(path.join(dir, testDir));
-          const rel = path.relative(testDirPath, filePath).replace(/\\/g, '/');
-          // filePath is inside testDir if rel === '' (same) or does not start with '..' and is not absolute
-          if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
+          const testDirPath = normalize(p.join(dir, testDir));
+          const rel = p.relative(testDirPath, filePath).replace(/\\/g, '/');
+          if (!rel.startsWith('..') && !p.isAbsolute(rel)) {
             return true;
           }
         } else {
@@ -61,16 +63,16 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         const specPatterns = getCypressSpecPattern(configPath);
         if (specPatterns) {
           for (const pattern of specPatterns) {
-            const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
+            const relativePath = p.relative(dir, filePath).replace(/\\/g, '/');
             const normalizedPattern = pattern.replace(/\\/g, '/');
             if (mm.isMatch(relativePath, normalizedPattern, { nocase: true, extended: true })) {
               return true;
             }
           }
         } else {
-          const cypressDir = normalize(path.join(dir, 'cypress'));
-          const rel = path.relative(cypressDir, filePath).replace(/\\/g, '/');
-          if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
+          const cypressDir = normalize(p.join(dir, 'cypress'));
+          const rel = p.relative(cypressDir, filePath).replace(/\\/g, '/');
+          if (!rel.startsWith('..') && !p.isAbsolute(rel)) {
             return true;
           }
         }
