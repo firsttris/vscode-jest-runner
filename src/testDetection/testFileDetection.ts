@@ -18,6 +18,7 @@ import {
   getCypressSpecPattern,
 } from './configParsing';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
+import { normalizePath } from '../util';
 import {
   detectTestFramework,
   findTestFrameworkDirectory,
@@ -47,8 +48,9 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
-          const testDirPath = path.resolve(dir, testDir);
-          if (filePath.startsWith(testDirPath + path.sep) || filePath === testDirPath) {
+          const testDirPath = normalizePath(path.resolve(dir, testDir));
+          const normalizedFilePath = normalizePath(filePath);
+          if (normalizedFilePath.startsWith(testDirPath + '/') || normalizedFilePath === testDirPath) {
             return true;
           }
         } else {
@@ -64,8 +66,9 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
             }
           }
         } else {
-          const cypressDir = path.join(dir, 'cypress');
-          if (filePath.startsWith(cypressDir + path.sep) || filePath === cypressDir) {
+          const cypressDir = normalizePath(path.join(dir, 'cypress'));
+          const normalizedFilePath = normalizePath(filePath);
+          if (normalizedFilePath.startsWith(cypressDir + '/') || normalizedFilePath === cypressDir) {
             return true;
           }
         }
