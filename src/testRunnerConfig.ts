@@ -160,21 +160,7 @@ export class TestRunnerConfig {
   }
 
   public get cwd(): string {
-    return (
-      this.projectPathFromConfig ||
-      this.currentPackagePath ||
-      this.currentWorkspaceFolderPath
-    );
-  }
-
-  private get projectPathFromConfig(): string | undefined {
-    const projectPathFromConfig = this.getConfig<string>('jestrunner.projectPath');
-    if (projectPathFromConfig) {
-      return path.resolve(
-        this.currentWorkspaceFolderPath,
-        projectPathFromConfig,
-      );
-    }
+    return this.currentPackagePath || this.currentWorkspaceFolderPath;
   }
 
   private get useNearestConfig(): boolean | undefined {
@@ -229,7 +215,6 @@ export class TestRunnerConfig {
       const resolvedPath = normalizePath(
         path.resolve(
           this.currentWorkspaceFolderPath,
-          this.projectPathFromConfig || '',
           configPath,
         ),
       );
@@ -325,9 +310,9 @@ export class TestRunnerConfig {
     return [];
   }
 
-  public getTestFilePattern(): string {
+  public getAllPotentialSourceFiles(): string {
     // Return a broad pattern to catch all potential test files
-    // Actual filtering is done by shouldIncludeFile() which reads patterns
+    // Actual filtering is done by isTestFile() which reads patterns
     // from framework configs (Jest testMatch / Vitest include)
     return '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}';
   }

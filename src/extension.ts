@@ -4,7 +4,8 @@ import { TestRunner } from './testRunner';
 import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { JestTestController } from './TestController';
-import { shouldIncludeFile, logError } from './util';
+import { isTestFile, logError } from './util';
+import { initConfigFileWatcher } from './testDetection';
 
 function wrapCommandHandler<T extends unknown[]>(
   handler: (...args: T) => Promise<void> | void,
@@ -50,9 +51,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const workspaceFolder = vscode.workspace.getWorkspaceFolder(
         editor.document.uri,
       )?.uri.fsPath;
-      const shouldInclude = workspaceFolder
-        ? shouldIncludeFile(filePath, workspaceFolder)
-        : false;
+      const shouldInclude = isTestFile(filePath);
       vscode.commands.executeCommand(
         'setContext',
         'jestrunner.isJestFile',
@@ -66,6 +65,9 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   updateJestFileContext();
+
+  // Initialize config file watcher for pattern conflict detection
+  context.subscriptions.push(initConfigFileWatcher());
 
   const enableTestExplorer = vscode.workspace
     .getConfiguration('jestrunner')
@@ -179,7 +181,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   if (config.isCodeLensEnabled) {
     const docSelectors: vscode.DocumentFilter[] = [
-      { pattern: config.getTestFilePattern() },
+      { pattern: config.getAllPotentialSourceFiles() },
     ];
     context.subscriptions.push(
       vscode.languages.registerCodeLensProvider(docSelectors, codeLensProvider),

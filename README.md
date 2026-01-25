@@ -7,6 +7,7 @@
 ![Extension Example](./docs/screenshot.png)
 
 [![Build](https://img.shields.io/github/actions/workflow/status/firsttris/vscode-jest-runner/master.yml?branch=master&label=Build&logo=github&style=flat-square)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/firsttris/vscode-jest-runner?logo=codecov&style=flat-square)](https://codecov.io/gh/firsttris/vscode-jest-runner)
 [![VS Marketplace Version](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 [![Installs](https://vsmarketplacebadges.dev/installs-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 [![Rating](https://vsmarketplacebadges.dev/rating-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
@@ -16,7 +17,6 @@
 [Overview](#-overview) •
 [Features](#-features) •
 [Configuration](#️-configuration) •
-[Keyboard Shortcuts](#️-keyboard-shortcuts) •
 [Contributing](#-contributing)
 
 </div>
@@ -28,6 +28,8 @@
 A **lightweight** VS Code extension for running and debugging Jest and Vitest tests directly in your editor. Works **out-of-the-box** with minimal configuration.
 
 > ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
+
+> ⚠️ **Important Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to create a GitHub issue.
 
 ## ✨ Features
 
@@ -62,8 +64,8 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 ### 🎯 Smart Test Detection
 
 - 🤖 **Automatic framework detection** - distinguishes between Jest and Vitest
-- 🔍 **Reads test patterns from framework configs** - automatically uses `testMatch` or `testRegex` from Jest config or `include` from Vitest config
-- 🎚️ **Include/exclude patterns** for fine-grained control over which tests appear
+- 🔍 **Reads test patterns from framework configs** - see [Supported Jest/Vitest Config Options](#-supported-config-options)
+- 🎚️ **Include/exclude patterns** configured via framework configs for fine-grained control over which tests appear
 
 </td>
 <td width="50%">
@@ -74,7 +76,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 - ⚙️ **Multiple configurations** with glob-based config resolution
 - 🔌 **Yarn 2 Plug'n'Play** - automatically detected, no configuration needed
 - ⚛️ **Create React App** and similar abstraction layers
-- 🛠️ **Framework support** including Nx, Next.js, and NestJS
+- 🛠️ **Framework support** including Vite, Tanstack Start, Nx, Next.js, and NestJS
 
 </td>
 </tr>
@@ -119,6 +121,15 @@ export default defineConfig({
 });
 ```
 
+**Coverage Directory Detection**
+
+The extension automatically detects the coverage directory from your framework configuration:
+
+- **Jest**: Reads the `coverageDirectory` option from your Jest config
+- **Vitest**: Reads the `reportsDirectory` option from your Vitest coverage config
+
+If not specified, it defaults to `coverage/` in your project root.
+
 **Running Tests with Coverage**
 
 All coverage entry points use the same **Coverage** profile powered by VS Code's native coverage API.
@@ -145,20 +156,16 @@ Customize the test runner for your project:
 
 | Setting                                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Core Configuration**                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.configPath`                     | Path to Jest config (relative to workspace folder, e.g. `jest-config.json`). Can be a string or a glob mapping object to support multiple Jest configs.<br><br>**Example with glob mapping:** `{"**/*.it.spec.ts": "./jest.it.config.js", "**/*.spec.ts": "./jest.unit.config.js"}` - The first matching glob is used, so specify more specific patterns first. Config path is relative to `jestrunner.projectPath` or workspace root. Use `jestrunner.useNearestConfig: true` to search up directories for the matching config file. |
-| `jestrunner.projectPath`                    | Path to project directory. Can be absolute (e.g. `/home/me/project/sub-folder`) or relative to workspace root (e.g. `./sub-folder`).                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Jest Configuration**                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `jestrunner.configPath`                     | Path to Jest config (relative to workspace folder, e.g. `jest-config.json`). Can be a string or a glob mapping object to support multiple Jest configs.<br><br>**Example with glob mapping:** `{"**/*.it.spec.ts": "./jest.it.config.js", "**/*.spec.ts": "./jest.unit.config.js"}` - The first matching glob is used, so specify more specific patterns first. Use `jestrunner.useNearestConfig: true` to search up directories for the matching config file. |
 | `jestrunner.jestCommand`                    | Define an alternative Jest command for projects using abstractions like Create React App (e.g. `npm run test --`).                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `jestrunner.runOptions`                     | CLI options to add to Jest commands (e.g. `["--coverage", "--colors"]`). See [Jest CLI documentation](https://jestjs.io/docs/en/cli).                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `jestrunner.debugOptions`                   | Add or override VS Code debug configurations (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging tests.                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Vitest Configuration**                    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.vitestCommand`                  | Define an alternative Vitest command (default: `npx --no-install vitest`).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `jestrunner.vitestConfigPath`               | Path to Vitest config (relative to workspace folder, e.g. `vitest.config.ts`). Can be a string or a glob mapping object similar to `configPath`.                                                                                                                                                                                                                                                                                                                                                                                      |
+| `jestrunner.vitestCommand`                  | Define an alternative Vitest command (default: `npx --no-install vitest`).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `jestrunner.vitestRunOptions`               | CLI options to add to Vitest commands (e.g. `["--reporter=verbose"]`). See [Vitest CLI documentation](https://vitest.dev/guide/cli.html).                                                                                                                                                                                                                                                                                                                                                                                             |
 | `jestrunner.vitestDebugOptions`             | Add or override VS Code debug configurations for Vitest (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging Vitest tests.                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Test Detection & Filtering**              |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.include`                        | Glob patterns for files to include in test detection. When specified, disables automatic Jest detection in favor of explicit inclusion.                                                                                                                                                                                                                                                                                                                                                                                               |
-| `jestrunner.exclude`                        | Glob patterns for files to exclude from test detection. When specified, disables automatic Jest detection in favor of explicit exclusion.                                                                                                                                                                                                                                                                                                                                                                                             |
 | **UI Options**                              |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `jestrunner.enableTestExplorer`             | Enable the Test Explorer integration using VS Code's Testing API. Shows tests in dedicated Test Explorer panel. Default: `false`                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `jestrunner.enableCodeLens`                 | Bring back the old CodeLens feature with inline run/debug buttons (replaced by Test Explorer). Default: `true`                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -167,7 +174,67 @@ Customize the test runner for your project:
 | **Debugging**                               |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `jestrunner.enableDebugLogs`                | Enable debug logging to the "Jest Runner" output channel. Useful for troubleshooting test detection and configuration issues. Default: `false`                                                                                                                                                                                                                                                                                                                                                                                        |
 | **Project Management**                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.changeDirectoryToWorkspaceRoot` | Change directory before running tests. Priority order: 1. `projectPath` 2. nearest package.json location 3. workspace folder.                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `jestrunner.changeDirectoryToWorkspaceRoot` | Change directory before running tests. Priority order: 1. nearest package.json location 2. workspace folder.                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+</details>
+
+
+<details>
+<summary><b>📋 Supported Framework Config Options</b></summary>
+<br>
+
+The extension **automatically reads configuration** from your framework config files. No manual setup required!
+
+The extension can only parse a single configuration file. If you use configuration inheritance with multiple files, consolidate all necessary settings into the config file you provide to jestrunner using the `configPath` setting.
+
+### Jest Config Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `rootDir` | `string` | Root directory for resolving paths |
+| `roots` | `string[]` | Directories to search for test files (e.g., `["<rootDir>/src", "<rootDir>/tests"]`) |
+| `testMatch` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
+| `testRegex` | `string \| string[]` | Regex patterns for test files |
+| `testPathIgnorePatterns` | `string[]` | Regex patterns to exclude files (e.g., `["/fixtures/", "/node_modules/"]`) |
+
+**Example Jest Config:**
+
+```javascript
+// jest.config.js
+module.exports = {
+  rootDir: '.',
+  roots: ['<rootDir>/src', '<rootDir>/tests'],
+  testMatch: ['**/?(*.)+(spec|test).ts?(x)'],
+  testPathIgnorePatterns: ['/node_modules/', '/fixtures/', '/__mocks__/'],
+};
+```
+
+### Vitest Config Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `root` | `string` | Project root directory |
+| `test.dir` | `string` | Base directory for test file discovery |
+| `test.include` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
+| `test.exclude` | `string[]` | Glob patterns to exclude (e.g., `["**/e2e/**"]`) |
+
+**Example Vitest Config:**
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  root: '.',
+  test: {
+    dir: 'src',
+    include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
+    exclude: ['**/node_modules/**', '**/e2e/**', '**/fixtures/**'],
+  },
+});
+```
+
+> **Note:** `projects` (monorepo/workspace support) is not yet supported but planned for a future release.
 
 </details>
 
@@ -175,36 +242,6 @@ Customize the test runner for your project:
 <details>
 <summary><b>🔧 Advanced Configuration Examples</b></summary>
 <br>
-
-**Custom Test File Patterns**
-
-The extension **automatically reads test file patterns** from your framework configuration:
-
-- **Jest**: Reads `testMatch` from `jest.config.js/ts/json` or `package.json`
-- **Vitest**: Reads `include` from `vitest.config.ts` or `vite.config.ts` (within the `test` section)
-
-**Example Jest Config:**
-
-```javascript
-// jest.config.js - Extension reads this automatically!
-module.exports = {
-  testMatch: [
-    '**/?(*.)+(spec|test|integrationtest).?([mc])[jt]s?(x)',
-    '**/__tests__/**/*.?([mc])[jt]s?(x)',
-  ],
-};
-```
-
-**Example Vitest Config:**
-
-```typescript
-// vitest.config.ts - Extension reads this automatically!
-export default defineConfig({
-  test: {
-    include: ['**/*.{test,spec,integrationtest}.{js,jsx,ts,tsx}'],
-  },
-});
-```
 
 **Usage with CRA or similar abstractions**
 
@@ -278,9 +315,7 @@ You can also use dynamic test names derived from class method names:
 
 ```javascript
 class TestClass {
-  myFunction() {
-    // nothing
-  }
+  myFunction() {}
 }
 it(TestClass.prototype.myFunction.name, () => {
   expect(true).toBe(true);

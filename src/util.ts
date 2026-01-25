@@ -3,7 +3,7 @@ import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import type { ParsedNode } from 'jest-editor-support';
-import { isTestFile } from './testDetection';
+export { isTestFile } from './testDetection';
 
 const IS_WINDOWS = process.platform.includes('win32');
 let outputChannel: vscode.OutputChannel | undefined;
@@ -222,35 +222,3 @@ export function searchPathToParent<T>(
   return false;
 }
 
-export function shouldIncludeFile(
-	filePath: string,
-	workspaceFolderPath: string,
-): boolean {
-	const config = vscode.workspace.getConfiguration('jestrunner');
-	const include = config.get<string[]>('include', []);
-	const exclude = config.get<string[]>('exclude', []);
-
-	if (include.length === 0 && exclude.length === 0) {
-		return isTestFile(filePath);
-	}
-
-	const normalizedPath = normalizePath(filePath);
-	const relativePath = path.relative(
-		normalizePath(workspaceFolderPath),
-		normalizedPath,
-	);
-
-	if (include.length > 0) {
-		if (!mm.isMatch(relativePath, include) && !mm.isMatch(normalizedPath, include)) {
-			return false;
-		}
-	}
-
-	if (exclude.length > 0) {
-		if (mm.isMatch(relativePath, exclude) || mm.isMatch(normalizedPath, exclude)) {
-			return false;
-		}
-	}
-
-	return true;
-}

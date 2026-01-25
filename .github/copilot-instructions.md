@@ -72,8 +72,7 @@ Auto-detected in [testRunnerConfig.ts](../src/testRunnerConfig.ts#L23-L41) via `
 Key settings (see [package.json](../package.json) contributions):
 - `jestrunner.enableTestExplorer` - Toggle new Test Explorer vs CodeLens (default: false)
 - `jestrunner.configPath`/`vitestConfigPath` - Config resolution (string or glob object)
-- `jestrunner.projectPath` - Override workspace root for monorepos
-- `jestrunner.changeDirectoryToWorkspaceRoot` - CWD behavior (priority: projectPath → nearest package.json → workspace)
+- `jestrunner.changeDirectoryToWorkspaceRoot` - CWD behavior (priority: nearest package.json → workspace)
 - `jestrunner.runOptions`/`vitestRunOptions` - Additional CLI flags array
 
 ## Common Patterns
@@ -82,7 +81,7 @@ Key settings (see [package.json](../package.json) contributions):
 All commands use `wrapCommandHandler()` (extension.ts) for consistent error handling and user-facing error messages.
 
 ### Test Detection in Files
-`shouldIncludeFile()` (util.ts) checks against test patterns from framework configs using micromatch. Sets `jestrunner.isJestFile` context for menu visibility.
+Sets `jestrunner.isJestFile` context for menu visibility.
 
 ### Logging
 Use `logInfo()`/`logError()`/`logDebug()` from util.ts. Debug logs gated by `jestrunner.enableDebugLogs` setting. Output channel: "Jest Runner".

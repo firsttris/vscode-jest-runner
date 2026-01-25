@@ -45,7 +45,7 @@ describe('TestRunnerCodeLensProvider', () => {
 
     (fastGlob.sync as jest.Mock).mockReturnValue([]);
 
-    jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(true);
+    jest.spyOn(util, 'isTestFile').mockReturnValue(true);
 
     jest.spyOn(parser, 'parse').mockReturnValue({
       root: {
@@ -166,7 +166,7 @@ describe('TestRunnerCodeLensProvider', () => {
       } as any);
 
       (fastGlob.sync as jest.Mock).mockReturnValue([]); // File not in include list
-      jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(false);
+      jest.spyOn(util, 'isTestFile').mockReturnValue(false);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses).toEqual([]);
@@ -197,7 +197,7 @@ describe('TestRunnerCodeLensProvider', () => {
       } as any);
 
       (fastGlob.sync as jest.Mock).mockReturnValue(['/workspace/test.spec.ts']);
-      jest.spyOn(util, 'shouldIncludeFile').mockReturnValue(false);
+      jest.spyOn(util, 'isTestFile').mockReturnValue(false);
 
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses).toEqual([]);

@@ -1,62 +1,23 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { spawn } from 'child_process';
-import { parse } from './parser';
-import {
-  escapeRegExp,
-  updateTestNameIfUsingProperties,
-  pushMany,
-  TestNode,
-  shouldIncludeFile,
-  logInfo,
-  logError,
-  logWarning,
-  logDebug,
-  resolveTestNameStringInterpolation,
-} from './util';
+import { pushMany, isTestFile, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
-import {
-  getTestFrameworkForFile,
-  type TestFrameworkName,
-} from './testDetection';
+import { getTestFrameworkForFile } from './testDetection';
 import {
   CoverageProvider,
   DetailedFileCoverage,
-  type CoverageMap,
 } from './coverageProvider';
-
-interface JestAssertionResult {
-  ancestorTitles: string[];
-  title: string;
-  fullName?: string;
-  status: 'passed' | 'failed' | 'skipped' | 'pending' | 'todo';
-  duration?: number;
-  failureMessages?: string[];
-  location?: { line: number; column: number } | null;
-}
-
-interface JestFileResult {
-  assertionResults: JestAssertionResult[];
-  name: string;
-  status: string;
-  message: string;
-  startTime: number;
-  endTime: number;
-  summary?: string;
-}
-
-interface JestResults {
-  numFailedTestSuites: number;
-  numFailedTests: number;
-  numPassedTestSuites: number;
-  numPassedTests: number;
-  numPendingTestSuites: number;
-  numPendingTests: number;
-  numTotalTestSuites: number;
-  numTotalTests: number;
-  success: boolean;
-  testResults: JestFileResult[];
-}
+import {
+  discoverTests,
+  parseTestsInFile,
+} from './testDiscovery';
+import { processTestResults } from './testResultProcessor';
+import {
+  executeTestCommand,
+  collectTestsByFile,
+  buildTestArgs,
+  logTestExecution,
+} from './testExecution';
 
 export class JestTestController {
   private testController: vscode.TestController;
@@ -74,6 +35,13 @@ export class JestTestController {
     );
     context.subscriptions.push(this.testController);
 
+    this.setupRunProfiles();
+    this.discoverAllTests();
+    this.setupFileWatcher();
+    this.setupConfigurationWatcher();
+  }
+
+  private setupRunProfiles(): void {
     this.testController.createRunProfile(
       'Run',
       vscode.TestRunProfileKind.Run,
@@ -112,19 +80,17 @@ export class JestTestController {
       (request, token) => this.runHandler(request, token, ['-u']),
       false,
     );
-
-    if (vscode.workspace.workspaceFolders) {
-      for (const workspaceFolder of vscode.workspace.workspaceFolders) {
-        this.discoverTests(workspaceFolder);
-      }
-    }
-
-    this.setupFileWatcher();
-    this.setupConfigurationWatcher();
   }
 
-  private setupConfigurationWatcher() {
-    // Watch for VS Code configuration changes
+  private discoverAllTests(): void {
+    if (vscode.workspace.workspaceFolders) {
+      for (const workspaceFolder of vscode.workspace.workspaceFolders) {
+        discoverTests(workspaceFolder, this.testController, this.jestConfig);
+      }
+    }
+  }
+
+  private setupConfigurationWatcher(): void {
     const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
       if (
         e.affectsConfiguration('jestrunner') ||
@@ -137,7 +103,6 @@ export class JestTestController {
 
     this.disposables.push(configWatcher);
 
-    // Watch for changes to test framework config files
     const configFilePatterns = [
       '**/jest.config.{js,ts,json,cjs,mjs}',
       '**/vitest.config.{js,ts,mjs,mts,cjs,cts}',
@@ -155,539 +120,13 @@ export class JestTestController {
     }
   }
 
-  private async refreshAllTests() {
-    // Clear all existing test items
+  private async refreshAllTests(): Promise<void> {
     this.testController.items.replace([]);
 
-    // Re-discover tests
     if (vscode.workspace.workspaceFolders) {
       for (const workspaceFolder of vscode.workspace.workspaceFolders) {
-        await this.discoverTests(workspaceFolder);
+        await discoverTests(workspaceFolder, this.testController, this.jestConfig);
       }
-    }
-  }
-
-  private async discoverTests(workspaceFolder: vscode.WorkspaceFolder) {
-    const testFiles = await this.findJestTestFiles(workspaceFolder.uri.fsPath);
-
-    for (const file of testFiles) {
-      const fileUri = vscode.Uri.file(file);
-      const relativePath = path.relative(workspaceFolder.uri.fsPath, file);
-
-      const testItem = this.testController.createTestItem(
-        file,
-        relativePath,
-        fileUri,
-      );
-      this.testController.items.add(testItem);
-
-      this.parseTestsInFile(file, testItem);
-    }
-  }
-
-  private parseTestsInFile(filePath: string, parentItem: vscode.TestItem) {
-    try {
-      const testFile = parse(filePath);
-
-      if (!testFile || !testFile.root || !testFile.root.children) {
-        return;
-      }
-
-      this.processTestNodes(testFile.root.children, parentItem, filePath);
-    } catch (error) {
-      logError(`Error parsing tests in ${filePath}`, error);
-    }
-  }
-
-  private processTestNodes(
-    nodes: TestNode[],
-    parentItem: vscode.TestItem,
-    filePath: string,
-    namePrefix: string = '',
-  ) {
-    for (const node of nodes) {
-      if (!node.name) {
-        continue;
-      }
-
-      const fullName = namePrefix ? `${namePrefix} ${node.name}` : node.name;
-
-      const cleanTestName = updateTestNameIfUsingProperties(node.name);
-      const cleanFullName = updateTestNameIfUsingProperties(fullName);
-
-      const testId = `${filePath}:${node.type}:${node.start?.line || 0}:${escapeRegExp(cleanFullName || fullName)}`;
-
-      const testItem = this.testController.createTestItem(
-        testId,
-        cleanTestName || node.name,
-        parentItem.uri,
-      );
-
-      testItem.tags =
-        node.type === 'describe'
-          ? [new vscode.TestTag('suite')]
-          : [new vscode.TestTag('test')];
-
-      if (node.start && node.start.line > 0) {
-        try {
-          testItem.range = new vscode.Range(
-            new vscode.Position(node.start.line - 1, node.start.column || 0),
-            new vscode.Position(
-              (node.end?.line || node.start.line) - 1,
-              node.end?.column || 100,
-            ),
-          );
-        } catch (error) {
-          logError(`Error setting range for ${node.name}`, error);
-        }
-      }
-
-      parentItem.children.add(testItem);
-
-      if (node.children && node.children.length > 0) {
-        this.processTestNodes(
-          node.children,
-          testItem,
-          filePath,
-          cleanFullName || fullName,
-        );
-      }
-    }
-  }
-
-  private async findJestTestFiles(folderPath: string): Promise<string[]> {
-    const pattern = new vscode.RelativePattern(
-      folderPath,
-      this.jestConfig.getTestFilePattern(),
-    );
-    const files = await vscode.workspace.findFiles(
-      pattern,
-      '**/node_modules/**',
-    );
-
-    return files
-      .map((file) => file.fsPath)
-      .filter((filePath) => shouldIncludeFile(filePath, folderPath));
-  }
-
-  private processTestResults(
-    output: string,
-    tests: vscode.TestItem[],
-    run: vscode.TestRun,
-  ): void {
-    this.processTestResultsWithFramework(output, tests, run, 'jest');
-  }
-
-  private async processCoverageData(
-    run: vscode.TestRun,
-    workspaceFolder: string,
-    framework: 'jest' | 'vitest' = 'jest',
-    configPath?: string,
-  ): Promise<void> {
-    try {
-      const coverageMap = await this.coverageProvider.readCoverageFromFile(
-        workspaceFolder,
-        framework,
-        configPath,
-      );
-
-      if (!coverageMap) {
-        logDebug(`No coverage data found for ${framework}.`);
-        logInfo(
-          `Make sure coverageReporters includes "json" in your ${framework} config.`,
-        );
-        return;
-      }
-
-      const fileCoverages = this.coverageProvider.convertToVSCodeCoverage(
-        coverageMap,
-        workspaceFolder,
-      );
-
-      logInfo(`Adding coverage for ${fileCoverages.length} files`);
-
-      for (const fileCoverage of fileCoverages) {
-        run.addCoverage(fileCoverage);
-      }
-    } catch (error) {
-      logError('Failed to process coverage data', error);
-    }
-  }
-
-  private executeJestCommand(
-    command: string,
-    args: string[],
-    token: vscode.CancellationToken,
-    tests: vscode.TestItem[],
-    run: vscode.TestRun,
-    additionalEnv?: Record<string, string>,
-  ): Promise<string | null> {
-    return new Promise((resolve) => {
-      const maxBufferSize =
-        vscode.workspace
-          .getConfiguration('jestrunner')
-          .get<number>('maxBufferSize', 50) *
-        1024 *
-        1024;
-
-      const jestProcess = spawn(command, args, {
-        cwd: this.jestConfig.cwd,
-        env: { ...process.env, FORCE_COLOR: 'true', ...additionalEnv },
-        shell: true,
-      });
-
-      let stdout = '';
-      let stderr = '';
-      let killed = false;
-
-      const checkBufferSize = (
-        buffer: string,
-        chunk: string,
-        errorMsg: string,
-      ): boolean => {
-        if (buffer.length + chunk.length > maxBufferSize) {
-          killed = true;
-          jestProcess.kill();
-          tests.forEach((test) => run.failed(test, new vscode.TestMessage(errorMsg)));
-          resolve(null);
-          return true;
-        }
-        return false;
-      };
-
-      jestProcess.stdout?.on('data', (data) => {
-        if (killed) return;
-        const chunk = data.toString();
-        if (!checkBufferSize(stdout, chunk, 'Test output exceeded maximum buffer size')) {
-          stdout += chunk;
-        }
-      });
-
-      jestProcess.stderr?.on('data', (data) => {
-        if (killed) return;
-        const chunk = data.toString();
-        if (!checkBufferSize(stderr, chunk, 'Error output exceeded maximum buffer size')) {
-          stderr += chunk;
-        }
-      });
-
-      jestProcess.on('error', (error) => {
-        tests.forEach((test) =>
-          run.failed(
-            test,
-            new vscode.TestMessage(`Failed to execute Jest: ${error.message}`),
-          ),
-        );
-        resolve(null);
-      });
-
-      jestProcess.on('close', (code) => {
-        cancellationListener.dispose();
-
-        if (token.isCancellationRequested) {
-          tests.forEach((test) => run.skipped(test));
-          resolve(null);
-          return;
-        }
-
-        if (stdout) {
-          resolve(stdout);
-        } else if (stderr) {
-          tests.forEach((test) =>
-            run.failed(test, new vscode.TestMessage(stderr)),
-          );
-          resolve(null);
-        } else {
-          tests.forEach((test) =>
-            run.failed(test, new vscode.TestMessage('No output from Jest')),
-          );
-          resolve(null);
-        }
-      });
-
-      const cancellationListener = token.onCancellationRequested(() => {
-        jestProcess.kill();
-        tests.forEach((test) => run.skipped(test));
-        resolve(null);
-      });
-    });
-  }
-
-  private parseJestOutput(output: string): JestResults | undefined {
-    try {
-      const jsonRegex = /({"numFailedTestSuites":.*?"wasInterrupted":.*?})/s;
-      const jsonMatch = output.match(jsonRegex);
-
-      if (jsonMatch && jsonMatch[1]) {
-        return JSON.parse(jsonMatch[1]);
-      }
-
-      const fallbackMatch = output.match(/(\{.*"testResults".*\})/s);
-      if (fallbackMatch && fallbackMatch[1]) {
-        return JSON.parse(fallbackMatch[1]);
-      }
-
-      return undefined;
-    } catch (e) {
-      logDebug(`Failed to parse Jest JSON output: ${e}`);
-      return undefined;
-    }
-  }
-
-  private parseVitestOutput(output: string): JestResults | undefined {
-    try {
-      const lines = output.split('\n');
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('{') && trimmed.includes('"testResults"')) {
-          try {
-            const parsed = JSON.parse(trimmed);
-            return this.convertVitestToJestResults(parsed);
-          } catch {}
-        }
-      }
-
-      const jsonMatch = output.match(/(\{[\s\S]*"testResults"[\s\S]*\})/m);
-      if (jsonMatch && jsonMatch[1]) {
-        const parsed = JSON.parse(jsonMatch[1]);
-        return this.convertVitestToJestResults(parsed);
-      }
-
-      return undefined;
-    } catch (e) {
-      logDebug(`Failed to parse Vitest JSON output: ${e}`);
-      return undefined;
-    }
-  }
-
-  private convertVitestToJestResults(vitestOutput: any): JestResults {
-    if (vitestOutput.numFailedTestSuites !== undefined) {
-      return vitestOutput as JestResults;
-    }
-
-    const results: JestResults = {
-      numFailedTestSuites: vitestOutput.numFailedTestSuites || 0,
-      numFailedTests: vitestOutput.numFailedTests || 0,
-      numPassedTestSuites: vitestOutput.numPassedTestSuites || 0,
-      numPassedTests: vitestOutput.numPassedTests || 0,
-      numPendingTestSuites: vitestOutput.numPendingTestSuites || 0,
-      numPendingTests: vitestOutput.numPendingTests || 0,
-      numTotalTestSuites: vitestOutput.numTotalTestSuites || 0,
-      numTotalTests: vitestOutput.numTotalTests || 0,
-      success: vitestOutput.success ?? vitestOutput.numFailedTests === 0,
-      testResults: vitestOutput.testResults || [],
-    };
-
-    return results;
-  }
-
-  private processTestResultsWithFramework(
-    output: string,
-    tests: vscode.TestItem[],
-    run: vscode.TestRun,
-    framework: TestFrameworkName,
-  ): void {
-    const results =
-      framework === 'vitest'
-        ? this.parseVitestOutput(output)
-        : this.parseJestOutput(output);
-
-    if (results) {
-      this.processTestResultsFromParsed(results, tests, run);
-    } else {
-      this.processTestResultsFallback(output, tests, run);
-    }
-  }
-
-  private matchesTestLabel(resultTitle: string, testLabel: string): boolean {
-    if (resultTitle === testLabel) {
-      return true;
-    }
-
-    const hasTemplateVar = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/i.test(
-      testLabel,
-    );
-    if (hasTemplateVar) {
-      const pattern = resolveTestNameStringInterpolation(testLabel);
-      try {
-        const regex = new RegExp(`^${pattern}$`);
-        return regex.test(resultTitle);
-      } catch {
-        return false;
-      }
-    }
-
-    return false;
-  }
-
-  private processTestResultsFromParsed(
-    results: JestResults,
-    tests: vscode.TestItem[],
-    run: vscode.TestRun,
-  ): void {
-    if (results?.testResults?.[0]?.assertionResults) {
-      const testResults = results.testResults[0].assertionResults;
-      logDebug(
-        `Processing ${testResults.length} test results for ${tests.length} test items`,
-      );
-
-      const usedResults = new Set<number>();
-
-      tests.forEach((test) => {
-        const testName = test.label.split(' ').pop() || test.label;
-        const testLine = test.range?.start.line;
-
-        const potentialMatches = testResults
-          .map((r, index) => ({ result: r, index }))
-          .filter(
-            ({ result: r }) =>
-              this.matchesTestLabel(r.title, test.label) ||
-              this.matchesTestLabel(r.title, testName) ||
-              r.fullName === test.label ||
-              (r.ancestorTitles &&
-                this.matchesTestLabel(
-                  r.ancestorTitles.concat(r.title).join(' '),
-                  test.label,
-                )),
-          );
-
-        let matchingResult: JestAssertionResult | undefined;
-        let matchedIndex = -1;
-
-        const hasTemplateVar = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/i.test(
-          test.label,
-        );
-
-        if (potentialMatches.length > 0) {
-          if (hasTemplateVar && potentialMatches.length > 1) {
-            logDebug(
-              `Found ${potentialMatches.length} it.each results for "${test.label}"`,
-            );
-
-            const allResults = potentialMatches.map((m) => m.result);
-            const failedResults = allResults.filter(
-              (r) => r.status === 'failed',
-            );
-            const passedResults = allResults.filter(
-              (r) => r.status === 'passed',
-            );
-
-            potentialMatches.forEach((m) => usedResults.add(m.index));
-
-            if (failedResults.length > 0) {
-              const allFailureMessages = failedResults
-                .flatMap((r) => r.failureMessages || ['Test failed'])
-                .map(
-                  (msg, i) => `[${failedResults[i]?.title || i + 1}]: ${msg}`,
-                )
-                .join('\n\n');
-              run.failed(test, new vscode.TestMessage(allFailureMessages));
-            } else if (passedResults.length > 0) {
-              run.passed(test);
-            } else {
-              run.skipped(test);
-            }
-            return;
-          } else if (potentialMatches.length === 1) {
-            matchingResult = potentialMatches[0].result;
-            matchedIndex = potentialMatches[0].index;
-          } else {
-            logDebug(
-              `Found ${potentialMatches.length} potential matches for "${test.label}", using location to match`,
-            );
-
-            if (testLine !== undefined) {
-              const locationMatch = potentialMatches.find(
-                ({ result: r, index }) =>
-                  !usedResults.has(index) &&
-                  r.location?.line !== undefined &&
-                  r.location.line === testLine + 1,
-              );
-
-              if (locationMatch) {
-                matchingResult = locationMatch.result;
-                matchedIndex = locationMatch.index;
-              }
-            }
-
-            if (!matchingResult) {
-              const unusedMatch = potentialMatches.find(
-                ({ index }) => !usedResults.has(index),
-              );
-              if (unusedMatch) {
-                matchingResult = unusedMatch.result;
-                matchedIndex = unusedMatch.index;
-              }
-            }
-          }
-        }
-
-        if (matchingResult) {
-          if (matchedIndex >= 0) {
-            usedResults.add(matchedIndex);
-          }
-
-          logDebug(
-            `Found match for "${test.label}" at line ${testLine}: ${matchingResult.status}`,
-          );
-          if (matchingResult.status === 'passed') {
-            run.passed(test);
-          } else if (matchingResult.status === 'failed') {
-            const message = new vscode.TestMessage(
-              matchingResult.failureMessages?.join('\n') || 'Test failed',
-            );
-            run.failed(test, message);
-          } else {
-            run.skipped(test);
-          }
-        } else {
-          logDebug(`No match found for test "${test.label}"`);
-          run.skipped(test);
-        }
-      });
-    } else {
-      logWarning('No assertion results found in test output');
-      tests.forEach((test) => run.skipped(test));
-    }
-  }
-
-  private processTestResultsFallback(
-    output: string,
-    tests: vscode.TestItem[],
-    run: vscode.TestRun,
-  ): void {
-    logWarning('Failed to parse test results, falling back to simple parsing');
-
-    const hasFail =
-      output.includes('FAIL') || output.includes('✗') || output.includes('×');
-
-    if (hasFail) {
-      const failLines = output
-        .split('\n')
-        .filter(
-          (line) =>
-            line.includes('●') ||
-            line.includes('✗') ||
-            line.includes('×') ||
-            line.includes('AssertionError'),
-        );
-
-      tests.forEach((test) => {
-        const testFailed = failLines.some(
-          (line) =>
-            line.includes(test.label) ||
-            (test.label.includes(' ') &&
-              line.includes(test.label.split(' ').pop() || '')),
-        );
-
-        if (testFailed) {
-          run.failed(test, new vscode.TestMessage('Test failed'));
-        } else {
-          run.passed(test);
-        }
-      });
-    } else {
-      tests.forEach((test) => run.passed(test));
     }
   }
 
@@ -695,45 +134,15 @@ export class JestTestController {
     request: vscode.TestRunRequest,
     token: vscode.CancellationToken,
     additionalArgs: string[] = [],
-  ) {
+  ): Promise<void> {
     return this.executeTests(request, token, additionalArgs, false);
   }
 
   private async coverageHandler(
     request: vscode.TestRunRequest,
     token: vscode.CancellationToken,
-  ) {
+  ): Promise<void> {
     return this.executeTests(request, token, [], true);
-  }
-
-  private collectTestsByFile(
-    request: vscode.TestRunRequest,
-  ): Map<string, vscode.TestItem[]> {
-    const testsByFile = new Map<string, vscode.TestItem[]>();
-
-    const collectTests = (test: vscode.TestItem) => {
-      if (request.exclude?.includes(test)) {
-        return;
-      }
-
-      if (test.children.size > 0) {
-        test.children.forEach((child) => collectTests(child));
-      } else if (test.uri) {
-        const filePath = test.uri.fsPath;
-        if (!testsByFile.has(filePath)) {
-          testsByFile.set(filePath, []);
-        }
-        testsByFile.get(filePath)!.push(test);
-      }
-    };
-
-    if (request.include) {
-      request.include.forEach((test) => collectTests(test));
-    } else {
-      this.testController.items.forEach((test) => collectTests(test));
-    }
-
-    return testsByFile;
   }
 
   private async executeTests(
@@ -741,9 +150,9 @@ export class JestTestController {
     token: vscode.CancellationToken,
     additionalArgs: string[] = [],
     collectCoverage: boolean = false,
-  ) {
+  ): Promise<void> {
     const run = this.testController.createTestRun(request);
-    const testsByFile = this.collectTestsByFile(request);
+    const testsByFile = collectTestsByFile(request, this.testController);
 
     testsByFile.forEach((tests) => {
       tests.forEach((test) => run.started(test));
@@ -766,6 +175,7 @@ export class JestTestController {
       const workspaceFolder = vscode.workspace.getWorkspaceFolder(
         vscode.Uri.file(allFiles[0]),
       )?.uri.fsPath;
+
       if (!workspaceFolder) {
         allTests.forEach((test) =>
           run.failed(
@@ -784,12 +194,14 @@ export class JestTestController {
         ? this.jestConfig.getVitestConfigPath(allFiles[0])
         : this.jestConfig.getJestConfigPath(allFiles[0]);
 
-      const args = this.buildTestArgs(
+      const args = buildTestArgs(
         allFiles,
         testsByFile,
         isVitest,
         additionalArgs,
         collectCoverage,
+        this.jestConfig,
+        this.testController,
       );
 
       const testCommand = isVitest
@@ -799,19 +211,24 @@ export class JestTestController {
       const command = commandParts[0];
       const commandArgs = [...commandParts.slice(1), ...args];
 
-      // Get ESM environment if needed (only for Jest, Vitest is ESM-native)
       const esmEnv = isVitest ? undefined : this.jestConfig.getEnvironmentForRun(allFiles[0]);
 
-      logInfo(
-        `Running batched ${framework} command: ${command} ${commandArgs.join(' ')} (${allTests.length} tests across ${allFiles.length} files)${esmEnv ? ' [ESM mode]' : ''}`,
+      logTestExecution(
+        framework,
+        command,
+        commandArgs,
+        allTests.length,
+        allFiles.length,
+        !!esmEnv,
       );
 
-      const output = await this.executeJestCommand(
+      const output = await executeTestCommand(
         command,
         commandArgs,
         token,
         allTests,
         run,
+        this.jestConfig.cwd,
         esmEnv,
       );
 
@@ -820,7 +237,7 @@ export class JestTestController {
         return;
       }
 
-      this.processTestResultsWithFramework(output, allTests, run, framework);
+      processTestResults(output, allTests, run, framework);
 
       if (collectCoverage && workspaceFolder) {
         await this.processCoverageData(
@@ -847,77 +264,43 @@ export class JestTestController {
     run.end();
   }
 
-  private buildTestArgs(
-    allFiles: string[],
-    testsByFile: Map<string, vscode.TestItem[]>,
-    isVitest: boolean,
-    additionalArgs: string[],
-    collectCoverage: boolean,
-  ): string[] {
-    const fileItem =
-      allFiles.length === 1
-        ? this.testController.items.get(allFiles[0])
-        : undefined;
-    const totalTestsInFile = fileItem?.children.size ?? 0;
-    const isPartialRun =
-      allFiles.length === 1 &&
-      testsByFile.get(allFiles[0])!.length < totalTestsInFile;
+  private async processCoverageData(
+    run: vscode.TestRun,
+    workspaceFolder: string,
+    framework: 'jest' | 'vitest' = 'jest',
+    configPath?: string,
+  ): Promise<void> {
+    try {
+      const coverageMap = await this.coverageProvider.readCoverageFromFile(
+        workspaceFolder,
+        framework,
+        configPath,
+      );
 
-    if (isPartialRun) {
-      const tests = testsByFile.get(allFiles[0])!;
-      const testNamePattern =
-        tests.length > 1
-          ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-          : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-
-      const extraArgs = [
-        ...additionalArgs,
-        isVitest ? '--reporter=json' : '--json',
-      ];
-
-      if (collectCoverage) {
-        extraArgs.push(
-          '--coverage',
-          isVitest ? '--coverage.reporter' : '--coverageReporters=json',
-          ...(isVitest ? ['json'] : []),
-        );
+      if (!coverageMap) {
+        logInfo(`No coverage data found. Make sure coverageReporters includes "json" in your ${framework} config.`);
+        return;
       }
 
-      return isVitest
-        ? this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, extraArgs)
-        : this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, extraArgs);
-    }
+      const fileCoverages = this.coverageProvider.convertToVSCodeCoverage(
+        coverageMap,
+        workspaceFolder,
+      );
 
-    // Full file run
-    const configPath = isVitest
-      ? this.jestConfig.getVitestConfigPath(allFiles[0])
-      : this.jestConfig.getJestConfigPath(allFiles[0]);
+      logInfo(`Adding coverage for ${fileCoverages.length} files`);
 
-    const args = isVitest
-      ? ['run', ...allFiles, '--reporter=json']
-      : [...allFiles, '--json'];
-
-    if (configPath) {
-      args.push(isVitest ? '--config' : '-c', configPath);
-    }
-
-    args.push(...additionalArgs);
-
-    if (collectCoverage) {
-      if (isVitest) {
-        args.push('--coverage', '--coverage.reporter', 'json', '--coverage.reporter', 'text');
-      } else {
-        args.push('--coverage', '--coverageReporters=json');
+      for (const fileCoverage of fileCoverages) {
+        run.addCoverage(fileCoverage);
       }
+    } catch (error) {
+      logError('Failed to process coverage data', error);
     }
-
-    return args;
   }
 
   private async debugHandler(
     request: vscode.TestRunRequest,
     token: vscode.CancellationToken,
-  ) {
+  ): Promise<void> {
     const queue: vscode.TestItem[] = [];
 
     if (request.include) {
@@ -936,7 +319,7 @@ export class JestTestController {
       }
 
       if (test.children.size === 0) {
-        await this.debugJestTest(test);
+        await this.debugTest(test);
         break;
       } else {
         test.children.forEach((child) => {
@@ -946,9 +329,9 @@ export class JestTestController {
     }
   }
 
-  private async debugJestTest(test: vscode.TestItem) {
+  private async debugTest(test: vscode.TestItem): Promise<boolean | undefined> {
     const filePath = test.uri!.fsPath;
-    const testName = test.children.size === 0 ? test.label : undefined;
+    const testName = test.children.size === 0 ? escapeRegExp(updateTestNameIfUsingProperties(test.label)) : undefined;
 
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!);
     if (!workspaceFolder) {
@@ -957,25 +340,21 @@ export class JestTestController {
     }
 
     const debugConfig = this.jestConfig.getDebugConfiguration(filePath);
-    const standardArgs = this.jestConfig.buildTestArgs(
-      filePath,
-      testName,
-      false,
-    );
+    const standardArgs = this.jestConfig.buildTestArgs(filePath, testName, false);
     pushMany(debugConfig.args, standardArgs);
 
     return vscode.debug.startDebugging(workspaceFolder, debugConfig);
   }
 
-  private setupFileWatcher() {
-    const pattern = this.jestConfig.getTestFilePattern();
+  private setupFileWatcher(): void {
+    const pattern = this.jestConfig.getAllPotentialSourceFiles();
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
     watcher.onDidChange((uri) => {
       const item = this.testController.items.get(uri.fsPath);
       if (item) {
         item.children.replace([]);
-        this.parseTestsInFile(uri.fsPath, item);
+        parseTestsInFile(uri.fsPath, item, this.testController);
       }
     });
 
@@ -983,7 +362,7 @@ export class JestTestController {
       if (vscode.workspace.workspaceFolders) {
         for (const workspaceFolder of vscode.workspace.workspaceFolders) {
           if (uri.fsPath.startsWith(workspaceFolder.uri.fsPath)) {
-            if (!shouldIncludeFile(uri.fsPath, workspaceFolder.uri.fsPath)) {
+            if (!isTestFile(uri.fsPath)) {
               return;
             }
             const relativePath = path.relative(
@@ -996,7 +375,7 @@ export class JestTestController {
               uri,
             );
             this.testController.items.add(testItem);
-            this.parseTestsInFile(uri.fsPath, testItem);
+            parseTestsInFile(uri.fsPath, testItem, this.testController);
           }
         }
       }
@@ -1012,7 +391,7 @@ export class JestTestController {
     this.disposables.push(watcher);
   }
 
-  public dispose() {
+  public dispose(): void {
     this.disposables.forEach((d) => d.dispose());
     this.testController.dispose();
   }
