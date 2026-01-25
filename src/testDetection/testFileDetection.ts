@@ -50,8 +50,8 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         if (testDir) {
           const testDirPath = normalize(path.join(dir, testDir));
           const rel = path.relative(testDirPath, filePath).replace(/\\/g, '/');
-          // filePath is inside testDir if rel does not start with '..' and is not absolute
-          if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
+          // filePath is inside testDir if rel === '' (same) or does not start with '..' and is not absolute
+          if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
             return true;
           }
         } else {
@@ -70,7 +70,7 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         } else {
           const cypressDir = normalize(path.join(dir, 'cypress'));
           const rel = path.relative(cypressDir, filePath).replace(/\\/g, '/');
-          if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
+          if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
             return true;
           }
         }
