@@ -59,14 +59,3 @@ export {
 
 // ESM detection
 export { isEsmProject } from './esmDetection';
-
-// Pattern conflict detection
-export {
-  detectPatternConflict,
-  showPatternConflictWarning,
-  clearPatternConflictWarnings,
-  hasWarnedForDirectory,
-  initConfigFileWatcher,
-  disposeConfigFileWatcher,
-  PatternConflictInfo,
-} from './patternConflictDetection';
