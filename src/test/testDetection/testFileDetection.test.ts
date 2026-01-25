@@ -1128,7 +1128,7 @@ export default defineConfig({
 
     it('should return true when Cypress config is found and file matches specPattern', () => {
       const filePath = '/workspace/project/cypress/e2e/login.cy.js';
-      const cypressConfigPath = '/workspace/project/cypress.config.js';
+      const cypressConfigPath = path.join(rootPath, 'cypress.config.js');
 
       mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
         return fsPath === cypressConfigPath;
@@ -1148,7 +1148,7 @@ export default defineConfig({
 
     it('should return false when Cypress config is found but file does not match specPattern', () => {
       const filePath = '/workspace/project/src/utils.test.js';
-      const cypressConfigPath = '/workspace/project/cypress.config.js';
+      const cypressConfigPath = path.join(rootPath, 'cypress.config.js');
 
       mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
         return fsPath === cypressConfigPath;
@@ -1168,7 +1168,7 @@ export default defineConfig({
 
     it('should return true when Cypress config is found and file is in default cypress dir', () => {
       const filePath = '/workspace/project/cypress/integration/login.spec.js';
-      const cypressConfigPath = '/workspace/project/cypress.config.js';
+      const cypressConfigPath = path.join(rootPath, 'cypress.config.js');
 
       mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
         return fsPath === cypressConfigPath;
