@@ -65,5 +65,7 @@ export {
   showPatternConflictWarning,
   clearPatternConflictWarnings,
   hasWarnedForDirectory,
+  initConfigFileWatcher,
+  disposeConfigFileWatcher,
   PatternConflictInfo,
 } from './patternConflictDetection';

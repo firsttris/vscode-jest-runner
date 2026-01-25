@@ -5,6 +5,7 @@ import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { JestTestController } from './TestController';
 import { isTestFile, logError } from './util';
+import { initConfigFileWatcher } from './testDetection';
 
 function wrapCommandHandler<T extends unknown[]>(
   handler: (...args: T) => Promise<void> | void,
@@ -64,6 +65,9 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   updateJestFileContext();
+
+  // Initialize config file watcher for pattern conflict detection
+  context.subscriptions.push(initConfigFileWatcher());
 
   const enableTestExplorer = vscode.workspace
     .getConfiguration('jestrunner')

@@ -1,9 +1,14 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { logWarning, logDebug, getOutputChannel } from '../util';
 import { DEFAULT_TEST_PATTERNS, TestPatterns } from './frameworkDefinitions';
+import { getTestMatchFromJestConfig, getVitestConfig, getConfigPath } from './configParsing';
 
 // Track which directories have already shown a warning to avoid spam
 const warnedDirectories = new Set<string>();
+
+// File watcher for config changes
+let configWatcher: vscode.FileSystemWatcher | undefined;
 
 /**
  * Checks if two pattern arrays are effectively equal (same patterns, possibly different order)
@@ -163,4 +168,85 @@ export function clearPatternConflictWarnings(): void {
  */
 export function hasWarnedForDirectory(directoryPath: string): boolean {
   return warnedDirectories.has(directoryPath);
+}
+
+/**
+ * Clears the warning for a specific directory.
+ * Called when a config file in that directory changes.
+ */
+function clearWarningForDirectory(directoryPath: string): void {
+  if (warnedDirectories.has(directoryPath)) {
+    warnedDirectories.delete(directoryPath);
+    logDebug(`Cleared pattern conflict warning for ${directoryPath} due to config change`);
+  }
+}
+
+/**
+ * Handles config file changes by clearing the warning for that directory and re-checking for conflicts.
+ */
+function onConfigFileChanged(uri: vscode.Uri): void {
+  const directoryPath = path.dirname(uri.fsPath);
+  clearWarningForDirectory(directoryPath);
+  // Immediately re-check for conflicts after clearing the warning
+  checkAndShowPatternConflictForDirectory(directoryPath);
+}
+
+/**
+ * Checks for pattern conflicts in a directory and shows warning if needed.
+ * Called when config files change to immediately re-evaluate conflicts.
+ */
+export function checkAndShowPatternConflictForDirectory(directoryPath: string): void {
+  const jestConfigPath = getConfigPath(directoryPath, 'jest');
+  const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
+
+  if (!jestConfigPath && !vitestConfigPath) {
+    return; // No configs, no conflict possible
+  }
+
+  const jestConfig = jestConfigPath ? getTestMatchFromJestConfig(jestConfigPath) : undefined;
+  const vitestConfig = vitestConfigPath ? getVitestConfig(vitestConfigPath) : undefined;
+
+  const conflictInfo = detectPatternConflict(jestConfig, vitestConfig);
+  if (conflictInfo.hasConflict) {
+    showPatternConflictWarning(directoryPath, conflictInfo);
+  }
+}
+
+/**
+ * Initializes the file watcher for Jest and Vitest config files.
+ * Should be called once during extension activation.
+ */
+export function initConfigFileWatcher(): vscode.Disposable {
+  if (configWatcher) {
+    configWatcher.dispose();
+  }
+
+  // Watch for Jest and Vitest config files
+  const configPattern = '**/{jest.config,vitest.config,vite.config}.{js,ts,mjs,mts,cjs,cts,json}';
+  configWatcher = vscode.workspace.createFileSystemWatcher(configPattern);
+
+  configWatcher.onDidChange(onConfigFileChanged);
+  configWatcher.onDidCreate(onConfigFileChanged);
+  configWatcher.onDidDelete(onConfigFileChanged);
+
+  logDebug('Initialized config file watcher for pattern conflict detection');
+
+  return {
+    dispose: () => {
+      if (configWatcher) {
+        configWatcher.dispose();
+        configWatcher = undefined;
+      }
+    },
+  };
+}
+
+/**
+ * Disposes the config file watcher.
+ */
+export function disposeConfigFileWatcher(): void {
+  if (configWatcher) {
+    configWatcher.dispose();
+    configWatcher = undefined;
+  }
 }
