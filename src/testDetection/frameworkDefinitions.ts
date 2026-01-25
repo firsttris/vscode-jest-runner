@@ -73,3 +73,31 @@ export const testFrameworks: TestFramework[] = [
     binaryName: 'jest',
   },
 ];
+
+// Alle bekannten Test-Frameworks, einschließlich derer, die von dieser Erweiterung nicht unterstützt werden
+export const allTestFrameworks: TestFramework[] = [
+  ...testFrameworks,
+  {
+    name: 'playwright',
+    configFiles: [
+      'playwright.config.ts',
+      'playwright.config.js',
+      'playwright.config.mjs',
+      'playwright.config.cjs',
+    ],
+    binaryName: 'playwright',
+  },
+  {
+    name: 'cypress',
+    configFiles: [
+      'cypress.config.ts',
+      'cypress.config.js',
+      'cypress.config.mjs',
+      'cypress.config.cjs',
+    ],
+    binaryName: 'cypress',
+  },
+];
+
+export const DEFAULT_COVERAGE_DIR = 'coverage';
+export const COVERAGE_FINAL_FILE = 'coverage-final.json';

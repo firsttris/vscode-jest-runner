@@ -3,12 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logDebug, logError, logInfo, logWarning } from './util';
 import { matchesTestFilePattern } from './testDetection';
-import {
-  JEST_CONFIG_FILES,
-  VITEST_CONFIG_FILES,
-  DEFAULT_COVERAGE_DIR,
-  COVERAGE_FINAL_FILE,
-} from './constants';
+import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
 
 export interface CoverageMap {
   [filePath: string]: FileCoverageData;
@@ -97,8 +92,8 @@ export class CoverageProvider {
     workspaceFolder: string,
     framework: 'jest' | 'vitest',
   ): string | undefined {
-    const configFiles =
-      framework === 'vitest' ? VITEST_CONFIG_FILES : JEST_CONFIG_FILES;
+    const frameworkDef = testFrameworks.find(f => f.name === framework);
+    const configFiles = frameworkDef ? frameworkDef.configFiles : [];
 
     for (const configFile of configFiles) {
       const configPath = path.join(workspaceFolder, configFile);

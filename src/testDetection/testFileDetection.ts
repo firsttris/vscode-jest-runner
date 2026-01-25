@@ -7,8 +7,10 @@ import {
   TestPatternResult,
   DEFAULT_TEST_PATTERNS,
   testFrameworks,
+  allTestFrameworks,
 } from './frameworkDefinitions';
 import {
+  getConfigPath,
   getTestMatchFromJestConfig,
   getVitestConfig,
   resolveAndValidateCustomConfig,
@@ -27,6 +29,26 @@ const createDefaultResult = (configDir: string): TestPatternResult => ({
   configDir,
   isRegex: false,
 });
+
+function hasConflictingTestFramework(filePath: string): boolean {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+  if (!workspaceFolder) return false;
+
+  const rootPath = workspaceFolder.uri.fsPath;
+  const dirs = getParentDirectories(path.dirname(filePath), rootPath);
+
+  for (const dir of dirs) {
+    for (const framework of allTestFrameworks) {
+      // Überspringe Jest und Vitest, da sie unterstützt werden
+      if (framework.name === 'jest' || framework.name === 'vitest') continue;
+
+      if (framework.configFiles.some(configFile => fs.existsSync(path.join(dir, configFile)))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 const resolveJestResult = (
   result: { patterns: string[]; rootDir?: string; isRegex: boolean; roots?: string[]; ignorePatterns?: string[] } | undefined,
@@ -232,6 +254,10 @@ export function isVitestTestFile(filePath: string): boolean {
 
 export function isTestFile(filePath: string): boolean {
   if (!matchesTestFilePattern(filePath)) {
+    return false;
+  }
+
+  if (hasConflictingTestFramework(filePath)) {
     return false;
   }
 

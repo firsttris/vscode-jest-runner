@@ -17,8 +17,8 @@ import {
   findTestFrameworkDirectory,
   isEsmProject,
   type TestFrameworkName,
+  testFrameworks,
 } from './testDetection';
-import { JEST_CONFIG_FILES, VITEST_CONFIG_FILES } from './constants';
 
 export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
   const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
@@ -246,10 +246,12 @@ export class TestRunnerConfig {
     let configFiles: readonly string[];
     if (targetConfigFilename) {
       configFiles = [targetConfigFilename];
-    } else if (framework === 'vitest') {
-      configFiles = VITEST_CONFIG_FILES;
+    } else if (framework) {
+      const frameworkDef = testFrameworks.find(f => f.name === framework);
+      configFiles = frameworkDef ? frameworkDef.configFiles : [];
     } else {
-      configFiles = JEST_CONFIG_FILES;
+      // Wenn kein Framework angegeben, suche nach allen unterstützten Frameworks
+      configFiles = testFrameworks.flatMap(f => f.configFiles);
     }
 
     const foundPath = searchPathToParent<string>(

@@ -194,7 +194,7 @@ export function buildTestArgs(
 
   if (collectCoverage) {
     if (isVitest) {
-      args.push('--coverage', '--coverage.reporter', 'json', '--coverage.reporter', 'text');
+      args.push('--coverage', '--coverage.reporter', 'json');
     } else {
       args.push('--coverage', '--coverageReporters=json');
     }

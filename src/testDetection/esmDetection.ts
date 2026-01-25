@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logDebug, searchPathToParent } from '../util';
-import { JEST_CONFIG_FILES } from '../constants';
+import { testFrameworks } from './frameworkDefinitions';
 
 /**
  * Detects if a project uses ESM (ECMAScript Modules) for Jest.
@@ -27,11 +27,14 @@ export function isEsmProject(projectDir: string, jestConfigPath?: string): boole
   }
 
   // Check jest.config for ESM indicators
+  const jestFramework = testFrameworks.find(f => f.name === 'jest');
+  const configFiles = jestFramework ? jestFramework.configFiles : [];
+
   const configPath = jestConfigPath || searchPathToParent<string>(
     projectDir,
     projectDir,
     (currentFolderPath: string) => {
-      for (const configFilename of JEST_CONFIG_FILES) {
+      for (const configFilename of configFiles) {
         const currentFolderConfigPath = path.join(currentFolderPath, configFilename);
         if (fs.existsSync(currentFolderConfigPath)) {
           return currentFolderConfigPath;
