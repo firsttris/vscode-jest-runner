@@ -64,8 +64,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 ### 🎯 Smart Test Detection
 
 - 🤖 **Automatic framework detection** - distinguishes between Jest and Vitest
-- 🔍 **Reads test patterns from framework configs** - see [Supported Jest/Vitest Config Options](#-supported-config-options)
-- 🎚️ **Include/exclude patterns** configured via framework configs for fine-grained control over which tests appear
+- 🔍 **Reads and applies include/exclude patterns** (globs and regex) from [framework configs](#️-configuration) for fine-grained control over which tests appear
 
 </td>
 <td width="50%">
@@ -185,7 +184,7 @@ Customize the test runner for your project:
 
 The extension **automatically reads configuration** from your framework config files. No manual setup required!
 
-The extension can only parse a single configuration file. If you use configuration inheritance with multiple files, consolidate all necessary settings into the config file you provide to jestrunner using the `configPath` setting.
+> ⚠️ **Important:** Currently, the extension can only parse a single configuration file per framework. If you use configuration inheritance with multiple files, consolidate all necessary settings into a single config file for the extension to read. It doesn't matter which one you choose. If you don't use default config names and locations, you can use `jestrunner.configPath` or `jestrunner.vitestConfigPath` to specify the config.
 
 ### Jest Config Options
 
