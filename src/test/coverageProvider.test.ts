@@ -16,11 +16,15 @@ jest.mock('../util', () => ({
   logWarning: jest.fn(),
   logError: jest.fn(),
 }));
-jest.mock('../testDetection', () => ({
-  matchesTestFilePattern: jest.fn((filePath: string) => {
-    return filePath.includes('.test.') || filePath.includes('.spec.');
-  }),
-}));
+jest.mock('../testDetection', () => {
+  const original = jest.requireActual('../testDetection');
+  return {
+    ...original,
+    matchesTestFilePattern: jest.fn((filePath: string) => {
+      return filePath.includes('.test.') || filePath.includes('.spec.');
+    }),
+  };
+});
 
 const normalizePath = (p: string): string => p.split('/').join(path.sep);
 
@@ -87,7 +91,7 @@ describe('CoverageProvider', () => {
       );
     });
 
-    it.skip('should parse Jest coverageDirectory from config', async () => {
+    it('should parse Jest coverageDirectory from config', async () => {
       const jestConfig = `module.exports = { coverageDirectory: './custom-coverage' };`;
       const coverageData: CoverageMap = {
         '/workspace/src/index.ts': createMockFileCoverageData(
@@ -116,7 +120,7 @@ describe('CoverageProvider', () => {
       expect(result).toEqual(coverageData);
     });
 
-    it.skip('should parse Vitest reportsDirectory from config', async () => {
+    it('should parse Vitest reportsDirectory from config', async () => {
       const vitestConfig = `export default { test: { coverage: { reportsDirectory: './vitest-coverage' } } };`;
       const coverageData: CoverageMap = {
         '/workspace/src/index.ts': createMockFileCoverageData(
@@ -145,7 +149,7 @@ describe('CoverageProvider', () => {
       expect(result).toEqual(coverageData);
     });
 
-    it.skip('should use config path when provided', async () => {
+    it('should use config path when provided', async () => {
       const configPath = normalizePath(
         '/workspace/packages/app/vitest.config.ts',
       );

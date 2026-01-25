@@ -424,12 +424,13 @@ export function parseCoverageDirectory(configPath: string, framework: 'jest' | '
         : /["']?coverageDirectory["']?\s*[=:]\s*["']([^"']+)["']/;
 
     const match = content.match(pattern);
+
     if (match) {
       const dir = match[1];
 
       if (framework === 'jest') {
         // For Jest, coverageDirectory is relative to rootDir
-        const rootDirMatch = content.match(/"rootDir"\s*:\s*"([^"]+)"/);
+        const rootDirMatch = content.match(/["']?rootDir["']?\s*:\s*["']([^"']+)["']/);
         const rootDir = rootDirMatch ? rootDirMatch[1] : '.';
         const rootDirPath = path.isAbsolute(rootDir) ? rootDir : path.join(configDir, rootDir);
         return path.isAbsolute(dir) ? dir : path.join(rootDirPath, dir);

@@ -14,9 +14,9 @@ export interface FileCoverageData {
   statementMap: { [id: string]: LocationRange };
   fnMap: { [id: string]: FunctionMapping };
   branchMap: { [id: string]: BranchMapping };
-  s: { [id: string]: number }; 
-  f: { [id: string]: number }; 
-  b: { [id: string]: number[] }; 
+  s: { [id: string]: number };
+  f: { [id: string]: number };
+  b: { [id: string]: number[] };
 }
 
 export interface LocationRange {
