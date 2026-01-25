@@ -4,6 +4,17 @@ import * as vscode from 'vscode';
 import { logError, logDebug, resolveConfigPathOrMapping } from '../util';
 import { TestPatterns, testFrameworks, TestFrameworkName } from './frameworkDefinitions';
 
+export function packageJsonHasJestConfig(configPath: string): boolean {
+  try {
+    const content = fs.readFileSync(configPath, 'utf8');
+    const packageJson = JSON.parse(content);
+    return 'jest' in packageJson;
+  } catch (error) {
+    logError(`Error reading package.json: ${configPath}`, error);
+    return false;
+  }
+}
+
 export function viteConfigHasTestAttribute(configPath: string): boolean {
   try {
     const content = fs.readFileSync(configPath, 'utf8');
@@ -33,6 +44,10 @@ export function getConfigPath(directoryPath: string, frameworkName: TestFramewor
     // vite.config.* ist nur gültig wenn test-Attribut vorhanden
     if (configFile.startsWith('vite.config.')) {
       if (viteConfigHasTestAttribute(configPath)) {
+        return configPath;
+      }
+    } else if (configFile === 'package.json' && frameworkName === 'jest') {
+      if (packageJsonHasJestConfig(configPath)) {
         return configPath;
       }
     } else {

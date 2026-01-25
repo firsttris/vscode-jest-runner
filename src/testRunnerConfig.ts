@@ -259,15 +259,36 @@ export class TestRunnerConfig {
         path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
+        // 1. Direkt im aktuellen Verzeichnis nach allen configFiles suchen
         for (const configFilename of configFiles) {
           const currentFolderConfigPath = path.join(
             currentFolderPath,
             configFilename,
           );
-
           if (fs.existsSync(currentFolderConfigPath)) {
             return currentFolderConfigPath;
           }
+        }
+        // 2. In typischen Test-Unterverzeichnissen nach allen configFiles suchen
+        try {
+          const subdirs = fs.readdirSync(currentFolderPath, { withFileTypes: true })
+            .filter(d => d.isDirectory())
+            .map(d => d.name);
+          for (const subdir of subdirs) {
+            if (!/^(test|e2e|integration|__tests__)$/.test(subdir)) continue;
+            const subdirPath = path.join(currentFolderPath, subdir);
+            const files = fs.readdirSync(subdirPath);
+            for (const configFilename of configFiles) {
+              if (files.includes(configFilename)) {
+                const candidate = path.join(subdirPath, configFilename);
+                if (fs.existsSync(candidate)) {
+                  return candidate;
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // ignore
         }
       },
     );

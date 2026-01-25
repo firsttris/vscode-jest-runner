@@ -21,6 +21,7 @@ export {
 // Config parsing
 export {
   viteConfigHasTestAttribute,
+  packageJsonHasJestConfig,
   binaryExists,
   getConfigPath,
   getTestMatchFromJestConfig,

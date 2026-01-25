@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import {
   viteConfigHasTestAttribute,
+  packageJsonHasJestConfig,
   getIncludeFromVitestConfig,
   getTestMatchFromJestConfig,
   getVitestConfig,
@@ -78,6 +79,43 @@ describe('configParsing', () => {
       });
 
       const result = viteConfigHasTestAttribute('/test/vite.config.ts');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('packageJsonHasJestConfig', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should return true when package.json has jest config', () => {
+      const packageJsonContent = '{"name": "test", "jest": {"testRegex": ".*\\\\.spec\\\\.ts$"}}';
+      mockedFs.readFileSync = jest.fn().mockReturnValue(packageJsonContent);
+
+      const result = packageJsonHasJestConfig('/test/package.json');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when package.json does not have jest config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        {
+          "name": "test"
+        }
+      `);
+
+      const result = packageJsonHasJestConfig('/test/package.json');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when file cannot be read', () => {
+      mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
+      const result = packageJsonHasJestConfig('/test/package.json');
 
       expect(result).toBe(false);
     });
