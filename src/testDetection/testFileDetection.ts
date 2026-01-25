@@ -36,15 +36,11 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
   if (!workspaceFolder) return false;
 
-  // Always use forward slashes for path comparisons
   const normalize = (p: string) => path.resolve(p).replace(/\\/g, '/');
   const rootPath = normalize(workspaceFolder.uri.fsPath);
   const dirs = getParentDirectories(path.dirname(filePath), rootPath);
 
-  const normalizedFilePath = normalize(filePath);
-
   for (const dir of dirs) {
-    const normalizedDir = normalize(dir);
     for (const framework of allTestFrameworks) {
       if (framework.name === currentFramework) continue;
       const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
@@ -53,7 +49,9 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
           const testDirPath = normalize(path.join(dir, testDir));
-          if (normalizedFilePath.startsWith(testDirPath + '/') || normalizedFilePath === testDirPath) {
+          const rel = path.relative(testDirPath, filePath).replace(/\\/g, '/');
+          // filePath is inside testDir if rel does not start with '..' and is not absolute
+          if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
             return true;
           }
         } else {
@@ -63,7 +61,6 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
         const specPatterns = getCypressSpecPattern(configPath);
         if (specPatterns) {
           for (const pattern of specPatterns) {
-            // Normalize relativePath and pattern for micromatch
             const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
             const normalizedPattern = pattern.replace(/\\/g, '/');
             if (mm.isMatch(relativePath, normalizedPattern, { nocase: true, extended: true })) {
@@ -72,7 +69,8 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
           }
         } else {
           const cypressDir = normalize(path.join(dir, 'cypress'));
-          if (normalizedFilePath.startsWith(cypressDir + '/') || normalizedFilePath === cypressDir) {
+          const rel = path.relative(cypressDir, filePath).replace(/\\/g, '/');
+          if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
             return true;
           }
         }
