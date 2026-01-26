@@ -1,5 +1,5 @@
 class Uri {
-  constructor(readonly fsPath: string) {}
+  constructor(readonly fsPath: string) { }
 
   static file(path: string): Uri {
     return new Uri(path);
@@ -7,19 +7,19 @@ class Uri {
 }
 
 class Document {
-  constructor(public readonly uri: Uri) {}
+  constructor(public readonly uri: Uri) { }
   fileName: string = '';
   getText: (range?: any) => string = () => '';
   save: () => Promise<boolean> = () => Promise.resolve(true);
 }
 
 class TextEditor {
-  constructor(public readonly document: Document) {}
+  constructor(public readonly document: Document) { }
   selection: any;
 }
 
 class WorkspaceFolder {
-  constructor(public readonly uri: Uri) {}
+  constructor(public readonly uri: Uri) { }
 
   name: string;
   index: number;
@@ -31,14 +31,14 @@ class Range {
     public readonly startColumn: number,
     public readonly endLine: number,
     public readonly endColumn: number,
-  ) {}
+  ) { }
 }
 
 class CodeLens {
   constructor(
     public readonly range: Range,
     public readonly command?: any,
-  ) {}
+  ) { }
 }
 
 class Workspace {
@@ -57,6 +57,7 @@ class Workspace {
 
 type JestRunnerConfigProps = {
   'jestrunner.configPath'?: string | Record<string, string>;
+  'jestrunner.enableESM'?: boolean;
   'jestrunner.useNearestConfig'?: boolean;
   'jestrunner.runOptions'?: string[];
   'jestrunner.debugOptions'?: any;
@@ -68,7 +69,7 @@ type JestRunnerConfigProps = {
   'jestrunner.changeDirectoryToWorkspaceRoot'?: boolean;
 };
 class WorkspaceConfiguration {
-  constructor(private dict: JestRunnerConfigProps) {}
+  constructor(private dict: JestRunnerConfigProps) { }
 
   get<T extends keyof typeof this.dict>(
     key: T,
@@ -151,22 +152,22 @@ class Position {
   constructor(
     public readonly line: number,
     public readonly character: number,
-  ) {}
+  ) { }
 }
 
 class VscodeRange {
   constructor(
     public readonly start: Position,
     public readonly end: Position,
-  ) {}
+  ) { }
 }
 
 class TestTag {
-  constructor(public readonly id: string) {}
+  constructor(public readonly id: string) { }
 }
 
 class TestMessage {
-  constructor(public readonly message: string) {}
+  constructor(public readonly message: string) { }
 }
 
 class TestItemCollection {
@@ -211,7 +212,7 @@ class TestItem {
     public id: string,
     public label: string,
     public uri?: Uri,
-  ) {}
+  ) { }
 }
 
 class TestRun {
@@ -229,7 +230,7 @@ class TestCoverageCount {
   constructor(
     public covered: number,
     public total: number,
-  ) {}
+  ) { }
 }
 
 class FileCoverage {
@@ -238,7 +239,7 @@ class FileCoverage {
     public statementCoverage: TestCoverageCount,
     public branchCoverage?: TestCoverageCount,
     public declarationCoverage?: TestCoverageCount,
-  ) {}
+  ) { }
 }
 
 class StatementCoverage {
@@ -246,7 +247,7 @@ class StatementCoverage {
     public executed: number,
     public location: VscodeRange,
     public branches?: BranchCoverage[],
-  ) {}
+  ) { }
 }
 
 class BranchCoverage {
@@ -254,7 +255,7 @@ class BranchCoverage {
     public executed: number,
     public location: VscodeRange,
     public label?: string,
-  ) {}
+  ) { }
 }
 
 class DeclarationCoverage {
@@ -262,7 +263,7 @@ class DeclarationCoverage {
     public name: string,
     public executed: number,
     public location: VscodeRange,
-  ) {}
+  ) { }
 }
 
 class TestRunProfile {
@@ -277,7 +278,7 @@ class TestRunProfile {
     public kind: TestRunProfileKind,
     public runHandler: any,
     public isDefault: boolean,
-  ) {}
+  ) { }
 }
 
 class TestController {
@@ -301,7 +302,7 @@ class TestController {
   constructor(
     public id: string,
     public label: string,
-  ) {}
+  ) { }
 }
 
 enum TestRunProfileKind {
@@ -321,7 +322,7 @@ class CancellationTokenSource {
     this.token.cancel();
   }
 
-  dispose(): void {}
+  dispose(): void { }
 }
 
 class CancellationToken {
@@ -354,7 +355,7 @@ class RelativePattern {
   constructor(
     public base: string,
     public pattern: string,
-  ) {}
+  ) { }
 }
 
 const tests = {

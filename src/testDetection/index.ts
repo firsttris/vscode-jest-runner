@@ -53,4 +53,4 @@ export {
   hasConflictingTestFramework,
 } from './testFileDetection';
 
-export { isEsmProject } from './esmDetection';
+

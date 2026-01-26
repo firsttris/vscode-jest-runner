@@ -138,6 +138,12 @@
             "description": "Enable the Test Explorer integration using VS Code's Testing API",
             "scope": "window"
           },
+          "jestrunner.enableESM": {
+            "type": "boolean",
+            "default": false,
+            "description": "Manually enable ESM support. When true, adds `--experimental-vm-modules` to NODE_OPTIONS.",
+            "scope": "window"
+          },
           "jestrunner.codeLens": {
             "type": "array",
             "default": [
