@@ -15,29 +15,28 @@ import {
 import {
   getTestFrameworkForFile,
   findTestFrameworkDirectory,
-  isEsmProject,
   type TestFrameworkName,
   testFrameworks,
 } from './testDetection';
 
 export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
   const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
-  
+
   if (!fs.existsSync(yarnReleasesPath)) {
     return { enabled: false };
   }
-  
+
   try {
     const files = fs.readdirSync(yarnReleasesPath);
     const yarnBinary = files.find(file => file.startsWith('yarn-') && file.endsWith('.cjs'));
-    
+
     if (yarnBinary) {
       return { enabled: true, yarnBinary };
     }
   } catch (error) {
     // If we can't read the directory, assume PnP is not enabled
   }
-  
+
   return { enabled: false };
 }
 
@@ -133,8 +132,12 @@ export class TestRunnerConfig {
     return this.jestCommand;
   }
 
+  public get enableESM(): boolean {
+    return this.getConfig<boolean>('jestrunner.enableESM', false);
+  }
+
   public getEnvironmentForRun(filePath: string): Record<string, string> | undefined {
-    if (isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath))) {
+    if (this.enableESM) {
       return { NODE_OPTIONS: '--experimental-vm-modules' };
     }
     return undefined;
@@ -218,16 +221,16 @@ export class TestRunnerConfig {
           configPath,
         ),
       );
-      
+
       if (fs.existsSync(resolvedPath)) {
         return resolvedPath;
       }
-      
+
       const foundPath = this.findConfigPath(targetPath, undefined, framework);
       if (foundPath) {
         return foundPath;
       }
-      
+
       return resolvedPath;
     }
 
@@ -255,7 +258,7 @@ export class TestRunnerConfig {
 
     const foundPath = searchPathToParent<string>(
       targetPath ||
-        path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
+      path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         for (const configFilename of configFiles) {
@@ -447,7 +450,7 @@ export class TestRunnerConfig {
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
-    if (!isVitest && isEsmProject(this.currentWorkspaceFolderPath, this.getJestConfigPath(filePath || ''))) {
+    if (!isVitest && this.enableESM) {
       delete debugConfig.runtimeExecutable;
       debugConfig.runtimeArgs = ['--experimental-vm-modules'];
       debugConfig.program = path.join(this.cwd, 'node_modules', 'jest', 'bin', 'jest.js');
