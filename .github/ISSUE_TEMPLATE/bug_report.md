@@ -38,12 +38,20 @@ Help us understand your setup by providing the following details:
 
 Please set `jestrunner.enableDebugLogs` to `true` in your VSCode settings and include any relevant debug output below. This helps us diagnose issues more effectively.
 
-```
 1. Open the test file where you have the issue
 2. Go to the OUTPUT panel (View → Output)
 3. Select "Jest Runner" from the dropdown
+
+Here you can see:
+
+- which framework config is being used
+- which pattern is applied
+- whether the current file matches the pattern
+
+This should make it easy to track down why its not working for you.
+
 4. Copy the debug output
-```
+
 
 **📁 Project Structure**  
 <!-- Where is your jest/vitest config located? Where are your test files? Any special setup? -->
