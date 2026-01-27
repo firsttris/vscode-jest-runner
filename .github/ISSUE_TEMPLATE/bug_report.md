@@ -18,27 +18,29 @@ assignees: ''
 
 ## 🖥️ Environment
 
-There are many different ways to configure a project, so please provide as much information as possible.
+There are so many different project configurations that it's difficult to debug why it's not working for your specific setup.
+
+Its very important that you provide your Jest / Vitest config file. Without it its almost impossible for me to track down your issue.
 
 Help us understand your setup by providing the following details:
 
 | Item | Value |
 |------|-------|
 | **Operating System** | Windows 11, macOS 14, Ubuntu 22.04 |
-| **Shell** | bash, zsh, PowerShell, cmd |
+| **Shell** | bash, zsh, PowerShell, cmd, fish |
 | **Project Framework** | Nx, Next.js, NestJS, Create React App, Vite |
 | **Test Framework** | Jest or Vitest |
 | **Jest/Vitest Config** | jest.config.js, jest.config.ts, vitest.config.ts |
 | **Project Type** | Monorepo or Single App |
 | **VSCode Version** | 1.100.0 (lowest supported version) |
-| **Extension Version** | 0.4.93 |
-| **Last Working Version** | 0.4.92 |
+| **Extension Version** | 0.4.XXX |
+| **Last Working Version** | 0.4.XXX |
 
 **🔧 Debug Logging**
 
-Please set `jestrunner.enableDebugLogs` to `true` in your VSCode settings and include any relevant debug output below. This helps us diagnose issues more effectively.
+Please set `jestrunner.enableDebugLogs` to `true` in your VSCode settings and include any relevant debug output below. This should make it easy to track down why its not working for you.
 
-1. Open the test file where you have the issue
+1. Open the test file where you have the issue (e.g. CodeLens is not displayed correctly)
 2. Go to the OUTPUT panel (View → Output)
 3. Select "Jest Runner" from the dropdown
 
@@ -46,9 +48,8 @@ Here you can see:
 
 - which framework config is being used
 - which pattern is applied
-- whether the current file matches the pattern
+- whether the current test file matches that pattern
 
-This should make it easy to track down why its not working for you.
 
 4. Copy the debug output
 
@@ -65,6 +66,9 @@ Example:
 ```
 
 **⚙️ Jest/Vitest Configuration**
+
+It's very important that you provide the Jest/Vitest configuration file. The extension reads the framework config (globs/regex) from this file to enable the extension only in the corresponding directories.
+
 <!-- Please paste the relevant parts of your jest.config.js/vitest.config.ts -->
 
 ```js
