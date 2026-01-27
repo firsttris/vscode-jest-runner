@@ -11,6 +11,7 @@ import {
   escapeRegExpForPath,
   quote,
   escapeSingleQuotes,
+  logDebug,
 } from './util';
 import {
   getTestFrameworkForFile,
@@ -210,6 +211,7 @@ export class TestRunnerConfig {
     if (!configPath || this.useNearestConfig) {
       const foundPath = this.findConfigPath(targetPath, configPath, framework);
       if (foundPath) {
+        logDebug(`Found config path using findConfigPath: ${foundPath}`);
         return foundPath;
       }
     }
@@ -228,9 +230,11 @@ export class TestRunnerConfig {
 
       const foundPath = this.findConfigPath(targetPath, undefined, framework);
       if (foundPath) {
+        logDebug(`Found config path (fallback) using findConfigPath: ${foundPath}`);
         return foundPath;
       }
 
+      logDebug(`Using resolved config path from settings: ${resolvedPath}`);
       return resolvedPath;
     }
 
@@ -292,7 +296,13 @@ export class TestRunnerConfig {
         }
       },
     );
-    return foundPath ? normalizePath(foundPath) : undefined;
+    const result = foundPath ? normalizePath(foundPath) : undefined;
+    if (result) {
+      logDebug(`findConfigPath found: ${result}`);
+    } else {
+      logDebug(`findConfigPath failed to find config in: ${targetPath}`);
+    }
+    return result;
   }
 
   public getVitestConfigPath(targetPath: string): string {

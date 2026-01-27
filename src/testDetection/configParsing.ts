@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { logError, resolveConfigPathOrMapping } from '../util';
+import { logError, resolveConfigPathOrMapping, logDebug } from '../util';
 import { TestPatterns, allTestFrameworks, DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
@@ -226,10 +226,18 @@ export function getTestMatchFromJestConfig(
     const content = fs.readFileSync(configPath, 'utf8');
 
     if (configPath.endsWith('.json')) {
-      return parseJsonConfig(content, configPath);
+      const result = parseJsonConfig(content, configPath);
+      if (result) {
+        logDebug(`Parsed Jest config: ${configPath}. Result: ${JSON.stringify(result)}`);
+      }
+      return result;
     }
 
-    return parseJsConfig(content, configPath);
+    const result = parseJsConfig(content, configPath);
+    if (result) {
+      logDebug(`Parsed Jest config (JS): ${configPath}. Result: ${JSON.stringify(result)}`);
+    }
+    return result;
   } catch (error) {
     logError(`Error reading Jest config file: ${configPath}`, error);
     return undefined;
@@ -321,13 +329,15 @@ export function getVitestConfig(configPath: string): TestPatterns | undefined {
       return undefined;
     }
 
-    return {
+    const result = {
       patterns: patterns ?? [],
       isRegex: false,
       rootDir,
       excludePatterns,
       dir,
     };
+    logDebug(`Parsed Vitest config: ${configPath}. Result: ${JSON.stringify(result)}`);
+    return result;
   } catch (error) {
     logError(`Error reading Vitest config file: ${configPath}`, error);
     return undefined;

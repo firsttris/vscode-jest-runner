@@ -17,6 +17,7 @@ import {
   getCypressSpecPattern,
   getDefaultTestPatterns,
 } from './configParsing';
+import { logDebug } from '../util';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
   detectTestFramework,
@@ -229,10 +230,12 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult {
   }
 
   if (jestConfigPath) {
+    logDebug(`Using Jest config for pattern detection: ${jestConfigPath}`);
     return resolveJestResult(getTestMatchFromJestConfig(jestConfigPath), jestConfigPath, rootPath);
   }
 
   if (vitestConfigPath) {
+    logDebug(`Using Vitest config for pattern detection: ${vitestConfigPath}`);
     return resolveVitestResult(getVitestConfig(vitestConfigPath), vitestConfigPath, rootPath);
   }
 
@@ -241,7 +244,10 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult {
 
 export function matchesTestFilePattern(filePath: string): boolean {
   const { patterns, configDir, isRegex, roots, ignorePatterns, excludePatterns } = getTestFilePatternsForFile(filePath);
-  return fileMatchesPatterns(filePath, configDir, patterns, isRegex, undefined, ignorePatterns, excludePatterns, roots);
+  logDebug(`Checking if file matches pattern: ${filePath}. Patterns: ${JSON.stringify(patterns)}`);
+  const result = fileMatchesPatterns(filePath, configDir, patterns, isRegex, undefined, ignorePatterns, excludePatterns, roots);
+  logDebug(`File ${filePath} matches pattern: ${result}`);
+  return result;
 }
 
 export function isJestTestFile(filePath: string): boolean {
