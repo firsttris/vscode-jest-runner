@@ -187,9 +187,18 @@ Customize the test runner for your project:
 <summary><b>📋 Supported Framework Config Options</b></summary>
 <br>
 
-The extension **automatically reads configuration** from your framework config files. No manual setup required!
+The extension **automatically reads configuration** from your framework config files.
 
-> ⚠️ **Important:** Currently, the extension can only parse a single configuration file per framework. If you use configuration inheritance with multiple files, consolidate all necessary settings into a single config file for the extension to read. It doesn't matter which one you choose. If you don't use default config names and locations, you can use `jestrunner.configPath` or `jestrunner.vitestConfigPath` to specify the config.
+> ⚠️ **Important:** The extension uses **regex-based parsing** to read configuration files. It does **not** interpret the file as JavaScript/TypeScript code.
+> 
+> This means:
+> - It **cannot** resolve external variables, imports, `require`, or function calls.
+> - Configuration options (roots, testMatch, etc.) must be **static literals** in the file.
+> - Only a **single configuration file** is parsed. If you use config inheritance, ensure the file the extension reads contains the necessary patterns.
+>
+> If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files.
+
+> ⚠️ **Important:** `projects` attribute in vitest/jest config files is not yet supported but planned for a future release.
 
 ### Jest Config Options
 
@@ -237,8 +246,6 @@ export default defineConfig({
   },
 });
 ```
-
-> **Note:** `projects` (monorepo/workspace support) is not yet supported but planned for a future release.
 
 </details>
 
