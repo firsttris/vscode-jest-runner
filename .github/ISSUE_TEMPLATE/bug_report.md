@@ -18,9 +18,9 @@ assignees: ''
 
 ## 🖥️ Environment
 
-Due to the wide variety of project configurations, it is difficult to debug issues without specific details. Please provide the requested information so I can reproduce your setup.
+Due to the wide variety of project configurations, it is difficult to debug issues without specific details. Please provide as many information as possible so I can reproduce your setup.
 
-Its very important that you provide your Jest / Vitest config file. Without it its almost impossible for me to track down your issue.
+Most important is your jest/vitest configuration file, because the extension parses framework-config to device where the extension is active.
 
 Please provide the following details:
 
