@@ -771,6 +771,37 @@ describe('testFileDetection', () => {
 
         expect(result).toBe(true);
       });
+
+      it('should ignore framework config when disableFrameworkConfig is true', () => {
+        const filePath = '/workspace/project/src/component.test.ts';
+        const rootPath = '/workspace/project';
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'disableFrameworkConfig') {
+            return true;
+          }
+          return undefined;
+        });
+
+        // Mock existence of a config that would typically be used
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          return fsPath === path.join(rootPath, 'jest.config.js');
+        });
+
+        const result = isTestFile(filePath);
+
+        // It should still return true because it falls back to default patterns
+        // which include .test.ts
+        expect(result).toBe(true);
+
+        // Ensure we are using default pattern logic by checking that it doesn't try to read the file
+        // (If it were using the config found by existsSync, it would try to read it)
+        expect(mockedFs.readFileSync).not.toHaveBeenCalled();
+      });
     });
   });
 

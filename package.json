@@ -144,6 +144,12 @@
             "description": "Add or override VS Code debug configurations for Vitest (e.g. { \"args\": [\"--no-cache\"] }). Only applies when debugging Vitest tests.",
             "scope": "window"
           },
+          "jestrunner.disableFrameworkConfig": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, the extension will ignore any framework configuration files (e.g. jest.config.js, vitest.config.ts) and use the `jestrunner.defaultTestPatterns` instead.",
+            "scope": "window"
+          },
           "jestrunner.enableCodeLens": {
             "type": "boolean",
             "default": true,

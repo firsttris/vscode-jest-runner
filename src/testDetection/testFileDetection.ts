@@ -214,6 +214,12 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult {
     return createDefaultResult(path.dirname(filePath));
   }
 
+  const disableFrameworkConfig = vscode.workspace.getConfiguration('jestrunner').get<boolean>('disableFrameworkConfig');
+  if (disableFrameworkConfig) {
+    logDebug('Framework config disabled via setting, using default patterns');
+    return createDefaultResult(workspaceFolder.uri.fsPath);
+  }
+
   const rootPath = workspaceFolder.uri.fsPath;
   const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
   const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
