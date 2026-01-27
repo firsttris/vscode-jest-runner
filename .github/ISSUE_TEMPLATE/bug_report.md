@@ -30,8 +30,9 @@ Please provide the following details:
 | **Shell** | bash, zsh, PowerShell, cmd, fish |
 | **Project Framework** | Nx, Next.js, NestJS, Create React App, Vite |
 | **Test Framework** | Jest or Vitest |
-| **Jest/Vitest Config** | jest.config.js, jest.config.ts, vitest.config.ts |
+| **Jest/Vitest Config Name** | jest.config.js, jest.config.ts, vitest.config.ts |
 | **Project Type** | Monorepo or Single App |
+| **IDE** | VSCode, Antigravity, Cursor, Windsurf |
 | **VSCode Version** | 1.100.0 (lowest supported version) |
 | **Extension Version** | 0.4.XXX |
 | **Last Working Version** | 0.4.XXX |
