@@ -41,7 +41,7 @@ Please provide the following details:
 
 If you set `jestrunner.enableDebugLogs` to `true` in your VSCode settings you can find out why its not working for you.
 
-1. Open the test file where you have the issue (e.g. CodeLens is not displayed correctly)
+1. Open the test file where you have the issue (e.g. CodeLens is not displayed)
 2. Go to the OUTPUT panel (View → Output)
 3. Select "Jest Runner" from the dropdown
 
