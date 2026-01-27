@@ -86,8 +86,14 @@ export class TestRunner {
     await editor.document.save();
 
     if (typeof this.previousCommand === 'string') {
-      await this.goToCwd();
-      await this.runTerminalCommand(this.previousCommand, this.previousFramework);
+      const cwd = this.config.changeDirectoryToWorkspaceRoot
+        ? this.config.cwd
+        : undefined;
+      await this.runTerminalCommand(
+        this.previousCommand,
+        this.previousFramework,
+        cwd,
+      );
     } else {
       await this.executeDebugCommand(this.previousCommand);
     }
@@ -103,7 +109,7 @@ export class TestRunner {
         : this.config.buildJestArgs(filePath, undefined, false);
     pushMany(debugConfig.args, standardArgs);
 
-    await this.goToCwd();
+    // await this.goToCwd();
     await this.executeDebugCommand({
       config: debugConfig,
       documentUri: vscode.Uri.file(filePath),
@@ -130,7 +136,7 @@ export class TestRunner {
         : this.config.buildJestArgs(filePath, resolvedTestName, false);
     pushMany(debugConfig.args, standardArgs);
 
-    await this.goToCwd();
+    // await this.goToCwd();
     await this.executeDebugCommand({
       config: debugConfig,
       documentUri: editor.document.uri,
@@ -217,41 +223,44 @@ export class TestRunner {
     this.previousCommand = command;
     this.previousFramework = framework;
 
-    await this.goToCwd(env);
-    await this.runTerminalCommand(command, framework, env);
-  }
+    const cwd = this.config.changeDirectoryToWorkspaceRoot
+      ? this.config.cwd
+      : undefined;
 
-  private async goToCwd(env?: Record<string, string>) {
-    const command = `cd ${quote(this.config.cwd)}`;
-    if (this.config.changeDirectoryToWorkspaceRoot) {
-      await this.runTerminalCommand(command, undefined, env);
-    }
+    await this.runTerminalCommand(command, framework, cwd, env);
   }
 
   private currentTerminalEnv: Record<string, string> | undefined;
+  private currentTerminalCwd: string | undefined;
 
   private async runTerminalCommand(
     command: string,
     framework?: string,
+    cwd?: string,
     env?: Record<string, string>,
   ) {
     const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
-    const envChanged = JSON.stringify(env) !== JSON.stringify(this.currentTerminalEnv);
+    const envChanged =
+      JSON.stringify(env) !== JSON.stringify(this.currentTerminalEnv);
+    const cwdChanged = cwd !== this.currentTerminalCwd;
 
     if (
       !this.terminal ||
       (this.currentTerminalName && this.currentTerminalName !== terminalName) ||
-      envChanged
+      envChanged ||
+      cwdChanged
     ) {
       if (this.terminal) {
         this.terminal.dispose();
       }
       this.terminal = vscode.window.createTerminal({
         name: terminalName,
+        cwd,
         env,
       });
       this.currentTerminalName = terminalName;
       this.currentTerminalEnv = env;
+      this.currentTerminalCwd = cwd;
     }
 
     this.terminal.show(this.config.preserveEditorFocus);

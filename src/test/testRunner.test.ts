@@ -114,14 +114,22 @@ describe('TestRunner', () => {
 
     it('should create a terminal if none exists', async () => {
       await jestRunner.runTestsOnPath('/workspace/test.ts');
-      expect(vscode.window.createTerminal).toHaveBeenCalledWith({ name: 'jest', env: undefined });
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith({
+        name: 'jest',
+        cwd: undefined,
+        env: undefined,
+      });
     });
 
     it('should create a terminal with vitest name for vitest tests', async () => {
       (mockConfig.getTestFramework as jest.Mock).mockReturnValue('vitest');
       (vscode.window.createTerminal as jest.Mock).mockClear();
       await jestRunner.runTestsOnPath('/workspace/test.spec.ts');
-      expect(vscode.window.createTerminal).toHaveBeenCalledWith({ name: 'vitest', env: undefined });
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith({
+        name: 'vitest',
+        cwd: undefined,
+        env: undefined,
+      });
     });
 
     it('should show the terminal', async () => {
@@ -332,10 +340,15 @@ describe('TestRunner', () => {
 
       await jestRunner.runTestsOnPath('/workspace/test.ts');
 
+      expect(vscode.window.createTerminal).toHaveBeenCalledWith({
+        name: 'jest',
+        cwd: '/different/path',
+        env: undefined,
+      });
+
       const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
-      expect(calls.length).toBe(2);
-      expect(calls[0][0]).toContain('cd');
-      expect(calls[0][0]).toContain('/different/path');
+      expect(calls.length).toBe(1);
+      expect(calls[0][0]).not.toContain('cd');
     });
 
     it('should not change directory when option is disabled', async () => {
