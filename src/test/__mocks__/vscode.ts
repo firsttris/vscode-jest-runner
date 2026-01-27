@@ -58,6 +58,7 @@ class Workspace {
 }
 
 type JestRunnerConfigProps = {
+  'jestrunner.projectPath'?: string;
   'jestrunner.configPath'?: string | Record<string, string>;
   'jestrunner.enableESM'?: boolean;
   'jestrunner.useNearestConfig'?: boolean;

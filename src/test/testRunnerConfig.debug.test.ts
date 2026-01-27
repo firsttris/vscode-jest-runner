@@ -132,6 +132,22 @@ describe('TestRunnerConfig', () => {
       expect(config.name).toBe('Debug Jest Tests'); // Original properties preserved
     });
 
+    it('should use projectPath as cwd when configured', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.projectPath': './packages/app',
+          'jestrunner.changeDirectoryToWorkspaceRoot': true,
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      const expectedPath = isWindows()
+        ? path.resolve('/home/user/project/packages/app').replace(/\//g, '\\')
+        : '/home/user/project/packages/app';
+      expect(config.cwd).toBe(expectedPath);
+    });
+
     it('should not set cwd when changeDirectoryToWorkspaceRoot is false', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({

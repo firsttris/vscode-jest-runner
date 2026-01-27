@@ -164,7 +164,21 @@ export class TestRunnerConfig {
   }
 
   public get cwd(): string {
-    return this.currentPackagePath || this.currentWorkspaceFolderPath;
+    return (
+      this.projectPathFromConfig ||
+      this.currentPackagePath ||
+      this.currentWorkspaceFolderPath
+    );
+  }
+
+  private get projectPathFromConfig(): string | undefined {
+    const projectPathFromConfig = this.getConfig<string>('jestrunner.projectPath');
+    if (projectPathFromConfig) {
+      return path.resolve(
+        this.currentWorkspaceFolderPath,
+        projectPathFromConfig,
+      );
+    }
   }
 
   private get useNearestConfig(): boolean | undefined {
@@ -220,6 +234,7 @@ export class TestRunnerConfig {
       const resolvedPath = normalizePath(
         path.resolve(
           this.currentWorkspaceFolderPath,
+          this.projectPathFromConfig || '',
           configPath,
         ),
       );
