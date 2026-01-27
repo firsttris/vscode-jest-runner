@@ -37,9 +37,9 @@ export class JestTestController {
     context.subscriptions.push(this.testController);
 
     this.setupRunProfiles();
-    this.discoverAllTests();
     this.setupFileWatcher();
     this.setupConfigurationWatcher();
+    this.setupDocumentOpenHandler();
   }
 
   private setupRunProfiles(): void {
@@ -433,6 +433,52 @@ export class JestTestController {
     });
 
     this.disposables.push(watcher);
+  }
+
+  private setupDocumentOpenHandler(): void {
+    // Only discover test files when they are opened - no scanning at startup
+    const openHandler = vscode.workspace.onDidOpenTextDocument((document) => {
+      const filePath = document.uri.fsPath;
+
+      // Check if this is a test file (pattern matching happens here, not at startup)
+      if (!isTestFile(filePath)) {
+        return;
+      }
+
+      // Check if we already have this test item
+      let testItem = this.testController.items.get(filePath);
+
+      if (!testItem) {
+        // Create the test item for this file
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+        if (workspaceFolder) {
+          const relativePath = path.relative(workspaceFolder.uri.fsPath, filePath);
+          testItem = this.testController.createTestItem(filePath, relativePath, document.uri);
+          this.testController.items.add(testItem);
+        }
+      }
+
+      // Parse tests in the file
+      if (testItem && testItem.children.size === 0) {
+        parseTestsInFile(filePath, testItem, this.testController);
+      }
+    });
+
+    this.disposables.push(openHandler);
+
+    // Process already opened test files (if any are open when extension starts)
+    vscode.workspace.textDocuments.forEach((document) => {
+      const filePath = document.uri.fsPath;
+      if (isTestFile(filePath)) {
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+        if (workspaceFolder) {
+          const relativePath = path.relative(workspaceFolder.uri.fsPath, filePath);
+          const testItem = this.testController.createTestItem(filePath, relativePath, document.uri);
+          this.testController.items.add(testItem);
+          parseTestsInFile(filePath, testItem, this.testController);
+        }
+      }
+    });
   }
 
   public dispose(): void {
