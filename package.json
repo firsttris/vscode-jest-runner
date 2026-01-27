@@ -246,24 +246,22 @@
       "editor/context": [
         {
           "command": "extension.runJest",
-          "when": "jestrunner.isJestFile",
+          "when": "jestrunner.isTestFile",
           "group": "02_testrunner"
         },
         {
           "command": "extension.debugJest",
-          "when": "jestrunner.isJestFile",
+          "when": "jestrunner.isTestFile",
           "group": "02_testrunner"
         }
       ],
       "explorer/context": [
         {
           "command": "extension.runJestPath",
-          "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
           "group": "02_testrunner@1"
         },
         {
           "command": "extension.debugJestPath",
-          "when": "explorerResourceIsFolder || resourceFilename =~ /.*\\.(spec|test)\\.(js|jsx|ts|tsx)$/",
           "group": "02_testrunner@2"
         }
       ]

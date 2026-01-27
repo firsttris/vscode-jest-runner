@@ -43,22 +43,39 @@ export function activate(context: vscode.ExtensionContext): void {
     config.codeLensOptions,
   );
 
-  const updateJestFileContext = () => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      const filePath = editor.document.uri.fsPath;
-      const workspaceFolder = vscode.workspace.getWorkspaceFolder(
-        editor.document.uri,
-      )?.uri.fsPath;
+  const updateJestFileContext = (uri?: vscode.Uri) => {
+    let filePath: string | undefined;
+
+    if (uri) {
+      // When called with a specific URI (e.g., from explorer selection)
+      filePath = uri.fsPath;
+    } else {
+      // When called without URI, use active editor
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        filePath = editor.document.uri.fsPath;
+      }
+    }
+
+    if (filePath) {
       const shouldInclude = isTestFile(filePath);
       vscode.commands.executeCommand(
         'setContext',
-        'jestrunner.isJestFile',
+        'jestrunner.isTestFile',
         shouldInclude,
+      );
+    } else {
+      // No file selected, disable context
+      vscode.commands.executeCommand(
+        'setContext',
+        'jestrunner.isTestFile',
+        false,
       );
     }
   };
 
+  // Update context when active editor changes
+  // This handles both opening files from explorer and switching between open editors
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => updateJestFileContext()),
   );
@@ -187,4 +204,4 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push({ dispose: () => jestRunner.dispose() });
 }
 
-export function deactivate(): void {}
+export function deactivate(): void { }
