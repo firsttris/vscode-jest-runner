@@ -2,7 +2,7 @@
   "name": "vscode-jest-runner",
   "displayName": "Jest / Vitest Runner",
   "description": "Simple way to run or debug a single (or multiple) tests from context-menu (supports Jest and Vitest)",
-  "version": "0.4.106",
+  "version": "0.4.107",
   "publisher": "firsttris",
   "author": "Tristan Teufel",
   "repository": {
