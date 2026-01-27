@@ -261,6 +261,8 @@ export class TestRunner {
       this.currentTerminalName = terminalName;
       this.currentTerminalEnv = env;
       this.currentTerminalCwd = cwd;
+      // Wait for the terminal to initialize
+      await this.terminal.processId;
     }
 
     this.terminal.show(this.config.preserveEditorFocus);
