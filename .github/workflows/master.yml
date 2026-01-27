@@ -87,8 +87,7 @@ jobs:
       - name: Build Extension
         run: npm run build
 
-      - name: Package Extension
-        run: npm run package
+
 
       - name: Publish to Marketplace
         run: npm run publish
@@ -96,6 +95,9 @@ jobs:
           VERSION: ${{ inputs.version }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+      - name: Package Extension
+        run: npm run package
 
       - name: Push Version Commit and Tags
         run: |
