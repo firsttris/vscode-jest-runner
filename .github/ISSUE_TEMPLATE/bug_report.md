@@ -54,6 +54,10 @@ Here you can see:
 
 4. Copy the debug output
 
+```txt
+// Paste your debug output here
+```
+
 
 **📁 Project Structure**  
 <!-- Where is your jest/vitest config located? Where are your test files? Any special setup? -->
@@ -116,12 +120,10 @@ Please provide detailed steps to reproduce the issue:
 **Console/Terminal Output:**  
 <!-- If applicable, paste the full output from running your test command -->
 
-<details>
-<summary>Click to expand output</summary>
-
 ```
 Paste your test command output here
 ```
+
 
 </details>
 
