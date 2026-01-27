@@ -18,6 +18,8 @@ assignees: ''
 
 ## 🖥️ Environment
 
+There are many different ways to configure a project, so please provide as much information as possible.
+
 Help us understand your setup by providing the following details:
 
 | Item | Value |
@@ -59,6 +61,13 @@ Example:
 
 ```js
 // Paste your config here
+```
+
+**🛠️ Extension Settings**
+<!-- Please paste your VSCode settings for the extension (search for "jestrunner" in your settings.json) -->
+
+```json
+// Paste your jestrunner settings here
 ```
 
 ---
