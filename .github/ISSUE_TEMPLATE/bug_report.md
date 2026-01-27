@@ -18,7 +18,7 @@ assignees: ''
 
 ## 🖥️ Environment
 
-There are so many different project configurations that it's difficult to debug why it's not working for your specific setup.
+Due to the wide variety of project configurations, it is difficult to debug issues without specific details. Please provide the requested information so I can reproduce your setup.
 
 Its very important that you provide your Jest / Vitest config file. Without it its almost impossible for me to track down your issue.
 
@@ -38,7 +38,7 @@ Help us understand your setup by providing the following details:
 
 **🔧 Debug Logging**
 
-Please set `jestrunner.enableDebugLogs` to `true` in your VSCode settings and include any relevant debug output below. This should make it easy to track down why its not working for you.
+If you set `jestrunner.enableDebugLogs` to `true` in your VSCode settings you can find out why its not working for you.
 
 1. Open the test file where you have the issue (e.g. CodeLens is not displayed correctly)
 2. Go to the OUTPUT panel (View → Output)
@@ -50,6 +50,7 @@ Here you can see:
 - which pattern is applied
 - whether the current test file matches that pattern
 
+ This should make it easy to track down why its not working for you.
 
 4. Copy the debug output
 
