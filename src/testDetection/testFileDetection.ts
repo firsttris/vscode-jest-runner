@@ -90,7 +90,7 @@ const resolveJestResult = (
     : defaultConfigDir;
 
   return {
-    patterns: result?.patterns ?? getDefaultTestPatterns(),
+    patterns: result?.patterns && result.patterns.length > 0 ? result.patterns : getDefaultTestPatterns(),
     configDir,
     isRegex: result?.isRegex ?? false,
     roots: result?.roots,

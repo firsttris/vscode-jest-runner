@@ -340,6 +340,44 @@ describe('testFileDetection', () => {
         expect(mockedFs.existsSync).toHaveBeenCalledWith(customConfigFullPath);
         expect(mockedFs.existsSync).toHaveBeenCalledWith(standardConfigPath);
       });
+
+      it('should fallback to default patterns when config exists but pattern matching fails (e.g. regex literal)', () => {
+        const testFile = path.join(rootPath, 'src', 'component.test.ts');
+        const customConfigPath = 'jest.config.js';
+        const customConfigFullPath = path.resolve(rootPath, customConfigPath);
+
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'jestrunner.configPath') {
+            return customConfigPath;
+          }
+          return undefined;
+        });
+
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === customConfigFullPath;
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === customConfigFullPath) {
+            // Using __dirname (which becomes absolute path) + roots containing <rootDir>
+            // This triggers the potential double-path bug in resolveRootDirToken
+            return `
+              module.exports = {
+                rootDir: __dirname,
+                roots: ['<rootDir>/src'],
+                testRegex: /.*\\.spec\\.ts$/ 
+              };
+            `;
+          }
+          return '';
+        }) as any;
+
+        const result = isJestTestFile(testFile);
+
+        expect(result).toBe(true);
+      });
     });
   });
 

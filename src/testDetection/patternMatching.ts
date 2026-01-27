@@ -37,6 +37,9 @@ function matchesExcludePatterns(
 
 function resolveRootDirToken(pattern: string, rootDir: string | undefined): string {
   const resolved = pattern.replace(/<rootDir>/gi, rootDir || '');
+  if (rootDir && resolved.startsWith(rootDir)) {
+    return resolved;
+  }
   return resolved.replace(/^\/+/, '');
 }
 
