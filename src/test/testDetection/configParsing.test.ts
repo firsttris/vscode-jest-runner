@@ -563,6 +563,26 @@ module.exports = {
         ignorePatterns: ['/fixtures/'],
       });
     });
+    it('should NOT extract roots from subsequent arrays if roots is a variable', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        const srcRoots = ['src'];
+        export default {
+          roots: srcRoots,
+          setupFiles: ['./.jest/setup.ts'],
+        };
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.ts');
+
+      // Should ideally be undefined or at least NOT ['.', '.jest/setup.ts']
+      // But for reproduction, we expect the current buggy behavior or just check it's not the wrong one.
+      // If we fix it, it should be roots: undefined (since we can't parse variables yet/anymore).
+
+      // The current buggy behavior would return roots: ['.jest/setup.ts'] (or similar string extraction)
+      // We want to assert that it is undefined in the fixed version.
+      // So let's write the test expecting the CORRECT behavior (which will fail now).
+      expect(result?.roots).toBeUndefined();
+    });
   });
 
   describe('getVitestConfig', () => {

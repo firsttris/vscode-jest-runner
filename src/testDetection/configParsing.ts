@@ -112,9 +112,10 @@ const extractStringsFromArray = (arrayContent: string): string[] =>
   [...arrayContent.matchAll(/['"`]((?:\\.|[^'"`\\])*?)['"`]/g)].map((m) => m[1]);
 
 const extractRootsFromText = (content: string): string[] | undefined => {
-  const rootsStart = content.indexOf('roots');
-  if (rootsStart === -1) return undefined;
-  const arrayStart = content.indexOf('[', rootsStart);
+  const rootsMatch = content.match(/roots\s*:\s*\[/);
+  if (!rootsMatch || rootsMatch.index === undefined) return undefined;
+
+  const arrayStart = content.indexOf('[', rootsMatch.index);
   if (arrayStart === -1) return undefined;
   const arrayEnd = findMatchingBracket(content, arrayStart);
   if (!arrayEnd) return undefined;
@@ -124,9 +125,10 @@ const extractRootsFromText = (content: string): string[] | undefined => {
 };
 
 const extractTestPathIgnorePatternsFromText = (content: string): string[] | undefined => {
-  const ignoreStart = content.indexOf('testPathIgnorePatterns');
-  if (ignoreStart === -1) return undefined;
-  const arrayStart = content.indexOf('[', ignoreStart);
+  const ignoreMatch = content.match(/testPathIgnorePatterns\s*:\s*\[/);
+  if (!ignoreMatch || ignoreMatch.index === undefined) return undefined;
+
+  const arrayStart = content.indexOf('[', ignoreMatch.index);
   if (arrayStart === -1) return undefined;
   const arrayEnd = findMatchingBracket(content, arrayStart);
   if (!arrayEnd) return undefined;
