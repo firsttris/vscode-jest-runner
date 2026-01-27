@@ -274,26 +274,6 @@ export class TestRunnerConfig {
             return currentFolderConfigPath;
           }
         }
-        try {
-          const subdirs = fs.readdirSync(currentFolderPath, { withFileTypes: true })
-            .filter(d => d.isDirectory())
-            .map(d => d.name);
-          for (const subdir of subdirs) {
-            if (!/^(test|e2e|integration|__tests__)$/.test(subdir)) continue;
-            const subdirPath = path.join(currentFolderPath, subdir);
-            const files = fs.readdirSync(subdirPath);
-            for (const configFilename of configFiles) {
-              if (files.includes(configFilename)) {
-                const candidate = path.join(subdirPath, configFilename);
-                if (fs.existsSync(candidate)) {
-                  return candidate;
-                }
-              }
-            }
-          }
-        } catch (e) {
-          // ignore
-        }
       },
     );
     const result = foundPath ? normalizePath(foundPath) : undefined;
