@@ -22,7 +22,7 @@ Due to the wide variety of project configurations, it is difficult to debug issu
 
 Its very important that you provide your Jest / Vitest config file. Without it its almost impossible for me to track down your issue.
 
-Help us understand your setup by providing the following details:
+Please provide the following details:
 
 | Item | Value |
 |------|-------|
