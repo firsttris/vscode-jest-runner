@@ -29,8 +29,6 @@ assignees: ''
 <!-- List any documentation, settings, or solutions you've already explored. -->
 
 - [ ] I've checked the [README](https://github.com/firsttris/vscode-jest-runner#readme)
-- [ ] I've searched existing [issues](https://github.com/firsttris/vscode-jest-runner/issues)
-- [ ] I've tried adjusting extension settings
 
 **Details of what you tried:**
 <!-- Describe any specific things you attempted. -->
@@ -56,23 +54,15 @@ assignees: ''
 
 <!-- If your question is about configuration, share relevant snippets. -->
 
-<details>
-<summary>Click to expand configuration</summary>
-
-**VSCode Settings (settings.json):**
+**Jestrunner Extension Settings:**
 ```json
-{
-  "jestrunner.configPath": "",
-  "jestrunner.jestPath": ""
-}
+// Paste relevant config here
 ```
 
 **Jest/Vitest Config:**
 ```js
 // Paste relevant config here
 ```
-
-</details>
 
 ---
 

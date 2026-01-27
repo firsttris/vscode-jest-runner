@@ -41,13 +41,20 @@ Help us understand your use case:
 
 | Item | Value |
 |------|-------|
+| **Operating System** | Windows 11, macOS 14, Ubuntu 22.04 |
+| **Shell** | bash, zsh, PowerShell, cmd, fish |
 | **Project Framework** | Nx, Next.js, NestJS, Create React App, Vite |
 | **Test Framework** | Jest or Vitest |
+| **Jest/Vitest Config Name** | jest.config.js, jest.config.ts, vitest.config.ts |
 | **Project Type** | Monorepo or Single App |
+| **IDE** | VSCode, Antigravity, Cursor, Windsurf |
+| **VSCode Version** | 1.100.0 (lowest supported version) |
+| **Extension Version** | 0.4.XXX |
+| **Last Working Version** | 0.4.XXX |
 
 ---
 
-## 📸 Mockups or Examples
+## 📸 Screenshots or Examples
 
 <!-- If applicable, add mockups, sketches, or examples from other tools that illustrate your idea. -->
 
