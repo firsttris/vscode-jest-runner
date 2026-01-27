@@ -1215,6 +1215,26 @@ export default defineConfig({
       expect(result).toBe(false);
     });
 
+    it('should return FALSE when Playwright config has NO testDir (default fallback)', () => {
+      const filePath = '/workspace/project/tests/example.spec.ts';
+      const playwrightConfigPath = path.join(rootPath, 'playwright.config.ts');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === playwrightConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === playwrightConfigPath) {
+          return 'export default {};';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(false);
+    });
+
     it('should return true when Cypress config is found and file matches specPattern', () => {
       const filePath = '/workspace/project/cypress/e2e/login.cy.js';
       const cypressConfigPath = path.join(rootPath, 'cypress.config.js');
@@ -1255,19 +1275,12 @@ export default defineConfig({
       expect(result).toBe(false);
     });
 
-    it('should return true when Cypress config is found and file is in default cypress dir', () => {
+    it('should return FALSE when Cypress config has NO specPattern (default fallback)', () => {
       const filePath = '/workspace/project/cypress/integration/login.spec.js';
       const cypressConfigPath = path.join(rootPath, 'cypress.config.js');
 
       mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
         return fsPath === cypressConfigPath;
-      });
-
-      mockedFs.readdirSync.mockImplementation((dir: fs.PathLike) => {
-        if (dir === rootPath) {
-          return ['cypress.config.js'] as any;
-        }
-        return [] as any;
       });
 
       mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
@@ -1279,7 +1292,93 @@ export default defineConfig({
 
       const result = hasConflictingTestFramework(filePath, 'jest');
 
-      expect(result).toBe(true);
+      expect(result).toBe(false);
+    });
+
+    it('should return FALSE when Cypress config has NO specPattern and file is outside cypress dir', () => {
+      const filePath = '/workspace/project/src/utils.test.js';
+      const cypressConfigPath = path.join(rootPath, 'cypress.config.js');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === cypressConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === cypressConfigPath) {
+          return 'module.exports = {};'; // No specPattern
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return FALSE when Jest config exists in root but checking Vitest file', () => {
+      const filePath = '/workspace/project/src/utils.test.js';
+      const jestConfigPath = path.join(rootPath, 'jest.config.js');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === jestConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === jestConfigPath) {
+          return 'module.exports = { testMatch: ["**/*.test.js"] };';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'vitest');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return FALSE when Vitest config exists in root but checking Jest file', () => {
+      const filePath = '/workspace/project/src/component.spec.ts';
+      const vitestConfigPath = path.join(rootPath, 'vitest.config.ts');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === vitestConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === vitestConfigPath) {
+          return 'export default { test: { include: ["**/*.test.ts"] } };';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return FALSE when Playwright config has NO testDir with various file paths', () => {
+      const playwrightConfigPath = path.join(rootPath, 'playwright.config.ts');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === playwrightConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === playwrightConfigPath) {
+          return 'export default {};'; // No testDir
+        }
+        return '';
+      });
+
+      const testPaths = [
+        '/workspace/project/tests/example.spec.ts',
+        '/workspace/project/src/component.test.ts',
+        '/workspace/project/e2e/login.test.ts',
+      ];
+
+      testPaths.forEach((filePath) => {
+        const result = hasConflictingTestFramework(filePath, 'jest');
+        expect(result).toBe(false);
+      });
     });
   });
 });

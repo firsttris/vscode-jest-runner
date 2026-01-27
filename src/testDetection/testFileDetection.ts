@@ -40,21 +40,25 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
   const rootPath = workspaceFolder.uri.fsPath;
   const dirs = getParentDirectories(path.dirname(filePath), rootPath);
 
+  logDebug(`Checking for conflicting test frameworks for file: ${filePath} (current framework: ${currentFramework})`);
+
   for (const dir of dirs) {
     for (const framework of allTestFrameworks) {
       if (framework.name === currentFramework) continue;
       const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
       if (!configPath) continue;
+
+      logDebug(`Found ${framework.name} config at: ${configPath}`);
+
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
           const testDirPath = path.resolve(dir, testDir);
           const relativePath = path.relative(testDirPath, filePath).replace(/\\/g, '/');
           if (!relativePath.startsWith('../')) {
+            logDebug(`Conflict detected: File is inside Playwright testDir (${testDir})`);
             return true;
           }
-        } else {
-          return true;
         }
       } else if (framework.name === 'cypress') {
         const specPatterns = getCypressSpecPattern(configPath);
@@ -62,18 +66,11 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
           for (const pattern of specPatterns) {
             const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
             if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+              logDebug(`Conflict detected: File matches Cypress specPattern (${pattern})`);
               return true;
             }
           }
-        } else {
-          const cypressDir = path.join(dir, 'cypress');
-          const relativePath = path.relative(cypressDir, filePath).replace(/\\/g, '/');
-          if (!relativePath.startsWith('../')) {
-            return true;
-          }
         }
-      } else {
-        return true;
       }
     }
   }
