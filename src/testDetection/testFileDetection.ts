@@ -40,15 +40,11 @@ function hasConflictingTestFramework(filePath: string, currentFramework: TestFra
   const rootPath = workspaceFolder.uri.fsPath;
   const dirs = getParentDirectories(path.dirname(filePath), rootPath);
 
-  logDebug(`Checking for conflicting test frameworks for file: ${filePath} (current framework: ${currentFramework})`);
-
   for (const dir of dirs) {
     for (const framework of allTestFrameworks) {
       if (framework.name === currentFramework) continue;
       const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
       if (!configPath) continue;
-
-      logDebug(`Found ${framework.name} config at: ${configPath}`);
 
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
