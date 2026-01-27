@@ -48,6 +48,18 @@
             "default": "",
             "scope": "window"
           },
+          "jestrunner.defaultTestPatterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "**/*.{test,spec}.?(c|m)[jt]s?(x)",
+              "**/__tests__/**/*.?(c|m)[jt]s?(x)"
+            ],
+            "description": "Fallback patterns used when no 'testMatch'/'testRegex' (Jest) or 'include' (Vitest) configuration is found.",
+            "scope": "window"
+          },
           "jestrunner.useNearestConfig": {
             "type": "boolean",
             "default": false,

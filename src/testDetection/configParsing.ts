@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { logError, resolveConfigPathOrMapping } from '../util';
-import { TestPatterns, allTestFrameworks } from './frameworkDefinitions';
+import { TestPatterns, allTestFrameworks, DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
   try {
@@ -446,4 +446,12 @@ export function parseCoverageDirectory(configPath: string, framework: 'jest' | '
     logError(`Could not parse ${framework} config: ${error}`);
   }
   return undefined;
+}
+
+export function getDefaultTestPatterns(): string[] {
+  const patterns = vscode.workspace.getConfiguration('jestrunner').get<string[]>('defaultTestPatterns');
+  if (patterns && patterns.length > 0) {
+    return patterns;
+  }
+  return DEFAULT_TEST_PATTERNS;
 }

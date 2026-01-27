@@ -5,7 +5,6 @@ import * as mm from 'micromatch';
 import {
   TestFrameworkName,
   TestPatternResult,
-  DEFAULT_TEST_PATTERNS,
   testFrameworks,
   allTestFrameworks,
 } from './frameworkDefinitions';
@@ -16,6 +15,7 @@ import {
   resolveAndValidateCustomConfig,
   getPlaywrightTestDir,
   getCypressSpecPattern,
+  getDefaultTestPatterns,
 } from './configParsing';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
@@ -27,7 +27,7 @@ import {
 } from './frameworkDetection';
 
 const createDefaultResult = (configDir: string): TestPatternResult => ({
-  patterns: DEFAULT_TEST_PATTERNS,
+  patterns: getDefaultTestPatterns(),
   configDir,
   isRegex: false,
 });
@@ -89,7 +89,7 @@ const resolveJestResult = (
     : defaultConfigDir;
 
   return {
-    patterns: result?.patterns ?? DEFAULT_TEST_PATTERNS,
+    patterns: result?.patterns ?? getDefaultTestPatterns(),
     configDir,
     isRegex: result?.isRegex ?? false,
     roots: result?.roots,
@@ -109,7 +109,7 @@ const resolveVitestResult = (
       : defaultConfigDir;
 
   return {
-    patterns: result?.patterns && result.patterns.length > 0 ? result.patterns : DEFAULT_TEST_PATTERNS,
+    patterns: result?.patterns && result.patterns.length > 0 ? result.patterns : getDefaultTestPatterns(),
     configDir,
     isRegex: false,
     excludePatterns: result?.excludePatterns,
@@ -137,7 +137,7 @@ const resolveDualConfigPatterns = (
   const combinedPatterns = [...(jestResult?.patterns ?? []), ...(vitestResult?.patterns ?? [])];
 
   return {
-    patterns: combinedPatterns.length > 0 ? combinedPatterns : DEFAULT_TEST_PATTERNS,
+    patterns: combinedPatterns.length > 0 ? combinedPatterns : getDefaultTestPatterns(),
     configDir: rootPath,
     isRegex: false,
   };
@@ -166,7 +166,7 @@ const findJestConfigInDir = (dir: string): TestPatternResult => {
   const configDir = found.config.rootDir ? path.resolve(dir, found.config.rootDir) : dir;
 
   return {
-    patterns: found.config.patterns.length > 0 ? found.config.patterns : DEFAULT_TEST_PATTERNS,
+    patterns: found.config.patterns.length > 0 ? found.config.patterns : getDefaultTestPatterns(),
     configDir,
     isRegex: found.config.isRegex,
     roots: found.config.roots,
@@ -188,7 +188,7 @@ const findVitestConfigInDir = (dir: string): TestPatternResult => {
       : dir;
 
   return {
-    patterns: found.config.patterns.length > 0 ? found.config.patterns : DEFAULT_TEST_PATTERNS,
+    patterns: found.config.patterns.length > 0 ? found.config.patterns : getDefaultTestPatterns(),
     configDir,
     isRegex: false,
     excludePatterns: found.config.excludePatterns,

@@ -791,6 +791,57 @@ describe('testFileDetection', () => {
       expect(result).toBeUndefined();
     });
 
+    describe('with custom defaultTestPatterns', () => {
+      let getConfigurationMock: jest.Mock;
+      let configMock: any;
+
+      beforeEach(() => {
+        configMock = {
+          get: jest.fn(),
+        };
+        getConfigurationMock = jest.fn().mockReturnValue(configMock);
+        (vscode.workspace.getConfiguration as jest.Mock) = getConfigurationMock;
+      });
+
+      it('should match files using custom default patterns when no config is found', () => {
+        const filePath = '/workspace/project/src/mytest.custom.js';
+        const rootPath = '/workspace/project';
+
+        (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+          uri: { fsPath: rootPath },
+        }));
+
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          return pathStr === path.join(rootPath, 'package.json');
+        });
+
+        mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+          const pathStr = fsPath.toString();
+          if (pathStr === path.join(rootPath, 'package.json')) {
+            return JSON.stringify({
+              devDependencies: {
+                jest: '^29.0.0',
+              },
+            });
+          }
+          return '';
+        }) as any;
+
+        // Mock configuration to return custom patterns
+        configMock.get.mockImplementation((key: string) => {
+          if (key === 'defaultTestPatterns') {
+            return ['**/*.custom.js'];
+          }
+          return undefined;
+        });
+
+        const result = isTestFile(filePath);
+
+        expect(result).toBe(true);
+      });
+    });
+
     it('should detect frameworks when both are present in package.json', () => {
       const filePath = '/workspace/project/src/component.test.ts';
       const rootPath = '/workspace/project';

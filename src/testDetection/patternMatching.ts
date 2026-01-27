@@ -1,13 +1,12 @@
 import * as path from 'path';
 import * as mm from 'micromatch';
-import { DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
-import { getTestMatchFromJestConfig, getVitestConfig } from './configParsing';
+import { getTestMatchFromJestConfig, getVitestConfig, getDefaultTestPatterns } from './configParsing';
 
 function matchesExcludePatterns(
   filePath: string,
   relativePath: string,
-  ignorePatterns?: string[], 
-  excludePatterns?: string[], 
+  ignorePatterns?: string[],
+  excludePatterns?: string[],
 ): boolean {
   const absolutePath = filePath.replace(/\\/g, '/');
 
@@ -47,8 +46,8 @@ export function fileMatchesPatternsExplicit(
   patterns: string[],
   isRegex: boolean,
   rootDir: string | undefined,
-  ignorePatterns?: string[], 
-  excludePatterns?: string[], 
+  ignorePatterns?: string[],
+  excludePatterns?: string[],
   roots?: string[],
 ): boolean {
   const baseDir = rootDir ? path.resolve(configDir, rootDir) : configDir;
@@ -92,10 +91,6 @@ export function fileMatchesPatternsExplicit(
   return false;
 }
 
-/**
- * Matches a file against patterns, using default patterns if none specified.
- * Used for general test file matching.
- */
 export function fileMatchesPatterns(
   filePath: string,
   configDir: string,
@@ -107,7 +102,7 @@ export function fileMatchesPatterns(
   roots?: string[],
 ): boolean {
   if (!patterns || patterns.length === 0) {
-    return fileMatchesPatternsExplicit(filePath, configDir, DEFAULT_TEST_PATTERNS, false, rootDir, ignorePatterns, excludePatterns, roots);
+    return fileMatchesPatternsExplicit(filePath, configDir, getDefaultTestPatterns(), false, rootDir, ignorePatterns, excludePatterns, roots);
   }
 
   return fileMatchesPatternsExplicit(filePath, configDir, patterns, isRegex, rootDir, ignorePatterns, excludePatterns, roots);
@@ -131,26 +126,26 @@ export function detectFrameworkByPatternMatch(
 
   const jestMatches = jestHasExplicitPatterns
     ? fileMatchesPatternsExplicit(
-        filePath,
-        directoryPath,
-        jestConfig.patterns,
-        jestConfig.isRegex,
-        jestConfig.rootDir,
-        jestConfig.ignorePatterns,
-        undefined,
-        jestConfig.roots
-      )
+      filePath,
+      directoryPath,
+      jestConfig.patterns,
+      jestConfig.isRegex,
+      jestConfig.rootDir,
+      jestConfig.ignorePatterns,
+      undefined,
+      jestConfig.roots
+    )
     : false;
   const vitestMatches = vitestHasExplicitPatterns
     ? fileMatchesPatternsExplicit(
-        filePath,
-        directoryPath,
-        vitestConfig.patterns,
-        false,
-        vitestConfig.rootDir,
-        undefined,
-        vitestConfig.excludePatterns
-      )
+      filePath,
+      directoryPath,
+      vitestConfig.patterns,
+      false,
+      vitestConfig.rootDir,
+      undefined,
+      vitestConfig.excludePatterns
+    )
     : false;
 
   if (jestHasExplicitPatterns && vitestHasExplicitPatterns) {
