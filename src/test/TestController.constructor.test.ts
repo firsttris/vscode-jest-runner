@@ -130,8 +130,9 @@ describe('JestTestController - constructor and dispose', () => {
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it('should discover tests for all workspace folders', () => {
-      expect(vscode.workspace.findFiles).toHaveBeenCalled();
+    it('should setup document open handler instead of discovering all tests at startup', () => {
+      expect(vscode.workspace.onDidOpenTextDocument).toHaveBeenCalled();
+      expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
     });
 
     it('should setup file watcher', () => {
@@ -269,23 +270,29 @@ describe('JestTestController - test discovery', () => {
     jest.restoreAllMocks();
   });
 
-  it('should find test files using configured pattern', async () => {
-    expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
-      expect.any(vscode.RelativePattern),
-      '**/node_modules/**',
-    );
-  });
+  it('should discover tests when a test file is opened', () => {
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
 
-  it('should create test items for discovered files', () => {
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
 
+    const mockDocument = {
+      uri: vscode.Uri.file('/workspace/test.spec.ts'),
+      getText: () => 'describe("test", () => { it("works", () => {}) })',
+    };
+
+    (mockTestController.createTestItem as jest.Mock).mockClear();
+    (parser.parse as jest.Mock).mockClear();
+
+    onOpenCallback(mockDocument);
+
     expect(mockTestController.createTestItem).toHaveBeenCalled();
+    expect(parser.parse).toHaveBeenCalled();
   });
 
-  it('should parse test structure from files', () => {
-    expect(parser.parse).toHaveBeenCalled();
+  it('should not discover tests at startup', () => {
+    expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
   });
 
   it('should handle parser errors gracefully', async () => {
@@ -330,20 +337,42 @@ describe('JestTestController - test discovery', () => {
     newController.dispose();
   });
 
-  it('should create nested test items for describe blocks', () => {
+  it('should create nested test items for describe blocks when document is opened', () => {
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
+
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
 
-    const createCalls = (mockTestController.createTestItem as jest.Mock).mock
-      .calls;
+    (mockTestController.createTestItem as jest.Mock).mockClear();
+
+    const mockDocument = {
+      uri: vscode.Uri.file('/workspace/nested.spec.ts'),
+      getText: () => 'describe("suite", () => { describe("nested", () => { it("test", () => {}) }) })',
+    };
+
+    onOpenCallback(mockDocument);
+
+    const createCalls = (mockTestController.createTestItem as jest.Mock).mock.calls;
     expect(createCalls.length).toBeGreaterThan(0);
   });
 
   it('should set correct test item tags', () => {
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
+
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
+
+    (mockTestController.createTestItem as jest.Mock).mockClear();
+
+    const mockDocument = {
+      uri: vscode.Uri.file('/workspace/tags.spec.ts'),
+      getText: () => 'it("test", () => {})',
+    };
+
+    onOpenCallback(mockDocument);
+
     const createdItems = (
       mockTestController.createTestItem as jest.Mock
     ).mock.results.map((r) => r.value);
@@ -354,9 +383,21 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should set test ranges for navigation', () => {
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
+
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
+
+    (mockTestController.createTestItem as jest.Mock).mockClear();
+
+    const mockDocument = {
+      uri: vscode.Uri.file('/workspace/ranges.spec.ts'),
+      getText: () => 'it("test", () => {})',
+    };
+
+    onOpenCallback(mockDocument);
+
     const createdItems = (
       mockTestController.createTestItem as jest.Mock
     ).mock.results.map((r) => r.value);

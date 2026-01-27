@@ -53,6 +53,8 @@ class Workspace {
   findFiles = jest.fn();
   createFileSystemWatcher = jest.fn();
   onDidChangeConfiguration = jest.fn(() => ({ dispose: jest.fn() }));
+  onDidOpenTextDocument = jest.fn(() => ({ dispose: jest.fn() }));
+  textDocuments: Document[] = [];
 }
 
 type JestRunnerConfigProps = {

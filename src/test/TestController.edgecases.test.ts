@@ -138,24 +138,26 @@ describe('JestTestController - edge cases', () => {
       },
     } as any);
 
-    (vscode.workspace.findFiles as jest.Mock).mockResolvedValue([
-      vscode.Uri.file('/workspace/special.test.ts'),
-    ]);
-
     const newController = new JestTestController(setup.mockContext);
 
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const mockTestController = (
-          vscode.tests.createTestController as jest.Mock
-        ).mock.results[1].value;
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[1].value;
 
-        expect(mockTestController.createTestItem).toHaveBeenCalled();
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[1][0];
 
-        newController.dispose();
-        resolve();
-      }, 100);
-    });
+    (mockTestController.createTestItem as jest.Mock).mockClear();
+
+    const mockDocument = {
+      uri: vscode.Uri.file('/workspace/special.test.ts'),
+      getText: () => 'it("should handle \\"quotes\\" and (parens)", () => {})',
+    };
+
+    onOpenCallback(mockDocument);
+
+    expect(mockTestController.createTestItem).toHaveBeenCalled();
+
+    newController.dispose();
   });
 
   it('should handle tests with no start location', () => {
