@@ -314,7 +314,6 @@ You can also use dynamic test names derived from class method names:
 ```javascript
 class TestClass {
   myFunction() {
-    // nothing
   }
 }
 it(TestClass.prototype.myFunction.name, () => {
