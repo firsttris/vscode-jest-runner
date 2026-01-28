@@ -226,4 +226,106 @@ describe('TestRunnerConfig', () => {
       expect(config.args).toContain('jest');
     });
   });
+
+  describe('getDebugConfiguration with enableESM', () => {
+    let jestRunnerConfig: TestRunnerConfig;
+    const mockFilePath = '/home/user/project/src/test.spec.ts';
+
+    beforeEach(() => {
+      jestRunnerConfig = new TestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(
+          new WorkspaceFolder(new Uri('/home/user/project') as any) as any,
+        );
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(
+          new TextEditor(new Document(new Uri(mockFilePath) as any)) as any,
+        );
+      // Mock no Yarn PnP
+      jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+    });
+
+    it('should set NODE_OPTIONS when enableESM is true for Jest', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableESM': true,
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.runtimeExecutable).toBe('npx');
+      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
+      expect(config.env).toEqual({
+        NODE_OPTIONS: '--experimental-vm-modules',
+      });
+    });
+
+    it('should not set NODE_OPTIONS when enableESM is false for Jest', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableESM': false,
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.runtimeExecutable).toBe('npx');
+      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
+      expect(config.env).toBeUndefined();
+    });
+
+    it('should merge NODE_OPTIONS with existing env from debugOptions', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableESM': true,
+          'jestrunner.debugOptions': {
+            env: { NODE_ENV: 'test', CUSTOM_VAR: 'value' },
+          },
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config.env).toEqual({
+        NODE_ENV: 'test',
+        CUSTOM_VAR: 'value',
+        NODE_OPTIONS: '--experimental-vm-modules',
+      });
+    });
+
+    it('should not affect Vitest debug configuration', () => {
+      const vitestFilePath = '/workspace/test.spec.ts';
+
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(
+          new TextEditor(new Document(new Uri(vitestFilePath) as any)) as any,
+        );
+
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.enableESM': true,
+        }),
+      );
+
+      jest
+        .spyOn(fs, 'existsSync')
+        .mockImplementation((filePath: fs.PathLike) => {
+          return String(filePath).includes('vitest.config');
+        });
+
+      jest
+        .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+        .mockReturnValue('vitest');
+
+      const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
+
+      expect(config.name).toBe('Debug Vitest Tests');
+      expect(config.runtimeExecutable).toBe('npx');
+      expect(config.env).toBeUndefined();
+    });
+  });
 });

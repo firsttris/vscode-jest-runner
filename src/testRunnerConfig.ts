@@ -456,10 +456,10 @@ export class TestRunnerConfig {
     };
 
     if (!isVitest && this.enableESM) {
-      delete debugConfig.runtimeExecutable;
-      debugConfig.runtimeArgs = ['--experimental-vm-modules'];
-      debugConfig.program = path.join(this.cwd, 'node_modules', 'jest', 'bin', 'jest.js');
-      debugConfig.args = ['--runInBand'];
+      debugConfig.env = {
+        ...debugConfig.env,
+        NODE_OPTIONS: '--experimental-vm-modules'
+      };
     }
 
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
