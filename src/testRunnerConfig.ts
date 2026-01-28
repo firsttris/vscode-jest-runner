@@ -13,6 +13,7 @@ import {
   escapeSingleQuotes,
   logDebug,
   isNodeExecuteAbleFile,
+  isWindows,
 } from './util';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
@@ -144,13 +145,21 @@ export class TestRunnerConfig {
     ];
     const cwd = this.cwd;
 
-    const foundJestPath = mayRelativeJestBin.find((relativeJestBin) =>
-      isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)),
+    const foundJestPath = searchPathToParent(
+      cwd,
+      this.currentWorkspaceFolderPath,
+      (currentFolderPath) => {
+        const found = mayRelativeJestBin.find((relativeJestBin) =>
+          isNodeExecuteAbleFile(path.join(currentFolderPath, relativeJestBin)),
+        );
+        if (found) {
+          return path.join(currentFolderPath, found);
+        }
+      },
     );
+
     return normalizePath(
-      foundJestPath
-        ? path.join(cwd, foundJestPath)
-        : path.join(cwd, fallbackRelativeJestBinPath),
+      foundJestPath || path.join(cwd, fallbackRelativeJestBinPath),
     );
   }
 
@@ -480,9 +489,12 @@ export class TestRunnerConfig {
       if (yarnPnp.enabled && !yarnPnp.yarnBinary) {
         debugConfig.runtimeExecutable = 'yarn';
         debugConfig.args = ['jest', '--runInBand'];
-      } else {
+      } else if (isWindows()) {
         debugConfig.program = this.jestBinPath;
         debugConfig.args = ['--runInBand'];
+      } else {
+        debugConfig.runtimeExecutable = 'npx';
+        debugConfig.args = ['--no-install', 'jest', '--runInBand'];
       }
     }
 

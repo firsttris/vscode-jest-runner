@@ -7,7 +7,18 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows } from '../util';
+
+
+jest.mock('../util', () => {
+  const originalModule = jest.requireActual('../util');
+  return {
+    __esModule: true,
+    ...originalModule,
+    isWindows: jest.fn(),
+    isNodeExecuteAbleFile: jest.fn().mockReturnValue(true), // Mock to always find the file for testing
+  };
+});
+import { isWindows, isNodeExecuteAbleFile } from '../util';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as testDetection from '../testDetection/testFileDetection';
@@ -41,7 +52,9 @@ describe('TestRunnerConfig', () => {
       // Mock no Yarn PnP
       jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
-      const config = jestRunnerConfig.getDebugConfiguration();
+      // Test Windows behavior (direct binary)
+      (isWindows as jest.Mock).mockReturnValue(true);
+      let config = jestRunnerConfig.getDebugConfiguration();
 
       expect(config).toMatchObject({
         console: 'integratedTerminal',
@@ -53,6 +66,21 @@ describe('TestRunnerConfig', () => {
       });
       expect(config.program).toBeDefined();
       expect(config.args).toEqual(['--runInBand']);
+
+      // Test Linux/Mac behavior (npx)
+      (isWindows as jest.Mock).mockReturnValue(false);
+      config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config).toMatchObject({
+        console: 'integratedTerminal',
+        internalConsoleOptions: 'neverOpen',
+        name: 'Debug Jest Tests',
+        request: 'launch',
+        type: 'node',
+        runtimeExecutable: 'npx',
+        cwd: '/home/user/project',
+        args: ['--no-install', 'jest', '--runInBand'],
+      });
     });
 
     it('should configure for Yarn PnP when detected', () => {
@@ -224,7 +252,8 @@ describe('TestRunnerConfig', () => {
       );
 
       expect(config.name).toBe('Debug Jest Tests');
-      expect(config.args).toEqual(['--runInBand']);
+      expect(config.name).toBe('Debug Jest Tests');
+      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
     });
   });
 
@@ -249,6 +278,9 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should set NODE_OPTIONS when enableESM is true for Jest', () => {
+      // Test Windows behavior (direct binary)
+      (isWindows as jest.Mock).mockReturnValue(true);
+
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.enableESM': true,
@@ -267,6 +299,9 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should not set NODE_OPTIONS when enableESM is false for Jest', () => {
+      // Test Windows behavior (direct binary)
+      (isWindows as jest.Mock).mockReturnValue(true);
+
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.enableESM': false,
