@@ -49,10 +49,10 @@ describe('TestRunnerConfig', () => {
         name: 'Debug Jest Tests',
         request: 'launch',
         type: 'node',
-        runtimeExecutable: 'npx',
         cwd: '/home/user/project',
-        args: ['--no-install', 'jest', '--runInBand'],
       });
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['--runInBand']);
     });
 
     it('should configure for Yarn PnP when detected', () => {
@@ -224,7 +224,7 @@ describe('TestRunnerConfig', () => {
       );
 
       expect(config.name).toBe('Debug Jest Tests');
-      expect(config.args).toContain('jest');
+      expect(config.args).toEqual(['--runInBand']);
     });
   });
 
@@ -257,8 +257,10 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.runtimeExecutable).toBe('npx');
-      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
+
+      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toEqual({
         NODE_OPTIONS: '--experimental-vm-modules',
       });
@@ -273,8 +275,9 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.runtimeExecutable).toBe('npx');
-      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
+      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toBeUndefined();
     });
 

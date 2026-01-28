@@ -12,6 +12,7 @@ import {
   quote,
   escapeSingleQuotes,
   logDebug,
+  isNodeExecuteAbleFile,
 } from './util';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
@@ -128,6 +129,29 @@ export class TestRunnerConfig {
       }
     }
     return this.jestCommand;
+  }
+
+  public get jestBinPath(): string {
+    const jestPath = this.getConfig<string>('jestrunner.jestPath');
+    if (jestPath) {
+      return jestPath;
+    }
+
+    const fallbackRelativeJestBinPath = 'node_modules/jest/bin/jest.js';
+    const mayRelativeJestBin = [
+      'node_modules/.bin/jest',
+      'node_modules/jest/bin/jest.js',
+    ];
+    const cwd = this.cwd;
+
+    const foundJestPath = mayRelativeJestBin.find((relativeJestBin) =>
+      isNodeExecuteAbleFile(path.join(cwd, relativeJestBin)),
+    );
+    return normalizePath(
+      foundJestPath
+        ? path.join(cwd, foundJestPath)
+        : path.join(cwd, fallbackRelativeJestBinPath),
+    );
   }
 
   public get enableESM(): boolean {
@@ -444,13 +468,23 @@ export class TestRunnerConfig {
       name: isVitest ? 'Debug Vitest Tests' : 'Debug Jest Tests',
       request: 'launch',
       type: 'node',
-      runtimeExecutable: 'npx',
       ...(this.changeDirectoryToWorkspaceRoot ? { cwd: this.cwd } : {}),
-      args: isVitest
-        ? ['--no-install', 'vitest', 'run']
-        : ['--no-install', 'jest', '--runInBand'],
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
+
+    if (isVitest) {
+      debugConfig.runtimeExecutable = 'npx';
+      debugConfig.args = ['--no-install', 'vitest', 'run'];
+    } else {
+      const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+      if (yarnPnp.enabled && !yarnPnp.yarnBinary) {
+        debugConfig.runtimeExecutable = 'yarn';
+        debugConfig.args = ['jest', '--runInBand'];
+      } else {
+        debugConfig.program = this.jestBinPath;
+        debugConfig.args = ['--runInBand'];
+      }
+    }
 
     if (!isVitest && this.enableESM) {
       debugConfig.env = {
