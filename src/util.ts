@@ -16,26 +16,30 @@ export function getOutputChannel(): vscode.OutputChannel {
 }
 
 export function logInfo(message: string): void {
-  getOutputChannel().appendLine(`[INFO] ${message}`);
+  const timestamp = new Date().toISOString();
+  getOutputChannel().appendLine(`[${timestamp}] [INFO] ${message}`);
 }
 
 export function logError(message: string, error?: unknown): void {
+  const timestamp = new Date().toISOString();
   const errorDetails =
     error instanceof Error ? error.stack || error.message : String(error);
   getOutputChannel().appendLine(
-    `[ERROR] ${message}${error ? ': ' + errorDetails : ''}`,
+    `[${timestamp}] [ERROR] ${message}${error ? ': ' + errorDetails : ''}`,
   );
 }
 
 export function logWarning(message: string): void {
-  getOutputChannel().appendLine(`[WARN] ${message}`);
+  const timestamp = new Date().toISOString();
+  getOutputChannel().appendLine(`[${timestamp}] [WARN] ${message}`);
 }
 
 export function logDebug(message: string): void {
   const config = vscode.workspace.getConfiguration('jestrunner');
   const enableDebugLogs = config.get<boolean>('enableDebugLogs', false);
   if (enableDebugLogs) {
-    getOutputChannel().appendLine(`[DEBUG] ${message}`);
+    const timestamp = new Date().toISOString();
+    getOutputChannel().appendLine(`[${timestamp}] [DEBUG] ${message}`);
   }
 }
 
