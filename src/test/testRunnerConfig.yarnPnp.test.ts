@@ -6,10 +6,16 @@ describe('detectYarnPnp', () => {
     jest.restoreAllMocks();
   });
 
+  beforeEach(() => {
+    jest.spyOn(fs, 'statSync').mockImplementation((pathStr) => {
+      return { isDirectory: () => true, isFile: () => false } as any;
+    });
+  });
+
   it('should return enabled false when .yarn/releases does not exist', () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
-    const result = detectYarnPnp('/home/user/project');
+    const result = detectYarnPnp('/home/user/project/pkg', '/home/user/project');
 
     expect(result).toEqual({ enabled: false });
   });
@@ -21,7 +27,7 @@ describe('detectYarnPnp', () => {
       'other-file.txt',
     ] as any);
 
-    const result = detectYarnPnp('/home/user/project');
+    const result = detectYarnPnp('/home/user/project/pkg', '/home/user/project');
 
     expect(result).toEqual({
       enabled: true,
@@ -36,7 +42,7 @@ describe('detectYarnPnp', () => {
       'yarn-4.0.0.cjs',
     ] as any);
 
-    const result = detectYarnPnp('/home/user/project');
+    const result = detectYarnPnp('/home/user/project/pkg', '/home/user/project');
 
     expect(result).toEqual({
       enabled: true,
@@ -51,9 +57,9 @@ describe('detectYarnPnp', () => {
       'readme.md',
     ] as any);
 
-    const result = detectYarnPnp('/home/user/project');
+    const result = detectYarnPnp('/home/user/project/pkg', '/home/user/project');
 
-    expect(result).toEqual({ enabled: false });
+    expect(result).toEqual({ enabled: true, yarnBinary: undefined });
   });
 
   it('should return enabled false when readdirSync throws error', () => {
@@ -62,9 +68,9 @@ describe('detectYarnPnp', () => {
       throw new Error('Permission denied');
     });
 
-    const result = detectYarnPnp('/home/user/project');
+    const result = detectYarnPnp('/home/user/project/pkg', '/home/user/project');
 
-    expect(result).toEqual({ enabled: false });
+    expect(result).toEqual({ enabled: true, yarnBinary: undefined });
   });
 
   it('should only match files starting with yarn- and ending with .cjs', () => {
@@ -76,7 +82,7 @@ describe('detectYarnPnp', () => {
       'yarn-4.0.0.cjs',     // correct
     ] as any);
 
-    const result = detectYarnPnp('/home/user/project');
+    const result = detectYarnPnp('/home/user/project/pkg', '/home/user/project');
 
     expect(result).toEqual({
       enabled: true,

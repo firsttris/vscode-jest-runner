@@ -100,6 +100,14 @@ describe('TestRunnerConfig', () => {
         'yarn-3.2.0.cjs' as any,
       ]);
 
+      // Mock statSync to allow searchPathToParent to traverse folders
+      jest.spyOn(fs, 'statSync').mockImplementation((pathStr) => {
+        if (typeof pathStr === 'string' && pathStr.includes('/home/user/project')) {
+          return { isDirectory: () => true, isFile: () => false } as any;
+        }
+        return { isDirectory: () => false, isFile: () => false } as any;
+      });
+
       const config = jestRunnerConfig.getDebugConfiguration();
 
       expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
@@ -231,13 +239,27 @@ describe('TestRunnerConfig', () => {
           return String(filePath).includes('vitest.config');
         });
 
-      const config = jestRunnerConfig.getDebugConfiguration(
+      // Linux/Mac: Use npx
+      (isWindows as jest.Mock).mockReturnValue(false);
+      let config = jestRunnerConfig.getDebugConfiguration(
         '/workspace/test.spec.ts',
       );
 
       expect(config.name).toBe('Debug Vitest Tests');
+      expect(config.runtimeExecutable).toBe('npx');
       expect(config.args).toContain('vitest');
       expect(config.args).toContain('run');
+
+      // Windows: Use direct binary
+      (isWindows as jest.Mock).mockReturnValue(true);
+      config = jestRunnerConfig.getDebugConfiguration(
+        '/workspace/test.spec.ts',
+      );
+
+      expect(config.name).toBe('Debug Vitest Tests');
+      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['run']);
     });
 
     it('should return jest debug configuration for jest files', () => {
@@ -246,6 +268,8 @@ describe('TestRunnerConfig', () => {
         .mockImplementation((filePath: fs.PathLike) => {
           return String(filePath).includes('jest.config');
         });
+
+      (isWindows as jest.Mock).mockReturnValue(false); // Expect Linux/npx behavior
 
       const config = jestRunnerConfig.getDebugConfiguration(
         '/workspace/test.spec.ts',
@@ -360,11 +384,48 @@ describe('TestRunnerConfig', () => {
         .spyOn(testDetection, 'getTestFrameworkForFile')
         .mockReturnValue('vitest');
 
+      // Test Linux/Mac behavior
+      (isWindows as jest.Mock).mockReturnValue(false);
+
       const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
 
       expect(config.name).toBe('Debug Vitest Tests');
       expect(config.runtimeExecutable).toBe('npx');
       expect(config.env).toBeUndefined();
+    });
+
+    it('should fallback to global yarn for Vitest if PnP enabled but no binary found', () => {
+      const vitestFilePath = '/workspace/test.spec.ts';
+
+      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
+        new TextEditor(new Document(new Uri(vitestFilePath) as any)) as any,
+      );
+
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+
+      jest.spyOn(testDetection, 'getTestFrameworkForFile').mockReturnValue('vitest');
+
+      // Mock Yarn PnP enabled but NO binary found
+      const expectedPath = path.join('/home/user/project', '.yarn', 'releases');
+      jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+        return checkPath === expectedPath;
+      });
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([]);
+
+      // Mock statSync to allow searchPathToParent to traverse folders
+      jest.spyOn(fs, 'statSync').mockImplementation((pathStr) => {
+        if (typeof pathStr === 'string' && pathStr.includes('/home/user/project')) {
+          return { isDirectory: () => true } as any;
+        }
+        return { isDirectory: () => false } as any;
+      });
+
+      const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
+
+      expect(config.runtimeExecutable).toBe('yarn');
+      expect(config.args).toEqual(['vitest', 'run']);
     });
   });
 });

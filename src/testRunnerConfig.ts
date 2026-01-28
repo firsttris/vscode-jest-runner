@@ -19,22 +19,38 @@ import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 
-export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
-  const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
+export function detectYarnPnp(
+  cwd: string,
+  workspaceRoot: string,
+): { enabled: boolean; yarnBinary?: string } {
+  let yarnBinary: string | undefined;
 
-  if (!fs.existsSync(yarnReleasesPath)) {
-    return { enabled: false };
-  }
+  const foundPnpPath = searchPathToParent(
+    cwd,
+    workspaceRoot,
+    (currentFolderPath) => {
+      const yarnReleasesPath = path.join(currentFolderPath, '.yarn', 'releases');
+      if (fs.existsSync(yarnReleasesPath)) {
+        try {
+          const files = fs.readdirSync(yarnReleasesPath);
+          const foundBinary = files.find(
+            (file) => file.startsWith('yarn-') && file.endsWith('.cjs'),
+          );
+          if (foundBinary) {
+            yarnBinary = foundBinary;
+          }
+          return yarnReleasesPath;
+        } catch { }
+        // If we found the folder but failed to read it, we might still want to consider it PnP?
+        // But for safety, strict check: if we can read it and find binary OR just find folder?
+        // Existing logic suggests: if folder exists, it is PnP candidate.
+        return yarnReleasesPath;
+      }
+    },
+  );
 
-  try {
-    const files = fs.readdirSync(yarnReleasesPath);
-    const yarnBinary = files.find(file => file.startsWith('yarn-') && file.endsWith('.cjs'));
-
-    if (yarnBinary) {
-      return { enabled: true, yarnBinary };
-    }
-  } catch (error) {
-    // If we can't read the directory, assume PnP is not enabled
+  if (foundPnpPath) {
+    return { enabled: true, yarnBinary };
   }
 
   return { enabled: false };
@@ -100,7 +116,7 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    const yarnPnp = detectYarnPnp(this.cwd, this.currentWorkspaceFolderPath);
     if (yarnPnp.enabled) {
       return `yarn jest`;
     }
@@ -114,7 +130,7 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+    const yarnPnp = detectYarnPnp(this.cwd, this.currentWorkspaceFolderPath);
     if (yarnPnp.enabled) {
       return `yarn vitest`;
     }
@@ -160,6 +176,37 @@ export class TestRunnerConfig {
 
     return normalizePath(
       foundJestPath || path.join(cwd, fallbackRelativeJestBinPath),
+    );
+  }
+
+  public get vitestBinPath(): string {
+    const vitestPath = this.getConfig<string>('jestrunner.vitestPath');
+    if (vitestPath) {
+      return vitestPath;
+    }
+
+    const fallbackRelativeVitestBinPath = 'node_modules/vitest/vitest.mjs';
+    const mayRelativeVitestBin = [
+      'node_modules/.bin/vitest',
+      'node_modules/vitest/vitest.mjs',
+    ];
+    const cwd = this.cwd;
+
+    const foundVitestPath = searchPathToParent(
+      cwd,
+      this.currentWorkspaceFolderPath,
+      (currentFolderPath) => {
+        const found = mayRelativeVitestBin.find((relativeVitestBin) =>
+          isNodeExecuteAbleFile(path.join(currentFolderPath, relativeVitestBin)),
+        );
+        if (found) {
+          return path.join(currentFolderPath, found);
+        }
+      },
+    );
+
+    return normalizePath(
+      foundVitestPath || path.join(cwd, fallbackRelativeVitestBinPath),
     );
   }
 
@@ -481,11 +528,20 @@ export class TestRunnerConfig {
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
+    const yarnPnp = detectYarnPnp(this.cwd, this.currentWorkspaceFolderPath);
+
     if (isVitest) {
-      debugConfig.runtimeExecutable = 'npx';
-      debugConfig.args = ['--no-install', 'vitest', 'run'];
+      if (yarnPnp.enabled && !yarnPnp.yarnBinary) {
+        debugConfig.runtimeExecutable = 'yarn';
+        debugConfig.args = ['vitest', 'run'];
+      } else if (isWindows()) {
+        debugConfig.program = this.vitestBinPath;
+        debugConfig.args = ['run'];
+      } else {
+        debugConfig.runtimeExecutable = 'npx';
+        debugConfig.args = ['--no-install', 'vitest', 'run'];
+      }
     } else {
-      const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
       if (yarnPnp.enabled && !yarnPnp.yarnBinary) {
         debugConfig.runtimeExecutable = 'yarn';
         debugConfig.args = ['jest', '--runInBand'];
@@ -505,7 +561,7 @@ export class TestRunnerConfig {
       };
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
+
     if (yarnPnp.enabled && yarnPnp.yarnBinary) {
       delete debugConfig.runtimeExecutable;
       debugConfig.program = `.yarn/releases/${yarnPnp.yarnBinary}`;
