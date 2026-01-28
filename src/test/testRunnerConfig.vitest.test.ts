@@ -19,6 +19,11 @@ describe('TestRunnerConfig', () => {
         .mockReturnValue(
           new WorkspaceFolder(new Uri('/home/user/project') as any) as any,
         );
+
+      // Mock statSync to allow directory traversal
+      jest.spyOn(fs, 'statSync').mockImplementation((pathStr) => {
+        return { isDirectory: () => true } as any;
+      });
     });
 
     afterEach(() => {

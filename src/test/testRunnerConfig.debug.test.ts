@@ -7,7 +7,18 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows } from '../util';
+
+
+jest.mock('../util', () => {
+  const originalModule = jest.requireActual('../util');
+  return {
+    __esModule: true,
+    ...originalModule,
+    isWindows: jest.fn(),
+    isNodeExecuteAbleFile: jest.fn().mockReturnValue(true), // Mock to always find the file for testing
+  };
+});
+import { isWindows, isNodeExecuteAbleFile } from '../util';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as testDetection from '../testDetection/testFileDetection';
@@ -41,7 +52,24 @@ describe('TestRunnerConfig', () => {
       // Mock no Yarn PnP
       jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
-      const config = jestRunnerConfig.getDebugConfiguration();
+      // Test Windows behavior (direct binary)
+      (isWindows as jest.Mock).mockReturnValue(true);
+      let config = jestRunnerConfig.getDebugConfiguration();
+
+      expect(config).toMatchObject({
+        console: 'integratedTerminal',
+        internalConsoleOptions: 'neverOpen',
+        name: 'Debug Jest Tests',
+        request: 'launch',
+        type: 'node',
+        cwd: '/home/user/project',
+      });
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['--runInBand']);
+
+      // Test Linux/Mac behavior (npx)
+      (isWindows as jest.Mock).mockReturnValue(false);
+      config = jestRunnerConfig.getDebugConfiguration();
 
       expect(config).toMatchObject({
         console: 'integratedTerminal',
@@ -71,6 +99,14 @@ describe('TestRunnerConfig', () => {
       jest.spyOn(fs, 'readdirSync').mockReturnValue([
         'yarn-3.2.0.cjs' as any,
       ]);
+
+      // Mock statSync to allow searchPathToParent to traverse folders
+      jest.spyOn(fs, 'statSync').mockImplementation((pathStr) => {
+        if (typeof pathStr === 'string' && pathStr.includes('/home/user/project')) {
+          return { isDirectory: () => true, isFile: () => false } as any;
+        }
+        return { isDirectory: () => false, isFile: () => false } as any;
+      });
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
@@ -203,13 +239,27 @@ describe('TestRunnerConfig', () => {
           return String(filePath).includes('vitest.config');
         });
 
-      const config = jestRunnerConfig.getDebugConfiguration(
+      // Linux/Mac: Use npx
+      (isWindows as jest.Mock).mockReturnValue(false);
+      let config = jestRunnerConfig.getDebugConfiguration(
         '/workspace/test.spec.ts',
       );
 
       expect(config.name).toBe('Debug Vitest Tests');
+      expect(config.runtimeExecutable).toBe('npx');
       expect(config.args).toContain('vitest');
       expect(config.args).toContain('run');
+
+      // Windows: Use direct binary
+      (isWindows as jest.Mock).mockReturnValue(true);
+      config = jestRunnerConfig.getDebugConfiguration(
+        '/workspace/test.spec.ts',
+      );
+
+      expect(config.name).toBe('Debug Vitest Tests');
+      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['run']);
     });
 
     it('should return jest debug configuration for jest files', () => {
@@ -219,12 +269,15 @@ describe('TestRunnerConfig', () => {
           return String(filePath).includes('jest.config');
         });
 
+      (isWindows as jest.Mock).mockReturnValue(false); // Expect Linux/npx behavior
+
       const config = jestRunnerConfig.getDebugConfiguration(
         '/workspace/test.spec.ts',
       );
 
       expect(config.name).toBe('Debug Jest Tests');
-      expect(config.args).toContain('jest');
+      expect(config.name).toBe('Debug Jest Tests');
+      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
     });
   });
 
@@ -249,6 +302,9 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should set NODE_OPTIONS when enableESM is true for Jest', () => {
+      // Test Windows behavior (direct binary)
+      (isWindows as jest.Mock).mockReturnValue(true);
+
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.enableESM': true,
@@ -257,14 +313,19 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.runtimeExecutable).toBe('npx');
-      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
+
+      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toEqual({
         NODE_OPTIONS: '--experimental-vm-modules',
       });
     });
 
     it('should not set NODE_OPTIONS when enableESM is false for Jest', () => {
+      // Test Windows behavior (direct binary)
+      (isWindows as jest.Mock).mockReturnValue(true);
+
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.enableESM': false,
@@ -273,8 +334,9 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.runtimeExecutable).toBe('npx');
-      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
+      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeDefined();
+      expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toBeUndefined();
     });
 
@@ -322,11 +384,48 @@ describe('TestRunnerConfig', () => {
         .spyOn(testDetection, 'getTestFrameworkForFile')
         .mockReturnValue('vitest');
 
+      // Test Linux/Mac behavior
+      (isWindows as jest.Mock).mockReturnValue(false);
+
       const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
 
       expect(config.name).toBe('Debug Vitest Tests');
       expect(config.runtimeExecutable).toBe('npx');
       expect(config.env).toBeUndefined();
+    });
+
+    it('should fallback to global yarn for Vitest if PnP enabled but no binary found', () => {
+      const vitestFilePath = '/workspace/test.spec.ts';
+
+      jest.spyOn(vscode.window, 'activeTextEditor', 'get').mockReturnValue(
+        new TextEditor(new Document(new Uri(vitestFilePath) as any)) as any,
+      );
+
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({}),
+      );
+
+      jest.spyOn(testDetection, 'getTestFrameworkForFile').mockReturnValue('vitest');
+
+      // Mock Yarn PnP enabled but NO binary found
+      const expectedPath = path.join('/home/user/project', '.yarn', 'releases');
+      jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+        return checkPath === expectedPath;
+      });
+      jest.spyOn(fs, 'readdirSync').mockReturnValue([]);
+
+      // Mock statSync to allow searchPathToParent to traverse folders
+      jest.spyOn(fs, 'statSync').mockImplementation((pathStr) => {
+        if (typeof pathStr === 'string' && pathStr.includes('/home/user/project')) {
+          return { isDirectory: () => true } as any;
+        }
+        return { isDirectory: () => false } as any;
+      });
+
+      const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
+
+      expect(config.runtimeExecutable).toBe('yarn');
+      expect(config.args).toEqual(['vitest', 'run']);
     });
   });
 });

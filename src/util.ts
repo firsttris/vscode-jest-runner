@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { execSync } from 'node:child_process';
 import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs';
@@ -155,6 +156,15 @@ export function validateCodeLensOptions(
   return [...new Set(maybeCodeLensOptions)].filter((value) =>
     isCodeLensOption(value),
   ) as CodeLensOption[];
+}
+
+export function isNodeExecuteAbleFile(filepath: string): boolean {
+  try {
+    execSync(`node ${filepath} --help`);
+    return true;
+  } catch (err) {
+    return false;
+  }
 }
 
 export function updateTestNameIfUsingProperties(receivedTestName?: string) {
