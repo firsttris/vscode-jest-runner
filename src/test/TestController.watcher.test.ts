@@ -5,6 +5,7 @@ import {
   TestItem,
   TestControllerSetup,
 } from './testControllerSetup';
+import { testFileCache } from '../testDetection';
 
 jest.mock('child_process');
 
@@ -113,7 +114,7 @@ describe('JestTestController - file watcher', () => {
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
 
-    jest.spyOn(require('../util'), 'isTestFile').mockReturnValue(false);
+    jest.spyOn(testFileCache, 'isTestFile').mockReturnValue(false);
 
     const initialItemCount = mockTestController.items.size;
     (parser.parse as jest.Mock).mockClear();

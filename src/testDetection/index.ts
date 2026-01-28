@@ -53,4 +53,7 @@ export {
   hasConflictingTestFramework,
 } from './testFileDetection';
 
+export { testFileCache } from './testFileCache';
+
+
 

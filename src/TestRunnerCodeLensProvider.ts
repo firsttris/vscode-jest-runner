@@ -11,9 +11,9 @@ import {
   escapeRegExp,
   CodeLensOption,
   TestNode,
-  isTestFile,
   logError,
 } from './util';
+import { testFileCache } from './testDetection';
 
 const CODE_LENS_CONFIG: Record<
   CodeLensOption,
@@ -80,13 +80,13 @@ function getTestsBlocks(
 export class TestRunnerCodeLensProvider implements CodeLensProvider {
   private lastSuccessfulCodeLens: Map<string, CodeLens[]> = new Map();
 
-  constructor(private readonly codeLensOptions: CodeLensOption[]) {}
+  constructor(private readonly codeLensOptions: CodeLensOption[]) { }
 
   public async provideCodeLenses(document: TextDocument): Promise<CodeLens[]> {
     try {
       const workspaceFolder = workspace.getWorkspaceFolder(document.uri);
       const workspaceFolderPath = workspaceFolder?.uri.fsPath;
-      if (!workspaceFolderPath || !isTestFile(document.fileName)) {
+      if (!workspaceFolderPath || !testFileCache.isTestFile(document.fileName)) {
         return [];
       }
 

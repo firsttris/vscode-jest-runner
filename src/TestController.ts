@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { pushMany, isTestFile, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties } from './util';
+import { pushMany, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
-import { getTestFrameworkForFile, clearTestDetectionCache, clearVitestDetectionCache, testFrameworks } from './testDetection';
+import { getTestFrameworkForFile, clearTestDetectionCache, clearVitestDetectionCache, testFrameworks, testFileCache } from './testDetection';
 import {
   CoverageProvider,
   DetailedFileCoverage,
@@ -164,6 +164,9 @@ export class JestTestController {
     // Clear detection caches to ensure fresh framework detection
     clearTestDetectionCache();
     clearVitestDetectionCache();
+
+    // Invalidate test file cache to force re-evaluation
+    testFileCache.invalidate();
 
     this.testController.items.replace([]);
 
@@ -406,7 +409,7 @@ export class JestTestController {
       if (vscode.workspace.workspaceFolders) {
         for (const workspaceFolder of vscode.workspace.workspaceFolders) {
           if (uri.fsPath.startsWith(workspaceFolder.uri.fsPath)) {
-            if (!isTestFile(uri.fsPath)) {
+            if (!testFileCache.isTestFile(uri.fsPath)) {
               return;
             }
             const relativePath = path.relative(
@@ -441,7 +444,7 @@ export class JestTestController {
       const filePath = document.uri.fsPath;
 
       // Check if this is a test file (pattern matching happens here, not at startup)
-      if (!isTestFile(filePath)) {
+      if (!testFileCache.isTestFile(filePath)) {
         return;
       }
 
@@ -469,7 +472,7 @@ export class JestTestController {
     // Process already opened test files (if any are open when extension starts)
     vscode.workspace.textDocuments.forEach((document) => {
       const filePath = document.uri.fsPath;
-      if (isTestFile(filePath)) {
+      if (testFileCache.isTestFile(filePath)) {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
         if (workspaceFolder) {
           const relativePath = path.relative(workspaceFolder.uri.fsPath, filePath);

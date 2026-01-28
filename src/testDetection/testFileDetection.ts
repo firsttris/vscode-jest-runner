@@ -33,7 +33,7 @@ const createDefaultResult = (configDir: string): TestPatternResult => ({
   isRegex: false,
 });
 
-function hasConflictingTestFramework(filePath: string, currentFramework: TestFrameworkName): boolean {
+export function hasConflictingTestFramework(filePath: string, currentFramework: TestFrameworkName): boolean {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
   if (!workspaceFolder) return false;
 
@@ -300,5 +300,4 @@ export function getTestFrameworkForFile(
   return result?.framework;
 }
 
-// Export for testing
-export { hasConflictingTestFramework };
+

@@ -4,7 +4,8 @@ import { TestRunner } from './testRunner';
 import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { JestTestController } from './TestController';
-import { isTestFile, logError } from './util';
+import { logError } from './util';
+import { testFileCache } from './testDetection';
 
 function wrapCommandHandler<T extends unknown[]>(
   handler: (...args: T) => Promise<void> | void,
@@ -58,7 +59,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
 
     if (filePath) {
-      const shouldInclude = isTestFile(filePath);
+      const shouldInclude = testFileCache.isTestFile(filePath);
       vscode.commands.executeCommand(
         'setContext',
         'jestrunner.isTestFile',

@@ -9,6 +9,7 @@ import {
 import { JestTestController } from '../TestController';
 import * as parser from '../parser';
 import * as util from '../util';
+import { testFileCache } from '../testDetection';
 import { EventEmitter } from 'events';
 
 export interface MockProcess extends EventEmitter {
@@ -129,7 +130,8 @@ export function setupTestControllerMocks(
     },
   } as any);
 
-  jest.spyOn(util, 'isTestFile').mockReturnValue(true);
+  // Mock testFileCache instead of isTestFile
+  jest.spyOn(testFileCache, 'isTestFile').mockReturnValue(true);
   jest
     .spyOn(util, 'updateTestNameIfUsingProperties')
     .mockImplementation((name) => name);

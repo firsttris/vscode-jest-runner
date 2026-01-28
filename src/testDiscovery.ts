@@ -5,10 +5,10 @@ import {
   escapeRegExp,
   updateTestNameIfUsingProperties,
   TestNode,
-  isTestFile,
   logError,
 } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
+import { testFileCache } from './testDetection';
 
 export async function discoverTests(
   workspaceFolder: vscode.WorkspaceFolder,
@@ -116,5 +116,5 @@ export async function findTestFiles(
 
   return files
     .map((file) => file.fsPath)
-    .filter((filePath) => isTestFile(filePath));
+    .filter((filePath) => testFileCache.isTestFile(filePath));
 }
