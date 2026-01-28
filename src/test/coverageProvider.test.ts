@@ -16,8 +16,8 @@ jest.mock('../util', () => ({
   logWarning: jest.fn(),
   logError: jest.fn(),
 }));
-jest.mock('../testDetection', () => {
-  const original = jest.requireActual('../testDetection');
+jest.mock('../testDetection/testFileDetection', () => {
+  const original = jest.requireActual('../testDetection/testFileDetection');
   return {
     ...original,
     matchesTestFilePattern: jest.fn((filePath: string) => {

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { Document, Uri, WorkspaceFolder } from './__mocks__/vscode';
 import * as fastGlob from 'fast-glob';
 import * as parser from '../parser';
-import { testFileCache } from '../testDetection';
+import { testFileCache } from '../testDetection/testFileCache';
 
 jest.mock('fast-glob');
 

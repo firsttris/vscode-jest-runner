@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { pushMany, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
-import { getTestFrameworkForFile, clearTestDetectionCache, clearVitestDetectionCache, testFrameworks, testFileCache } from './testDetection';
 import {
   CoverageProvider,
   DetailedFileCoverage,
@@ -18,6 +17,10 @@ import {
   buildTestArgs,
   logTestExecution,
 } from './testExecution';
+import { testFrameworks } from './testDetection/frameworkDefinitions';
+import { clearTestDetectionCache, clearVitestDetectionCache } from './testDetection/cache';
+import { testFileCache } from './testDetection/testFileCache';
+import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 
 export class JestTestController {
   private testController: vscode.TestController;

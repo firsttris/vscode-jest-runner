@@ -6,6 +6,7 @@ import {
   CancellationToken,
   TestControllerSetup,
 } from './testControllerSetup';
+import * as testDetection from '../testDetection/testFileDetection';
 
 jest.mock('child_process');
 
@@ -36,7 +37,7 @@ describe('JestTestController - Vitest support', () => {
     mockTestController.items.add(test1);
 
     jest
-      .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+      .spyOn(testDetection, 'getTestFrameworkForFile')
       .mockReturnValue('vitest');
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -105,7 +106,7 @@ describe('JestTestController - Vitest support', () => {
     mockTestController.items.add(test2);
 
     jest
-      .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+      .spyOn(testDetection, 'getTestFrameworkForFile')
       .mockReturnValue('vitest');
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -176,7 +177,7 @@ describe('JestTestController - Vitest support', () => {
     mockTestController.items.add(test1);
 
     jest
-      .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+      .spyOn(testDetection, 'getTestFrameworkForFile')
       .mockReturnValue('vitest');
 
     const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
@@ -226,7 +227,7 @@ describe('JestTestController - Vitest support', () => {
     mockTestController.items.add(test1);
 
     jest
-      .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+      .spyOn(testDetection, 'getTestFrameworkForFile')
       .mockReturnValue('vitest');
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -280,7 +281,7 @@ describe('JestTestController - Vitest support', () => {
     mockTestController.items.add(test2);
 
     jest
-      .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+      .spyOn(testDetection, 'getTestFrameworkForFile')
       .mockReturnValue('vitest');
     const mockConfig = setup.controller['jestConfig'] as any;
     jest
@@ -350,7 +351,7 @@ describe('JestTestController - Vitest support', () => {
     mockTestController.items.add(test2);
 
     jest
-      .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+      .spyOn(testDetection, 'getTestFrameworkForFile')
       .mockReturnValue('jest');
     const mockConfig = setup.controller['jestConfig'] as any;
     jest

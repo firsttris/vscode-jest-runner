@@ -13,7 +13,7 @@ import {
   TestNode,
   logError,
 } from './util';
-import { testFileCache } from './testDetection';
+import { testFileCache } from './testDetection/testFileCache';
 
 const CODE_LENS_CONFIG: Record<
   CodeLensOption,

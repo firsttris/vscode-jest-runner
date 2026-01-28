@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo, logWarning } from './util';
-import { matchesTestFilePattern, parseCoverageDirectory } from './testDetection';
 import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
+import { parseCoverageDirectory } from './testDetection/configParsing';
+import { matchesTestFilePattern } from './testDetection/testFileDetection';
 
 export interface CoverageMap {
   [filePath: string]: FileCoverageData;

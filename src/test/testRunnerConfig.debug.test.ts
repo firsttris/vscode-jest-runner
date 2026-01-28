@@ -10,6 +10,7 @@ import {
 import { isWindows } from '../util';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as testDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig', () => {
   describe('getDebugConfiguration', () => {
@@ -318,7 +319,7 @@ describe('TestRunnerConfig', () => {
         });
 
       jest
-        .spyOn(require('../testDetection'), 'getTestFrameworkForFile')
+        .spyOn(testDetection, 'getTestFrameworkForFile')
         .mockReturnValue('vitest');
 
       const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);

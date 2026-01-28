@@ -5,7 +5,7 @@ import {
   TestItem,
   TestControllerSetup,
 } from './testControllerSetup';
-import { testFileCache } from '../testDetection';
+import { testFileCache } from '../testDetection/testFileCache';
 
 jest.mock('child_process');
 

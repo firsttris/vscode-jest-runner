@@ -13,12 +13,9 @@ import {
   escapeSingleQuotes,
   logDebug,
 } from './util';
-import {
-  getTestFrameworkForFile,
-  findTestFrameworkDirectory,
-  type TestFrameworkName,
-  testFrameworks,
-} from './testDetection';
+import { getTestFrameworkForFile } from './testDetection/testFileDetection';
+import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
+import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 
 export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
   const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');

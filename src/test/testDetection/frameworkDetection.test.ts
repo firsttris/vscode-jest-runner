@@ -1,15 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  isJestUsedIn,
-  findJestDirectory,
-  clearTestDetectionCache,
-  isVitestUsedIn,
-  clearVitestDetectionCache,
-  findVitestDirectory,
-  detectTestFramework,
-} from '../../testDetection';
+import { clearTestDetectionCache, clearVitestDetectionCache } from '../../testDetection/cache';
+import { detectTestFramework, findJestDirectory, findVitestDirectory, isJestUsedIn, isVitestUsedIn } from '../../testDetection/frameworkDetection';
+import { isJestTestFile } from '../../testDetection/testFileDetection';
 
 jest.mock('fs');
 jest.mock('vscode');
@@ -659,7 +653,6 @@ describe('frameworkDetection', () => {
         return fsPath === path.join(rootPath, 'jest.config.js');
       });
 
-      const { isJestTestFile } = require('../../testDetection');
       const result = isJestTestFile(filePath);
 
       expect(result).toBe(true);
@@ -702,7 +695,6 @@ describe('frameworkDetection', () => {
             return '';
           });
 
-        const { isJestTestFile } = require('../../testDetection');
         const result = isJestTestFile(filePath);
 
         expect(result).toBe(true);

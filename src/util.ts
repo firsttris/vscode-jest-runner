@@ -3,7 +3,6 @@ import * as mm from 'micromatch';
 import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import type { ParsedNode } from 'jest-editor-support';
-export { isTestFile } from './testDetection';
 
 const IS_WINDOWS = process.platform.includes('win32');
 let outputChannel: vscode.OutputChannel | undefined;

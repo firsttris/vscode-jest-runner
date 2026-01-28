@@ -8,7 +8,7 @@ import {
   logWarning,
   resolveTestNameStringInterpolation,
 } from './util';
-import { type TestFrameworkName } from './testDetection';
+import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 
 export function parseJestOutput(output: string): JestResults | undefined {
   try {

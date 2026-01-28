@@ -9,8 +9,8 @@ import {
 import { JestTestController } from '../TestController';
 import * as parser from '../parser';
 import * as util from '../util';
-import { testFileCache } from '../testDetection';
 import { EventEmitter } from 'events';
+import { testFileCache } from '../testDetection/testFileCache';
 
 export interface MockProcess extends EventEmitter {
   stdout: EventEmitter;

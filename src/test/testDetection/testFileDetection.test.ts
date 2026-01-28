@@ -1,16 +1,9 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  isJestTestFile,
-  clearTestDetectionCache,
-  clearVitestDetectionCache,
-  isVitestTestFile,
-  isTestFile,
-  getTestFrameworkForFile,
-  findTestFrameworkDirectory,
-  hasConflictingTestFramework,
-} from '../../testDetection';
+import { clearTestDetectionCache, clearVitestDetectionCache } from '../../testDetection/cache';
+import { getTestFrameworkForFile, hasConflictingTestFramework, isJestTestFile, isTestFile, isVitestTestFile } from '../../testDetection/testFileDetection';
+import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
 
 jest.mock('fs');
 jest.mock('vscode');

@@ -8,7 +8,7 @@ import {
   logError,
 } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
-import { testFileCache } from './testDetection';
+import { testFileCache } from './testDetection/testFileCache';
 
 export async function discoverTests(
   workspaceFolder: vscode.WorkspaceFolder,

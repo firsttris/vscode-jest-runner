@@ -2,14 +2,12 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
-  clearTestDetectionCache,
-  clearVitestDetectionCache,
-} from '../../testDetection';
-import {
   fileMatchesPatternsExplicit,
   fileMatchesPatterns,
   detectFrameworkByPatternMatch,
 } from '../../testDetection/patternMatching';
+import { clearTestDetectionCache, clearVitestDetectionCache } from '../../testDetection/cache';
+import { matchesTestFilePattern } from '../../testDetection/testFileDetection';
 
 jest.mock('fs');
 jest.mock('vscode');
@@ -595,7 +593,7 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -648,7 +646,7 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -700,7 +698,7 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -745,7 +743,7 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -793,7 +791,7 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -836,7 +834,7 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -880,7 +878,7 @@ export default {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -925,7 +923,7 @@ export default {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -966,7 +964,7 @@ export default {
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const result = matchesTestFilePattern(testFile);
 
@@ -1018,7 +1016,7 @@ export default defineConfig({
         return '';
       }) as any;
 
-      const { matchesTestFilePattern } = require('../../testDetection');
+
 
       const specFile = path.join(rootPath, 'src', 'utils.spec.ts');
       expect(matchesTestFilePattern(specFile)).toBe(true);
