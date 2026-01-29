@@ -30,7 +30,7 @@ A **lightweight** VS Code extension for running and debugging Jest and Vitest te
 
 > ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
 
-> ⚠️ **Important:** The extension uses **regex-based parsing** to read configuration files. It does **not** interpret the file as JavaScript/TypeScript code. If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files.
+> ⚠️ **Important:** The extension uses **regex-based parsing** to read configuration files. It does **not** interpret the file as JavaScript/TypeScript code. If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files. More information in [Supported Framework Config](#-supported-framework-config).
 
 > ⚠️ **Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to create a GitHub issue.
 
