@@ -19,26 +19,7 @@ import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 
-export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
-  const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
 
-  if (!fs.existsSync(yarnReleasesPath)) {
-    return { enabled: false };
-  }
-
-  try {
-    const files = fs.readdirSync(yarnReleasesPath);
-    const yarnBinary = files.find(file => file.startsWith('yarn-') && file.endsWith('.cjs'));
-
-    if (yarnBinary) {
-      return { enabled: true, yarnBinary };
-    }
-  } catch (error) {
-    // If we can't read the directory, assume PnP is not enabled
-  }
-
-  return { enabled: false };
-}
 
 function parseShellCommand(command: string): string[] {
   const args: string[] = [];
@@ -125,10 +106,7 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
-    if (yarnPnp.enabled) {
-      return `yarn jest`;
-    }
+
 
     return 'npx --no-install jest';
   }
@@ -139,10 +117,7 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
-    if (yarnPnp.enabled) {
-      return `yarn vitest`;
-    }
+
 
     return 'npx --no-install vitest';
   }
@@ -482,12 +457,6 @@ export class TestRunnerConfig {
       };
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
-    if (yarnPnp.enabled && yarnPnp.yarnBinary) {
-      debugConfig.program = `.yarn/releases/${yarnPnp.yarnBinary}`;
-      debugConfig.args = isVitest ? ['vitest', 'run'] : ['jest'];
-      return debugConfig;
-    }
 
     const customCommandKey = isVitest
       ? 'jestrunner.vitestCommand'
