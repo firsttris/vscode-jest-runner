@@ -14,61 +14,13 @@ import {
   escapeSingleQuotes,
   logDebug,
   logWarning,
+  parseShellCommand,
 } from './util';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 
 
-
-function parseShellCommand(command: string): string[] {
-  const args: string[] = [];
-  let current = '';
-  let inSingleQuote = false;
-  let inDoubleQuote = false;
-  let escaped = false;
-
-  for (let i = 0; i < command.length; i++) {
-    const char = command[i];
-
-    if (escaped) {
-      current += char;
-      escaped = false;
-      continue;
-    }
-
-    if (char === '\\' && !inSingleQuote) {
-      escaped = true;
-      continue;
-    }
-
-    if (char === "'" && !inDoubleQuote) {
-      inSingleQuote = !inSingleQuote;
-      continue;
-    }
-
-    if (char === '"' && !inSingleQuote) {
-      inDoubleQuote = !inDoubleQuote;
-      continue;
-    }
-
-    if (char === ' ' && !inSingleQuote && !inDoubleQuote) {
-      if (current) {
-        args.push(current);
-        current = '';
-      }
-      continue;
-    }
-
-    current += char;
-  }
-
-  if (current) {
-    args.push(current);
-  }
-
-  return args;
-}
 
 /**
  * Resolve the absolute path to a binary using Node's require.resolve.
@@ -124,7 +76,10 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-
+    const binaryPath = resolveBinaryPath('jest', this.cwd);
+    if (binaryPath) {
+      return quote(binaryPath);
+    }
 
     return 'npx --no-install jest';
   }
@@ -135,7 +90,10 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-
+    const binaryPath = resolveBinaryPath('vitest', this.cwd);
+    if (binaryPath) {
+      return quote(binaryPath);
+    }
 
     return 'npx --no-install vitest';
   }

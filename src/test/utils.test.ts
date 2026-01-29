@@ -33,7 +33,7 @@ function createTestNode(data: {
   return {
     ...data,
     file: '',
-    addChild: () => {},
+    addChild: () => { },
     filter: () => [],
   };
 }
@@ -353,29 +353,29 @@ describe('searchPathToParent', () => {
       traversedPaths: string[],
     ]
   > = [
-    [
-      'linux',
-      '/home/user/workspace/package/src/file.ts',
-      '/home/user/workspace/package/src',
-      '/home/user/workspace',
       [
+        'linux',
+        '/home/user/workspace/package/src/file.ts',
         '/home/user/workspace/package/src',
-        '/home/user/workspace/package',
         '/home/user/workspace',
+        [
+          '/home/user/workspace/package/src',
+          '/home/user/workspace/package',
+          '/home/user/workspace',
+        ],
       ],
-    ],
-    [
-      'windows',
-      'C:\\Users\\user\\workspace\\package\\src\\file.ts',
-      'C:\\Users\\user\\workspace\\package\\src',
-      'C:\\Users\\user\\workspace',
       [
+        'windows',
+        'C:\\Users\\user\\workspace\\package\\src\\file.ts',
         'C:\\Users\\user\\workspace\\package\\src',
-        'C:\\Users\\user\\workspace\\package',
         'C:\\Users\\user\\workspace',
+        [
+          'C:\\Users\\user\\workspace\\package\\src',
+          'C:\\Users\\user\\workspace\\package',
+          'C:\\Users\\user\\workspace',
+        ],
       ],
-    ],
-  ];
+    ];
   describe.each(scenarios)(
     'on %s',
     (os, fileAsStartPath, folderAsStartPath, workspacePath, traversedPaths) => {
@@ -488,3 +488,35 @@ describe('searchPathToParent', () => {
   );
 });
 
+
+import { parseShellCommand } from '../util';
+
+describe('parseShellCommand', () => {
+  it('should parse simple command', () => {
+    expect(parseShellCommand('npm test')).toEqual(['npm', 'test']);
+  });
+
+  it('should handle single quotes', () => {
+    expect(parseShellCommand("npm run 'test:watch'")).toEqual(['npm', 'run', 'test:watch']);
+  });
+
+  it('should handle double quotes', () => {
+    expect(parseShellCommand('npm run "test:watch"')).toEqual(['npm', 'run', 'test:watch']);
+  });
+
+  it('should handle escaped characters', () => {
+    expect(parseShellCommand('npm run test\\:watch')).toEqual(['npm', 'run', 'test:watch']);
+  });
+
+  it('should handle quotes inside words', () => {
+    expect(parseShellCommand('npm run test="foo bar"')).toEqual(['npm', 'run', 'test=foo bar']);
+  });
+
+  it('should handle spaces inside quotes', () => {
+    expect(parseShellCommand('echo "hello world"')).toEqual(['echo', 'hello world']);
+  });
+
+  it('should handle empty string', () => {
+    expect(parseShellCommand('')).toEqual([]);
+  });
+});

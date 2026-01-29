@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { pushMany, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties } from './util';
+import { pushMany, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties, parseShellCommand } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import {
   CoverageProvider,
@@ -251,7 +251,7 @@ export class JestTestController {
       const testCommand = isVitest
         ? this.jestConfig.vitestCommand
         : this.jestConfig.jestCommand;
-      const commandParts = testCommand.split(' ');
+      const commandParts = parseShellCommand(testCommand);
       const command = commandParts[0];
 
       const esmEnv = isVitest ? undefined : this.jestConfig.getEnvironmentForRun(allFiles[0]);
