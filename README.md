@@ -186,7 +186,7 @@ Customize the test runner for your project:
 
 
 <details>
-<summary><b>📋 Supported Framework Config Options</b></summary>
+<summary><b>📋 Supported Framework Config</b></summary>
 <br>
 
 The extension **automatically reads configuration** from your framework config files.
