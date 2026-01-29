@@ -92,7 +92,7 @@ function resolveBinaryPath(binaryName: string, cwd: string): string | undefined 
 
     if (fs.existsSync(binPath)) {
       logDebug(`Resolved binary path for ${binaryName}: ${binPath}`);
-      return binPath;
+      return normalizePath(binPath);
     }
 
     // Fallback: try to find the binary script directly in the package
@@ -101,7 +101,7 @@ function resolveBinaryPath(binaryName: string, cwd: string): string | undefined 
       const binaryScript = requireFromCwd.resolve(`${binaryName}/bin/${binaryName}.js`);
       if (fs.existsSync(binaryScript)) {
         logDebug(`Resolved binary script for ${binaryName}: ${binaryScript}`);
-        return binaryScript;
+        return normalizePath(binaryScript);
       }
     } catch {
       // Binary script not found in standard location
