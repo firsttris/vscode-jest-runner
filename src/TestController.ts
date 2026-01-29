@@ -13,8 +13,11 @@ import {
 import { processTestResults } from './testResultProcessor';
 import {
   executeTestCommand,
+  executeTestCommandFast,
   collectTestsByFile,
   buildTestArgs,
+  buildTestArgsFast,
+  canUseFastMode,
   logTestExecution,
   generateOutputFilePath,
 } from './testExecution';
@@ -245,8 +248,38 @@ export class JestTestController {
         ? this.jestConfig.getVitestConfigPath(allFiles[0])
         : this.jestConfig.getJestConfigPath(allFiles[0]);
 
-      // Generate output file path for JSON output
-      // This avoids stdout parsing issues with Nx/monorepo wrappers
+      const testCommand = isVitest
+        ? this.jestConfig.vitestCommand
+        : this.jestConfig.jestCommand;
+      const commandParts = testCommand.split(' ');
+      const command = commandParts[0];
+
+      const esmEnv = isVitest ? undefined : this.jestConfig.getEnvironmentForRun(allFiles[0]);
+
+      // Fast mode: single test without coverage - skip JSON parsing
+      if (canUseFastMode(testsByFile, collectCoverage) && additionalArgs.length === 0) {
+        const test = allTests[0];
+        const testName = escapeRegExp(updateTestNameIfUsingProperties(test.label));
+        const args = buildTestArgsFast(allFiles[0], testName, isVitest, this.jestConfig);
+        const commandArgs = [...commandParts.slice(1), ...args];
+
+        logInfo(`Running fast mode: ${command} ${commandArgs.join(' ')}`);
+
+        await executeTestCommandFast(
+          command,
+          commandArgs,
+          token,
+          test,
+          run,
+          this.jestConfig.cwd,
+          esmEnv,
+        );
+
+        run.end();
+        return;
+      }
+
+      // Standard mode: use JSON output for multiple tests or coverage
       const outputFilePath = generateOutputFilePath();
 
       const args = buildTestArgs(
@@ -260,14 +293,7 @@ export class JestTestController {
         outputFilePath,
       );
 
-      const testCommand = isVitest
-        ? this.jestConfig.vitestCommand
-        : this.jestConfig.jestCommand;
-      const commandParts = testCommand.split(' ');
-      const command = commandParts[0];
       const commandArgs = [...commandParts.slice(1), ...args];
-
-      const esmEnv = isVitest ? undefined : this.jestConfig.getEnvironmentForRun(allFiles[0]);
 
       logTestExecution(
         framework,

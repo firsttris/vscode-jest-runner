@@ -26,16 +26,22 @@ describe('JestTestController - result parsing', () => {
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
-    const mockTestItem = new TestItem(
+    const mockTestItem1 = new TestItem(
       'test1',
       'Test 1',
       vscode.Uri.file('/workspace/test.ts'),
     );
-    mockTestController.items.add(mockTestItem);
+    const mockTestItem2 = new TestItem(
+      'test2',
+      'Test 2',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    mockTestController.items.add(mockTestItem1);
+    mockTestController.items.add(mockTestItem2);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[0][2];
-    const mockRequest = { include: [mockTestItem], exclude: [] } as any;
+    const mockRequest = { include: [mockTestItem1, mockTestItem2], exclude: [] } as any;
     const mockToken = new CancellationToken();
 
     const { spawn } = require('child_process');
@@ -56,6 +62,10 @@ describe('JestTestController - result parsing', () => {
                   title: 'Test 1',
                   status: 'skipped',
                 },
+                {
+                  title: 'Test 2',
+                  status: 'passed',
+                },
               ],
             },
           ],
@@ -74,16 +84,22 @@ describe('JestTestController - result parsing', () => {
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
-    const mockTestItem = new TestItem(
+    const mockTestItem1 = new TestItem(
       'test1',
       'Test 1',
       vscode.Uri.file('/workspace/test.ts'),
     );
-    mockTestController.items.add(mockTestItem);
+    const mockTestItem2 = new TestItem(
+      'test2',
+      'Test 2',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    mockTestController.items.add(mockTestItem1);
+    mockTestController.items.add(mockTestItem2);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[0][2];
-    const mockRequest = { include: [mockTestItem], exclude: [] } as any;
+    const mockRequest = { include: [mockTestItem1, mockTestItem2], exclude: [] } as any;
     const mockToken = new CancellationToken();
 
     const { spawn } = require('child_process');
@@ -104,6 +120,10 @@ describe('JestTestController - result parsing', () => {
                   title: 'Test 1',
                   status: 'pending',
                 },
+                {
+                  title: 'Test 2',
+                  status: 'passed',
+                },
               ],
             },
           ],
@@ -122,16 +142,22 @@ describe('JestTestController - result parsing', () => {
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
-    const mockTestItem = new TestItem(
+    const mockTestItem1 = new TestItem(
       'test1',
       'Test 1',
       vscode.Uri.file('/workspace/test.ts'),
     );
-    mockTestController.items.add(mockTestItem);
+    const mockTestItem2 = new TestItem(
+      'test2',
+      'Test 2',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    mockTestController.items.add(mockTestItem1);
+    mockTestController.items.add(mockTestItem2);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[0][2];
-    const mockRequest = { include: [mockTestItem], exclude: [] } as any;
+    const mockRequest = { include: [mockTestItem1, mockTestItem2], exclude: [] } as any;
     const mockToken = new CancellationToken();
 
     const { spawn } = require('child_process');
@@ -151,6 +177,10 @@ describe('JestTestController - result parsing', () => {
                 {
                   title: 'Test 1',
                   status: 'todo',
+                },
+                {
+                  title: 'Test 2',
+                  status: 'passed',
                 },
               ],
             },
@@ -235,16 +265,22 @@ describe('JestTestController - result parsing', () => {
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
-    const mockTestItem = new TestItem(
+    const mockTestItem1 = new TestItem(
       'test1',
       'Test 1',
       vscode.Uri.file('/workspace/test.ts'),
     );
-    mockTestController.items.add(mockTestItem);
+    const mockTestItem2 = new TestItem(
+      'test2',
+      'Test 2',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    mockTestController.items.add(mockTestItem1);
+    mockTestController.items.add(mockTestItem2);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[0][2];
-    const mockRequest = { include: [mockTestItem], exclude: [] } as any;
+    const mockRequest = { include: [mockTestItem1, mockTestItem2], exclude: [] } as any;
     const mockToken = new CancellationToken();
 
     const { spawn } = require('child_process');

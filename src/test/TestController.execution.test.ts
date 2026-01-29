@@ -187,7 +187,15 @@ describe('JestTestController - test execution', () => {
     const mockTestController = (
       vscode.tests.createTestController as jest.Mock
     ).mock.results[0].value;
+
+    // Need 2 tests to avoid fast mode (which doesn't have buffer limiting)
+    const mockTestItem2 = new TestItem(
+      'test2',
+      'Test 2',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
     mockTestController.items.add(mockTestItem);
+    mockTestController.items.add(mockTestItem2);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[0][2];
@@ -196,7 +204,8 @@ describe('JestTestController - test execution', () => {
     const mockProcess = createMockProcess();
     spawn.mockReturnValue(mockProcess);
 
-    const runPromise = runProfile(mockRequest, mockToken);
+    const multiRequest = { include: [mockTestItem, mockTestItem2], exclude: [] } as any;
+    const runPromise = runProfile(multiRequest, mockToken);
 
     const largeOutput = 'x'.repeat(51 * 1024 * 1024);
     setTimeout(() => {

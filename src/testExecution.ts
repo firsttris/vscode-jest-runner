@@ -5,6 +5,7 @@ import { join } from 'path';
 import { readFile, unlink } from 'fs/promises';
 import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logWarning } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
+import { stripAnsi } from './util';
 
 /**
  * Generate a unique temporary file path for Jest JSON output.
@@ -14,6 +15,76 @@ export function generateOutputFilePath(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   return join(tmpdir(), `jest-runner-${timestamp}-${random}.json`);
+}
+
+/**
+ * Fast test execution for single tests - uses exit code instead of JSON parsing.
+ * This is significantly faster as it skips JSON serialization/parsing overhead.
+ */
+export function executeTestCommandFast(
+  command: string,
+  args: string[],
+  token: vscode.CancellationToken,
+  test: vscode.TestItem,
+  run: vscode.TestRun,
+  cwd: string,
+  additionalEnv?: Record<string, string>,
+): Promise<void> {
+  return new Promise((resolve) => {
+    const jestProcess = spawn(command, args, {
+      cwd,
+      env: { ...process.env, FORCE_COLOR: 'true', ...additionalEnv },
+      shell: true,
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let exitCode: number | null = null;
+
+    jestProcess.stdout?.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    jestProcess.stderr?.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    jestProcess.on('error', (error) => {
+      run.failed(
+        test,
+        new vscode.TestMessage(`Failed to execute test runner: ${error.message}`),
+      );
+      resolve();
+    });
+
+    jestProcess.on('close', (code) => {
+      cancellationListener.dispose();
+      exitCode = code;
+
+      if (token.isCancellationRequested) {
+        run.skipped(test);
+        resolve();
+        return;
+      }
+
+      // Exit code 0 = passed, non-zero = failed
+      if (exitCode === 0) {
+        run.passed(test);
+      } else {
+        // Extract error message from output
+        const errorOutput = stderr || stdout || 'Test failed';
+        const cleanError = stripAnsi(errorOutput);
+        run.failed(test, new vscode.TestMessage(cleanError));
+      }
+      resolve();
+    });
+
+    const cancellationListener = token.onCancellationRequested(() => {
+      jestProcess.kill();
+      run.skipped(test);
+      resolve();
+    });
+  });
 }
 
 export function executeTestCommand(
@@ -91,7 +162,7 @@ export function executeTestCommand(
       if (token.isCancellationRequested) {
         tests.forEach((test) => run.skipped(test));
         if (outputFilePath) {
-          unlink(outputFilePath).catch(() => {});
+          unlink(outputFilePath).catch(() => { });
         }
         resolve(null);
         return;
@@ -102,7 +173,7 @@ export function executeTestCommand(
         try {
           const fileContent = await readFile(outputFilePath, 'utf8');
           // Clean up temp file
-          unlink(outputFilePath).catch(() => {});
+          unlink(outputFilePath).catch(() => { });
           if (fileContent && fileContent.trim()) {
             resolve(fileContent);
             return;
@@ -230,18 +301,18 @@ export function buildTestArgs(
 
   const args = isVitest
     ? [
-        'run',
-        ...allFiles,
-        '--reporter=json',
-        // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-        ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
-      ]
+      'run',
+      ...allFiles,
+      '--reporter=json',
+      // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
+      ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
+    ]
     : [
-        ...allFiles,
-        '--json',
-        // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-        ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
-      ];
+      ...allFiles,
+      '--json',
+      // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
+      ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
+    ];
 
   if (configPath) {
     args.push(isVitest ? '--config' : '-c', configPath);
@@ -271,4 +342,35 @@ export function logTestExecution(
   logInfo(
     `Running batched ${framework} command: ${command} ${args.join(' ')} (${testCount} tests across ${fileCount} files)${isEsm ? ' [ESM mode]' : ''}`,
   );
+}
+
+/**
+ * Build test args for fast single-test execution (no JSON output).
+ * This is used when running a single test to avoid JSON serialization overhead.
+ */
+export function buildTestArgsFast(
+  filePath: string,
+  testName: string,
+  isVitest: boolean,
+  jestConfig: TestRunnerConfig,
+): string[] {
+  return isVitest
+    ? jestConfig.buildVitestArgs(filePath, testName, true, [])
+    : jestConfig.buildJestArgs(filePath, testName, true, []);
+}
+
+/**
+ * Check if a test run qualifies for fast mode (single test, no coverage).
+ */
+export function canUseFastMode(
+  testsByFile: Map<string, vscode.TestItem[]>,
+  collectCoverage: boolean,
+): boolean {
+  if (collectCoverage) return false;
+
+  const files = Array.from(testsByFile.keys());
+  if (files.length !== 1) return false;
+
+  const tests = testsByFile.get(files[0])!;
+  return tests.length === 1;
 }
