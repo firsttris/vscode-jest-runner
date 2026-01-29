@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
+import { execSync } from 'child_process';
 import {
   normalizePath,
   validateCodeLensOptions,
@@ -12,6 +13,7 @@ import {
   quote,
   escapeSingleQuotes,
   logDebug,
+  logWarning,
 } from './util';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
@@ -86,6 +88,31 @@ function parseShellCommand(command: string): string[] {
 
   return args;
 }
+
+/**
+ * Resolve the absolute path to a binary using npx.
+ * This allows direct execution instead of using npx as runtimeExecutable.
+ */
+function resolveBinaryPath(binaryName: string, cwd: string): string | undefined {
+  try {
+    // Use npx which to find the binary location
+    // --no-install prevents automatic installation if 'which' is not found
+    const result = execSync(`npx --no-install which ${binaryName}`, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    const binaryPath = result.trim();
+    if (binaryPath && fs.existsSync(binaryPath)) {
+      logDebug(`Resolved binary path for ${binaryName}: ${binaryPath}`);
+      return binaryPath;
+    }
+  } catch (error) {
+    logWarning(`Failed to resolve binary path for ${binaryName}: ${error}`);
+  }
+  return undefined;
+}
+
 
 export class TestRunnerConfig {
   private getConfig<T>(key: string, defaultValue?: T): T | undefined {
@@ -444,11 +471,7 @@ export class TestRunnerConfig {
       name: isVitest ? 'Debug Vitest Tests' : 'Debug Jest Tests',
       request: 'launch',
       type: 'node',
-      runtimeExecutable: 'npx',
       ...(this.changeDirectoryToWorkspaceRoot ? { cwd: this.cwd } : {}),
-      args: isVitest
-        ? ['--no-install', 'vitest', 'run']
-        : ['--no-install', 'jest', '--runInBand'],
       ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
     };
 
@@ -461,7 +484,6 @@ export class TestRunnerConfig {
 
     const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
     if (yarnPnp.enabled && yarnPnp.yarnBinary) {
-      delete debugConfig.runtimeExecutable;
       debugConfig.program = `.yarn/releases/${yarnPnp.yarnBinary}`;
       debugConfig.args = isVitest ? ['vitest', 'run'] : ['jest'];
       return debugConfig;
@@ -474,13 +496,28 @@ export class TestRunnerConfig {
     if (customCommand && typeof customCommand === 'string') {
       const parts = parseShellCommand(customCommand);
       if (parts.length > 0) {
-        delete debugConfig.runtimeExecutable;
         debugConfig.program = parts[0];
         debugConfig.args = isVitest
           ? [...parts.slice(1), 'run']
           : parts.slice(1);
       }
       return debugConfig;
+    }
+
+    // Use npx to resolve the binary path and execute it directly
+    const binaryName = isVitest ? 'vitest' : 'jest';
+    const binaryPath = resolveBinaryPath(binaryName, this.cwd);
+
+    if (binaryPath) {
+      debugConfig.program = binaryPath;
+      debugConfig.args = isVitest ? ['run'] : ['--runInBand'];
+    } else {
+      // Fallback to npx if binary path cannot be resolved
+      logWarning(`Could not resolve ${binaryName} binary path, falling back to npx`);
+      debugConfig.runtimeExecutable = 'npx';
+      debugConfig.args = isVitest
+        ? ['--no-install', 'vitest', 'run']
+        : ['--no-install', 'jest', '--runInBand'];
     }
 
     return debugConfig;
