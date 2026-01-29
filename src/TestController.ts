@@ -16,6 +16,7 @@ import {
   collectTestsByFile,
   buildTestArgs,
   logTestExecution,
+  generateOutputFilePath,
 } from './testExecution';
 import { testFrameworks } from './testDetection/frameworkDefinitions';
 import { clearTestDetectionCache, clearVitestDetectionCache } from './testDetection/cache';
@@ -244,6 +245,10 @@ export class JestTestController {
         ? this.jestConfig.getVitestConfigPath(allFiles[0])
         : this.jestConfig.getJestConfigPath(allFiles[0]);
 
+      // Generate output file path for JSON output
+      // This avoids stdout parsing issues with Nx/monorepo wrappers
+      const outputFilePath = generateOutputFilePath();
+
       const args = buildTestArgs(
         allFiles,
         testsByFile,
@@ -252,6 +257,7 @@ export class JestTestController {
         collectCoverage,
         this.jestConfig,
         this.testController,
+        outputFilePath,
       );
 
       const testCommand = isVitest
@@ -280,6 +286,7 @@ export class JestTestController {
         run,
         this.jestConfig.cwd,
         esmEnv,
+        outputFilePath,
       );
 
       if (output === null) {

@@ -1,7 +1,20 @@
 import * as vscode from 'vscode';
 import { spawn } from 'child_process';
-import { escapeRegExp, updateTestNameIfUsingProperties, logInfo } from './util';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { readFile, unlink } from 'fs/promises';
+import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logWarning } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
+
+/**
+ * Generate a unique temporary file path for Jest JSON output.
+ * Using a file avoids all stdout parsing issues with Nx/monorepo wrappers.
+ */
+export function generateOutputFilePath(): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return join(tmpdir(), `jest-runner-${timestamp}-${random}.json`);
+}
 
 export function executeTestCommand(
   command: string,
@@ -11,6 +24,7 @@ export function executeTestCommand(
   run: vscode.TestRun,
   cwd: string,
   additionalEnv?: Record<string, string>,
+  outputFilePath?: string,
 ): Promise<string | null> {
   return new Promise((resolve) => {
     const maxBufferSize =
@@ -71,22 +85,51 @@ export function executeTestCommand(
       resolve(null);
     });
 
-    jestProcess.on('close', (code) => {
+    jestProcess.on('close', async () => {
       cancellationListener.dispose();
 
       if (token.isCancellationRequested) {
         tests.forEach((test) => run.skipped(test));
+        if (outputFilePath) {
+          unlink(outputFilePath).catch(() => {});
+        }
         resolve(null);
         return;
       }
 
-      if (stdout) {
-        resolve(stdout);
-      } else if (stderr) {
-        tests.forEach((test) =>
-          run.failed(test, new vscode.TestMessage(stderr)),
-        );
-        resolve(null);
+      // Try to read from output file first (most reliable for Jest)
+      if (outputFilePath) {
+        try {
+          const fileContent = await readFile(outputFilePath, 'utf8');
+          // Clean up temp file
+          unlink(outputFilePath).catch(() => {});
+          if (fileContent && fileContent.trim()) {
+            resolve(fileContent);
+            return;
+          }
+        } catch (err) {
+          // File doesn't exist or can't be read - fall back to stdout parsing
+          logWarning(`Could not read Jest output file: ${err}. Falling back to stdout parsing.`);
+        }
+      }
+
+      // Fallback: parse from stdout/stderr (for Vitest or when --outputFile fails)
+      const combinedOutput = stdout + (stderr ? '\n' + stderr : '');
+
+      if (combinedOutput.trim()) {
+        const hasJsonInStdout = stdout.includes('"testResults"');
+        const hasJsonInStderr = stderr.includes('"testResults"');
+
+        if (hasJsonInStdout || hasJsonInStderr) {
+          resolve(combinedOutput);
+        } else if (stdout) {
+          resolve(combinedOutput);
+        } else {
+          tests.forEach((test) =>
+            run.failed(test, new vscode.TestMessage(stderr)),
+          );
+          resolve(null);
+        }
       } else {
         tests.forEach((test) =>
           run.failed(test, new vscode.TestMessage('No output from test runner')),
@@ -142,6 +185,7 @@ export function buildTestArgs(
   collectCoverage: boolean,
   jestConfig: TestRunnerConfig,
   testController: vscode.TestController,
+  outputFilePath?: string,
 ): string[] {
   const fileItem =
     allFiles.length === 1
@@ -162,6 +206,8 @@ export function buildTestArgs(
     const extraArgs = [
       ...additionalArgs,
       isVitest ? '--reporter=json' : '--json',
+      // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
+      ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
     ];
 
     if (collectCoverage) {
@@ -183,8 +229,19 @@ export function buildTestArgs(
     : jestConfig.getJestConfigPath(allFiles[0]);
 
   const args = isVitest
-    ? ['run', ...allFiles, '--reporter=json']
-    : [...allFiles, '--json'];
+    ? [
+        'run',
+        ...allFiles,
+        '--reporter=json',
+        // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
+        ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
+      ]
+    : [
+        ...allFiles,
+        '--json',
+        // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
+        ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
+      ];
 
   if (configPath) {
     args.push(isVitest ? '--config' : '-c', configPath);

@@ -6,36 +6,33 @@ import {
 import {
   logError,
   logWarning,
-  resolveTestNameStringInterpolation,
 } from './util';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 
+/**
+ * Validates that a parsed object looks like Jest test results
+ */
+function isJestResults(obj: unknown): obj is JestResults {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'testResults' in obj &&
+    Array.isArray((obj as JestResults).testResults)
+  );
+}
+
+/**
+ * Parse Jest JSON output.
+ * With --outputFile, the output is clean JSON from the temp file.
+ */
 export function parseJestOutput(output: string): JestResults | undefined {
   try {
     const trimmed = output.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (parsed && typeof parsed === 'object' && 'testResults' in parsed) {
-          return parsed;
-        }
-      } catch (e) {
-        logError(`Failed to parse complete output as JSON: ${e}`);
-      }
+    const parsed = JSON.parse(trimmed);
+    if (isJestResults(parsed)) {
+      return parsed;
     }
-
-    const jsonRegex = /({"numFailedTestSuites":.*?"wasInterrupted":.*?})/s;
-    const jsonMatch = output.match(jsonRegex);
-
-    if (jsonMatch && jsonMatch[1]) {
-      return JSON.parse(jsonMatch[1]);
-    }
-
-    const fallbackMatch = output.match(/(\{.*"testResults".*\})/s);
-    if (fallbackMatch && fallbackMatch[1]) {
-      return JSON.parse(fallbackMatch[1]);
-    }
-
+    logWarning('Parsed JSON does not contain testResults array');
     return undefined;
   } catch (e) {
     logError(`Failed to parse Jest JSON output: ${e}`);
@@ -43,26 +40,15 @@ export function parseJestOutput(output: string): JestResults | undefined {
   }
 }
 
+/**
+ * Parse Vitest JSON output.
+ * With --outputFile, the output is clean JSON from the temp file.
+ */
 export function parseVitestOutput(output: string): JestResults | undefined {
   try {
-    const lines = output.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('{') && trimmed.includes('"testResults"')) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          return convertVitestToJestResults(parsed);
-        } catch { }
-      }
-    }
-
-    const jsonMatch = output.match(/(\{[\s\S]*"testResults"[\s\S]*\})/m);
-    if (jsonMatch && jsonMatch[1]) {
-      const parsed = JSON.parse(jsonMatch[1]);
-      return convertVitestToJestResults(parsed);
-    }
-
-    return undefined;
+    const trimmed = output.trim();
+    const parsed = JSON.parse(trimmed);
+    return convertVitestToJestResults(parsed);
   } catch (e) {
     logError(`Failed to parse Vitest JSON output: ${e}`);
     return undefined;
@@ -117,7 +103,7 @@ function matchesTestLabel(resultTitle: string, testLabel: string): boolean {
     testLabel,
   );
   if (hasTemplateVar) {
-    const pattern = resolveTestNameStringInterpolation(testLabel);
+    const pattern = escapeRegExpWithTemplateVars(testLabel);
     try {
       const regex = new RegExp(`^${pattern}$`);
       return regex.test(resultTitle);
@@ -129,12 +115,89 @@ function matchesTestLabel(resultTitle: string, testLabel: string): boolean {
   return false;
 }
 
+/**
+ * Escapes regex special characters in the test label while preserving
+ * template variable patterns which get replaced with (.*?)
+ */
+function escapeRegExpWithTemplateVars(testLabel: string): string {
+  const templateVarRegex = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/gi;
+  const placeholder = '\x00TEMPLATE\x00';
+  const templateVars: string[] = [];
+
+  // Replace template vars with placeholders
+  const withPlaceholders = testLabel.replace(templateVarRegex, (match) => {
+    templateVars.push(match);
+    return placeholder;
+  });
+
+  // Escape regex special characters in the non-template parts
+  const escaped = withPlaceholders.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Replace placeholders back with (.*?)
+  let result = escaped;
+  for (let i = 0; i < templateVars.length; i++) {
+    result = result.replace(placeholder, '(.*?)');
+  }
+
+  return result;
+}
+
 type IndexedResult = { result: JestAssertionResult; index: number };
 
 const TEMPLATE_VAR_REGEX = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/i;
 
 const hasTemplateVar = (label: string): boolean =>
   TEMPLATE_VAR_REGEX.test(label);
+
+/**
+ * Checks if the string is ONLY a template variable (e.g., "%d", "$foo")
+ * which would result in a regex that matches everything.
+ */
+const isOnlyTemplateVar = (label: string): boolean => {
+  const trimmed = label.trim();
+  return /^(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])$/i.test(trimmed);
+};
+
+/**
+ * Gets the ancestor titles (parent describe blocks) from a TestItem's hierarchy.
+ */
+const getAncestorTitles = (test: vscode.TestItem): string[] => {
+  const titles: string[] = [];
+  let parent = test.parent;
+  while (parent) {
+    // Skip file-level items (they have a URI that matches their id)
+    if (parent.uri && parent.id !== parent.uri.fsPath) {
+      titles.unshift(parent.label);
+    }
+    parent = parent.parent;
+  }
+  return titles;
+};
+
+/**
+ * Checks if the result's ancestorTitles match the test's ancestor hierarchy.
+ * Used for template-only labels where we can't match by test name.
+ */
+const matchesByAncestors = (r: JestAssertionResult, test: vscode.TestItem): boolean => {
+  const testAncestors = getAncestorTitles(test);
+  const resultAncestors = r.ancestorTitles ?? [];
+
+  // If test has no ancestors, only match if result also has no ancestors
+  // (single test at file level)
+  if (testAncestors.length === 0) {
+    return resultAncestors.length === 0;
+  }
+
+  // Check if result ancestors end with the test ancestors
+  // This handles nested describes where result might have more ancestors
+  if (resultAncestors.length < testAncestors.length) {
+    return false;
+  }
+
+  // Compare from the end (most specific ancestor)
+  const offset = resultAncestors.length - testAncestors.length;
+  return testAncestors.every((title, i) => resultAncestors[offset + i] === title);
+};
 
 const getTestName = (test: vscode.TestItem): string =>
   test.label.split(' ').pop() || test.label;
@@ -151,9 +214,18 @@ const matchesTest = (r: JestAssertionResult, test: vscode.TestItem): boolean => 
     return /^ \(\d+\)$/.test(suffix);
   };
 
+  // For template-only labels (e.g., "$description"), match by ancestor titles
+  // instead of by regex which would match everything
+  if (isOnlyTemplateVar(test.label)) {
+    return matchesByAncestors(r, test);
+  }
+
+  // Skip testName matching if it's only a template variable (would match everything)
+  const testNameMatches = !isOnlyTemplateVar(testName) && matchesTestLabel(r.title, testName);
+
   return (
     matchesTestLabel(r.title, test.label) ||
-    matchesTestLabel(r.title, testName) ||
+    testNameMatches ||
     matchesWithSuffix(r.title, test.label) ||
     matchesWithSuffix(fullPath, test.label) ||
     r.fullName === test.label ||
@@ -213,16 +285,21 @@ const reportTestResult = (
 
   switch (result.status) {
     case 'passed':
-      run.passed(test);
+      run.passed(test, result.duration);
       break;
-    case 'failed':
-      run.failed(
-        test,
-        new vscode.TestMessage(
-          result.failureMessages?.join('\n') || 'Test failed',
-        ),
+    case 'failed': {
+      const message = new vscode.TestMessage(
+        result.failureMessages?.join('\n') || 'Test failed',
       );
+      if (result.location && test.uri) {
+        message.location = new vscode.Location(
+          test.uri,
+          new vscode.Position(result.location.line - 1, result.location.column),
+        );
+      }
+      run.failed(test, message, result.duration);
       break;
+    }
     default:
       run.skipped(test);
   }
@@ -233,21 +310,29 @@ const reportTemplateTestResult = (
   test: vscode.TestItem,
   matches: IndexedResult[],
 ): void => {
-
   const results = matches.map((m) => m.result);
   const status = aggregateStatus(results);
+  const totalDuration = results.reduce((sum, r) => sum + (r.duration ?? 0), 0);
 
   switch (status) {
-    case 'failed':
-      run.failed(
-        test,
-        new vscode.TestMessage(
-          buildFailureMessage(results.filter((r) => r.status === 'failed')),
-        ),
-      );
+    case 'failed': {
+      const failedResults = results.filter((r) => r.status === 'failed');
+      const message = new vscode.TestMessage(buildFailureMessage(failedResults));
+      const firstFailedWithLocation = failedResults.find((r) => r.location);
+      if (firstFailedWithLocation?.location && test.uri) {
+        message.location = new vscode.Location(
+          test.uri,
+          new vscode.Position(
+            firstFailedWithLocation.location.line - 1,
+            firstFailedWithLocation.location.column,
+          ),
+        );
+      }
+      run.failed(test, message, totalDuration);
       break;
+    }
     case 'passed':
-      run.passed(test);
+      run.passed(test, totalDuration);
       break;
     default:
       run.skipped(test);
@@ -304,37 +389,87 @@ function processTestResultsFallback(
   tests: vscode.TestItem[],
   run: vscode.TestRun,
 ): void {
-  logWarning('Failed to parse test results, falling back to simple parsing');
+  logWarning('Failed to parse JSON test results, falling back to text parsing');
 
-  const hasFail =
-    output.includes('FAIL') || output.includes('✗') || output.includes('×');
+  // Look for various failure indicators in output
+  const failureIndicators = [
+    'FAIL',
+    '✗',
+    '×',
+    '●',
+    'FAILED',
+    'Error:',
+    'AssertionError',
+    'expect(',
+    'Expected:',
+    'Received:',
+  ];
 
-  if (hasFail) {
+  const hasFailIndicator = failureIndicators.some((indicator) =>
+    output.includes(indicator),
+  );
+
+  // Look for pass indicators
+  const passIndicators = ['PASS', '✓', '√', 'passed'];
+  const hasPassIndicator = passIndicators.some((indicator) =>
+    output.includes(indicator),
+  );
+
+  // If we have clear pass indicators and no fail indicators, mark as passed
+  if (hasPassIndicator && !hasFailIndicator) {
+    tests.forEach((test) => run.passed(test));
+    return;
+  }
+
+  // If we have failure indicators, try to match them to specific tests
+  if (hasFailIndicator) {
     const failLines = output
       .split('\n')
-      .filter(
-        (line) =>
-          line.includes('●') ||
-          line.includes('✗') ||
-          line.includes('×') ||
-          line.includes('AssertionError'),
+      .filter((line) =>
+        failureIndicators.some((indicator) => line.includes(indicator)),
       );
 
     tests.forEach((test) => {
+      const testName = test.label;
+      const shortName = testName.split(' ').pop() || testName;
+
       const testFailed = failLines.some(
-        (line) =>
-          line.includes(test.label) ||
-          (test.label.includes(' ') &&
-            line.includes(test.label.split(' ').pop() || '')),
+        (line) => line.includes(testName) || line.includes(shortName),
       );
 
       if (testFailed) {
-        run.failed(test, new vscode.TestMessage('Test failed'));
+        // Find relevant error message for this test
+        const relevantLines = failLines
+          .filter((line) => line.includes(testName) || line.includes(shortName))
+          .join('\n');
+        run.failed(
+          test,
+          new vscode.TestMessage(relevantLines || 'Test failed'),
+        );
       } else {
-        run.passed(test);
+        // Can't determine status - mark as errored to indicate parsing issue
+        run.errored(
+          test,
+          new vscode.TestMessage(
+            'Could not determine test result. Check Output panel for details.',
+          ),
+        );
       }
     });
-  } else {
-    tests.forEach((test) => run.passed(test));
+    return;
   }
+
+  // No clear indicators either way - mark as errored, not passed
+  // This prevents false positives when JSON parsing fails
+  logWarning(
+    `No pass/fail indicators found in output. Output preview: ${output.slice(0, 500)}`,
+  );
+  tests.forEach((test) =>
+    run.errored(
+      test,
+      new vscode.TestMessage(
+        'Could not parse test results. Run tests from terminal to see full output.',
+      ),
+    ),
+  );
 }
