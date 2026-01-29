@@ -46,7 +46,7 @@ describe('TestRunnerConfig', () => {
       expect(jestRunnerConfig.vitestCommand).toBe('npx --no-install vitest');
     });
 
-    it('should use yarn when PnP is detected', () => {
+    it('should use npx even when PnP is detected', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({}),
       );
@@ -63,7 +63,7 @@ describe('TestRunnerConfig', () => {
         'yarn-3.2.0.cjs' as any,
       ]);
 
-      expect(jestRunnerConfig.vitestCommand).toBe('yarn vitest');
+      expect(jestRunnerConfig.vitestCommand).toBe('npx --no-install vitest');
     });
   });
 

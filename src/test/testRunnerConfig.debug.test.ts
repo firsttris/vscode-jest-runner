@@ -11,7 +11,7 @@ import { isWindows } from '../util';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as testDetection from '../testDetection/testFileDetection';
-import * as child_process from 'child_process';
+import * as moduleLib from 'module';
 
 describe('TestRunnerConfig', () => {
   describe('getDebugConfiguration', () => {
@@ -30,6 +30,26 @@ describe('TestRunnerConfig', () => {
         .mockReturnValue(
           new TextEditor(new Document(new Uri(mockFilePath) as any)) as any,
         );
+
+      // Mock createRequire to return a mock require function with resolve
+      const mockRequire = {
+        resolve: jest.fn().mockImplementation((pkg: string) => {
+          if (pkg === 'jest') {
+            return '/home/user/project/node_modules/jest/index.js';
+          }
+          if (pkg === 'jest/bin/jest.js') {
+            return '/home/user/project/node_modules/.bin/jest';
+          }
+          if (pkg === 'vitest') {
+            return '/workspace/node_modules/vitest/index.js';
+          }
+          if (pkg === 'vitest/bin/vitest.js') {
+            return '/workspace/node_modules/.bin/vitest';
+          }
+          throw new Error(`Cannot find module '${pkg}'`);
+        }),
+      };
+      jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
     });
 
     it('should return default debug configuration', () => {
@@ -49,8 +69,6 @@ describe('TestRunnerConfig', () => {
         return true;
       });
 
-      // Mock npx --which to return binary path
-      jest.spyOn(child_process, 'execSync').mockReturnValue('/home/user/project/node_modules/.bin/jest');
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
@@ -66,12 +84,12 @@ describe('TestRunnerConfig', () => {
       expect(config.cwd).toBeTruthy(); // cwd may vary based on test setup
     });
 
-    it('should configure for Yarn PnP when detected', () => {
+    it('should use default npx configuration even when Yarn PnP is detected', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({}),
       );
 
-      // Mock Yarn PnP directory structure
+      // Mock Yarn PnP directory structure (which should now be ignored)
       const expectedPath = path.join('/home/user/project', '.yarn', 'releases');
       jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
         if (checkPath === expectedPath) {
@@ -85,9 +103,8 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.program).toBe('.yarn/releases/yarn-3.2.0.cjs');
-      expect(config.args).toEqual(['jest']);
-      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.runtimeExecutable).toBe('npx');
+      expect(config.args).toEqual(['--no-install', 'jest', '--runInBand']);
     });
 
     it('should parse custom jest command', () => {
@@ -270,8 +287,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // Mock npx --which to return binary path
-      jest.spyOn(child_process, 'execSync').mockReturnValue('/home/user/project/node_modules/.bin/jest');
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
@@ -289,8 +304,6 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
-      // Mock npx --which to return binary path
-      jest.spyOn(child_process, 'execSync').mockReturnValue('/home/user/project/node_modules/.bin/jest');
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
@@ -349,8 +362,6 @@ describe('TestRunnerConfig', () => {
         .spyOn(testDetection, 'getTestFrameworkForFile')
         .mockReturnValue('vitest');
 
-      // Mock npx --which to return binary path for vitest
-      jest.spyOn(child_process, 'execSync').mockReturnValue('/workspace/node_modules/.bin/vitest');
 
       const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
 

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as vscode from 'vscode';
-import { execSync } from 'child_process';
+import { createRequire } from 'module';
 import {
   normalizePath,
   validateCodeLensOptions,
@@ -19,26 +19,7 @@ import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 
-export function detectYarnPnp(workspaceRoot: string): { enabled: boolean; yarnBinary?: string } {
-  const yarnReleasesPath = path.join(workspaceRoot, '.yarn', 'releases');
 
-  if (!fs.existsSync(yarnReleasesPath)) {
-    return { enabled: false };
-  }
-
-  try {
-    const files = fs.readdirSync(yarnReleasesPath);
-    const yarnBinary = files.find(file => file.startsWith('yarn-') && file.endsWith('.cjs'));
-
-    if (yarnBinary) {
-      return { enabled: true, yarnBinary };
-    }
-  } catch (error) {
-    // If we can't read the directory, assume PnP is not enabled
-  }
-
-  return { enabled: false };
-}
 
 function parseShellCommand(command: string): string[] {
   const args: string[] = [];
@@ -90,22 +71,40 @@ function parseShellCommand(command: string): string[] {
 }
 
 /**
- * Resolve the absolute path to a binary using npx.
- * This allows direct execution instead of using npx as runtimeExecutable.
+ * Resolve the absolute path to a binary using Node's require.resolve.
+ * This recursively searches parent directories, just like npx does.
  */
 function resolveBinaryPath(binaryName: string, cwd: string): string | undefined {
   try {
-    // Use npx which to find the binary location
-    // --no-install prevents automatic installation if 'which' is not found
-    const result = execSync(`npx --no-install which ${binaryName}`, {
-      cwd,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    const binaryPath = result.trim();
-    if (binaryPath && fs.existsSync(binaryPath)) {
-      logDebug(`Resolved binary path for ${binaryName}: ${binaryPath}`);
-      return binaryPath;
+    // Create a require function with the cwd as the base path
+    // This allows require.resolve to search from the project directory upwards
+    const requireFromCwd = createRequire(path.join(cwd, 'package.json'));
+
+    // Try to resolve the binary package
+    // For jest, this resolves to the main entry point of the jest package
+    const packagePath = requireFromCwd.resolve(binaryName);
+
+    // Extract the package directory
+    const packageDir = packagePath.substring(0, packagePath.lastIndexOf(binaryName) + binaryName.length);
+
+    // Construct path to the binary in node_modules/.bin
+    const binPath = path.join(packageDir, '..', '.bin', binaryName);
+
+    if (fs.existsSync(binPath)) {
+      logDebug(`Resolved binary path for ${binaryName}: ${binPath}`);
+      return normalizePath(binPath);
+    }
+
+    // Fallback: try to find the binary script directly in the package
+    // For example, jest/bin/jest.js
+    try {
+      const binaryScript = requireFromCwd.resolve(`${binaryName}/bin/${binaryName}.js`);
+      if (fs.existsSync(binaryScript)) {
+        logDebug(`Resolved binary script for ${binaryName}: ${binaryScript}`);
+        return normalizePath(binaryScript);
+      }
+    } catch {
+      // Binary script not found in standard location
     }
   } catch (error) {
     logWarning(`Failed to resolve binary path for ${binaryName}: ${error}`);
@@ -125,10 +124,7 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
-    if (yarnPnp.enabled) {
-      return `yarn jest`;
-    }
+
 
     return 'npx --no-install jest';
   }
@@ -139,10 +135,7 @@ export class TestRunnerConfig {
       return customCommand;
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
-    if (yarnPnp.enabled) {
-      return `yarn vitest`;
-    }
+
 
     return 'npx --no-install vitest';
   }
@@ -482,12 +475,6 @@ export class TestRunnerConfig {
       };
     }
 
-    const yarnPnp = detectYarnPnp(this.currentWorkspaceFolderPath);
-    if (yarnPnp.enabled && yarnPnp.yarnBinary) {
-      debugConfig.program = `.yarn/releases/${yarnPnp.yarnBinary}`;
-      debugConfig.args = isVitest ? ['vitest', 'run'] : ['jest'];
-      return debugConfig;
-    }
 
     const customCommandKey = isVitest
       ? 'jestrunner.vitestCommand'
