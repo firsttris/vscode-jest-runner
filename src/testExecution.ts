@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readFile, unlink } from 'node:fs/promises';
-import { realpathSync } from 'node:fs';
+import { realpathSync, mkdirSync, existsSync } from 'node:fs';
 import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logWarning } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { stripAnsi } from './util';
@@ -12,12 +12,27 @@ import { stripAnsi } from './util';
  * Generate a unique temporary file path for Jest JSON output.
  * Using a file avoids all stdout parsing issues with Nx/monorepo wrappers.
  */
-export function generateOutputFilePath(): string {
+export function generateOutputFilePath(workspaceFolder?: string): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
+  const filename = `jest-runner-${timestamp}-${random}.json`;
+
+  if (workspaceFolder) {
+    try {
+      const cacheDir = join(workspaceFolder, 'node_modules', '.cache', 'vscode-jest-runner');
+      if (!existsSync(cacheDir)) {
+        mkdirSync(cacheDir, { recursive: true });
+      }
+      return join(cacheDir, filename);
+    } catch (e) {
+      logWarning(`Failed to create cache directory in workspace: ${e}. Falling back to tmpdir.`);
+    }
+  }
+
+  // Fallback to system temp dir if no workspace folder or creation failed
   // Use realpathSync to resolve symlinks (e.g. /var vs /private/var on MacOS)
   const tempDir = realpathSync(tmpdir());
-  return join(tempDir, `jest-runner-${timestamp}-${random}.json`);
+  return join(tempDir, filename);
 }
 
 /**

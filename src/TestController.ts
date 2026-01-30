@@ -280,7 +280,7 @@ export class JestTestController {
       }
 
       // Standard mode: use JSON output for multiple tests or coverage
-      const outputFilePath = generateOutputFilePath();
+      const outputFilePath = generateOutputFilePath(workspaceFolder);
 
       const args = buildTestArgs(
         allFiles,
