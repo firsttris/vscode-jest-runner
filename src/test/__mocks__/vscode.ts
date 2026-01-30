@@ -227,6 +227,7 @@ class TestRun {
   enqueued = jest.fn();
   end = jest.fn();
   addCoverage = jest.fn();
+  appendOutput = jest.fn();
 }
 
 class TestCoverageCount {
