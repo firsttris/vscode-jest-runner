@@ -90,14 +90,6 @@ export class JestTestController {
     );
   }
 
-  private discoverAllTests(): void {
-    if (vscode.workspace.workspaceFolders) {
-      for (const workspaceFolder of vscode.workspace.workspaceFolders) {
-        discoverTests(workspaceFolder, this.testController, this.jestConfig);
-      }
-    }
-  }
-
   private setupConfigurationWatcher(): void {
     const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
       if (
