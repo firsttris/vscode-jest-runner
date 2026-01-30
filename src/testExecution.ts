@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { escapeRegExp, updateTestNameIfUsingProperties, logInfo } from './util';
+import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logDebug, normalizePath } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { stripAnsi } from './util';
 
@@ -265,14 +265,17 @@ export function buildTestArgs(
     ? jestConfig.getVitestConfigPath(allFiles[0])
     : jestConfig.getJestConfigPath(allFiles[0]);
 
+  // Normalize paths for Windows compatibility (backslashes -> forward slashes)
+  const normalizedFiles = allFiles.map(normalizePath);
+
   const args = isVitest
     ? [
       'run',
-      ...allFiles,
+      ...normalizedFiles,
       '--reporter=json',
     ]
     : [
-      ...allFiles,
+      ...normalizedFiles,
       '--json',
     ];
 
