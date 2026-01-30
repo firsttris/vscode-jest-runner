@@ -39,8 +39,8 @@ describe('TestRunnerConfig', () => {
       // Mock createRequire to return a mock require function with resolve
       const mockRequire = {
         resolve: jest.fn().mockImplementation((pkg: string) => {
-          if (pkg === 'jest/bin/jest') {
-            return '/home/user/project/node_modules/jest/bin/jest.js';
+          if (pkg === 'jest/package.json') {
+            return '/home/user/project/node_modules/jest/package.json';
           }
           if (pkg === 'vitest/package.json') {
             return '/workspace/node_modules/vitest/package.json';
@@ -49,15 +49,6 @@ describe('TestRunnerConfig', () => {
         }),
       };
       jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
-
-      // Mock fs.readFileSync for vitest package.json
-      const originalReadFileSync = fs.readFileSync;
-      jest.spyOn(fs, 'readFileSync').mockImplementation((filePath: any, options?: any) => {
-        if (String(filePath).includes('vitest/package.json')) {
-          return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
-        }
-        return originalReadFileSync(filePath, options);
-      });
 
       // Default to 'jest' framework to prevent leakage and ensure predictable test behavior
       jest.spyOn(testDetection, 'getTestFrameworkForFile').mockReturnValue('jest');
@@ -81,8 +72,8 @@ describe('TestRunnerConfig', () => {
         if (pathStr.includes('vitest') || pathStr.includes('vite.config')) {
           return false;
         }
-        // Return true for Jest scripts
-        if (pathStr.includes('jest/bin/jest.js')) {
+        // Return true for Jest .bin
+        if (pathStr.includes('.bin/jest')) {
           return true;
         }
 
@@ -98,13 +89,13 @@ describe('TestRunnerConfig', () => {
         name: 'Debug Jest Tests',
         request: 'launch',
         type: 'node',
-        program: '/home/user/project/node_modules/jest/bin/jest.js',
+        program: '/home/user/project/node_modules/.bin/jest',
         args: ['--runInBand'],
       });
       expect(config.cwd).toBeTruthy(); // cwd may vary based on test setup
     });
 
-    it('should fallback to direct script if binary is missing', () => {
+    it('should fallback to npx if binary is missing', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({})
       );
@@ -113,7 +104,7 @@ describe('TestRunnerConfig', () => {
         if (String(checkPath).includes('.yarn/releases')) {
           return false;
         }
-        // Simulate missing binary but existing script
+        // Simulate missing .bin binary
         if (String(checkPath).includes('.bin/jest')) {
           return false;
         }
@@ -123,11 +114,12 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.program).toBe('/home/user/project/node_modules/jest/bin/jest.js');
-      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeUndefined();
+      expect(config.runtimeExecutable).toBe('npx');
+      expect(config.args).toContain('--no-install');
     });
 
-    it('should fallback to direct script if binary is missing for Vitest', () => {
+    it('should fallback to npx if binary is missing for Vitest', () => {
       const vitestFilePath = '/workspace/test.spec.ts';
       jest
         .spyOn(vscode.window, 'activeTextEditor', 'get')
@@ -145,17 +137,18 @@ describe('TestRunnerConfig', () => {
         if (String(checkPath).includes('.yarn/releases')) {
           return false;
         }
-        // Enable Vitest script existence for this test
-        if (String(checkPath).includes('vitest.mjs')) {
-          return true;
+        // Simulate missing .bin binary
+        if (String(checkPath).includes('.bin/vitest')) {
+          return false;
         }
         return false;
       });
 
       const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
 
-      expect(config.program).toBe('/workspace/node_modules/vitest/vitest.mjs');
-      expect(config.runtimeExecutable).toBeUndefined();
+      expect(config.program).toBeUndefined();
+      expect(config.runtimeExecutable).toBe('npx');
+      expect(config.args).toContain('--no-install');
     });
 
     it('should use default npx configuration even when Yarn PnP is detected', () => {
@@ -367,10 +360,11 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.program).toBe('/home/user/project/node_modules/jest/bin/jest.js');
+      expect(config.program).toBe('/home/user/project/node_modules/.bin/jest');
       expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toEqual({
         NODE_OPTIONS: '--experimental-vm-modules',
@@ -384,10 +378,11 @@ describe('TestRunnerConfig', () => {
         }),
       );
 
+      jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.program).toBe('/home/user/project/node_modules/jest/bin/jest.js');
+      expect(config.program).toBe('/home/user/project/node_modules/.bin/jest');
       expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toBeUndefined();
     });
@@ -446,7 +441,7 @@ describe('TestRunnerConfig', () => {
       const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
 
       expect(config.name).toBe('Debug Vitest Tests');
-      expect(config.program).toBe('/workspace/node_modules/vitest/vitest.mjs');
+      expect(config.program).toBe('/workspace/node_modules/.bin/vitest');
       expect(config.env).toBeUndefined();
     });
   });

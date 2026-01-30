@@ -283,8 +283,8 @@ describe('TestRunnerConfig', () => {
 
         const mockRequire = {
           resolve: jest.fn().mockImplementation((pkg: string) => {
-            if (pkg === 'jest/bin/jest') {
-              return '/home/user/project/node_modules/jest/bin/jest.js';
+            if (pkg === 'jest/package.json') {
+              return '/home/user/project/node_modules/jest/package.json';
             }
             if (pkg === 'vitest/package.json') {
               return '/home/user/project/node_modules/vitest/package.json';
@@ -293,15 +293,6 @@ describe('TestRunnerConfig', () => {
           }),
         };
         jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
-
-        // Mock fs.readFileSync for vitest package.json
-        const originalReadFileSync = fs.readFileSync;
-        jest.spyOn(fs, 'readFileSync').mockImplementation((filePath: any, options?: any) => {
-          if (String(filePath).includes('vitest/package.json')) {
-            return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
-          }
-          return originalReadFileSync(filePath, options);
-        });
       });
 
       it('should prefix jest command with node when binary is resolved', () => {
@@ -309,9 +300,9 @@ describe('TestRunnerConfig', () => {
 
         const command = jestRunnerConfig.jestCommand;
 
-        // Expect direct script execution with node prefix
+        // Expect direct execution via node_modules/.bin
         expect(command).toContain('node ');
-        expect(command).toContain('jest.js');
+        expect(command).toContain('.bin/jest');
       });
 
       it('should prefix vitest command with node when binary is resolved', () => {
@@ -320,7 +311,7 @@ describe('TestRunnerConfig', () => {
         const command = jestRunnerConfig.vitestCommand;
 
         expect(command).toContain('node ');
-        expect(command).toContain('vitest.mjs');
+        expect(command).toContain('.bin/vitest');
       });
 
       it('should fallback to npx for jest if binary not found', () => {

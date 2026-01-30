@@ -13,6 +13,7 @@ import {
   logDebug,
   logWarning,
   parseShellCommand,
+  isWindows,
 } from './util';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
@@ -32,19 +33,25 @@ function resolveBinaryPath(binaryName: string, cwd: string): string | undefined 
     // This allows require.resolve to search from the project directory upwards
     const requireFromCwd = createRequire(join(cwd, 'package.json'));
 
-    // Strategy 1: Try to resolve the binary script directly via exports
-    // Works for packages that export their bin (e.g., jest/bin/jest)
-    try {
-      const binaryScriptPath = `${binaryName}/bin/${binaryName}`;
-      const binaryScript = requireFromCwd.resolve(binaryScriptPath);
-      if (existsSync(binaryScript)) {
-        logDebug(`Resolved binary script for ${binaryName}: ${binaryScript}`);
-        return normalizePath(binaryScript);
+    // Strategy 1: On non-Windows, try node_modules/.bin symlink (most reliable)
+    // These are executable symlinks created by npm/yarn/pnpm
+    if (!isWindows()) {
+      try {
+        const pkgJsonPath = requireFromCwd.resolve(`${binaryName}/package.json`);
+        // Extract the base node_modules path (works for normal, scoped, and pnpm layouts)
+        const nodeModulesMatch = pkgJsonPath.split(/[/\\]node_modules[/\\]/);
+        if (nodeModulesMatch.length > 1) {
+          const binPath = join(nodeModulesMatch[0], 'node_modules', '.bin', binaryName);
+          if (existsSync(binPath)) {
+            logDebug(`Resolved binary via node_modules/.bin for ${binaryName}: ${binPath}`);
+            return normalizePath(binPath);
+          }
+        }
+      } catch {
+        // .bin approach failed, try other strategies
       }
-    } catch {
-      // Binary script not exported, try package.json approach
     }
-    
+
     // Strategy 2: Resolve via package.json and bin field
     // Works for packages that don't export their bin (e.g., vitest)
     try {
