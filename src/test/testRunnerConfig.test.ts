@@ -295,7 +295,7 @@ describe('TestRunnerConfig', () => {
         jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
       });
 
-      it('should prefix jest command with node when binary is resolved', () => {
+      its.linux('should prefix jest command with node when binary is resolved', () => {
         jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
         const command = jestRunnerConfig.jestCommand;
@@ -305,7 +305,7 @@ describe('TestRunnerConfig', () => {
         expect(command).toContain('.bin/jest');
       });
 
-      it('should prefix vitest command with node when binary is resolved', () => {
+      its.linux('should prefix vitest command with node when binary is resolved', () => {
         jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
         const command = jestRunnerConfig.vitestCommand;

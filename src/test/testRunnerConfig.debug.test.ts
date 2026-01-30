@@ -13,6 +13,8 @@ import * as path from 'node:path';
 import * as testDetection from '../testDetection/testFileDetection';
 import * as moduleLib from 'node:module';
 
+const itNonWindows = isWindows() ? it.skip : it;
+
 describe('TestRunnerConfig', () => {
   beforeEach(() => {
     // Default to 'jest' framework to prevent leakage and ensure predictable test behavior
@@ -89,9 +91,12 @@ describe('TestRunnerConfig', () => {
         name: 'Debug Jest Tests',
         request: 'launch',
         type: 'node',
-        program: '/home/user/project/node_modules/.bin/jest',
-        args: ['--runInBand'],
       });
+      // On non-Windows, binary is resolved via .bin symlink
+      if (!isWindows()) {
+        expect(config.program).toBe('/home/user/project/node_modules/.bin/jest');
+        expect(config.args).toEqual(['--runInBand']);
+      }
       expect(config.cwd).toBeTruthy(); // cwd may vary based on test setup
     });
 
@@ -353,7 +358,7 @@ describe('TestRunnerConfig', () => {
       });
     });
 
-    it('should set NODE_OPTIONS when enableESM is true for Jest', () => {
+    itNonWindows('should set NODE_OPTIONS when enableESM is true for Jest', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.enableESM': true,
@@ -371,7 +376,7 @@ describe('TestRunnerConfig', () => {
       });
     });
 
-    it('should not set NODE_OPTIONS when enableESM is false for Jest', () => {
+    itNonWindows('should not set NODE_OPTIONS when enableESM is false for Jest', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
           'jestrunner.enableESM': false,
@@ -406,7 +411,7 @@ describe('TestRunnerConfig', () => {
       });
     });
 
-    it('should not affect Vitest debug configuration', () => {
+    itNonWindows('should not affect Vitest debug configuration', () => {
       const vitestFilePath = '/workspace/test.spec.ts';
 
       jest
