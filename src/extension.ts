@@ -81,35 +81,35 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.onDidChangeActiveTextEditor(() => updateJestFileContext()),
   );
 
-  updateJestFileContext();
+  // Test Explorer management
+  let testController: JestTestController | undefined;
 
-  const enableTestExplorer = vscode.workspace
-    .getConfiguration('jestrunner')
-    .get('enableTestExplorer', false);
-
-  if (enableTestExplorer) {
-    if (
-      vscode.workspace.workspaceFolders &&
-      vscode.workspace.workspaceFolders.length > 0
-    ) {
+  const updateTestExplorer = () => {
+    const enabled = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', false);
+    if (enabled && !testController && vscode.workspace.workspaceFolders?.length) {
       try {
-        const jestTestController = new JestTestController(context);
-        context.subscriptions.push({
-          dispose: () => jestTestController.dispose(),
-        });
+        testController = new JestTestController(context);
       } catch (error) {
         logError('Failed to initialize Test Explorer', error);
-        vscode.window.showWarningMessage(
-          'Jest Runner: Failed to initialize Test Explorer. Check the output for details.',
-        );
       }
-    } else {
-      logError(
-        'Test Explorer is enabled but no workspace folders are available',
-        new Error('No workspace folders'),
-      );
+    } else if (!enabled && testController) {
+      testController.dispose();
+      testController = undefined;
     }
-  }
+  };
+
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('jestrunner')) {
+        testFileCache.invalidate();
+        updateTestExplorer();
+      }
+    }),
+    { dispose: () => testController?.dispose() },
+  );
+
+  updateJestFileContext();
+  updateTestExplorer();
 
   registerCommand(
     context,
