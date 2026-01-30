@@ -21,8 +21,8 @@ export default defineConfig({
       },
     },
     outDir: 'dist',
-    sourcemap: true,
-    minify: false,
+    sourcemap: false,
+    minify: true,
     target: 'node18',
     commonjsOptions: {
       esmExternals: true,
