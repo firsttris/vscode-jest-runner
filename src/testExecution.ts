@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { readFile, unlink } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logWarning } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { stripAnsi } from './util';
@@ -14,7 +15,9 @@ import { stripAnsi } from './util';
 export function generateOutputFilePath(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
-  return join(tmpdir(), `jest-runner-${timestamp}-${random}.json`);
+  // Use realpathSync to resolve symlinks (e.g. /var vs /private/var on MacOS)
+  const tempDir = realpathSync(tmpdir());
+  return join(tempDir, `jest-runner-${timestamp}-${random}.json`);
 }
 
 /**
@@ -278,7 +281,7 @@ export function buildTestArgs(
       ...additionalArgs,
       isVitest ? '--reporter=json' : '--json',
       // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-      ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
+      ...(outputFilePath ? ['--outputFile', `"${outputFilePath}"`] : []),
     ];
 
     if (collectCoverage) {
@@ -305,13 +308,13 @@ export function buildTestArgs(
       ...allFiles,
       '--reporter=json',
       // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-      ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
+      ...(outputFilePath ? ['--outputFile', `"${outputFilePath}"`] : []),
     ]
     : [
       ...allFiles,
       '--json',
       // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-      ...(outputFilePath ? ['--outputFile', outputFilePath] : []),
+      ...(outputFilePath ? ['--outputFile', `"${outputFilePath}"`] : []),
     ];
 
   if (configPath) {
