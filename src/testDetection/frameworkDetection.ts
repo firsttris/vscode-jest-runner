@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { logError } from '../util';
+import { logError, logDebug } from '../util';
 import {
   TestFrameworkName,
   testFrameworks,
@@ -15,6 +15,51 @@ import {
   resolveAndValidateCustomConfig,
 } from './configParsing';
 import { detectFrameworkByPatternMatch } from './patternMatching';
+
+// Cache for node-test file detection
+const nodeTestFileCache = new Map<string, boolean>();
+
+/**
+ * Check if a file uses Node.js built-in test runner (node:test)
+ * Automatically detects based on import statements in the file
+ */
+export function isNodeTestFile(filePath: string): boolean {
+  // Check cache first
+  if (nodeTestFileCache.has(filePath)) {
+    return nodeTestFileCache.get(filePath)!;
+  }
+
+  try {
+    if (!existsSync(filePath)) {
+      nodeTestFileCache.set(filePath, false);
+      return false;
+    }
+
+    const content = readFileSync(filePath, 'utf-8');
+    // Check for node:test import patterns:
+    // - import { test } from 'node:test'
+    // - import test from 'node:test'
+    // - const { test } = require('node:test')
+    // - require('node:test')
+    const isNodeTest =
+      /from\s+['"]node:test['"]/.test(content) ||
+      /require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
+
+    nodeTestFileCache.set(filePath, isNodeTest);
+    return isNodeTest;
+  } catch (error) {
+    logError(`Error checking for node:test in ${filePath}`, error);
+    nodeTestFileCache.set(filePath, false);
+    return false;
+  }
+}
+
+/**
+ * Clear the node-test file cache (useful when settings change)
+ */
+export function clearNodeTestCache(): void {
+  nodeTestFileCache.clear();
+}
 
 function isFrameworkUsedIn(
   directoryPath: string,
@@ -80,6 +125,11 @@ export function detectTestFramework(
   directoryPath: string,
   filePath?: string,
 ): TestFrameworkName | undefined {
+  // Check for node:test first if file path is provided
+  if (filePath && isNodeTestFile(filePath)) {
+    return 'node-test';
+  }
+
   const jestConfigPath = getConfigPath(directoryPath, 'jest');
   const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
 
@@ -230,6 +280,14 @@ export function findTestFrameworkDirectory(
   if (!workspaceFolder) return undefined;
 
   const rootPath = workspaceFolder.uri.fsPath;
+
+  // Check for node:test first - it takes priority based on file content
+  const isNodeTest = isNodeTestFile(filePath);
+  logDebug(`findTestFrameworkDirectory: filePath=${filePath}, targetFramework=${targetFramework}, isNodeTest=${isNodeTest}`);
+  if (!targetFramework && isNodeTest) {
+    logDebug(`Detected node:test for ${filePath}`);
+    return { directory: dirname(filePath), framework: 'node-test' };
+  }
 
   const customResult = resolveCustomConfigs(filePath, rootPath, targetFramework);
   if (customResult) return customResult;

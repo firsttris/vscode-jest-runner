@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logDebug, normalizePath } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { stripAnsi } from './util';
+import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 
 /**
  * Fast test execution for single tests - uses exit code instead of JSON parsing.
@@ -220,12 +221,36 @@ export function collectTestsByFile(
 export function buildTestArgs(
   allFiles: string[],
   testsByFile: Map<string, vscode.TestItem[]>,
-  isVitest: boolean,
+  framework: TestFrameworkName,
   additionalArgs: string[],
   collectCoverage: boolean,
   jestConfig: TestRunnerConfig,
   testController: vscode.TestController,
 ): string[] {
+  const isVitest = framework === 'vitest';
+  const isNodeTest = framework === 'node-test';
+
+  // Node.js test runner has simpler argument handling
+  if (isNodeTest) {
+    const args = ['--test', ...allFiles, '--test-reporter', 'tap'];
+
+    const tests = Array.from(testsByFile.values()).flat();
+    if (tests.length > 0) {
+      const testNamePattern =
+        tests.length > 1
+          ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
+          : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
+      args.push('--test-name-pattern', testNamePattern);
+    }
+
+    if (collectCoverage) {
+      args.push('--experimental-test-coverage');
+    }
+
+    args.push(...additionalArgs);
+    return args;
+  }
+
   const fileItem =
     allFiles.length === 1
       ? testController.items.get(allFiles[0])
@@ -316,12 +341,16 @@ export function logTestExecution(
 export function buildTestArgsFast(
   filePath: string,
   testName: string,
-  isVitest: boolean,
+  framework: TestFrameworkName,
   jestConfig: TestRunnerConfig,
 ): string[] {
-  return isVitest
-    ? jestConfig.buildVitestArgs(filePath, testName, true, [])
-    : jestConfig.buildJestArgs(filePath, testName, true, []);
+  if (framework === 'node-test') {
+    return jestConfig.buildNodeTestArgs(filePath, testName, true, []);
+  }
+  if (framework === 'vitest') {
+    return jestConfig.buildVitestArgs(filePath, testName, true, []);
+  }
+  return jestConfig.buildJestArgs(filePath, testName, true, []);
 }
 
 /**

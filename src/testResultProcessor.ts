@@ -8,6 +8,7 @@ import {
   logWarning,
 } from './util';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { parseTapOutput } from './parsers/tapParser';
 
 /**
  * Validates that a parsed object looks like Jest test results
@@ -166,10 +167,17 @@ export function processTestResults(
   run: vscode.TestRun,
   framework: TestFrameworkName,
 ): void {
-  const results =
-    framework === 'vitest'
-      ? parseVitestOutput(output)
-      : parseJestOutput(output);
+  let results: JestResults | undefined;
+
+  if (framework === 'node-test') {
+    // Get file path from first test for TAP parsing
+    const filePath = tests[0]?.uri?.fsPath || '';
+    results = parseTapOutput(output, filePath);
+  } else if (framework === 'vitest') {
+    results = parseVitestOutput(output);
+  } else {
+    results = parseJestOutput(output);
+  }
 
   if (results) {
     processTestResultsFromParsed(results, tests, run);

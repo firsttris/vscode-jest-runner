@@ -109,11 +109,22 @@ export class TestRunnerConfig {
     return 'npx --no-install vitest';
   }
 
+  public get nodeTestCommand(): string {
+    const customCommand = this.getConfig<string>('jestrunner.nodeTestCommand');
+    if (customCommand) {
+      return customCommand;
+    }
+    return 'node';
+  }
+
   public getTestCommand(filePath?: string): string {
     if (filePath) {
       const framework = getTestFrameworkForFile(filePath);
       if (framework === 'vitest') {
         return this.vitestCommand;
+      }
+      if (framework === 'node-test') {
+        return this.nodeTestCommand;
       }
     }
     return this.jestCommand;
@@ -312,6 +323,18 @@ export class TestRunnerConfig {
     return this.getConfig('jestrunner.vitestDebugOptions', {});
   }
 
+  public get nodeTestDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return this.getConfig('jestrunner.nodeTestDebugOptions', {});
+  }
+
+  public get nodeTestRunOptions(): string[] | null {
+    const runOptions = this.getConfig<string[]>('jestrunner.nodeTestRunOptions');
+    if (runOptions && Array.isArray(runOptions)) {
+      return runOptions;
+    }
+    return null;
+  }
+
   public get isCodeLensEnabled(): boolean {
     return this.getConfig('jestrunner.enableCodeLens', true);
   }
@@ -410,6 +433,42 @@ export class TestRunnerConfig {
     return args;
   }
 
+  public buildNodeTestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const args: string[] = [];
+    const quoter = withQuotes ? quote : (str) => str;
+
+    // Add --test flag
+    args.push('--test');
+
+    // Add test file path
+    args.push(quoter(normalizePath(filePath)));
+
+    // Add test name pattern filter
+    if (testName) {
+      if (testName.includes('%')) {
+        testName = resolveTestNameStringInterpolation(testName);
+      }
+      args.push('--test-name-pattern');
+      args.push(withQuotes ? quoter(escapeSingleQuotes(testName)) : testName);
+    }
+
+    const setOptions = new Set(options);
+
+    // Add user-configured run options
+    if (this.nodeTestRunOptions) {
+      this.nodeTestRunOptions.forEach((option) => setOptions.add(option));
+    }
+
+    args.push(...setOptions);
+
+    return args;
+  }
+
   public buildTestArgs(
     filePath: string,
     testName: string | undefined,
@@ -420,30 +479,58 @@ export class TestRunnerConfig {
     if (framework === 'vitest') {
       return this.buildVitestArgs(filePath, testName, withQuotes, options);
     }
+    if (framework === 'node-test') {
+      return this.buildNodeTestArgs(filePath, testName, withQuotes, options);
+    }
     return this.buildJestArgs(filePath, testName, withQuotes, options);
   }
 
   public getDebugConfiguration(filePath?: string): vscode.DebugConfiguration {
     const framework = this.getTestFramework(filePath);
     const isVitest = framework === 'vitest';
+    const isNodeTest = framework === 'node-test';
 
     const debugConfig: vscode.DebugConfiguration = {
       console: 'integratedTerminal',
       internalConsoleOptions: 'neverOpen',
-      name: isVitest ? 'Debug Vitest Tests' : 'Debug Jest Tests',
+      name: isNodeTest
+        ? 'Debug Node.js Tests'
+        : isVitest
+          ? 'Debug Vitest Tests'
+          : 'Debug Jest Tests',
       request: 'launch',
       type: 'node',
       ...(this.changeDirectoryToWorkspaceRoot ? { cwd: this.cwd } : {}),
-      ...(isVitest ? this.vitestDebugOptions : this.debugOptions),
+      ...(isNodeTest
+        ? this.nodeTestDebugOptions
+        : isVitest
+          ? this.vitestDebugOptions
+          : this.debugOptions),
     };
 
-    if (!isVitest && this.enableESM) {
+    if (!isVitest && !isNodeTest && this.enableESM) {
       debugConfig.env = {
         ...debugConfig.env,
         NODE_OPTIONS: '--experimental-vm-modules'
       };
     }
 
+    // Node.js test runner uses node directly with --test flag
+    if (isNodeTest) {
+      const customCommand = this.getConfig<string>('jestrunner.nodeTestCommand');
+      if (customCommand) {
+        const parts = parseShellCommand(customCommand);
+        if (parts.length > 0) {
+          debugConfig.runtimeExecutable = parts[0];
+          debugConfig.runtimeArgs = [...parts.slice(1), '--test'];
+        }
+      } else {
+        debugConfig.runtimeArgs = ['--test'];
+      }
+      debugConfig.program = filePath || '';
+      debugConfig.args = [];
+      return debugConfig;
+    }
 
     const customCommandKey = isVitest
       ? 'jestrunner.vitestCommand'

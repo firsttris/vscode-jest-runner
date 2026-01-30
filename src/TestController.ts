@@ -234,24 +234,27 @@ export class JestTestController {
 
       const framework = getTestFrameworkForFile(allFiles[0]) || 'jest';
       const isVitest = framework === 'vitest';
+      const isNodeTest = framework === 'node-test';
 
       const configPath = isVitest
         ? this.jestConfig.getVitestConfigPath(allFiles[0])
         : this.jestConfig.getJestConfigPath(allFiles[0]);
 
-      const testCommand = isVitest
-        ? this.jestConfig.vitestCommand
-        : this.jestConfig.jestCommand;
+      const testCommand = isNodeTest
+        ? this.jestConfig.nodeTestCommand
+        : isVitest
+          ? this.jestConfig.vitestCommand
+          : this.jestConfig.jestCommand;
       const commandParts = parseShellCommand(testCommand);
       const command = commandParts[0];
 
-      const esmEnv = isVitest ? undefined : this.jestConfig.getEnvironmentForRun(allFiles[0]);
+      const esmEnv = isVitest || isNodeTest ? undefined : this.jestConfig.getEnvironmentForRun(allFiles[0]);
 
       // Fast mode: single test without coverage - skip JSON parsing
       if (canUseFastMode(testsByFile, collectCoverage) && additionalArgs.length === 0) {
         const test = allTests[0];
         const testName = escapeRegExp(updateTestNameIfUsingProperties(test.label));
-        const args = buildTestArgsFast(allFiles[0], testName, isVitest, this.jestConfig);
+        const args = buildTestArgsFast(allFiles[0], testName, framework, this.jestConfig);
         const commandArgs = [...commandParts.slice(1), ...args];
 
         logInfo(`Running fast mode: ${command} ${commandArgs.join(' ')}`);
@@ -274,7 +277,7 @@ export class JestTestController {
       const args = buildTestArgs(
         allFiles,
         testsByFile,
-        isVitest,
+        framework,
         additionalArgs,
         collectCoverage,
         this.jestConfig,

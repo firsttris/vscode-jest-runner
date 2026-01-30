@@ -144,6 +144,28 @@
             "description": "Add or override VS Code debug configurations for Vitest (e.g. { \"args\": [\"--no-cache\"] }). Only applies when debugging Vitest tests.",
             "scope": "window"
           },
+          "jestrunner.nodeTestCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative Node.js test command (defaults to 'node')",
+            "scope": "window"
+          },
+          "jestrunner.nodeTestRunOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --experimental-test-coverage"
+            },
+            "description": "Add CLI Options to the Node.js test runner command (e.g. --experimental-test-coverage)",
+            "scope": "window"
+          },
+          "jestrunner.nodeTestDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or override VS Code debug configurations for Node.js test runner. Only applies when debugging node:test tests.",
+            "scope": "window"
+          },
           "jestrunner.disableFrameworkConfig": {
             "type": "boolean",
             "default": false,
@@ -298,12 +320,14 @@
     "@vscode/vsce": "^3.7.1",
     "jest": "^30.2.0",
     "ovsx": "^0.10.8",
+    "prettier": "^3.8.0",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
-    "prettier": "^3.8.0"
+    "vite": "^7.3.1"
   },
   "dependencies": {
+    "@babel/parser": "^7.28.6",
+    "@babel/traverse": "^7.28.6",
     "fast-glob": "^3.3.3",
     "jest-editor-support": "^32.0.0-beta.1",
     "micromatch": "^4.0.8"
