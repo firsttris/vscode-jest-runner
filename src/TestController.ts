@@ -19,7 +19,6 @@ import {
   buildTestArgsFast,
   canUseFastMode,
   logTestExecution,
-  generateOutputFilePath,
 } from './testExecution';
 import { testFrameworks } from './testDetection/frameworkDefinitions';
 import { clearTestDetectionCache, clearVitestDetectionCache } from './testDetection/cache';
@@ -272,8 +271,6 @@ export class JestTestController {
       }
 
       // Standard mode: use JSON output for multiple tests or coverage
-      const outputFilePath = generateOutputFilePath(workspaceFolder);
-
       const args = buildTestArgs(
         allFiles,
         testsByFile,
@@ -282,7 +279,6 @@ export class JestTestController {
         collectCoverage,
         this.jestConfig,
         this.testController,
-        outputFilePath,
       );
 
       const commandArgs = [...commandParts.slice(1), ...args];
@@ -304,7 +300,6 @@ export class JestTestController {
         run,
         this.jestConfig.cwd,
         esmEnv,
-        outputFilePath,
       );
 
       if (output === null) {

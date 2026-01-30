@@ -1,39 +1,8 @@
 import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { readFile, unlink } from 'node:fs/promises';
-import { realpathSync, mkdirSync, existsSync } from 'node:fs';
-import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logWarning } from './util';
+import { escapeRegExp, updateTestNameIfUsingProperties, logInfo } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { stripAnsi } from './util';
-
-/**
- * Generate a unique temporary file path for Jest JSON output.
- * Using a file avoids all stdout parsing issues with Nx/monorepo wrappers.
- */
-export function generateOutputFilePath(workspaceFolder?: string): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  const filename = `jest-runner-${timestamp}-${random}.json`;
-
-  if (workspaceFolder) {
-    try {
-      const cacheDir = join(workspaceFolder, 'node_modules', '.cache', 'vscode-jest-runner');
-      if (!existsSync(cacheDir)) {
-        mkdirSync(cacheDir, { recursive: true });
-      }
-      return join(cacheDir, filename);
-    } catch (e) {
-      logWarning(`Failed to create cache directory in workspace: ${e}. Falling back to tmpdir.`);
-    }
-  }
-
-  // Fallback to system temp dir if no workspace folder or creation failed
-  // Use realpathSync to resolve symlinks (e.g. /var vs /private/var on MacOS)
-  const tempDir = realpathSync(tmpdir());
-  return join(tempDir, filename);
-}
 
 /**
  * Fast test execution for single tests - uses exit code instead of JSON parsing.
@@ -57,14 +26,18 @@ export function executeTestCommandFast(
 
     let stdout = '';
     let stderr = '';
-    let exitCode: number | null = null;
 
     jestProcess.stdout?.on('data', (data) => {
-      stdout += data.toString();
+      const chunk = data.toString();
+      stdout += chunk;
+      // Stream output with colors to the test output panel
+      run.appendOutput(chunk.replace(/\n/g, '\r\n'));
     });
 
     jestProcess.stderr?.on('data', (data) => {
-      stderr += data.toString();
+      const chunk = data.toString();
+      stderr += chunk;
+      run.appendOutput(chunk.replace(/\n/g, '\r\n'));
     });
 
     jestProcess.on('error', (error) => {
@@ -77,7 +50,6 @@ export function executeTestCommandFast(
 
     jestProcess.on('close', (code) => {
       cancellationListener.dispose();
-      exitCode = code;
 
       if (token.isCancellationRequested) {
         run.skipped(test);
@@ -86,10 +58,9 @@ export function executeTestCommandFast(
       }
 
       // Exit code 0 = passed, non-zero = failed
-      if (exitCode === 0) {
+      if (code === 0) {
         run.passed(test);
       } else {
-        // Extract error message from output
         const errorOutput = stderr || stdout || 'Test failed';
         const cleanError = stripAnsi(errorOutput);
         run.failed(test, new vscode.TestMessage(cleanError));
@@ -113,7 +84,6 @@ export function executeTestCommand(
   run: vscode.TestRun,
   cwd: string,
   additionalEnv?: Record<string, string>,
-  outputFilePath?: string,
 ): Promise<string | null> {
   return new Promise((resolve) => {
     const maxBufferSize =
@@ -174,40 +144,21 @@ export function executeTestCommand(
       resolve(null);
     });
 
-    jestProcess.on('close', async () => {
+    jestProcess.on('close', () => {
       cancellationListener.dispose();
 
       if (token.isCancellationRequested) {
         tests.forEach((test) => run.skipped(test));
-        if (outputFilePath) {
-          unlink(outputFilePath).catch(() => { });
-        }
         resolve(null);
         return;
       }
 
-      // Try to read from output file first (most reliable for Jest)
-      if (outputFilePath) {
-        try {
-          const fileContent = await readFile(outputFilePath, 'utf8');
-          // Clean up temp file
-          unlink(outputFilePath).catch(() => { });
-          if (fileContent && fileContent.trim()) {
-            resolve(fileContent);
-            return;
-          }
-        } catch (err) {
-          // File doesn't exist or can't be read - fall back to stdout parsing
-          logWarning(`Could not read Jest output file: ${err}. Falling back to stdout parsing.`);
-        }
-      }
-
-      // Fallback: parse from stdout/stderr (for Vitest or when --outputFile fails)
+      // Parse from stdout/stderr - JSON extraction handles Nx/monorepo prefixed output
       const combinedOutput = stdout + (stderr ? '\n' + stderr : '');
 
       if (combinedOutput.trim()) {
-        const hasJsonInStdout = stdout.includes('"testResults"');
-        const hasJsonInStderr = stderr.includes('"testResults"');
+        const hasJsonInStdout = stdout.includes('"testResults"') || stdout.includes('"numFailedTestSuites"');
+        const hasJsonInStderr = stderr.includes('"testResults"') || stderr.includes('"numFailedTestSuites"');
 
         if (hasJsonInStdout || hasJsonInStderr) {
           resolve(combinedOutput);
@@ -274,7 +225,6 @@ export function buildTestArgs(
   collectCoverage: boolean,
   jestConfig: TestRunnerConfig,
   testController: vscode.TestController,
-  outputFilePath?: string,
 ): string[] {
   const fileItem =
     allFiles.length === 1
@@ -295,8 +245,6 @@ export function buildTestArgs(
     const extraArgs = [
       ...additionalArgs,
       isVitest ? '--reporter=json' : '--json',
-      // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-      ...(outputFilePath ? ['--outputFile', `"${outputFilePath}"`] : []),
     ];
 
     if (collectCoverage) {
@@ -322,14 +270,10 @@ export function buildTestArgs(
       'run',
       ...allFiles,
       '--reporter=json',
-      // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-      ...(outputFilePath ? ['--outputFile', `"${outputFilePath}"`] : []),
     ]
     : [
       ...allFiles,
       '--json',
-      // Use --outputFile to avoid stdout parsing issues with Nx/monorepos
-      ...(outputFilePath ? ['--outputFile', `"${outputFilePath}"`] : []),
     ];
 
   if (configPath) {

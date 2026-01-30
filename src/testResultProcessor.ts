@@ -22,37 +22,121 @@ function isJestResults(obj: unknown): obj is JestResults {
 }
 
 /**
+ * Extract JSON from mixed stdout output.
+ * Nx/monorepo wrappers often prepend log messages before Jest's JSON output.
+ * This function finds and extracts the JSON object from the output.
+ */
+function extractJsonFromOutput(output: string): string | undefined {
+  // Try to find the start of Jest JSON output
+  // Jest JSON always starts with {"numFailedTestSuites": or {"testResults":
+  const jsonPatterns = [
+    '{"numFailedTestSuites"',
+    '{"testResults"',
+    '{"numTotalTestSuites"',
+  ];
+
+  for (const pattern of jsonPatterns) {
+    const startIndex = output.indexOf(pattern);
+    if (startIndex !== -1) {
+      // Find the matching closing brace by counting braces
+      let braceCount = 0;
+      let inString = false;
+      let escapeNext = false;
+
+      for (let i = startIndex; i < output.length; i++) {
+        const char = output[i];
+
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+
+        if (char === '\\' && inString) {
+          escapeNext = true;
+          continue;
+        }
+
+        if (char === '"' && !escapeNext) {
+          inString = !inString;
+          continue;
+        }
+
+        if (!inString) {
+          if (char === '{') braceCount++;
+          else if (char === '}') {
+            braceCount--;
+            if (braceCount === 0) {
+              return output.slice(startIndex, i + 1);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Parse Jest JSON output.
- * With --outputFile, the output is clean JSON from the temp file.
+ * Handles both clean JSON and mixed output with prepended log messages.
  */
 export function parseJestOutput(output: string): JestResults | undefined {
+  // First try to parse the whole output as JSON (fast path)
   try {
     const trimmed = output.trim();
     const parsed = JSON.parse(trimmed);
     if (isJestResults(parsed)) {
       return parsed;
     }
-    logWarning('Parsed JSON does not contain testResults array');
-    return undefined;
-  } catch (e) {
-    logError(`Failed to parse Jest JSON output: ${e}`);
-    return undefined;
+  } catch {
+    // Not valid JSON, try to extract it
   }
+
+  // Try to extract JSON from mixed output (Nx/monorepo case)
+  const extracted = extractJsonFromOutput(output);
+  if (extracted) {
+    try {
+      const parsed = JSON.parse(extracted);
+      if (isJestResults(parsed)) {
+        return parsed;
+      }
+    } catch (e) {
+      logError(`Failed to parse extracted Jest JSON: ${e}`);
+    }
+  }
+
+  logWarning('Could not find valid Jest JSON in output');
+  return undefined;
 }
 
 /**
  * Parse Vitest JSON output.
- * With --outputFile, the output is clean JSON from the temp file.
+ * Handles both clean JSON and mixed output with prepended log messages.
  */
 export function parseVitestOutput(output: string): JestResults | undefined {
+  // First try to parse the whole output as JSON (fast path)
   try {
     const trimmed = output.trim();
     const parsed = JSON.parse(trimmed);
     return convertVitestToJestResults(parsed);
-  } catch (e) {
-    logError(`Failed to parse Vitest JSON output: ${e}`);
-    return undefined;
+  } catch {
+    // Not valid JSON, try to extract it
   }
+
+  // Try to extract JSON from mixed output (Nx/monorepo case)
+  const extracted = extractJsonFromOutput(output);
+  if (extracted) {
+    try {
+      const parsed = JSON.parse(extracted);
+      return convertVitestToJestResults(parsed);
+    } catch (e) {
+      logError(`Failed to parse extracted Vitest JSON: ${e}`);
+    }
+  }
+
+  logWarning('Could not find valid Vitest JSON in output');
+  return undefined;
 }
 
 export function convertVitestToJestResults(vitestOutput: any): JestResults {
