@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { TestRunner } from '../testRunner';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { Document, TextEditor, Uri } from './__mocks__/vscode';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import * as parser from '../parser';
 
 describe('TestRunner', () => {

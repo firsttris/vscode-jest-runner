@@ -1,4 +1,4 @@
-import { parse, ParsedNode } from '../parser';
+import { parse } from '../parser';
 import * as path from 'path';
 
 describe('parser', () => {

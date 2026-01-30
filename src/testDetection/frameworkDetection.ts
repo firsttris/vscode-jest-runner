@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { logError } from '../util';
 import {
   TestFrameworkName,
@@ -41,10 +41,10 @@ function isFrameworkUsedIn(
       return true;
     }
 
-    const packageJsonPath = path.join(directoryPath, 'package.json');
-    if (fs.existsSync(packageJsonPath)) {
+    const packageJsonPath = join(directoryPath, 'package.json');
+    if (existsSync(packageJsonPath)) {
       try {
-        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
         if (
           packageJson.dependencies?.[frameworkName] ||
@@ -100,10 +100,10 @@ export function detectTestFramework(
     return 'jest';
   }
 
-  const packageJsonPath = path.join(directoryPath, 'package.json');
-  if (fs.existsSync(packageJsonPath)) {
+  const packageJsonPath = join(directoryPath, 'package.json');
+  if (existsSync(packageJsonPath)) {
     try {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
       for (const framework of testFrameworks) {
         if (
@@ -136,7 +136,7 @@ const matchesTarget = (
 
 export const getParentDirectories = (startDir: string, rootPath: string): string[] => {
   if (!startDir.startsWith(rootPath)) return [];
-  const parentDir = path.dirname(startDir);
+  const parentDir = dirname(startDir);
   return parentDir === startDir
     ? [startDir]
     : [startDir, ...getParentDirectories(parentDir, rootPath)];
@@ -187,7 +187,7 @@ const findFrameworkInParentDirs = (
   rootPath: string,
   targetFramework?: 'jest' | 'vitest'
 ): SearchOutcome => {
-  const dirs = getParentDirectories(path.dirname(filePath), rootPath);
+  const dirs = getParentDirectories(dirname(filePath), rootPath);
 
   const search = (remainingDirs: string[]): SearchOutcome => {
     if (remainingDirs.length === 0) return { status: 'not_found' };

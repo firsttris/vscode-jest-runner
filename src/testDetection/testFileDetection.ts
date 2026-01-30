@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as mm from 'micromatch';
+import { existsSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
+import { isMatch } from 'micromatch';
 import {
   TestFrameworkName,
   TestPatternResult,
@@ -38,7 +38,7 @@ export function hasConflictingTestFramework(filePath: string, currentFramework: 
   if (!workspaceFolder) return false;
 
   const rootPath = workspaceFolder.uri.fsPath;
-  const dirs = getParentDirectories(path.dirname(filePath), rootPath);
+  const dirs = getParentDirectories(dirname(filePath), rootPath);
 
   for (const dir of dirs) {
     for (const framework of allTestFrameworks) {
@@ -49,8 +49,8 @@ export function hasConflictingTestFramework(filePath: string, currentFramework: 
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
-          const testDirPath = path.resolve(dir, testDir);
-          const relativePath = path.relative(testDirPath, filePath).replace(/\\/g, '/');
+          const testDirPath = resolve(dir, testDir);
+          const relativePath = relative(testDirPath, filePath).replace(/\\/g, '/');
           if (!relativePath.startsWith('../')) {
             logDebug(`Conflict detected: File is inside Playwright testDir (${testDir})`);
             return true;
@@ -60,8 +60,8 @@ export function hasConflictingTestFramework(filePath: string, currentFramework: 
         const specPatterns = getCypressSpecPattern(configPath);
         if (specPatterns) {
           for (const pattern of specPatterns) {
-            const relativePath = path.relative(dir, filePath).replace(/\\/g, '/');
-            if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+            const relativePath = relative(dir, filePath).replace(/\\/g, '/');
+            if (isMatch(relativePath, pattern, { nocase: true, extended: true })) {
               logDebug(`Conflict detected: File matches Cypress specPattern (${pattern})`);
               return true;
             }
@@ -79,7 +79,7 @@ const resolveJestResult = (
   defaultConfigDir: string
 ): TestPatternResult => {
   const configDir = result?.rootDir
-    ? path.resolve(path.dirname(configPath), result.rootDir)
+    ? resolve(dirname(configPath), result.rootDir)
     : defaultConfigDir;
 
   return {
@@ -97,9 +97,9 @@ const resolveVitestResult = (
   defaultConfigDir: string
 ): TestPatternResult => {
   const configDir = result?.rootDir
-    ? path.resolve(path.dirname(configPath), result.rootDir)
+    ? resolve(dirname(configPath), result.rootDir)
     : result?.dir
-      ? path.resolve(defaultConfigDir, result.dir)
+      ? resolve(defaultConfigDir, result.dir)
       : defaultConfigDir;
 
   return {
@@ -144,7 +144,7 @@ const findFirstValidConfig = <T>(
   if (configPaths.length === 0) return undefined;
 
   const [configPath, ...rest] = configPaths;
-  if (!fs.existsSync(configPath)) return findFirstValidConfig(rest, getConfig);
+  if (!existsSync(configPath)) return findFirstValidConfig(rest, getConfig);
 
   const config = getConfig(configPath);
   return config ? { configPath, config } : findFirstValidConfig(rest, getConfig);
@@ -152,12 +152,12 @@ const findFirstValidConfig = <T>(
 
 const findJestConfigInDir = (dir: string): TestPatternResult => {
   const jestFramework = testFrameworks.find((f) => f.name === 'jest')!;
-  const configPaths = [...jestFramework.configFiles, 'package.json'].map((f) => path.join(dir, f));
+  const configPaths = [...jestFramework.configFiles, 'package.json'].map((f) => join(dir, f));
 
   const found = findFirstValidConfig(configPaths, getTestMatchFromJestConfig);
   if (!found) return createDefaultResult(dir);
 
-  const configDir = found.config.rootDir ? path.resolve(dir, found.config.rootDir) : dir;
+  const configDir = found.config.rootDir ? resolve(dir, found.config.rootDir) : dir;
 
   return {
     patterns: found.config.patterns.length > 0 ? found.config.patterns : getDefaultTestPatterns(),
@@ -170,15 +170,15 @@ const findJestConfigInDir = (dir: string): TestPatternResult => {
 
 const findVitestConfigInDir = (dir: string): TestPatternResult => {
   const vitestFramework = testFrameworks.find((f) => f.name === 'vitest')!;
-  const configPaths = vitestFramework.configFiles.map((f) => path.join(dir, f));
+  const configPaths = vitestFramework.configFiles.map((f) => join(dir, f));
 
   const found = findFirstValidConfig(configPaths, getVitestConfig);
   if (!found) return createDefaultResult(dir);
 
   const configDir = found.config.rootDir
-    ? path.resolve(dir, found.config.rootDir)
+    ? resolve(dir, found.config.rootDir)
     : found.config.dir
-      ? path.resolve(dir, found.config.dir)
+      ? resolve(dir, found.config.dir)
       : dir;
 
   return {
@@ -205,13 +205,13 @@ const detectPatternsInParentDirs = (
     return search(rest);
   };
 
-  return search(getParentDirectories(path.dirname(filePath), rootPath));
+  return search(getParentDirectories(dirname(filePath), rootPath));
 };
 
 function getTestFilePatternsForFile(filePath: string): TestPatternResult {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
   if (!workspaceFolder) {
-    return createDefaultResult(path.dirname(filePath));
+    return createDefaultResult(dirname(filePath));
   }
 
   const disableFrameworkConfig = vscode.workspace.getConfiguration('jestrunner').get<boolean>('disableFrameworkConfig');

@@ -1,5 +1,3 @@
-import * as path from 'path';
-import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { createRequire } from 'module';
 import {
@@ -19,6 +17,8 @@ import {
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
+import { dirname, join, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
 
 
@@ -30,33 +30,37 @@ function resolveBinaryPath(binaryName: string, cwd: string): string | undefined 
   try {
     // Create a require function with the cwd as the base path
     // This allows require.resolve to search from the project directory upwards
-    const requireFromCwd = createRequire(path.join(cwd, 'package.json'));
+    const requireFromCwd = createRequire(join(cwd, 'package.json'));
 
-    // Try to resolve the binary package
-    // For jest, this resolves to the main entry point of the jest package
-    const packagePath = requireFromCwd.resolve(binaryName);
-
-    // Extract the package directory
-    const packageDir = packagePath.substring(0, packagePath.lastIndexOf(binaryName) + binaryName.length);
-
-    // Construct path to the binary in node_modules/.bin
-    const binPath = path.join(packageDir, '..', '.bin', binaryName);
-
-    if (fs.existsSync(binPath)) {
-      logDebug(`Resolved binary path for ${binaryName}: ${binPath}`);
-      return normalizePath(binPath);
-    }
-
-    // Fallback: try to find the binary script directly in the package
-    // For example, jest/bin/jest.js
+    // Strategy 1: Try to resolve the binary script directly via exports
+    // Works for packages that export their bin (e.g., jest/bin/jest)
     try {
-      const binaryScript = requireFromCwd.resolve(`${binaryName}/bin/${binaryName}.js`);
-      if (fs.existsSync(binaryScript)) {
+      const binaryScriptPath = `${binaryName}/bin/${binaryName}`;
+      const binaryScript = requireFromCwd.resolve(binaryScriptPath);
+      if (existsSync(binaryScript)) {
         logDebug(`Resolved binary script for ${binaryName}: ${binaryScript}`);
         return normalizePath(binaryScript);
       }
     } catch {
-      // Binary script not found in standard location
+      // Binary script not exported, try package.json approach
+    }
+    
+    // Strategy 2: Resolve via package.json and bin field
+    // Works for packages that don't export their bin (e.g., vitest)
+    try {
+      const pkgJsonPath = requireFromCwd.resolve(`${binaryName}/package.json`);
+      const pkgDir = dirname(pkgJsonPath);
+      const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
+      const binEntry = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.[binaryName];
+      if (binEntry) {
+        const binPath = join(pkgDir, binEntry);
+        if (existsSync(binPath)) {
+          logDebug(`Resolved binary via package.json for ${binaryName}: ${binPath}`);
+          return normalizePath(binPath);
+        }
+      }
+    } catch {
+      // Package.json approach also failed
     }
   } catch (error) {
     logWarning(`Failed to resolve binary path for ${binaryName}: ${error}`);
@@ -78,7 +82,7 @@ export class TestRunnerConfig {
 
     const binaryPath = resolveBinaryPath('jest', this.cwd);
     if (binaryPath) {
-      return quote(binaryPath);
+      return `node ${quote(binaryPath)}`;
     }
 
     return 'npx --no-install jest';
@@ -92,7 +96,7 @@ export class TestRunnerConfig {
 
     const binaryPath = resolveBinaryPath('vitest', this.cwd);
     if (binaryPath) {
-      return quote(binaryPath);
+      return `node ${quote(binaryPath)}`;
     }
 
     return 'npx --no-install vitest';
@@ -149,7 +153,7 @@ export class TestRunnerConfig {
   private get projectPathFromConfig(): string | undefined {
     const projectPathFromConfig = this.getConfig<string>('jestrunner.projectPath');
     if (projectPathFromConfig) {
-      return path.resolve(
+      return resolve(
         this.currentWorkspaceFolderPath,
         projectPathFromConfig,
       );
@@ -207,14 +211,14 @@ export class TestRunnerConfig {
 
     if (configPath) {
       const resolvedPath = normalizePath(
-        path.resolve(
+        resolve(
           this.currentWorkspaceFolderPath,
           this.projectPathFromConfig || '',
           configPath,
         ),
       );
 
-      if (fs.existsSync(resolvedPath)) {
+      if (existsSync(resolvedPath)) {
         return resolvedPath;
       }
 
@@ -252,15 +256,15 @@ export class TestRunnerConfig {
 
     const foundPath = searchPathToParent<string>(
       targetPath ||
-      path.dirname(vscode.window.activeTextEditor.document.uri.fsPath),
+      dirname(vscode.window.activeTextEditor.document.uri.fsPath),
       this.currentWorkspaceFolderPath,
       (currentFolderPath: string) => {
         for (const configFilename of configFiles) {
-          const currentFolderConfigPath = path.join(
+          const currentFolderConfigPath = join(
             currentFolderPath,
             configFilename,
           );
-          if (fs.existsSync(currentFolderConfigPath)) {
+          if (existsSync(currentFolderConfigPath)) {
             return currentFolderConfigPath;
           }
         }

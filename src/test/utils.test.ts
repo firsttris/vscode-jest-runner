@@ -15,8 +15,7 @@ import {
   resolveConfigPathOrMapping,
   findFullTestName,
 } from '../util';
-import * as fs from 'fs';
-import * as vscode from 'vscode';
+import * as fs from 'node:fs';
 
 const its = {
   windows: isWindows() ? it : it.skip,

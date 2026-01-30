@@ -5,7 +5,7 @@ import {
     WorkspaceConfiguration,
     WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 
 describe('TestRunnerConfig', () => {
     describe('jestCommand', () => {

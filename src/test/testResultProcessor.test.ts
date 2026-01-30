@@ -1,5 +1,3 @@
-
-import * as vscode from 'vscode';
 import { processTestResults } from '../testResultProcessor';
 import { TestItem, TestRun, Uri } from './__mocks__/vscode';
 

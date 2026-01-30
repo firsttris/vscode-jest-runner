@@ -8,7 +8,8 @@ import {
   WorkspaceFolder,
 } from './__mocks__/vscode';
 import { isWindows, normalizePath } from '../util';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
+import * as moduleLib from 'node:module';
 import * as frameworkDetection from '../testDetection/frameworkDetection';
 
 const describes = {
@@ -265,6 +266,70 @@ describe('TestRunnerConfig', () => {
       expect(jestRunnerConfig.getAllPotentialSourceFiles()).toBe(
         '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}',
       );
+    });
+    describe('Command Generation', () => {
+      let jestRunnerConfig: TestRunnerConfig;
+
+      beforeEach(() => {
+        jestRunnerConfig = new TestRunnerConfig();
+        jest
+          .spyOn(vscode.workspace, 'getWorkspaceFolder')
+          .mockReturnValue(
+            new WorkspaceFolder(new Uri('/home/user/project') as any) as any,
+          );
+        jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+          new WorkspaceConfiguration({})
+        );
+
+        const mockRequire = {
+          resolve: jest.fn().mockImplementation((pkg: string) => {
+            if (pkg === 'jest/bin/jest') {
+              return '/home/user/project/node_modules/jest/bin/jest.js';
+            }
+            if (pkg === 'vitest/package.json') {
+              return '/home/user/project/node_modules/vitest/package.json';
+            }
+            throw new Error(`Cannot find module '${pkg}'`);
+          }),
+        };
+        jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
+
+        // Mock fs.readFileSync for vitest package.json
+        const originalReadFileSync = fs.readFileSync;
+        jest.spyOn(fs, 'readFileSync').mockImplementation((filePath: any, options?: any) => {
+          if (String(filePath).includes('vitest/package.json')) {
+            return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
+          }
+          return originalReadFileSync(filePath, options);
+        });
+      });
+
+      it('should prefix jest command with node when binary is resolved', () => {
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+        const command = jestRunnerConfig.jestCommand;
+
+        // Expect direct script execution with node prefix
+        expect(command).toContain('node ');
+        expect(command).toContain('jest.js');
+      });
+
+      it('should prefix vitest command with node when binary is resolved', () => {
+        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+        const command = jestRunnerConfig.vitestCommand;
+
+        expect(command).toContain('node ');
+        expect(command).toContain('vitest.mjs');
+      });
+
+      it('should fallback to npx for jest if binary not found', () => {
+        // Mock fail to find script
+        jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+        const command = jestRunnerConfig.jestCommand;
+        expect(command).toBe('npx --no-install jest');
+      });
     });
   });
 });

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import { isAbsolute, relative, resolve } from 'node:path';
 import { pushMany, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties, parseShellCommand } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import {
@@ -155,9 +155,9 @@ export class JestTestController {
 
     for (const configPath of customPaths) {
       if (configPath) {
-        const resolvedPath = path.isAbsolute(configPath)
+        const resolvedPath = isAbsolute(configPath)
           ? configPath
-          : path.resolve(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', configPath);
+          : resolve(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', configPath);
         const watcher = vscode.workspace.createFileSystemWatcher(resolvedPath);
         watcher.onDidChange(handleConfigChange);
         watcher.onDidCreate(handleConfigChange);
@@ -448,7 +448,7 @@ export class JestTestController {
             if (!testFileCache.isTestFile(uri.fsPath)) {
               return;
             }
-            const relativePath = path.relative(
+            const relativePath = relative(
               workspaceFolder.uri.fsPath,
               uri.fsPath,
             );
@@ -491,7 +491,7 @@ export class JestTestController {
         // Create the test item for this file
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
         if (workspaceFolder) {
-          const relativePath = path.relative(workspaceFolder.uri.fsPath, filePath);
+          const relativePath = relative(workspaceFolder.uri.fsPath, filePath);
           testItem = this.testController.createTestItem(filePath, relativePath, document.uri);
           this.testController.items.add(testItem);
         }
@@ -511,7 +511,7 @@ export class JestTestController {
       if (testFileCache.isTestFile(filePath)) {
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
         if (workspaceFolder) {
-          const relativePath = path.relative(workspaceFolder.uri.fsPath, filePath);
+          const relativePath = relative(workspaceFolder.uri.fsPath, filePath);
           const testItem = this.testController.createTestItem(filePath, relativePath, document.uri);
           this.testController.items.add(testItem);
           parseTestsInFile(filePath, testItem, this.testController);

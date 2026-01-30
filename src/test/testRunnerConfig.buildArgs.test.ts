@@ -8,7 +8,7 @@ import {
   WorkspaceFolder,
 } from './__mocks__/vscode';
 import { isWindows } from '../util';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 
 describe('TestRunnerConfig', () => {
   describe('buildJestArgs', () => {

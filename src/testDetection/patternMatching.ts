@@ -1,5 +1,5 @@
-import * as path from 'path';
-import * as mm from 'micromatch';
+import { relative, resolve } from 'node:path';
+import { isMatch } from 'micromatch';
 import { getTestMatchFromJestConfig, getVitestConfig, getDefaultTestPatterns } from './configParsing';
 
 function matchesExcludePatterns(
@@ -26,7 +26,7 @@ function matchesExcludePatterns(
 
   if (excludePatterns && excludePatterns.length > 0) {
     for (const pattern of excludePatterns) {
-      if (mm.isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+      if (isMatch(relativePath, pattern, { nocase: true, extended: true })) {
         return true;
       }
     }
@@ -53,8 +53,8 @@ export function fileMatchesPatternsExplicit(
   excludePatterns?: string[],
   roots?: string[],
 ): boolean {
-  const baseDir = rootDir ? path.resolve(configDir, rootDir) : configDir;
-  const relativePath = path.relative(baseDir, filePath).replace(/\\/g, '/');
+  const baseDir = rootDir ? resolve(configDir, rootDir) : configDir;
+  const relativePath = relative(baseDir, filePath).replace(/\\/g, '/');
   const pathToMatch = isRegex ? filePath.replace(/\\/g, '/') : relativePath;
 
 
@@ -63,9 +63,9 @@ export function fileMatchesPatternsExplicit(
   }
 
   if (roots && roots.length > 0) {
-    const absolutePath = path.resolve(filePath).replace(/\\/g, '/');
+    const absolutePath = resolve(filePath).replace(/\\/g, '/');
     const isInRoots = roots.some(root => {
-      const resolvedRoot = path.resolve(configDir, resolveRootDirToken(root, rootDir)).replace(/\\/g, '/');
+      const resolvedRoot = resolve(configDir, resolveRootDirToken(root, rootDir)).replace(/\\/g, '/');
       return absolutePath.startsWith(resolvedRoot);
     });
     if (!isInRoots) {
@@ -85,7 +85,7 @@ export function fileMatchesPatternsExplicit(
       }
     } else {
       const normalizedPattern = resolveRootDirToken(pattern, rootDir);
-      if (mm.isMatch(pathToMatch, normalizedPattern, { nocase: true, extended: true })) {
+      if (isMatch(pathToMatch, normalizedPattern, { nocase: true, extended: true })) {
         return true;
       }
     }

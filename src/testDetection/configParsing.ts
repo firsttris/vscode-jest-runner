@@ -1,12 +1,12 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { logError, resolveConfigPathOrMapping, logDebug } from '../util';
 import { TestPatterns, allTestFrameworks, DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
   try {
-    const content = fs.readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, 'utf8');
     const packageJson = JSON.parse(content);
     return 'jest' in packageJson;
   } catch (error) {
@@ -17,7 +17,7 @@ export function packageJsonHasJestConfig(configPath: string): boolean {
 
 export function viteConfigHasTestAttribute(configPath: string): boolean {
   try {
-    const content = fs.readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, 'utf8');
     return /\btest\s*[:=]/.test(content);
   } catch (error) {
     logError(`Error reading vite config file: ${configPath}`, error);
@@ -27,19 +27,19 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
 
 export function binaryExists(directoryPath: string, binaryName: string): boolean {
   const possibleBinaryPaths = [
-    path.join(directoryPath, 'node_modules', '.bin', binaryName),
-    path.join(directoryPath, 'node_modules', '.bin', `${binaryName}.cmd`),
-    path.join(directoryPath, 'node_modules', binaryName, 'package.json'),
+    join(directoryPath, 'node_modules', '.bin', binaryName),
+    join(directoryPath, 'node_modules', '.bin', `${binaryName}.cmd`),
+    join(directoryPath, 'node_modules', binaryName, 'package.json'),
   ];
-  return possibleBinaryPaths.some(fs.existsSync);
+  return possibleBinaryPaths.some(existsSync);
 }
 
 export function getConfigPath(directoryPath: string, frameworkName: string): string | undefined {
   const framework = allTestFrameworks.find((f) => f.name === frameworkName);
   if (!framework) return undefined;
   for (const configFile of framework.configFiles) {
-    const configPath = path.join(directoryPath, configFile);
-    if (!fs.existsSync(configPath)) continue;
+    const configPath = join(directoryPath, configFile);
+    if (!existsSync(configPath)) continue;
     if (configFile.startsWith('vite.config.')) {
       if (viteConfigHasTestAttribute(configPath)) {
         return configPath;
@@ -89,7 +89,7 @@ function extractRootDir(content: string, configPath: string): string | undefined
   if (rootDirMatch) {
     const value = rootDirMatch[1];
     if (value === '__dirname') {
-      return path.dirname(configPath);
+      return dirname(configPath);
     }
     return rootDirMatch[2];
   }
@@ -225,7 +225,7 @@ export function getTestMatchFromJestConfig(
   configPath: string
 ): TestPatterns | undefined {
   try {
-    const content = fs.readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, 'utf8');
 
     if (configPath.endsWith('.json')) {
       const result = parseJsonConfig(content, configPath);
@@ -319,7 +319,7 @@ const extractVitestDir = (
 
 export function getVitestConfig(configPath: string): TestPatterns | undefined {
   try {
-    const content = fs.readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, 'utf8');
     const testBlockContent = extractTestBlockContent(content);
 
     const rootDir = extractVitestRoot(content);
@@ -364,15 +364,15 @@ export function resolveAndValidateCustomConfig(
   const basePath = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath;
   if (!basePath) return undefined;
 
-  const fullConfigPath = path.resolve(basePath, resolvedConfigPath);
-  if (!fs.existsSync(fullConfigPath)) return undefined;
+  const fullConfigPath = resolve(basePath, resolvedConfigPath);
+  if (!existsSync(fullConfigPath)) return undefined;
 
   return fullConfigPath;
 }
 
 export function getPlaywrightTestDir(configPath: string): string | undefined {
   try {
-    const content = fs.readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, 'utf8');
     if (configPath.endsWith('.json')) {
       const config = JSON.parse(content);
       return config.testDir;
@@ -390,7 +390,7 @@ export function getPlaywrightTestDir(configPath: string): string | undefined {
 
 export function getCypressSpecPattern(configPath: string): string[] | undefined {
   try {
-    const content = fs.readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, 'utf8');
 
     if (configPath.endsWith('.json')) {
       const config = JSON.parse(content);
@@ -427,8 +427,8 @@ export function getCypressSpecPattern(configPath: string): string[] | undefined 
 
 export function parseCoverageDirectory(configPath: string, framework: 'jest' | 'vitest'): string | undefined {
   try {
-    const content = fs.readFileSync(configPath, 'utf-8');
-    const configDir = path.dirname(configPath);
+    const content = readFileSync(configPath, 'utf-8');
+    const configDir = dirname(configPath);
 
     const pattern =
       framework === 'vitest'
@@ -444,14 +444,14 @@ export function parseCoverageDirectory(configPath: string, framework: 'jest' | '
         // For Jest, coverageDirectory is relative to rootDir
         const rootDirMatch = content.match(/["']?rootDir["']?\s*:\s*["']([^"']+)["']/);
         const rootDir = rootDirMatch ? rootDirMatch[1] : '.';
-        const rootDirPath = path.isAbsolute(rootDir) ? rootDir : path.join(configDir, rootDir);
-        return path.isAbsolute(dir) ? dir : path.join(rootDirPath, dir);
+        const rootDirPath = isAbsolute(rootDir) ? rootDir : join(configDir, rootDir);
+        return isAbsolute(dir) ? dir : join(rootDirPath, dir);
       } else {
         // For Vitest, reportsDirectory is relative to root
         const rootMatch = content.match(/root\s*[=:]\s*["']([^"']+)["']/);
         const root = rootMatch ? rootMatch[1] : '.';
-        const rootPath = path.isAbsolute(root) ? root : path.join(configDir, root);
-        return path.isAbsolute(dir) ? dir : path.join(rootPath, dir);
+        const rootPath = isAbsolute(root) ? root : join(configDir, root);
+        return isAbsolute(dir) ? dir : join(rootPath, dir);
       }
     }
   } catch (error) {

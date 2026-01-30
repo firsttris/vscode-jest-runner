@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { parse } from './parser';
 import {
@@ -12,6 +11,7 @@ import {
   unquote,
   updateTestNameIfUsingProperties,
 } from './util';
+import { existsSync } from 'node:fs';
 
 interface DebugCommand {
   documentUri: vscode.Uri;
@@ -209,7 +209,7 @@ export class TestRunner {
     const targetFileDir = getDirName(filePath);
     const targetFileName = getFileName(filePath).replace(/\.(test|spec)\./, '.');
 
-    const coverageTarget = fs.existsSync(`${targetFileDir}/${targetFileName}`)
+    const coverageTarget = existsSync(`${targetFileDir}/${targetFileName}`)
       ? `**/${targetFileName}`
       : `**/${getFileName(targetFileDir)}/**`;
 

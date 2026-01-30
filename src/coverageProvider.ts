@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { logError, logInfo, logWarning } from './util';
 import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
 import { parseCoverageDirectory } from './testDetection/configParsing';
@@ -57,7 +57,7 @@ export class CoverageProvider {
     configPath: string,
     framework: 'jest' | 'vitest',
   ): string | undefined {
-    if (!fs.existsSync(configPath)) {
+    if (!existsSync(configPath)) {
       return undefined;
     }
     return parseCoverageDirectory(configPath, framework);
@@ -71,8 +71,8 @@ export class CoverageProvider {
     const configFiles = frameworkDef ? frameworkDef.configFiles : [];
 
     for (const configFile of configFiles) {
-      const configPath = path.join(workspaceFolder, configFile);
-      if (fs.existsSync(configPath)) {
+      const configPath = join(workspaceFolder, configFile);
+      if (existsSync(configPath)) {
         const coverageDir = this.getCoverageDirFromConfigPath(
           configPath,
           framework,
@@ -106,13 +106,13 @@ export class CoverageProvider {
       }
 
       if (!coverageDir) {
-        const baseDir = configPath ? path.dirname(configPath) : workspaceFolder;
-        coverageDir = path.join(baseDir, DEFAULT_COVERAGE_DIR);
+        const baseDir = configPath ? dirname(configPath) : workspaceFolder;
+        coverageDir = join(baseDir, DEFAULT_COVERAGE_DIR);
       }
 
-      const coveragePath = path.join(coverageDir, COVERAGE_FINAL_FILE);
+      const coveragePath = join(coverageDir, COVERAGE_FINAL_FILE);
 
-      if (!fs.existsSync(coveragePath)) {
+      if (!existsSync(coveragePath)) {
         logInfo(`Coverage file not found at: ${coveragePath}`);
         logInfo(
           `Make sure you have ${framework === 'vitest' ? '@vitest/coverage-v8 or @vitest/coverage-istanbul' : 'jest'} configured with JSON reporter.`,
@@ -120,7 +120,7 @@ export class CoverageProvider {
         return undefined;
       }
 
-      const content = fs.readFileSync(coveragePath, 'utf-8');
+      const content = readFileSync(coveragePath, 'utf-8');
 
       if (!content || content.trim() === '' || content.trim() === '{}') {
         logWarning(

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { spawn } from 'child_process';
-import { tmpdir } from 'os';
-import { join } from 'path';
-import { readFile, unlink } from 'fs/promises';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { readFile, unlink } from 'node:fs/promises';
 import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logWarning } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { stripAnsi } from './util';

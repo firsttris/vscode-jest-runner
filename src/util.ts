@@ -1,7 +1,8 @@
-import * as path from 'node:path';
-import * as mm from 'micromatch';
+import { basename, dirname, resolve } from 'node:path';
+import { matcher } from 'micromatch';
+import { statSync }  from 'node:fs';
 import * as vscode from 'vscode';
-import * as fs from 'node:fs';
+
 import type { ParsedNode } from 'jest-editor-support';
 
 const IS_WINDOWS = process.platform.includes('win32');
@@ -48,11 +49,11 @@ export interface TestNode extends ParsedNode {
 }
 
 export function getDirName(filePath: string): string {
-  return path.dirname(filePath);
+  return dirname(filePath);
 }
 
 export function getFileName(filePath: string): string {
-  return path.basename(filePath);
+  return basename(filePath);
 }
 
 export function isWindows(): boolean {
@@ -177,7 +178,7 @@ export function resolveConfigPathOrMapping(
   for (const [key, value] of Object.entries(
     configPathOrMapping as Record<string, string>,
   )) {
-    const isMatch = mm.matcher(key);
+    const isMatch = matcher(key);
     if (isMatch(targetPath) || isMatch(normalizePath(targetPath))) {
       return normalizePath(value);
     }
@@ -195,19 +196,19 @@ export function searchPathToParent<T>(
 ) {
   let currentFolderPath: string;
   try {
-    currentFolderPath = fs.statSync(startingPath).isDirectory()
+    currentFolderPath = statSync(startingPath).isDirectory()
       ? startingPath
-      : path.dirname(startingPath);
+      : dirname(startingPath);
   } catch (error) {
     logWarning(
       `Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`,
     );
-    currentFolderPath = path.dirname(startingPath);
+    currentFolderPath = dirname(startingPath);
   }
 
-  const endPath = path.dirname(ancestorPath);
-  const resolvedStart = path.resolve(currentFolderPath);
-  const resolvedEnd = path.resolve(endPath);
+  const endPath = dirname(ancestorPath);
+  const resolvedStart = resolve(currentFolderPath);
+  const resolvedEnd = resolve(endPath);
   if (!resolvedStart.startsWith(resolvedEnd)) {
     return false;
   }
@@ -219,7 +220,7 @@ export function searchPathToParent<T>(
       return result;
     }
     lastPath = currentFolderPath;
-    currentFolderPath = path.dirname(currentFolderPath);
+    currentFolderPath = dirname(currentFolderPath);
   } while (currentFolderPath !== endPath && currentFolderPath !== lastPath);
 
   return false;

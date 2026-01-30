@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+import { relative } from 'node:path';
 import { parse } from './parser';
 import {
   escapeRegExp,
@@ -19,7 +19,7 @@ export async function discoverTests(
 
   for (const file of testFiles) {
     const fileUri = vscode.Uri.file(file);
-    const relativePath = path.relative(workspaceFolder.uri.fsPath, file);
+    const relativePath = relative(workspaceFolder.uri.fsPath, file);
 
     const testItem = testController.createTestItem(file, relativePath, fileUri);
     testController.items.add(testItem);

@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import { getIncludeFromVitestConfig, getTestMatchFromJestConfig, getVitestConfig, packageJsonHasJestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsing';
 
 jest.mock('fs');

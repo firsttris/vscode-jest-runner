@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { clearTestDetectionCache, clearVitestDetectionCache } from '../../testDetection/cache';
 import { getTestFrameworkForFile, hasConflictingTestFramework, isJestTestFile, isTestFile, isVitestTestFile } from '../../testDetection/testFileDetection';
 import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';

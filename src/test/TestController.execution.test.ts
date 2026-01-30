@@ -5,7 +5,6 @@ import {
   TestItem,
   CancellationToken,
   CancellationTokenSource,
-  MockProcess,
   TestControllerSetup,
 } from './testControllerSetup';
 
