@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logDebug, normalizePath } from './util';
+import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logDebug, normalizePath, quote, escapeSingleQuotes } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { stripAnsi } from './util';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
@@ -162,10 +162,13 @@ export function executeTestCommand(
         const hasJsonInStderr = stderr.includes('"testResults"') || stderr.includes('"numFailedTestSuites"');
 
         if (hasJsonInStdout || hasJsonInStderr) {
+          logDebug(`Runner output (stdout): ${stdout.substring(0, 500)}...`);
           resolve(combinedOutput);
         } else if (stdout) {
+          logDebug(`Runner output (stdout): ${stdout.substring(0, 500)}...`);
           resolve(combinedOutput);
         } else {
+          logInfo(`Runner stderr: ${stderr}`);
           tests.forEach((test) =>
             run.failed(test, new vscode.TestMessage(stderr)),
           );
@@ -232,7 +235,10 @@ export function buildTestArgs(
 
   // Node.js test runner has simpler argument handling
   if (isNodeTest) {
-    const args = ['--test', ...allFiles, '--test-reporter', 'tap'];
+    const args = ['--test'];
+
+    // Options must come BEFORE files for node --test
+    args.push('--test-reporter', 'tap');
 
     const tests = Array.from(testsByFile.values()).flat();
     if (tests.length > 0) {
@@ -240,7 +246,9 @@ export function buildTestArgs(
         tests.length > 1
           ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
           : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-      args.push('--test-name-pattern', testNamePattern);
+
+      // Pattern must be single-quote escaped for the quote() function if it uses single quotes
+      args.push('--test-name-pattern', quote(escapeSingleQuotes(testNamePattern)));
     }
 
     if (collectCoverage) {
@@ -248,6 +256,9 @@ export function buildTestArgs(
     }
 
     args.push(...additionalArgs);
+
+    // Files come LAST
+    args.push(...allFiles.map(normalizePath));
     return args;
   }
 

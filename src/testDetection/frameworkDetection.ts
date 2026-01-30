@@ -61,6 +61,13 @@ export function clearNodeTestCache(): void {
   nodeTestFileCache.clear();
 }
 
+/**
+ * Invalidate the node-test cache for a specific file
+ */
+export function invalidateNodeTestCache(filePath: string): void {
+  nodeTestFileCache.delete(filePath);
+}
+
 function isFrameworkUsedIn(
   directoryPath: string,
   frameworkName: TestFrameworkName,
@@ -264,9 +271,9 @@ const detectFrameworkByDependency = (
   const checks: Array<{ framework: TestFrameworkName; isUsed: () => boolean }> = targetFramework
     ? [{ framework: targetFramework, isUsed: () => (targetFramework === 'jest' ? isJestUsedIn : isVitestUsedIn)(rootPath) }]
     : [
-        { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
-        { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
-      ];
+      { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
+      { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
+    ];
 
   const found = checks.find((check) => check.isUsed());
   return found ? { directory: rootPath, framework: found.framework } : undefined;

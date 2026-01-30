@@ -414,4 +414,85 @@ describe('TestRunnerConfig', () => {
       expect(args[0]).not.toBe('run');
     });
   });
+
+  describe('buildNodeTestArgs', () => {
+    let jestRunnerConfig: TestRunnerConfig;
+
+    beforeEach(() => {
+      jestRunnerConfig = new TestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(
+          new WorkspaceFolder(new Uri('/workspace') as any) as any,
+        );
+    });
+
+    it('should include --test flag', () => {
+      const args = jestRunnerConfig.buildNodeTestArgs(
+        '/workspace/test.test.js',
+        undefined,
+        true,
+      );
+
+      expect(args[0]).toBe('--test');
+    });
+
+    it('should put file path at the end', () => {
+      const args = jestRunnerConfig.buildNodeTestArgs(
+        '/workspace/test.test.js',
+        'my test',
+        true,
+      );
+
+      const lastArg = args[args.length - 1];
+      const expectedPath = isWindows()
+        ? '"/workspace/test.test.js"'
+        : "'/workspace/test.test.js'";
+
+      expect(lastArg).toBe(expectedPath);
+    });
+
+    it('should include test name pattern before file path', () => {
+      const args = jestRunnerConfig.buildNodeTestArgs(
+        '/workspace/test.test.js',
+        'my test',
+        true,
+      );
+
+      expect(args).toContain('--test-name-pattern');
+      const patternIndex = args.indexOf('--test-name-pattern');
+      const expectedPath = isWindows()
+        ? '"/workspace/test.test.js"'
+        : "'/workspace/test.test.js'";
+      const pathIndex = args.indexOf(expectedPath);
+
+      expect(patternIndex).toBeLessThan(pathIndex);
+    });
+
+    it('should include nodeTestRunOptions from config before file path', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.nodeTestRunOptions': ['--experimental-test-coverage'],
+        }),
+      );
+
+      const args = jestRunnerConfig.buildNodeTestArgs(
+        '/workspace/test.test.js',
+        undefined,
+        true,
+      );
+
+      expect(args).toContain('--experimental-test-coverage');
+      const optionIndex = args.indexOf('--experimental-test-coverage');
+      const expectedPath = isWindows()
+        ? '"/workspace/test.test.js"'
+        : "'/workspace/test.test.js'";
+      const pathIndex = args.indexOf(expectedPath);
+
+      expect(optionIndex).toBeLessThan(pathIndex);
+    });
+  });
 });

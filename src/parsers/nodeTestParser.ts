@@ -42,83 +42,49 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
   const describeStack: Array<{ start: { line: number; column: number } }> = [];
 
   traverse(ast, {
-    CallExpression(path) {
-      const node = path.node;
-      const callee = node.callee;
+    CallExpression: {
+      enter(path) {
+        const node = path.node;
+        const callee = node.callee;
+        const testInfo = getTestCallInfo(callee);
 
-      // Check if this is a test/it/describe call
-      const testInfo = getTestCallInfo(callee);
-      if (!testInfo) return;
+        if (!testInfo) return;
 
-      // Get test name from first argument
-      const nameArg = node.arguments[0];
-      const name = extractTestName(nameArg);
-      if (!name) return;
+        const nameArg = node.arguments[0];
+        const name = extractTestName(nameArg);
+        if (!name) return;
 
-      const loc = node.loc;
-      if (!loc) return;
+        const loc = node.loc;
+        if (!loc) return;
 
-      const testNode: RawTestNode = {
-        name,
-        type: testInfo.type,
-        start: { line: loc.start.line, column: loc.start.column },
-        end: { line: loc.end.line, column: loc.end.column },
-        parentStart: describeStack.length > 0 ? describeStack[describeStack.length - 1].start : undefined,
-      };
+        // Get parent from stack
+        const parentStart = describeStack.length > 0 ? describeStack[describeStack.length - 1].start : undefined;
 
-      rawTests.push(testNode);
+        const testNode: RawTestNode = {
+          name,
+          type: testInfo.type,
+          start: { line: loc.start.line, column: loc.start.column },
+          end: { line: loc.end.line, column: loc.end.column },
+          parentStart,
+        };
 
-      // If this is a describe block, track it for nested tests
-      if (testInfo.type === 'describe') {
-        const callbackArg = node.arguments[1];
-        if (callbackArg && (callbackArg.type === 'ArrowFunctionExpression' || callbackArg.type === 'FunctionExpression')) {
+        rawTests.push(testNode);
+
+        // If it's a describe block, push to stack
+        if (testInfo.type === 'describe') {
           describeStack.push({ start: testNode.start });
+        }
+      },
+      exit(path) {
+        const node = path.node;
+        const callee = node.callee;
+        const testInfo = getTestCallInfo(callee);
 
-          // Traverse the callback body manually to find nested tests
-          path.traverse({
-            CallExpression(innerPath) {
-              const innerNode = innerPath.node;
-              const innerCallee = innerNode.callee;
-              const innerTestInfo = getTestCallInfo(innerCallee);
-
-              if (!innerTestInfo) return;
-
-              const innerNameArg = innerNode.arguments[0];
-              const innerName = extractTestName(innerNameArg);
-              if (!innerName) return;
-
-              const innerLoc = innerNode.loc;
-              if (!innerLoc) return;
-
-              // Check if this is a nested describe
-              if (innerTestInfo.type === 'describe') {
-                describeStack.push({ start: { line: innerLoc.start.line, column: innerLoc.start.column } });
-              }
-
-              rawTests.push({
-                name: innerName,
-                type: innerTestInfo.type,
-                start: { line: innerLoc.start.line, column: innerLoc.start.column },
-                end: { line: innerLoc.end.line, column: innerLoc.end.column },
-                parentStart: describeStack[describeStack.length - 1]?.start,
-              });
-            },
-            exit(innerPath) {
-              if (innerPath.isCallExpression()) {
-                const innerCallee = innerPath.node.callee;
-                const info = getTestCallInfo(innerCallee);
-                if (info?.type === 'describe') {
-                  describeStack.pop();
-                }
-              }
-            },
-          });
-
+        if (testInfo?.type === 'describe') {
           describeStack.pop();
-          path.skip(); // Skip further traversal of this describe block
         }
       }
-    },
+    }
   });
 
   // Remove duplicates (from nested traversal)

@@ -46,7 +46,7 @@ describe('buildTestArgs', () => {
       const args = buildTestArgs(
         [windowsPath],
         testsByFile as any,
-        false, // isVitest
+        'jest', // isVitest -> framework
         [],
         false, // collectCoverage
         mockJestConfig,
@@ -65,7 +65,7 @@ describe('buildTestArgs', () => {
       const args = buildTestArgs(
         [windowsPath],
         testsByFile as any,
-        true, // isVitest
+        'vitest', // isVitest -> framework
         [],
         false, // collectCoverage
         mockJestConfig,
@@ -87,7 +87,7 @@ describe('buildTestArgs', () => {
       const args = buildTestArgs(
         windowsPaths,
         testsByFile as any,
-        false,
+        'jest',
         [],
         false,
         mockJestConfig,
@@ -105,7 +105,7 @@ describe('buildTestArgs', () => {
       const args = buildTestArgs(
         [unixPath],
         testsByFile as any,
-        false,
+        'jest',
         [],
         false,
         mockJestConfig,

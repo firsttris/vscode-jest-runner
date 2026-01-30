@@ -445,9 +445,6 @@ export class TestRunnerConfig {
     // Add --test flag
     args.push('--test');
 
-    // Add test file path
-    args.push(quoter(normalizePath(filePath)));
-
     // Add test name pattern filter
     if (testName) {
       if (testName.includes('%')) {
@@ -465,6 +462,9 @@ export class TestRunnerConfig {
     }
 
     args.push(...setOptions);
+
+    // Add test file path at the end
+    args.push(quoter(normalizePath(filePath)));
 
     return args;
   }

@@ -1,4 +1,4 @@
-import { parse } from './parser';
+import { parse, parseTestFile } from './parser';
 import {
   CodeLens,
   CodeLensProvider,
@@ -90,9 +90,7 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
         return [];
       }
 
-      const parseResults = parse(document.fileName, document.getText(), {
-        plugins: { decorators: 'legacy' },
-      }).root.children;
+      const parseResults = parseTestFile(document.fileName, document.getText()).root.children;
 
       const codeLenses = parseResults.flatMap((parseResult) =>
         getTestsBlocks(parseResult, parseResults, this.codeLensOptions),

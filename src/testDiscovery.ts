@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { relative } from 'node:path';
-import { parse } from './parser';
+import { parse, parseTestFile } from './parser';
 import {
   escapeRegExp,
   updateTestNameIfUsingProperties,
@@ -34,7 +34,7 @@ export function parseTestsInFile(
   testController: vscode.TestController,
 ): void {
   try {
-    const testFile = parse(filePath);
+    const testFile = parseTestFile(filePath);
 
     if (!testFile || !testFile.root || !testFile.root.children) {
       return;

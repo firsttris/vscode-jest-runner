@@ -24,6 +24,7 @@ import { testFrameworks } from './testDetection/frameworkDefinitions';
 import { clearTestDetectionCache, clearVitestDetectionCache } from './testDetection/cache';
 import { testFileCache } from './testDetection/testFileCache';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
+import { invalidateNodeTestCache } from './testDetection/frameworkDetection';
 
 export class JestTestController {
   private testController: vscode.TestController;
@@ -424,6 +425,7 @@ export class JestTestController {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 
     watcher.onDidChange((uri) => {
+      invalidateNodeTestCache(uri.fsPath);
       const item = this.testController.items.get(uri.fsPath);
       if (item) {
         item.children.replace([]);
