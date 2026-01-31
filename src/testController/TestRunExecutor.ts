@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { relative } from 'node:path';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { CoverageProvider, DetailedFileCoverage } from '../coverageProvider';
 import {
@@ -19,6 +20,7 @@ import { getTestFrameworkForFile } from '../testDetection/testFileDetection';
 import { parseShellCommand } from '../utils/ShellUtils';
 import { escapeRegExp, updateTestNameIfUsingProperties } from '../utils/TestNameUtils';
 import { logInfo, logError } from '../utils/Logger';
+import { findTestFiles, parseTestsInFile } from '../testDiscovery';
 
 export class TestRunExecutor {
     constructor(
@@ -26,6 +28,55 @@ export class TestRunExecutor {
         private readonly testRunnerConfig: TestRunnerConfig,
         private readonly coverageProvider: CoverageProvider
     ) { }
+
+    /**
+     * Ensures all test files in the relevant directories are discovered before running tests.
+     * This fixes the bug where tests in unopened files are not found when running coverage on a folder.
+     */
+    private async ensureTestsDiscovered(request: vscode.TestRunRequest): Promise<void> {
+        const pathsToScan = new Set<string>();
+
+        if (request.include && request.include.length > 0) {
+            // Collect paths from included test items
+            for (const item of request.include) {
+                if (item.uri) {
+                    const workspaceFolder = vscode.workspace.getWorkspaceFolder(item.uri);
+                    if (workspaceFolder) {
+                        pathsToScan.add(workspaceFolder.uri.fsPath);
+                    }
+                }
+            }
+        } else {
+            // No specific include - scan all workspace folders
+            for (const folder of vscode.workspace.workspaceFolders || []) {
+                pathsToScan.add(folder.uri.fsPath);
+            }
+        }
+
+        // Discover test files in each path
+        for (const folderPath of pathsToScan) {
+            const testFiles = await findTestFiles(folderPath, this.testRunnerConfig);
+
+            for (const filePath of testFiles) {
+                // Skip if already in test controller
+                if (this.testController.items.get(filePath)) {
+                    continue;
+                }
+
+                // Add the test file to the controller
+                const workspaceFolder = vscode.workspace.workspaceFolders?.find(
+                    (f) => filePath.startsWith(f.uri.fsPath)
+                );
+                if (workspaceFolder) {
+                    const relativePath = relative(workspaceFolder.uri.fsPath, filePath);
+                    const fileUri = vscode.Uri.file(filePath);
+                    const testItem = this.testController.createTestItem(filePath, relativePath, fileUri);
+                    this.testController.items.add(testItem);
+                    parseTestsInFile(filePath, testItem, this.testController);
+                }
+            }
+        }
+    }
 
     public async runHandler(
         request: vscode.TestRunRequest,
@@ -59,6 +110,9 @@ export class TestRunExecutor {
         additionalArgs: string[] = [],
         collectCoverage: boolean = false
     ): Promise<void> {
+        // Ensure all test files are discovered before collecting tests
+        await this.ensureTestsDiscovered(request);
+
         const run = this.testController.createTestRun(request);
         const testsByFile = collectTestsByFile(request, this.testController);
 
