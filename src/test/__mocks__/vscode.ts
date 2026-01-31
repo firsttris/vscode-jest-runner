@@ -381,6 +381,31 @@ const window = new Window();
 const commands = new Commands();
 const debug = new Debug();
 
+
+class EventEmitter<T> {
+  private listeners: Array<(e: T) => any> = [];
+
+  event = (listener: (e: T) => any, thisArgs?: any, disposables?: any[]) => {
+    this.listeners.push(listener);
+    return {
+      dispose: () => {
+        const index = this.listeners.indexOf(listener);
+        if (index > -1) {
+          this.listeners.splice(index, 1);
+        }
+      }
+    };
+  };
+
+  fire(data: T): void {
+    this.listeners.forEach(listener => listener(data));
+  }
+
+  dispose(): void {
+    this.listeners = [];
+  }
+}
+
 export {
   workspace,
   window,
@@ -414,4 +439,5 @@ export {
   StatementCoverage,
   BranchCoverage,
   DeclarationCoverage,
+  EventEmitter,
 };
