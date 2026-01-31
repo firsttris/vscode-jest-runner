@@ -2,14 +2,18 @@ import * as vscode from 'vscode';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { CoverageProvider, DetailedFileCoverage } from '../coverageProvider';
 import {
-    executeTestCommand,
-    executeTestCommandFast,
     collectTestsByFile,
+} from '../execution/TestCollector';
+import {
     buildTestArgs,
     buildTestArgsFast,
     canUseFastMode,
+} from '../execution/TestArgumentBuilder';
+import {
+    executeTestCommand,
+    executeTestCommandFast,
     logTestExecution,
-} from '../testExecution';
+} from '../execution/TestProcessRunner';
 import { processTestResults } from '../testResultProcessor';
 import { getTestFrameworkForFile } from '../testDetection/testFileDetection';
 import { parseShellCommand } from '../utils/ShellUtils';

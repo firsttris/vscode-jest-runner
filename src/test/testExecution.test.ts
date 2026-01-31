@@ -1,11 +1,15 @@
 import * as vscode from 'vscode';
 import {
     buildTestArgs,
-    collectTestsByFile,
     buildTestArgsFast,
     canUseFastMode,
+} from '../execution/TestArgumentBuilder';
+import {
+    collectTestsByFile,
+} from '../execution/TestCollector';
+import {
     logTestExecution,
-} from '../testExecution';
+} from '../execution/TestProcessRunner';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { Uri, WorkspaceConfiguration, WorkspaceFolder, TestItem, TestItemCollection } from './__mocks__/vscode';
 
