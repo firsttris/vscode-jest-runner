@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import { TestPatterns, allTestFrameworks, DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
 import { logDebug, logError } from '../utils/Logger';
 import { resolveConfigPathOrMapping } from '../utils/PathUtils';
+import * as Settings from '../config/Settings';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
   try {
@@ -462,9 +463,6 @@ export function parseCoverageDirectory(configPath: string, framework: 'jest' | '
 }
 
 export function getDefaultTestPatterns(): string[] {
-  const patterns = vscode.workspace.getConfiguration('jestrunner').get<string[]>('defaultTestPatterns');
-  if (patterns && patterns.length > 0) {
-    return patterns;
-  }
-  return DEFAULT_TEST_PATTERNS;
+  const patterns = Settings.getDefaultTestPatterns();
+  return patterns && patterns.length > 0 ? patterns : DEFAULT_TEST_PATTERNS;
 }

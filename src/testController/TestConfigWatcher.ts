@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { isAbsolute, resolve } from 'node:path';
 import { testFrameworks } from '../testDetection/frameworkDefinitions';
+import * as Settings from '../config/Settings';
 
 export class TestConfigWatcher {
     private readonly _onDidChange = new vscode.EventEmitter<void>();
@@ -52,8 +53,8 @@ export class TestConfigWatcher {
 
         const customPaths = new Set<string>();
 
-        const jestConfigPath = vscode.workspace.getConfiguration().get('jestrunner.configPath') as string | Record<string, string> | undefined;
-        const vitestConfigPath = vscode.workspace.getConfiguration().get('jestrunner.vitestConfigPath') as string | Record<string, string> | undefined;
+        const jestConfigPath = Settings.getJestConfigPath();
+        const vitestConfigPath = Settings.getVitestConfigPath();
 
         const addPaths = (config: string | Record<string, string> | undefined) => {
             if (typeof config === 'string') {

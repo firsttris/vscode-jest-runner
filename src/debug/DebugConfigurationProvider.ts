@@ -4,6 +4,7 @@ import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseShellCommand } from '../utils/ShellUtils';
 import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
 import { logWarning } from '../utils/Logger';
+import * as Settings from '../config/Settings';
 
 export class DebugConfigurationProvider {
     /**
@@ -42,7 +43,7 @@ export class DebugConfigurationProvider {
 
         // Node.js test runner uses node directly with --test flag
         if (isNodeTest) {
-            const customCommand = vscode.workspace.getConfiguration().get<string>('jestrunner.nodeTestCommand');
+            const customCommand = Settings.getNodeTestCommand();
             if (customCommand) {
                 const parts = parseShellCommand(customCommand);
                 if (parts.length > 0) {
@@ -79,10 +80,9 @@ export class DebugConfigurationProvider {
                 : config.buildJestArgs(filePath, testName, false))
             : [];
 
-        const customCommandKey = isVitest
-            ? 'jestrunner.vitestCommand'
-            : 'jestrunner.jestCommand';
-        const customCommand = vscode.workspace.getConfiguration().get<string>(customCommandKey);
+        const customCommand = isVitest
+            ? Settings.getVitestCommand()
+            : Settings.getJestCommand();
 
         if (customCommand && typeof customCommand === 'string') {
             const parts = parseShellCommand(customCommand);

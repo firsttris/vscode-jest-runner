@@ -891,7 +891,7 @@ describe('testFileDetection', () => {
 
         // Mock configuration to return custom patterns
         configMock.get.mockImplementation((key: string) => {
-          if (key === 'defaultTestPatterns') {
+          if (key === 'jestrunner.defaultTestPatterns') {
             return ['**/*.custom.js'];
           }
           return undefined;

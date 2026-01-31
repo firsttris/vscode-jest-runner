@@ -82,6 +82,11 @@ export const getCodeLensOptions = (): CodeLensOption[] => {
   return Array.isArray(options) ? validateCodeLensOptions(options) : [];
 };
 
+// === Test Detection Settings ===
+
+export const getDefaultTestPatterns = (): string[] | undefined =>
+  getConfig<string[]>('jestrunner.defaultTestPatterns');
+
 // === Computed Settings ===
 
 export const getRunOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-test'): string[] | null => {

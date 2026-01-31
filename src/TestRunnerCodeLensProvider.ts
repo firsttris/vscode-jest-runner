@@ -1,4 +1,4 @@
-import { parse, parseTestFile } from './parser';
+import { parseTestFile } from './parser';
 import {
   CodeLens,
   CodeLensProvider,
