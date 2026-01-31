@@ -1,64 +1,45 @@
 export class CacheManager {
-    private testDetectionCache = new Map<string, boolean>();
-    private vitestDetectionCache = new Map<string, boolean>();
-    private nodeTestFileCache = new Map<string, boolean>();
-    private testFileCache = new Map<string, boolean>();
+    private directoryFrameworkCache = new Map<string, Map<string, boolean>>();
+    private fileFrameworkCache = new Map<string, { framework: string; directory: string } | null>();
 
-    // Jest detection cache
-    public getJest(directory: string): boolean | undefined {
-        return this.testDetectionCache.get(directory);
+    // Framework detection cache
+    public getFramework(directory: string, framework: string): boolean | undefined {
+        return this.directoryFrameworkCache.get(directory)?.get(framework);
     }
 
-    public setJest(directory: string, value: boolean): void {
-        this.testDetectionCache.set(directory, value);
+    public setFramework(directory: string, framework: string, value: boolean): void {
+        if (!this.directoryFrameworkCache.has(directory)) {
+            this.directoryFrameworkCache.set(directory, new Map());
+        }
+        this.directoryFrameworkCache.get(directory)!.set(framework, value);
     }
 
-    // Vitest detection cache
-    public getVitest(directory: string): boolean | undefined {
-        return this.vitestDetectionCache.get(directory);
+    // File framework cache (consolidated)
+    public getFileFramework(filePath: string): { framework: string; directory: string } | null | undefined {
+        return this.fileFrameworkCache.get(filePath);
     }
 
-    public setVitest(directory: string, value: boolean): void {
-        this.vitestDetectionCache.set(directory, value);
+    public setFileFramework(filePath: string, value: { framework: string; directory: string } | null): void {
+        this.fileFrameworkCache.set(filePath, value);
     }
 
-    // Node test file cache
-    public getNodeTest(filePath: string): boolean | undefined {
-        return this.nodeTestFileCache.get(filePath);
-    }
 
-    public setNodeTest(filePath: string, value: boolean): void {
-        this.nodeTestFileCache.set(filePath, value);
-    }
-
-    // Test file cache (general)
-    public getTestFile(filePath: string): boolean | undefined {
-        return this.testFileCache.get(filePath);
-    }
-
-    public setTestFile(filePath: string, value: boolean): void {
-        this.testFileCache.set(filePath, value);
-    }
 
     public getTestFileStats(): { size: number; entries: string[] } {
         return {
-            size: this.testFileCache.size,
-            entries: Array.from(this.testFileCache.keys()),
+            size: this.fileFrameworkCache.size,
+            entries: Array.from(this.fileFrameworkCache.keys()),
         };
     }
 
     public invalidateAll(): void {
-        this.testDetectionCache.clear();
-        this.vitestDetectionCache.clear();
-        this.nodeTestFileCache.clear();
-        this.testFileCache.clear();
+        this.directoryFrameworkCache.clear();
+        this.fileFrameworkCache.clear();
     }
 
     public invalidate(key: string): void {
-        this.testDetectionCache.delete(key);
-        this.vitestDetectionCache.delete(key);
-        this.nodeTestFileCache.delete(key);
-        this.testFileCache.delete(key);
+        this.directoryFrameworkCache.delete(key);
+        this.fileFrameworkCache.delete(key);
     }
 }
 

@@ -22,14 +22,16 @@ import { detectFrameworkByPatternMatch } from './patternMatching';
  */
 export function isNodeTestFile(filePath: string): boolean {
   // Check cache first
-  const cached = cacheManager.getNodeTest(filePath);
+  const cached = cacheManager.getFileFramework(filePath);
   if (cached !== undefined) {
-    return cached;
+    return cached?.framework === 'node-test';
   }
 
   try {
     if (!existsSync(filePath)) {
-      cacheManager.setNodeTest(filePath, false);
+      // If file doesn't exist, we can't be sure it's not a test file in general,
+      // but strictly for node-test it's false. 
+      // We don't cache 'null' indiscriminately here to avoid side effects on other frameworks.
       return false;
     }
 
@@ -43,15 +45,21 @@ export function isNodeTestFile(filePath: string): boolean {
       /from\s+['"]node:test['"]/.test(content) ||
       /require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
 
-    cacheManager.setNodeTest(filePath, isNodeTest);
+    if (isNodeTest) {
+      // We do NOT cache here because pattern matching checks haven't run yet.
+      // The TestFileCache will handle caching valid test files.
+    }
+
     return isNodeTest;
   } catch (error) {
     logError(`Error checking for node:test in ${filePath}`, error);
-    cacheManager.setNodeTest(filePath, false);
     return false;
   }
 }
 
+/**
+ * Clear the node-test file cache (useful when settings change)
+ */
 /**
  * Clear the node-test file cache (useful when settings change)
  */
@@ -70,20 +78,14 @@ function isFrameworkUsedIn(
   directoryPath: string,
   frameworkName: TestFrameworkName,
 ): boolean {
-  const cached = frameworkName === 'vitest'
-    ? cacheManager.getVitest(directoryPath)
-    : cacheManager.getJest(directoryPath);
+  const cached = cacheManager.getFramework(directoryPath, frameworkName);
 
   if (cached !== undefined) {
     return cached;
   }
 
   const setCache = (value: boolean) => {
-    if (frameworkName === 'vitest') {
-      cacheManager.setVitest(directoryPath, value);
-    } else {
-      cacheManager.setJest(directoryPath, value);
-    }
+    cacheManager.setFramework(directoryPath, frameworkName, value);
   };
 
   try {
