@@ -158,7 +158,6 @@ export class CoverageProvider {
 
   public convertToVSCodeCoverage(
     coverageMap: CoverageMap,
-    workspaceFolder: string,
   ): DetailedFileCoverage[] {
     const fileCoverages: DetailedFileCoverage[] = [];
 

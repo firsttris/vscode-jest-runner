@@ -215,8 +215,7 @@ export class TestRunExecutor {
             }
 
             const fileCoverages = this.coverageProvider.convertToVSCodeCoverage(
-                coverageMap,
-                workspaceFolder
+                coverageMap
             );
 
             logInfo(`Adding coverage for ${fileCoverages.length} files`);
