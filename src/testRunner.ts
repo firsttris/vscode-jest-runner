@@ -11,6 +11,7 @@ import {
   updateTestNameIfUsingProperties,
 } from './util';
 import { existsSync } from 'node:fs';
+import { TerminalManager } from './TerminalManager';
 
 interface DebugCommand {
   documentUri: vscode.Uri;
@@ -22,19 +23,13 @@ export class TestRunner {
 
   private previousFramework: string | undefined;
 
-  private terminal: vscode.Terminal;
-
-  private currentTerminalName: string | undefined;
+  private terminalManager = new TerminalManager();
 
   private commands: string[] = [];
 
-  private disposables: vscode.Disposable[] = [];
-
   private isExecuting: boolean = false;
 
-  constructor(private readonly config: TestRunnerConfig) {
-    this.setup();
-  }
+  constructor(private readonly config: TestRunnerConfig) { }
 
   public async runTestsOnPath(path: string): Promise<void> {
     const command = this.buildCommand(path);
@@ -207,63 +202,21 @@ export class TestRunner {
     await this.runTerminalCommand(command, framework, cwd, env);
   }
 
-  private currentTerminalEnv: Record<string, string> | undefined;
-  private currentTerminalCwd: string | undefined;
-
   private async runTerminalCommand(
     command: string,
     framework?: string,
     cwd?: string,
     env?: Record<string, string>,
   ) {
-    const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
-    const envChanged =
-      JSON.stringify(env) !== JSON.stringify(this.currentTerminalEnv);
-    const cwdChanged = cwd !== this.currentTerminalCwd;
-
-    if (
-      !this.terminal ||
-      (this.currentTerminalName && this.currentTerminalName !== terminalName) ||
-      envChanged ||
-      cwdChanged
-    ) {
-      if (this.terminal) {
-        this.terminal.dispose();
-      }
-      this.terminal = vscode.window.createTerminal({
-        name: terminalName,
-        cwd,
-        env,
-      });
-      this.currentTerminalName = terminalName;
-      this.currentTerminalEnv = env;
-      this.currentTerminalCwd = cwd;
-      // Wait for the terminal to initialize
-      await this.terminal.processId;
-    }
-
-    this.terminal.show(this.config.preserveEditorFocus);
-    this.terminal.sendText(command);
-  }
-
-  private setup() {
-    const terminalCloseHandler = vscode.window.onDidCloseTerminal(
-      (closedTerminal: vscode.Terminal) => {
-        if (this.terminal === closedTerminal) {
-          this.terminal = null;
-          this.currentTerminalName = undefined;
-        }
-      },
-    );
-    this.disposables.push(terminalCloseHandler);
+    await this.terminalManager.runCommand(command, {
+      framework,
+      cwd,
+      env,
+      preserveEditorFocus: this.config.preserveEditorFocus,
+    });
   }
 
   public dispose() {
-    this.disposables.forEach((d) => d.dispose());
-    this.disposables = [];
-    if (this.terminal) {
-      this.terminal.dispose();
-      this.terminal = null;
-    }
+    this.terminalManager.dispose();
   }
 }

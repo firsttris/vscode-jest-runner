@@ -8,7 +8,7 @@ import {
   FrameworkResult,
   SearchOutcome,
 } from './frameworkDefinitions';
-import { testDetectionCache, vitestDetectionCache } from './cache';
+import { cacheManager } from '../cache/CacheManager';
 import {
   binaryExists,
   getConfigPath,
@@ -16,22 +16,20 @@ import {
 } from './configParsing';
 import { detectFrameworkByPatternMatch } from './patternMatching';
 
-// Cache for node-test file detection
-const nodeTestFileCache = new Map<string, boolean>();
-
 /**
  * Check if a file uses Node.js built-in test runner (node:test)
  * Automatically detects based on import statements in the file
  */
 export function isNodeTestFile(filePath: string): boolean {
   // Check cache first
-  if (nodeTestFileCache.has(filePath)) {
-    return nodeTestFileCache.get(filePath)!;
+  const cached = cacheManager.getNodeTest(filePath);
+  if (cached !== undefined) {
+    return cached;
   }
 
   try {
     if (!existsSync(filePath)) {
-      nodeTestFileCache.set(filePath, false);
+      cacheManager.setNodeTest(filePath, false);
       return false;
     }
 
@@ -45,11 +43,11 @@ export function isNodeTestFile(filePath: string): boolean {
       /from\s+['"]node:test['"]/.test(content) ||
       /require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
 
-    nodeTestFileCache.set(filePath, isNodeTest);
+    cacheManager.setNodeTest(filePath, isNodeTest);
     return isNodeTest;
   } catch (error) {
     logError(`Error checking for node:test in ${filePath}`, error);
-    nodeTestFileCache.set(filePath, false);
+    cacheManager.setNodeTest(filePath, false);
     return false;
   }
 }
@@ -58,24 +56,35 @@ export function isNodeTestFile(filePath: string): boolean {
  * Clear the node-test file cache (useful when settings change)
  */
 export function clearNodeTestCache(): void {
-  nodeTestFileCache.clear();
+  cacheManager.invalidateAll();
 }
 
 /**
  * Invalidate the node-test cache for a specific file
  */
 export function invalidateNodeTestCache(filePath: string): void {
-  nodeTestFileCache.delete(filePath);
+  cacheManager.invalidate(filePath);
 }
 
 function isFrameworkUsedIn(
   directoryPath: string,
   frameworkName: TestFrameworkName,
-  cache: Map<string, boolean>,
 ): boolean {
-  if (cache.has(directoryPath)) {
-    return cache.get(directoryPath)!;
+  const cached = frameworkName === 'vitest'
+    ? cacheManager.getVitest(directoryPath)
+    : cacheManager.getJest(directoryPath);
+
+  if (cached !== undefined) {
+    return cached;
   }
+
+  const setCache = (value: boolean) => {
+    if (frameworkName === 'vitest') {
+      cacheManager.setVitest(directoryPath, value);
+    } else {
+      cacheManager.setJest(directoryPath, value);
+    }
+  };
 
   try {
     const framework = testFrameworks.find((f) => f.name === frameworkName);
@@ -84,12 +93,12 @@ function isFrameworkUsedIn(
     }
 
     if (binaryExists(directoryPath, framework.binaryName)) {
-      cache.set(directoryPath, true);
+      setCache(true);
       return true;
     }
 
     if (getConfigPath(directoryPath, frameworkName)) {
-      cache.set(directoryPath, true);
+      setCache(true);
       return true;
     }
 
@@ -104,7 +113,7 @@ function isFrameworkUsedIn(
           packageJson.peerDependencies?.[frameworkName] ||
           packageJson[frameworkName]
         ) {
-          cache.set(directoryPath, true);
+          setCache(true);
           return true;
         }
       } catch (error) {
@@ -112,7 +121,7 @@ function isFrameworkUsedIn(
       }
     }
 
-    cache.set(directoryPath, false);
+    setCache(false);
     return false;
   } catch (error) {
     logError(`Error checking for ${frameworkName}`, error);
@@ -121,11 +130,11 @@ function isFrameworkUsedIn(
 }
 
 export function isJestUsedIn(directoryPath: string): boolean {
-  return isFrameworkUsedIn(directoryPath, 'jest', testDetectionCache);
+  return isFrameworkUsedIn(directoryPath, 'jest');
 }
 
 export function isVitestUsedIn(directoryPath: string): boolean {
-  return isFrameworkUsedIn(directoryPath, 'vitest', vitestDetectionCache);
+  return isFrameworkUsedIn(directoryPath, 'vitest');
 }
 
 export function detectTestFramework(

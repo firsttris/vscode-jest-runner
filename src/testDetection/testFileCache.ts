@@ -1,20 +1,19 @@
+import { cacheManager } from '../cache/CacheManager';
 import { matchesTestFilePattern } from './testFileDetection';
 import { findTestFrameworkDirectory } from './frameworkDetection';
 import { resolveAndValidateCustomConfig } from './configParsing';
 import { hasConflictingTestFramework } from './testFileDetection';
 
 class TestFileCache {
-    private cache = new Map<string, boolean>();
-
     public isTestFile(filePath: string): boolean {
-        if (this.cache.has(filePath)) {
-            const cached = this.cache.get(filePath)!;
+        const cached = cacheManager.getTestFile(filePath);
+        if (cached !== undefined) {
             return cached;
         }
 
         const result = this.computeIsTestFile(filePath);
 
-        this.cache.set(filePath, result);
+        cacheManager.setTestFile(filePath, result);
 
         return result;
     }
@@ -43,17 +42,14 @@ class TestFileCache {
 
     public invalidate(filePath?: string): void {
         if (filePath) {
-            this.cache.delete(filePath);
+            cacheManager.invalidate(filePath);
         } else {
-            this.cache.clear();
+            cacheManager.invalidateAll();
         }
     }
 
     public getCacheStats(): { size: number; entries: string[] } {
-        return {
-            size: this.cache.size,
-            entries: Array.from(this.cache.keys()),
-        };
+        return cacheManager.getTestFileStats();
     }
 }
 

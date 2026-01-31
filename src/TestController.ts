@@ -21,7 +21,7 @@ import {
   logTestExecution,
 } from './testExecution';
 import { testFrameworks } from './testDetection/frameworkDefinitions';
-import { clearTestDetectionCache, clearVitestDetectionCache } from './testDetection/cache';
+import { cacheManager } from './cache/CacheManager';
 import { testFileCache } from './testDetection/testFileCache';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { invalidateNodeTestCache } from './testDetection/frameworkDetection';
@@ -161,8 +161,7 @@ export class JestTestController {
 
   private async refreshAllTests(): Promise<void> {
     // Clear detection caches to ensure fresh framework detection
-    clearTestDetectionCache();
-    clearVitestDetectionCache();
+    cacheManager.invalidateAll();
 
     // Invalidate test file cache to force re-evaluation
     testFileCache.invalidate();

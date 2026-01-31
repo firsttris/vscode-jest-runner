@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { createRequire } from 'module';
+import { ConfigResolver } from './ConfigResolver';
 import {
   normalizePath,
   validateCodeLensOptions,
@@ -76,6 +77,8 @@ function resolveBinaryPath(binaryName: string, cwd: string): string | undefined 
 
 
 export class TestRunnerConfig {
+  private configResolver = new ConfigResolver();
+
   private getConfig<T>(key: string, defaultValue?: T): T | undefined {
     return vscode.workspace.getConfiguration().get(key, defaultValue);
   }
@@ -167,7 +170,7 @@ export class TestRunnerConfig {
     );
   }
 
-  private get projectPathFromConfig(): string | undefined {
+  public get projectPathFromConfig(): string | undefined {
     const projectPathFromConfig = this.getConfig<string>('jestrunner.projectPath');
     if (projectPathFromConfig) {
       return resolve(
@@ -177,7 +180,7 @@ export class TestRunnerConfig {
     }
   }
 
-  private get useNearestConfig(): boolean | undefined {
+  public get useNearestConfig(): boolean | undefined {
     return this.getConfig<boolean>('jestrunner.useNearestConfig');
   }
 
@@ -191,7 +194,7 @@ export class TestRunnerConfig {
     return result ? normalizePath(result.directory) : '';
   }
 
-  private get currentWorkspaceFolderPath(): string {
+  public get currentWorkspaceFolderPath(): string {
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
@@ -212,44 +215,16 @@ export class TestRunnerConfig {
     configKey: string,
     framework?: TestFrameworkName,
   ): string {
-    const configPathOrMapping = this.getConfig<string | Record<string, string>>(configKey);
-
-    const configPath = resolveConfigPathOrMapping(
-      configPathOrMapping,
+    return this.configResolver.resolveConfigPath(
       targetPath,
+      configKey,
+      {
+        currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
+        projectPathFromConfig: this.projectPathFromConfig, // accessed via public getter
+        useNearestConfig: this.useNearestConfig // accessed via public getter
+      },
+      framework
     );
-    if (!configPath || this.useNearestConfig) {
-      const foundPath = this.findConfigPath(targetPath, configPath, framework);
-      if (foundPath) {
-        logDebug(`Found config path using findConfigPath: ${foundPath}`);
-        return foundPath;
-      }
-    }
-
-    if (configPath) {
-      const resolvedPath = normalizePath(
-        resolve(
-          this.currentWorkspaceFolderPath,
-          this.projectPathFromConfig || '',
-          configPath,
-        ),
-      );
-
-      if (existsSync(resolvedPath)) {
-        return resolvedPath;
-      }
-
-      const foundPath = this.findConfigPath(targetPath, undefined, framework);
-      if (foundPath) {
-        logDebug(`Found config path (fallback) using findConfigPath: ${foundPath}`);
-        return foundPath;
-      }
-
-      logDebug(`Using resolved config path from settings: ${resolvedPath}`);
-      return resolvedPath;
-    }
-
-    return '';
   }
 
   public getJestConfigPath(targetPath: string): string {
@@ -261,39 +236,16 @@ export class TestRunnerConfig {
     targetConfigFilename?: string,
     framework?: TestFrameworkName,
   ): string | undefined {
-    let configFiles: readonly string[];
-    if (targetConfigFilename) {
-      configFiles = [targetConfigFilename];
-    } else if (framework) {
-      const frameworkDef = testFrameworks.find(f => f.name === framework);
-      configFiles = frameworkDef ? frameworkDef.configFiles : [];
-    } else {
-      configFiles = testFrameworks.flatMap(f => f.configFiles);
-    }
-
-    const foundPath = searchPathToParent<string>(
-      targetPath ||
-      dirname(vscode.window.activeTextEditor.document.uri.fsPath),
-      this.currentWorkspaceFolderPath,
-      (currentFolderPath: string) => {
-        for (const configFilename of configFiles) {
-          const currentFolderConfigPath = join(
-            currentFolderPath,
-            configFilename,
-          );
-          if (existsSync(currentFolderConfigPath)) {
-            return currentFolderConfigPath;
-          }
-        }
+    return this.configResolver.findConfigPath(
+      targetPath,
+      {
+        currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
+        projectPathFromConfig: this.projectPathFromConfig,
+        useNearestConfig: this.useNearestConfig
       },
+      targetConfigFilename,
+      framework
     );
-    const result = foundPath ? normalizePath(foundPath) : undefined;
-    if (result) {
-      logDebug(`findConfigPath found: ${result}`);
-    } else {
-      logDebug(`findConfigPath failed to find config in: ${targetPath}`);
-    }
-    return result;
   }
 
   public getVitestConfigPath(targetPath: string): string {
@@ -489,8 +441,8 @@ export class TestRunnerConfig {
     // Jest/Vitest: build test args and add to config (only if filePath is provided)
     const testArgs = filePath
       ? (isVitest
-          ? this.buildVitestArgs(filePath, testName, false)
-          : this.buildJestArgs(filePath, testName, false))
+        ? this.buildVitestArgs(filePath, testName, false)
+        : this.buildJestArgs(filePath, testName, false))
       : [];
 
     const customCommandKey = isVitest
