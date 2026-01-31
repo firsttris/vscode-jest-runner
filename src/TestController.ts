@@ -241,11 +241,7 @@ export class JestTestController {
         ? this.jestConfig.getVitestConfigPath(allFiles[0])
         : this.jestConfig.getJestConfigPath(allFiles[0]);
 
-      const testCommand = isNodeTest
-        ? this.jestConfig.nodeTestCommand
-        : isVitest
-          ? this.jestConfig.vitestCommand
-          : this.jestConfig.jestCommand;
+      const testCommand = this.jestConfig.getTestCommand(allFiles[0]);
       const commandParts = parseShellCommand(testCommand);
       const command = commandParts[0];
 

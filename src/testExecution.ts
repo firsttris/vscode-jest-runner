@@ -291,9 +291,7 @@ export function buildTestArgs(
       );
     }
 
-    return isVitest
-      ? jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, extraArgs)
-      : jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, extraArgs);
+    return jestConfig.buildTestArgs(allFiles[0], testNamePattern, true, extraArgs);
   }
 
   // Full file run
@@ -352,16 +350,10 @@ export function logTestExecution(
 export function buildTestArgsFast(
   filePath: string,
   testName: string,
-  framework: TestFrameworkName,
+  _framework: TestFrameworkName,
   jestConfig: TestRunnerConfig,
 ): string[] {
-  if (framework === 'node-test') {
-    return jestConfig.buildNodeTestArgs(filePath, testName, true, []);
-  }
-  if (framework === 'vitest') {
-    return jestConfig.buildVitestArgs(filePath, testName, true, []);
-  }
-  return jestConfig.buildJestArgs(filePath, testName, true, []);
+  return jestConfig.buildTestArgs(filePath, testName, true, []);
 }
 
 /**

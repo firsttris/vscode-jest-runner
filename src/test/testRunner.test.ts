@@ -33,6 +33,7 @@ describe('TestRunner', () => {
       getJestConfigPath: jest.fn().mockReturnValue(''),
       getVitestConfigPath: jest.fn().mockReturnValue(''),
       getTestFramework: jest.fn().mockReturnValue('jest'),
+      getTestCommand: jest.fn().mockReturnValue('node jest'),
       getEnvironmentForRun: jest.fn().mockReturnValue(undefined),
       buildJestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
         const args = [filePath];
@@ -52,6 +53,14 @@ describe('TestRunner', () => {
           return args;
         },
       ),
+      buildTestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
+        const args = [filePath];
+        if (testName) {
+          args.push('-t', testName);
+        }
+        args.push(...options);
+        return args;
+      }),
       getDebugConfiguration: jest.fn((filePath?: string, testName?: string) => ({
         console: 'integratedTerminal',
         internalConsoleOptions: 'neverOpen',

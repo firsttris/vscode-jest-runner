@@ -168,20 +168,9 @@ export class TestRunner {
     testName?: string,
     options?: string[],
   ): string {
-    const framework = this.config.getTestFramework(filePath);
-
-    if (framework === 'vitest') {
-      const args = this.config.buildVitestArgs(filePath, testName, true, options);
-      return `${this.config.vitestCommand} ${args.join(' ')}`;
-    }
-
-    if (framework === 'node-test') {
-      const args = this.config.buildNodeTestArgs(filePath, testName, true, options);
-      return `${this.config.nodeTestCommand} ${args.join(' ')}`;
-    }
-
-    const args = this.config.buildJestArgs(filePath, testName, true, options);
-    return `${this.config.jestCommand} ${args.join(' ')}`;
+    const command = this.config.getTestCommand(filePath);
+    const args = this.config.buildTestArgs(filePath, testName, true, options);
+    return `${command} ${args.join(' ')}`;
   }
 
   private getCoverageOptions(

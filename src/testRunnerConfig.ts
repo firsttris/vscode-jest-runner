@@ -7,9 +7,7 @@ import {
   resolveConfigPathOrMapping,
   searchPathToParent,
   resolveTestNameStringInterpolation,
-  escapeRegExpForPath,
   quote,
-  escapeSingleQuotes,
   logDebug,
   logWarning,
   parseShellCommand,
@@ -20,6 +18,7 @@ import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefi
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 import { dirname, join, resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
+import { getFrameworkAdapter } from './frameworkAdapters';
 
 
 
@@ -360,35 +359,15 @@ export class TestRunnerConfig {
     withQuotes: boolean,
     options: string[] = [],
   ): string[] {
-    const args: string[] = [];
-    const quoter = withQuotes ? quote : (str) => str;
-
-    args.push(quoter(escapeRegExpForPath(normalizePath(filePath))));
-
-    const jestConfigPath = this.getJestConfigPath(filePath);
-    if (jestConfigPath) {
-      args.push('-c');
-      args.push(quoter(normalizePath(jestConfigPath)));
-    }
-
-    if (testName) {
-      if (testName.includes('%')) {
-        testName = resolveTestNameStringInterpolation(testName);
-      }
-
-      args.push('-t');
-      args.push(withQuotes ? quoter(escapeSingleQuotes(testName)) : testName);
-    }
-
-    const setOptions = new Set(options);
-
-    if (this.runOptions) {
-      this.runOptions.forEach((option) => setOptions.add(option));
-    }
-
-    args.push(...setOptions);
-
-    return args;
+    const configPath = this.getJestConfigPath(filePath);
+    return getFrameworkAdapter('jest').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      configPath,
+      this.runOptions,
+    );
   }
 
   public buildVitestArgs(
@@ -397,40 +376,20 @@ export class TestRunnerConfig {
     withQuotes: boolean,
     options: string[] = [],
   ): string[] {
-    const args: string[] = [];
-    const quoter = withQuotes ? quote : (str) => str;
-
-    args.push('run');
-
-    args.push(quoter(normalizePath(filePath)));
-
-    const vitestConfigPath = this.getVitestConfigPath(filePath);
-    if (vitestConfigPath) {
-      args.push('--config');
-      args.push(quoter(normalizePath(vitestConfigPath)));
-    }
-
-    if (testName) {
-      if (testName.includes('%')) {
-        testName = resolveTestNameStringInterpolation(testName);
-      }
-
-      args.push('-t');
-      args.push(withQuotes ? quoter(escapeSingleQuotes(testName)) : testName);
-    }
-
-    const setOptions = new Set(options);
-
+    const configPath = this.getVitestConfigPath(filePath);
     const vitestRunOptions = this.getConfig<string[]>('jestrunner.vitestRunOptions');
-    if (vitestRunOptions && Array.isArray(vitestRunOptions)) {
-      vitestRunOptions.forEach((option) => setOptions.add(option));
-    } else if (this.runOptions) {
-      this.runOptions.forEach((option) => setOptions.add(option));
-    }
+    const runOptions = (vitestRunOptions && Array.isArray(vitestRunOptions))
+      ? vitestRunOptions
+      : this.runOptions;
 
-    args.push(...setOptions);
-
-    return args;
+    return getFrameworkAdapter('vitest').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      configPath,
+      runOptions,
+    );
   }
 
   public buildNodeTestArgs(
@@ -439,34 +398,14 @@ export class TestRunnerConfig {
     withQuotes: boolean,
     options: string[] = [],
   ): string[] {
-    const args: string[] = [];
-    const quoter = withQuotes ? quote : (str) => str;
-
-    // Add --test flag
-    args.push('--test');
-
-    // Add test name pattern filter
-    if (testName) {
-      if (testName.includes('%')) {
-        testName = resolveTestNameStringInterpolation(testName);
-      }
-      args.push('--test-name-pattern');
-      args.push(withQuotes ? quoter(escapeSingleQuotes(testName)) : testName);
-    }
-
-    const setOptions = new Set(options);
-
-    // Add user-configured run options
-    if (this.nodeTestRunOptions) {
-      this.nodeTestRunOptions.forEach((option) => setOptions.add(option));
-    }
-
-    args.push(...setOptions);
-
-    // Add test file path at the end
-    args.push(quoter(normalizePath(filePath)));
-
-    return args;
+    return getFrameworkAdapter('node-test').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '', // Node test has no config file
+      this.nodeTestRunOptions,
+    );
   }
 
   public buildTestArgs(

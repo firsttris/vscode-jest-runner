@@ -444,16 +444,14 @@ describe('testExecution', () => {
 
         beforeEach(() => {
             mockJestConfig = {
-                buildJestArgs: jest.fn().mockReturnValue(['jest', 'args']),
-                buildVitestArgs: jest.fn().mockReturnValue(['vitest', 'args']),
-                buildNodeTestArgs: jest.fn().mockReturnValue(['node', 'test', 'args']),
+                buildTestArgs: jest.fn().mockReturnValue(['test', 'args']),
             } as unknown as TestRunnerConfig;
         });
 
-        it('should use buildNodeTestArgs for node-test framework', () => {
+        it('should use buildTestArgs for node-test framework', () => {
             buildTestArgsFast('/path/to/test.test.js', 'my test', 'node-test', mockJestConfig);
 
-            expect(mockJestConfig.buildNodeTestArgs).toHaveBeenCalledWith(
+            expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
                 '/path/to/test.test.js',
                 'my test',
                 true,
@@ -461,10 +459,10 @@ describe('testExecution', () => {
             );
         });
 
-        it('should use buildVitestArgs for vitest framework', () => {
+        it('should use buildTestArgs for vitest framework', () => {
             buildTestArgsFast('/path/to/test.spec.ts', 'my test', 'vitest', mockJestConfig);
 
-            expect(mockJestConfig.buildVitestArgs).toHaveBeenCalledWith(
+            expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
                 '/path/to/test.spec.ts',
                 'my test',
                 true,
@@ -472,10 +470,10 @@ describe('testExecution', () => {
             );
         });
 
-        it('should use buildJestArgs for jest framework', () => {
+        it('should use buildTestArgs for jest framework', () => {
             buildTestArgsFast('/path/to/test.spec.ts', 'my test', 'jest', mockJestConfig);
 
-            expect(mockJestConfig.buildJestArgs).toHaveBeenCalledWith(
+            expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
                 '/path/to/test.spec.ts',
                 'my test',
                 true,
