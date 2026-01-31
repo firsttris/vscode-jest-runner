@@ -1,9 +1,9 @@
+import { processTestResults } from '../testResultProcessor';
 import {
-    processTestResults,
     parseJestOutput,
     parseVitestOutput,
     convertVitestToJestResults,
-} from '../testResultProcessor';
+} from '../parsers/OutputParser';
 import { TestItem, TestRun, Uri } from './__mocks__/vscode';
 
 describe('testResultProcessor', () => {
