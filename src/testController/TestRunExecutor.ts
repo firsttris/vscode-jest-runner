@@ -229,8 +229,9 @@ export class TestRunExecutor {
                 await this.processCoverageData(
                     run,
                     workspaceFolder,
-                    isVitest ? 'vitest' : 'jest',
-                    configPath
+                    framework,
+                    configPath,
+                    allFiles.length > 0 ? allFiles[0] : undefined
                 );
             }
         } catch (error) {
@@ -253,14 +254,16 @@ export class TestRunExecutor {
     private async processCoverageData(
         run: vscode.TestRun,
         workspaceFolder: string,
-        framework: 'jest' | 'vitest' = 'jest',
-        configPath?: string
+        framework: 'jest' | 'vitest' | 'node-test' = 'jest',
+        configPath?: string,
+        testFilePath?: string
     ): Promise<void> {
         try {
             const coverageMap = await this.coverageProvider.readCoverageFromFile(
                 workspaceFolder,
                 framework,
-                configPath
+                configPath,
+                testFilePath
             );
 
             if (!coverageMap) {

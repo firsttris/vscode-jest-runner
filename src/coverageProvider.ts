@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, isAbsolute, resolve } from 'node:path';
 import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
 import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
 import { matchesTestFilePattern } from './testDetection/testFileDetection';
@@ -88,20 +88,52 @@ export class CoverageProvider {
 
   public async readCoverageFromFile(
     workspaceFolder: string,
-    framework: 'jest' | 'vitest' = 'jest',
+    framework: 'jest' | 'vitest' | 'node-test' = 'jest',
     configPath?: string,
+    testFilePath?: string, // New optional parameter
   ): Promise<CoverageMap | undefined> {
     try {
+      if (framework === 'node-test') {
+        // Search locations for lcov.info
+        const candidatePaths: string[] = [];
+
+        // 1. Next to the test file (if provided)
+        if (testFilePath) {
+          candidatePaths.push(join(dirname(testFilePath), 'lcov.info'));
+        }
+
+        // 2. In the directory of the config file (e.g. package.json dir)
+        if (configPath) {
+          candidatePaths.push(join(dirname(configPath), 'lcov.info'));
+        }
+
+        // 3. Workspace root (standard fallback)
+        candidatePaths.push(join(workspaceFolder, 'lcov.info'));
+
+        // Use a set to remove duplicates (e.g. if test file is in root)
+        const uniquePaths = [...new Set(candidatePaths)];
+
+        for (const lcovPath of uniquePaths) {
+          if (existsSync(lcovPath)) {
+            logInfo(`Found LCOV file at: ${lcovPath}`);
+            return this.readLcovCoverage(lcovPath);
+          }
+        }
+
+        logInfo(`LCOV file not found. Searched in: ${uniquePaths.join(', ')}`);
+        return undefined;
+      }
+
       let coverageDir: string | undefined;
 
       if (configPath) {
-        coverageDir = this.getCoverageDirFromConfigPath(configPath, framework);
+        coverageDir = this.getCoverageDirFromConfigPath(configPath, framework as 'jest' | 'vitest');
       }
 
       if (!coverageDir) {
         coverageDir = this.getCoverageDirectoryFromWorkspace(
           workspaceFolder,
-          framework,
+          framework as 'jest' | 'vitest',
         );
       }
 
@@ -146,6 +178,120 @@ export class CoverageProvider {
       logError(`Failed to read coverage from file: ${error}`);
       return undefined;
     }
+  }
+
+  private async readLcovCoverage(lcovPath: string): Promise<CoverageMap | undefined> {
+    return new Promise((resolvePromise) => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const parse = require('lcov-parse');
+      parse(lcovPath, (err: Error | null, data: any[]) => {
+        if (err || !data) {
+          logError(`Failed to parse LCOV file: ${err}`);
+          resolvePromise(undefined);
+          return;
+        }
+
+        const coverageMap: CoverageMap = {};
+        const baseDir = dirname(lcovPath);
+
+        for (const file of data) {
+          let filePath = file.file;
+
+          // Resolve relative paths against the lcov file directory
+          if (!isAbsolute(filePath)) {
+            filePath = resolve(baseDir, filePath);
+          }
+
+          const lines = file.lines?.details || [];
+          const functions = file.functions?.details || [];
+          const branches = file.branches?.details || [];
+
+          // Convert LCOV data to our internal format
+          // Note: LCOV is line-based, while our format supports statement/branch/function maps
+          // We'll do a best-effort conversion here
+
+          const s: { [id: string]: number } = {};
+          const statementMap: { [id: string]: LocationRange } = {};
+
+          lines.forEach((line: any, index: number) => {
+            const id = index.toString();
+            s[id] = line.hit;
+            statementMap[id] = {
+              start: { line: line.line, column: 0 },
+              end: { line: line.line, column: 0 }, // LCOV doesn't give columns
+            };
+          });
+
+          // Function mapping
+          const f: { [id: string]: number } = {};
+          const fnMap: { [id: string]: FunctionMapping } = {};
+
+          functions.forEach((func: any, index: number) => {
+            const id = index.toString();
+            f[id] = func.hit;
+            fnMap[id] = {
+              name: func.name,
+              decl: {
+                start: { line: func.line, column: 0 },
+                end: { line: func.line, column: 0 },
+              },
+              loc: {
+                start: { line: func.line, column: 0 },
+                end: { line: func.line, column: 0 },
+              },
+              line: func.line
+            };
+          });
+
+          // Branch mapping
+          // LCOV branch format is complex, simplifying for now
+          // We might need more robust parsing if branch coverage is critical
+          const b: { [id: string]: number[] } = {};
+          const branchMap: { [id: string]: BranchMapping } = {};
+
+          // Group branches by line
+          const branchesByLine = new Map<number, any[]>();
+          branches.forEach((branch: any) => {
+            if (!branchesByLine.has(branch.line)) {
+              branchesByLine.set(branch.line, []);
+            }
+            branchesByLine.get(branch.line)?.push(branch);
+          });
+
+          let branchIdCounter = 0;
+          branchesByLine.forEach((lineBranches, line) => {
+            const id = branchIdCounter.toString();
+            branchIdCounter++;
+
+            b[id] = lineBranches.map((br: any) => br.taken ? 1 : 0);
+            branchMap[id] = {
+              loc: {
+                start: { line: line, column: 0 },
+                end: { line: line, column: 0 },
+              },
+              type: 'branch',
+              locations: lineBranches.map(() => ({
+                start: { line: line, column: 0 },
+                end: { line: line, column: 0 },
+              })),
+              line: line
+            };
+          });
+
+          coverageMap[filePath] = {
+            path: filePath,
+            statementMap,
+            fnMap,
+            branchMap,
+            s,
+            f,
+            b
+          };
+        }
+
+        resolvePromise(coverageMap);
+      });
+    });
   }
 
   private createCoverageCount(

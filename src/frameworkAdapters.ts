@@ -71,7 +71,22 @@ const buildNodeTestArgs: BuildArgsFn = (filePath, testName, withQuotes, options,
     args.push('--test-name-pattern', resolved);
   }
 
-  return [...args, ...mergeOptions(options, runOptions), q(normalizePath(filePath))];
+  const allOptions = mergeOptions(options, runOptions);
+
+  if (allOptions.includes('--coverage')) {
+    args.push('--experimental-test-coverage');
+    args.push('--test-reporter', 'tap');
+    args.push('--test-reporter-destination', 'stdout');
+    args.push('--test-reporter', 'lcov');
+    args.push('--test-reporter-destination', 'lcov.info');
+    // Remove --coverage from args as it's not a native node flag (it's our internal flag)
+    const coverageIndex = allOptions.indexOf('--coverage');
+    if (coverageIndex > -1) {
+      allOptions.splice(coverageIndex, 1);
+    }
+  }
+
+  return [...args, ...allOptions, q(normalizePath(filePath))];
 };
 
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {

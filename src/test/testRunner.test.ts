@@ -61,6 +61,14 @@ describe('TestRunner', () => {
         args.push(...options);
         return args;
       }),
+      buildNodeTestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
+        const args = ['--test'];
+        if (options.includes('--coverage')) {
+          args.push('--experimental-test-coverage');
+          args.push('--test-reporter', 'lcov');
+        }
+        return args;
+      }),
       getDebugConfiguration: jest.fn((filePath?: string, testName?: string) => ({
         console: 'integratedTerminal',
         internalConsoleOptions: 'neverOpen',
@@ -253,6 +261,14 @@ describe('TestRunner', () => {
       jest
         .spyOn(vscode.window, 'activeTextEditor', 'get')
         .mockReturnValue(mockEditor as any);
+    });
+
+    it('should generate correct args for node-test with coverage', () => {
+      const args = mockConfig.buildNodeTestArgs('test.js', 'testName', false, ['--coverage']);
+      expect(args).toContain('--experimental-test-coverage');
+      expect(args).toContain('--test-reporter');
+      expect(args).toContain('lcov');
+      expect(args).not.toContain('--coverage');
     });
 
     it('should run the previous command', async () => {

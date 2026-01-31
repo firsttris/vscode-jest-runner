@@ -20,25 +20,40 @@ export function buildTestArgs(
     if (isNodeTest) {
         const args = ['--test'];
 
-        // Options must come BEFORE files for node --test
-        args.push('--test-reporter', 'tap');
-
         const tests = Array.from(testsByFile.values()).flat();
-        if (tests.length > 0) {
-            const testNamePattern =
-                tests.length > 1
-                    ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-                    : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
+        let testName: string | undefined;
 
-            // Pattern must be single-quote escaped for the quote() function if it uses single quotes
-            args.push('--test-name-pattern', quote(escapeSingleQuotes(testNamePattern)));
+        if (tests.length > 0) {
+            testName = tests.length > 1
+                ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
+                : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
         }
 
+        // Add reporters
+        // Node requires destination for ALL reporters if multiple are specified.
         if (collectCoverage) {
+            args.push('--test-reporter', 'tap');
+            args.push('--test-reporter-destination', 'stdout');
+            args.push('--test-reporter', 'lcov');
+            args.push('--test-reporter-destination', 'lcov.info');
             args.push('--experimental-test-coverage');
+        } else {
+            // Single reporter, default destination (stdout) is fine
+            args.push('--test-reporter', 'tap');
+        }
+
+        if (testName) {
+            // Pattern must be single-quote escaped for the quote() function if it uses single quotes
+            args.push('--test-name-pattern', quote(escapeSingleQuotes(testName)));
         }
 
         args.push(...additionalArgs);
+
+        // Remove --coverage if it was passed in additionalArgs (as node doesn't support it)
+        const coverageIndex = args.indexOf('--coverage');
+        if (coverageIndex > -1) {
+            args.splice(coverageIndex, 1);
+        }
 
         // Files come LAST
         args.push(...allFiles.map(normalizePath));
