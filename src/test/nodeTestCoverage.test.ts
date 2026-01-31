@@ -107,8 +107,9 @@ describe('Node Test Coverage Support', () => {
         });
         it('should read lcov coverage from test file directory if not found in root', async () => {
             // Mock lcov.info not existing in root but existing in test file dir
-            (fs.existsSync as jest.Mock).mockImplementation((path: string) => {
-                return path.includes('/path/to/lcov.info'); // Simulate exists next to file
+            (fs.existsSync as jest.Mock).mockImplementation((pathStr: string) => {
+                const normalizedPath = pathStr.replace(/\\/g, '/');
+                return normalizedPath.includes('/path/to/lcov.info'); // Simulate exists next to file
             });
 
             const coverage = await provider.readCoverageFromFile(
