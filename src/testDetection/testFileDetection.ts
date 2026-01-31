@@ -8,15 +8,11 @@ import {
   testFrameworks,
   allTestFrameworks,
 } from './frameworkDefinitions';
-import {
-  getConfigPath,
-  getTestMatchFromJestConfig,
-  getVitestConfig,
-  resolveAndValidateCustomConfig,
-  getPlaywrightTestDir,
-  getCypressSpecPattern,
-  getDefaultTestPatterns,
-} from './configParsing';
+import { getConfigPath, resolveAndValidateCustomConfig, getDefaultTestPatterns } from './configParsing';
+import { getTestMatchFromJestConfig } from './configParsers/jestParser';
+import { getVitestConfig } from './configParsers/vitestParser';
+import { getPlaywrightTestDir } from './configParsers/playwrightParser';
+import { getCypressSpecPattern } from './configParsers/cypressParser';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
   detectTestFramework,

@@ -1,5 +1,7 @@
 import * as fs from 'node:fs';
-import { getIncludeFromVitestConfig, getTestMatchFromJestConfig, getVitestConfig, packageJsonHasJestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsing';
+import { packageJsonHasJestConfig } from '../../testDetection/configParsing';
+import { getTestMatchFromJestConfig } from '../../testDetection/configParsers/jestParser';
+import { getIncludeFromVitestConfig, getVitestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsers/vitestParser';
 
 jest.mock('fs');
 jest.mock('vscode');
