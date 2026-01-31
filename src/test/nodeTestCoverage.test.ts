@@ -121,7 +121,8 @@ describe('Node Test Coverage Support', () => {
 
             expect(coverage).toBeDefined();
             // Verify path normalization or finding
-            expect(fs.existsSync).toHaveBeenCalledWith('/path/to/lcov.info');
+            const calls = (fs.existsSync as jest.Mock).mock.calls.map(c => c[0].replace(/\\/g, '/'));
+            expect(calls).toContain('/path/to/lcov.info');
         });
         it('should resolve relative paths in lcov file', async () => {
             // Mock lcov.info with relative path content
