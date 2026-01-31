@@ -362,6 +362,298 @@ describe('testExecution', () => {
                 expect(args).toContain('json');
             });
         });
+
+        describe('Partial run (isPartialRun)', () => {
+            it('should use buildTestArgs for Jest partial run with single test', () => {
+                const filePath = '/path/to/test.spec.ts';
+                const testItem1 = new TestItem('test1', 'test1', Uri.file(filePath) as any);
+                const testItem2 = new TestItem('test2', 'test2', Uri.file(filePath) as any);
+                const testItem3 = new TestItem('test3', 'test3', Uri.file(filePath) as any);
+
+                // File has 3 tests total
+                const fileItem = new TestItem(filePath, 'test.spec.ts', Uri.file(filePath) as any);
+                fileItem.children.add(testItem1);
+                fileItem.children.add(testItem2);
+                fileItem.children.add(testItem3);
+
+                mockTestController = {
+                    items: {
+                        get: jest.fn().mockReturnValue(fileItem),
+                    },
+                } as unknown as vscode.TestController;
+
+                mockJestConfig = {
+                    ...mockJestConfig,
+                    buildTestArgs: jest.fn().mockReturnValue(['mocked', 'partial', 'args']),
+                } as unknown as TestRunnerConfig;
+
+                // Only running 1 test out of 3
+                const testsByFile = new Map([[filePath, [testItem1]]]);
+
+                const args = buildTestArgs(
+                    [filePath],
+                    testsByFile as any,
+                    'jest',
+                    [],
+                    false,
+                    mockJestConfig,
+                    mockTestController,
+                );
+
+                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                    filePath,
+                    'test1',
+                    true,
+                    ['--json'],
+                );
+                expect(args).toEqual(['mocked', 'partial', 'args']);
+            });
+
+            it('should use buildTestArgs for Jest partial run with multiple tests', () => {
+                const filePath = '/path/to/test.spec.ts';
+                const testItem1 = new TestItem('test1', 'test1', Uri.file(filePath) as any);
+                const testItem2 = new TestItem('test2', 'test2', Uri.file(filePath) as any);
+                const testItem3 = new TestItem('test3', 'test3', Uri.file(filePath) as any);
+
+                const fileItem = new TestItem(filePath, 'test.spec.ts', Uri.file(filePath) as any);
+                fileItem.children.add(testItem1);
+                fileItem.children.add(testItem2);
+                fileItem.children.add(testItem3);
+
+                mockTestController = {
+                    items: {
+                        get: jest.fn().mockReturnValue(fileItem),
+                    },
+                } as unknown as vscode.TestController;
+
+                mockJestConfig = {
+                    ...mockJestConfig,
+                    buildTestArgs: jest.fn().mockReturnValue(['mocked', 'partial', 'args']),
+                } as unknown as TestRunnerConfig;
+
+                // Running 2 tests out of 3
+                const testsByFile = new Map([[filePath, [testItem1, testItem2]]]);
+
+                const args = buildTestArgs(
+                    [filePath],
+                    testsByFile as any,
+                    'jest',
+                    [],
+                    false,
+                    mockJestConfig,
+                    mockTestController,
+                );
+
+                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                    filePath,
+                    '(test1|test2)',
+                    true,
+                    ['--json'],
+                );
+                expect(args).toEqual(['mocked', 'partial', 'args']);
+            });
+
+            it('should use buildTestArgs for Vitest partial run', () => {
+                const filePath = '/path/to/test.spec.ts';
+                const testItem1 = new TestItem('test1', 'test1', Uri.file(filePath) as any);
+                const testItem2 = new TestItem('test2', 'test2', Uri.file(filePath) as any);
+
+                const fileItem = new TestItem(filePath, 'test.spec.ts', Uri.file(filePath) as any);
+                fileItem.children.add(testItem1);
+                fileItem.children.add(testItem2);
+
+                mockTestController = {
+                    items: {
+                        get: jest.fn().mockReturnValue(fileItem),
+                    },
+                } as unknown as vscode.TestController;
+
+                mockJestConfig = {
+                    ...mockJestConfig,
+                    buildTestArgs: jest.fn().mockReturnValue(['vitest', 'partial', 'args']),
+                } as unknown as TestRunnerConfig;
+
+                const testsByFile = new Map([[filePath, [testItem1]]]);
+
+                const args = buildTestArgs(
+                    [filePath],
+                    testsByFile as any,
+                    'vitest',
+                    [],
+                    false,
+                    mockJestConfig,
+                    mockTestController,
+                );
+
+                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                    filePath,
+                    'test1',
+                    true,
+                    ['--reporter=json'],
+                );
+                expect(args).toEqual(['vitest', 'partial', 'args']);
+            });
+
+            it('should include coverage flags for Jest partial run', () => {
+                const filePath = '/path/to/test.spec.ts';
+                const testItem1 = new TestItem('test1', 'test1', Uri.file(filePath) as any);
+                const testItem2 = new TestItem('test2', 'test2', Uri.file(filePath) as any);
+
+                const fileItem = new TestItem(filePath, 'test.spec.ts', Uri.file(filePath) as any);
+                fileItem.children.add(testItem1);
+                fileItem.children.add(testItem2);
+
+                mockTestController = {
+                    items: {
+                        get: jest.fn().mockReturnValue(fileItem),
+                    },
+                } as unknown as vscode.TestController;
+
+                mockJestConfig = {
+                    ...mockJestConfig,
+                    buildTestArgs: jest.fn().mockReturnValue(['coverage', 'args']),
+                } as unknown as TestRunnerConfig;
+
+                const testsByFile = new Map([[filePath, [testItem1]]]);
+
+                buildTestArgs(
+                    [filePath],
+                    testsByFile as any,
+                    'jest',
+                    [],
+                    true,
+                    mockJestConfig,
+                    mockTestController,
+                );
+
+                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                    filePath,
+                    'test1',
+                    true,
+                    ['--json', '--coverage', '--coverageReporters=json'],
+                );
+            });
+
+            it('should include coverage flags for Vitest partial run', () => {
+                const filePath = '/path/to/test.spec.ts';
+                const testItem1 = new TestItem('test1', 'test1', Uri.file(filePath) as any);
+                const testItem2 = new TestItem('test2', 'test2', Uri.file(filePath) as any);
+
+                const fileItem = new TestItem(filePath, 'test.spec.ts', Uri.file(filePath) as any);
+                fileItem.children.add(testItem1);
+                fileItem.children.add(testItem2);
+
+                mockTestController = {
+                    items: {
+                        get: jest.fn().mockReturnValue(fileItem),
+                    },
+                } as unknown as vscode.TestController;
+
+                mockJestConfig = {
+                    ...mockJestConfig,
+                    buildTestArgs: jest.fn().mockReturnValue(['vitest', 'coverage', 'args']),
+                } as unknown as TestRunnerConfig;
+
+                const testsByFile = new Map([[filePath, [testItem1]]]);
+
+                buildTestArgs(
+                    [filePath],
+                    testsByFile as any,
+                    'vitest',
+                    [],
+                    true,
+                    mockJestConfig,
+                    mockTestController,
+                );
+
+                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                    filePath,
+                    'test1',
+                    true,
+                    ['--reporter=json', '--coverage', '--coverage.reporter', 'json'],
+                );
+            });
+
+            it('should include additional args for partial run', () => {
+                const filePath = '/path/to/test.spec.ts';
+                const testItem1 = new TestItem('test1', 'test1', Uri.file(filePath) as any);
+                const testItem2 = new TestItem('test2', 'test2', Uri.file(filePath) as any);
+
+                const fileItem = new TestItem(filePath, 'test.spec.ts', Uri.file(filePath) as any);
+                fileItem.children.add(testItem1);
+                fileItem.children.add(testItem2);
+
+                mockTestController = {
+                    items: {
+                        get: jest.fn().mockReturnValue(fileItem),
+                    },
+                } as unknown as vscode.TestController;
+
+                mockJestConfig = {
+                    ...mockJestConfig,
+                    buildTestArgs: jest.fn().mockReturnValue(['args']),
+                } as unknown as TestRunnerConfig;
+
+                const testsByFile = new Map([[filePath, [testItem1]]]);
+
+                buildTestArgs(
+                    [filePath],
+                    testsByFile as any,
+                    'jest',
+                    ['--watch', '--verbose'],
+                    false,
+                    mockJestConfig,
+                    mockTestController,
+                );
+
+                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                    filePath,
+                    'test1',
+                    true,
+                    ['--watch', '--verbose', '--json'],
+                );
+            });
+
+            it('should escape special regex characters in test names for partial run', () => {
+                const filePath = '/path/to/test.spec.ts';
+                const testItem1 = new TestItem('test (with) special [chars]', 'test (with) special [chars]', Uri.file(filePath) as any);
+                const testItem2 = new TestItem('normal test', 'normal test', Uri.file(filePath) as any);
+
+                const fileItem = new TestItem(filePath, 'test.spec.ts', Uri.file(filePath) as any);
+                fileItem.children.add(testItem1);
+                fileItem.children.add(testItem2);
+
+                mockTestController = {
+                    items: {
+                        get: jest.fn().mockReturnValue(fileItem),
+                    },
+                } as unknown as vscode.TestController;
+
+                mockJestConfig = {
+                    ...mockJestConfig,
+                    buildTestArgs: jest.fn().mockReturnValue(['args']),
+                } as unknown as TestRunnerConfig;
+
+                const testsByFile = new Map([[filePath, [testItem1]]]);
+
+                buildTestArgs(
+                    [filePath],
+                    testsByFile as any,
+                    'jest',
+                    [],
+                    false,
+                    mockJestConfig,
+                    mockTestController,
+                );
+
+                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                    filePath,
+                    'test \\(with\\) special \\[chars\\]',
+                    true,
+                    ['--json'],
+                );
+            });
+        });
     });
 
     describe('collectTestsByFile', () => {

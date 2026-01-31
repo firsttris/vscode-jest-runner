@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { TestConfigWatcher } from '../../testController/TestConfigWatcher';
 import * as Settings from '../../config/Settings';
 
@@ -105,7 +106,7 @@ describe('TestConfigWatcher', () => {
 
       // Should create watcher for custom path
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        '/workspace/jest.config.js'
+        path.resolve('/workspace', 'jest.config.js')
       );
     });
 
@@ -128,10 +129,10 @@ describe('TestConfigWatcher', () => {
       new TestConfigWatcher();
 
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        '/workspace/jest.config.app.js'
+        path.resolve('/workspace', 'jest.config.app.js')
       );
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        '/workspace/jest.config.lib.js'
+        path.resolve('/workspace', 'jest.config.lib.js')
       );
     });
 
@@ -141,7 +142,7 @@ describe('TestConfigWatcher', () => {
       new TestConfigWatcher();
 
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        '/workspace/vitest.config.ts'
+        path.resolve('/workspace', 'vitest.config.ts')
       );
     });
 
