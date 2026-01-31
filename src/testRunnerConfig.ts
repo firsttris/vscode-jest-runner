@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 import { ConfigResolver } from './ConfigResolver';
-import {
-  validateCodeLensOptions,
-  CodeLensOption,
-} from './util';
+import { CodeLensOption } from './util';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
@@ -13,18 +10,15 @@ import { normalizePath } from './utils/PathUtils';
 import { quote } from './utils/TestNameUtils';
 import { resolveBinaryPath } from './utils/ResolverUtils';
 import { DebugConfigurationProvider } from './debug/DebugConfigurationProvider';
+import * as Settings from './config/Settings';
 
 
 export class TestRunnerConfig {
   private configResolver = new ConfigResolver();
   private debugConfigProvider = new DebugConfigurationProvider();
 
-  private getConfig<T>(key: string, defaultValue?: T): T | undefined {
-    return vscode.workspace.getConfiguration().get(key, defaultValue);
-  }
-
   public get jestCommand(): string {
-    const customCommand = this.getConfig<string>('jestrunner.jestCommand');
+    const customCommand = Settings.getJestCommand();
     if (customCommand) {
       return customCommand;
     }
@@ -38,7 +32,7 @@ export class TestRunnerConfig {
   }
 
   public get vitestCommand(): string {
-    const customCommand = this.getConfig<string>('jestrunner.vitestCommand');
+    const customCommand = Settings.getVitestCommand();
     if (customCommand) {
       return customCommand;
     }
@@ -52,11 +46,7 @@ export class TestRunnerConfig {
   }
 
   public get nodeTestCommand(): string {
-    const customCommand = this.getConfig<string>('jestrunner.nodeTestCommand');
-    if (customCommand) {
-      return customCommand;
-    }
-    return 'node';
+    return Settings.getNodeTestCommand() ?? 'node';
   }
 
   public getTestCommand(filePath?: string): string {
@@ -73,10 +63,10 @@ export class TestRunnerConfig {
   }
 
   public get enableESM(): boolean {
-    return this.getConfig<boolean>('jestrunner.enableESM', false);
+    return Settings.isESMEnabled();
   }
 
-  public getEnvironmentForRun(filePath: string): Record<string, string> | undefined {
+  public getEnvironmentForRun(_filePath: string): Record<string, string> | undefined {
     if (this.enableESM) {
       return { NODE_OPTIONS: '--experimental-vm-modules' };
     }
@@ -95,11 +85,11 @@ export class TestRunnerConfig {
   }
 
   public get changeDirectoryToWorkspaceRoot(): boolean {
-    return this.getConfig('jestrunner.changeDirectoryToWorkspaceRoot');
+    return Settings.isChangeDirectoryToWorkspaceRoot();
   }
 
   public get preserveEditorFocus(): boolean {
-    return this.getConfig('jestrunner.preserveEditorFocus', false);
+    return Settings.isPreserveEditorFocus();
   }
 
   public get cwd(): string {
@@ -111,17 +101,14 @@ export class TestRunnerConfig {
   }
 
   public get projectPathFromConfig(): string | undefined {
-    const projectPathFromConfig = this.getConfig<string>('jestrunner.projectPath');
-    if (projectPathFromConfig) {
-      return resolve(
-        this.currentWorkspaceFolderPath,
-        projectPathFromConfig,
-      );
+    const projectPath = Settings.getProjectPath();
+    if (projectPath) {
+      return resolve(this.currentWorkspaceFolderPath, projectPath);
     }
   }
 
   public get useNearestConfig(): boolean | undefined {
-    return this.getConfig<boolean>('jestrunner.useNearestConfig');
+    return Settings.isUseNearestConfig();
   }
 
   public get currentPackagePath() {
@@ -193,49 +180,31 @@ export class TestRunnerConfig {
   }
 
   public get runOptions(): string[] | null {
-    const runOptions = this.getConfig('jestrunner.runOptions');
-    if (runOptions) {
-      if (Array.isArray(runOptions)) {
-        return runOptions;
-      } else {
-        vscode.window.showWarningMessage(
-          'Please check your vscode settings. "jestrunner.runOptions" must be an Array. ',
-        );
-      }
-    }
-    return null;
+    return Settings.getJestRunOptions();
   }
 
   public get debugOptions(): Partial<vscode.DebugConfiguration> {
-    return this.getConfig('jestrunner.debugOptions', {});
+    return Settings.getJestDebugOptions();
   }
 
   public get vitestDebugOptions(): Partial<vscode.DebugConfiguration> {
-    return this.getConfig('jestrunner.vitestDebugOptions', {});
+    return Settings.getVitestDebugOptions();
   }
 
   public get nodeTestDebugOptions(): Partial<vscode.DebugConfiguration> {
-    return this.getConfig('jestrunner.nodeTestDebugOptions', {});
+    return Settings.getNodeTestDebugOptions();
   }
 
   public get nodeTestRunOptions(): string[] | null {
-    const runOptions = this.getConfig<string[]>('jestrunner.nodeTestRunOptions');
-    if (runOptions && Array.isArray(runOptions)) {
-      return runOptions;
-    }
-    return null;
+    return Settings.getNodeTestRunOptions();
   }
 
   public get isCodeLensEnabled(): boolean {
-    return this.getConfig('jestrunner.enableCodeLens', true);
+    return Settings.isCodeLensEnabled();
   }
 
   public get codeLensOptions(): CodeLensOption[] {
-    const codeLensOptions = this.getConfig('jestrunner.codeLens');
-    if (Array.isArray(codeLensOptions)) {
-      return validateCodeLensOptions(codeLensOptions);
-    }
-    return [];
+    return Settings.getCodeLensOptions();
   }
 
   public getAllPotentialSourceFiles(): string {
@@ -269,10 +238,7 @@ export class TestRunnerConfig {
     options: string[] = [],
   ): string[] {
     const configPath = this.getVitestConfigPath(filePath);
-    const vitestRunOptions = this.getConfig<string[]>('jestrunner.vitestRunOptions');
-    const runOptions = (vitestRunOptions && Array.isArray(vitestRunOptions))
-      ? vitestRunOptions
-      : this.runOptions;
+    const runOptions = Settings.getVitestRunOptions() ?? this.runOptions;
 
     return getFrameworkAdapter('vitest').buildArgs(
       filePath,
