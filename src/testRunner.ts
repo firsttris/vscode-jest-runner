@@ -6,7 +6,6 @@ import {
   findFullTestName,
   getFileName,
   getDirName,
-  pushMany,
   quote,
   unquote,
   updateTestNameIfUsingProperties,
@@ -101,15 +100,7 @@ export class TestRunner {
 
   public async debugTestsOnPath(filePath: string): Promise<void> {
     const debugConfig = this.config.getDebugConfiguration(filePath);
-    const framework = this.config.getTestFramework(filePath);
 
-    const standardArgs =
-      framework === 'vitest'
-        ? this.config.buildVitestArgs(filePath, undefined, false)
-        : this.config.buildJestArgs(filePath, undefined, false);
-    pushMany(debugConfig.args, standardArgs);
-
-    // await this.goToCwd();
     await this.executeDebugCommand({
       config: debugConfig,
       documentUri: vscode.Uri.file(filePath),
@@ -127,16 +118,8 @@ export class TestRunner {
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
     const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const debugConfig = this.config.getDebugConfiguration(filePath);
-    const framework = this.config.getTestFramework(filePath);
+    const debugConfig = this.config.getDebugConfiguration(filePath, resolvedTestName);
 
-    const standardArgs =
-      framework === 'vitest'
-        ? this.config.buildVitestArgs(filePath, resolvedTestName, false)
-        : this.config.buildJestArgs(filePath, resolvedTestName, false);
-    pushMany(debugConfig.args, standardArgs);
-
-    // await this.goToCwd();
     await this.executeDebugCommand({
       config: debugConfig,
       documentUri: editor.document.uri,

@@ -52,7 +52,7 @@ describe('TestRunner', () => {
           return args;
         },
       ),
-      getDebugConfiguration: jest.fn(() => ({
+      getDebugConfiguration: jest.fn((filePath?: string, testName?: string) => ({
         console: 'integratedTerminal',
         internalConsoleOptions: 'neverOpen',
         name: 'Debug Jest Tests',
@@ -60,7 +60,9 @@ describe('TestRunner', () => {
         type: 'node',
         runtimeExecutable: 'npx',
         cwd: '/workspace',
-        args: ['--no-install', 'jest', '--runInBand'],
+        args: testName
+          ? ['--no-install', 'jest', '--runInBand', filePath, '-t', testName]
+          : ['--no-install', 'jest', '--runInBand'],
       })),
       get runOptions() {
         return null;

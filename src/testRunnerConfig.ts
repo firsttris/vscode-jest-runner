@@ -485,7 +485,7 @@ export class TestRunnerConfig {
     return this.buildJestArgs(filePath, testName, withQuotes, options);
   }
 
-  public getDebugConfiguration(filePath?: string): vscode.DebugConfiguration {
+  public getDebugConfiguration(filePath?: string, testName?: string): vscode.DebugConfiguration {
     const framework = this.getTestFramework(filePath);
     const isVitest = framework === 'vitest';
     const isNodeTest = framework === 'node-test';
@@ -527,10 +527,32 @@ export class TestRunnerConfig {
       } else {
         debugConfig.runtimeArgs = ['--test'];
       }
+
+      // Add test name pattern if specified
+      if (testName) {
+        let resolvedTestName = testName;
+        if (testName.includes('%')) {
+          resolvedTestName = resolveTestNameStringInterpolation(testName);
+        }
+        debugConfig.runtimeArgs.push('--test-name-pattern', resolvedTestName);
+      }
+
+      // Add user-configured run options
+      if (this.nodeTestRunOptions) {
+        debugConfig.runtimeArgs.push(...this.nodeTestRunOptions);
+      }
+
       debugConfig.program = filePath || '';
       debugConfig.args = [];
       return debugConfig;
     }
+
+    // Jest/Vitest: build test args and add to config (only if filePath is provided)
+    const testArgs = filePath
+      ? (isVitest
+          ? this.buildVitestArgs(filePath, testName, false)
+          : this.buildJestArgs(filePath, testName, false))
+      : [];
 
     const customCommandKey = isVitest
       ? 'jestrunner.vitestCommand'
@@ -541,8 +563,8 @@ export class TestRunnerConfig {
       if (parts.length > 0) {
         debugConfig.program = parts[0];
         debugConfig.args = isVitest
-          ? [...parts.slice(1), 'run']
-          : parts.slice(1);
+          ? [...parts.slice(1), ...testArgs]
+          : [...parts.slice(1), ...testArgs];
       }
       return debugConfig;
     }
@@ -553,14 +575,14 @@ export class TestRunnerConfig {
 
     if (binaryPath) {
       debugConfig.program = binaryPath;
-      debugConfig.args = isVitest ? ['run'] : ['--runInBand'];
+      debugConfig.args = isVitest ? ['run', ...testArgs] : ['--runInBand', ...testArgs];
     } else {
       // Fallback to npx if binary path cannot be resolved
       logWarning(`Could not resolve ${binaryName} binary path, falling back to npx`);
       debugConfig.runtimeExecutable = 'npx';
       debugConfig.args = isVitest
-        ? ['--no-install', 'vitest', 'run']
-        : ['--no-install', 'jest', '--runInBand'];
+        ? ['--no-install', 'vitest', 'run', ...testArgs]
+        : ['--no-install', 'jest', '--runInBand', ...testArgs];
     }
 
     return debugConfig;
