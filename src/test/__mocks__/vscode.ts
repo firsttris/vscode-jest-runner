@@ -363,6 +363,13 @@ class RelativePattern {
   ) { }
 }
 
+class Location {
+  constructor(
+    public uri: Uri,
+    public range: VscodeRange | Position,
+  ) { }
+}
+
 const tests = {
   createTestController: jest.fn(
     (id: string, label: string) => new TestController(id, label),
@@ -389,6 +396,7 @@ export {
   CodeLens,
   Position,
   VscodeRange,
+  Location,
   TestTag,
   TestMessage,
   TestItem,
