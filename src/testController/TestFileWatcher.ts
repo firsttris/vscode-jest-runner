@@ -4,6 +4,7 @@ import { TestRunnerConfig } from '../testRunnerConfig';
 import { testFileCache } from '../testDetection/testFileCache';
 import { invalidateNodeTestCache } from '../testDetection/frameworkDetection';
 import { parseTestsInFile } from '../testDiscovery';
+import { cacheManager } from '../cache/CacheManager';
 
 export class TestFileWatcher {
     private disposables: vscode.Disposable[] = [];
@@ -53,6 +54,7 @@ export class TestFileWatcher {
         });
 
         watcher.onDidDelete((uri) => {
+            cacheManager.invalidate(uri.fsPath);
             const item = this.testController.items.get(uri.fsPath);
             if (item) {
                 this.testController.items.delete(uri.fsPath);

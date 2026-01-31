@@ -51,15 +51,14 @@ export class CacheManager {
     public invalidate(key: string): void {
         this.directoryFrameworkCache.delete(key);
         this.fileFrameworkCache.delete(key);
-        // We can't easily invalidate specific config cache entries by key only if key is directory,
-        // because the key for config cache involves config names too.
-        // For simplicity, we might just clear config cache or leave it if 'key' matches.
-        // Given 'invalidate' is used for file paths, we probably just clear the whole config cache 
-        // if a relevant file changes, or just rely on 'invalidateAll' for big changes.
-        // For now, let's just clear the specific entry if it matches, but keys are different.
-        // If the key passed is a directory or file, we might just want to be safe and clear config cache
-        // or improve this logic later. For now, simple append to invalidateAll is safe.
-        this.configPathCache.delete(key);
+
+        // Config cache keys have format: "config:${startPath}:${configFiles}"
+        // Delete all entries where the path component contains the invalidated key
+        for (const cacheKey of this.configPathCache.keys()) {
+            if (cacheKey.includes(key)) {
+                this.configPathCache.delete(cacheKey);
+            }
+        }
     }
 }
 
