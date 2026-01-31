@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { isAbsolute, relative, resolve } from 'node:path';
-import { pushMany, logInfo, logError, escapeRegExp, updateTestNameIfUsingProperties, parseShellCommand } from './util';
+import { pushMany } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
 import {
   CoverageProvider,
@@ -25,6 +25,9 @@ import { cacheManager } from './cache/CacheManager';
 import { testFileCache } from './testDetection/testFileCache';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { invalidateNodeTestCache } from './testDetection/frameworkDetection';
+import { parseShellCommand } from './utils/ShellUtils';
+import { escapeRegExp, updateTestNameIfUsingProperties } from './utils/TestNameUtils';
+import { logError, logInfo } from './utils/Logger';
 
 export class JestTestController {
   private testController: vscode.TestController;

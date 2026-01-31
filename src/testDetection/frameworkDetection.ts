@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { logError, logDebug } from '../util';
 import {
   TestFrameworkName,
   testFrameworks,
@@ -15,6 +14,7 @@ import {
   resolveAndValidateCustomConfig,
 } from './configParsing';
 import { detectFrameworkByPatternMatch } from './patternMatching';
+import { logDebug, logError } from '../utils/Logger';
 
 /**
  * Check if a file uses Node.js built-in test runner (node:test)

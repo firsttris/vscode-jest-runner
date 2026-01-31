@@ -7,7 +7,7 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows } from '../util';
+import { isWindows } from '../utils/PathUtils';
 import * as fs from 'node:fs';
 
 describe('TestRunnerConfig', () => {

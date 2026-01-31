@@ -1,13 +1,9 @@
 import * as vscode from 'vscode';
 import { dirname, join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
-import {
-    normalizePath,
-    resolveConfigPathOrMapping,
-    searchPathToParent,
-    logDebug,
-} from './util';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
+import { normalizePath, resolveConfigPathOrMapping, searchPathToParent } from './utils/PathUtils';
+import { logDebug } from './utils/Logger';
 
 export interface ConfigResolutionContext {
     currentWorkspaceFolderPath: string;

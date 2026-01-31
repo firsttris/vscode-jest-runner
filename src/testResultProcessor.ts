@@ -3,12 +3,9 @@ import {
   JestResults,
   JestAssertionResult,
 } from './testResultTypes';
-import {
-  logError,
-  logWarning,
-} from './util';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { parseTapOutput } from './parsers/tapParser';
+import { logError, logWarning } from './utils/Logger';
 
 /**
  * Validates that a parsed object looks like Jest test results

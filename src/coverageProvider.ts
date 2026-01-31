@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { logError, logInfo, logWarning } from './util';
 import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
 import { parseCoverageDirectory } from './testDetection/configParsing';
 import { matchesTestFilePattern } from './testDetection/testFileDetection';
+import { logError, logInfo, logWarning } from './utils/Logger';
 
 export interface CoverageMap {
   [filePath: string]: FileCoverageData;

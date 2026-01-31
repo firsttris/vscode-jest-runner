@@ -1,17 +1,10 @@
 import * as vscode from 'vscode';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { parse } from './parser';
-import {
-  escapeRegExp,
-  findFullTestName,
-  getFileName,
-  getDirName,
-  quote,
-  unquote,
-  updateTestNameIfUsingProperties,
-} from './util';
 import { existsSync } from 'node:fs';
 import { TerminalManager } from './TerminalManager';
+import { escapeRegExp, findFullTestName, quote, unquote } from './utils/TestNameUtils';
+import { getDirName, getFileName } from './utils/PathUtils';
 
 interface DebugCommand {
   documentUri: vscode.Uri;
@@ -51,10 +44,9 @@ export class TestRunner {
     const filePath = editor.document.fileName;
     const currentTestName = typeof argument === 'string' ? argument : undefined;
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const resolvedTestName = updateTestNameIfUsingProperties(testName);
 
     const finalOptions = this.getCoverageOptions(filePath, collectCoverageFromCurrentFile, options);
-    const command = this.buildCommand(filePath, resolvedTestName, finalOptions);
+    const command = this.buildCommand(filePath, testName, finalOptions);
     await this.executeCommand(command, filePath);
   }
 
@@ -112,8 +104,7 @@ export class TestRunner {
 
     const filePath = editor.document.fileName;
     const testName = currentTestName || this.findCurrentTestName(editor);
-    const resolvedTestName = updateTestNameIfUsingProperties(testName);
-    const debugConfig = this.config.getDebugConfiguration(filePath, resolvedTestName);
+    const debugConfig = this.config.getDebugConfiguration(filePath, testName);
 
     await this.executeDebugCommand({
       config: debugConfig,

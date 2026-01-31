@@ -6,14 +6,10 @@ import {
   TextDocument,
   workspace,
 } from 'vscode';
-import {
-  findFullTestName,
-  escapeRegExp,
-  CodeLensOption,
-  TestNode,
-  logError,
-} from './util';
 import { testFileCache } from './testDetection/testFileCache';
+import { CodeLensOption } from './util';
+import { escapeRegExp, findFullTestName, TestNode } from './utils/TestNameUtils';
+import { logError } from './utils/Logger';
 
 const CODE_LENS_CONFIG: Record<
   CodeLensOption,

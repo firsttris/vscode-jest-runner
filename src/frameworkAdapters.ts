@@ -1,11 +1,6 @@
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import {
-  normalizePath,
-  resolveTestNameStringInterpolation,
-  escapeRegExpForPath,
-  quote,
-  escapeSingleQuotes,
-} from './util';
+import { escapeRegExpForPath, normalizePath } from './utils/PathUtils';
+import { escapeSingleQuotes, quote, resolveTestNameStringInterpolation } from './utils/TestNameUtils';
 
 type BuildArgsFn = (
   filePath: string,

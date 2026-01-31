@@ -7,7 +7,7 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows, normalizePath } from '../util';
+import { isWindows, normalizePath } from '../utils/PathUtils';
 import * as fs from 'node:fs';
 import * as moduleLib from 'node:module';
 import * as frameworkDetection from '../testDetection/frameworkDetection';

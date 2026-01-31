@@ -296,9 +296,9 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should handle parser errors gracefully', async () => {
-    const { logError } = require('../util');
+    const loggerModule = require('../utils/Logger');
     const logErrorSpy = jest
-      .spyOn({ logError }, 'logError')
+      .spyOn(loggerModule, 'logError')
       .mockImplementation();
 
     const parseError = new Error('Parse error');

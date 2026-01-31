@@ -1,20 +1,21 @@
+import { pushMany, validateCodeLensOptions } from '../util';
 import {
   isWindows,
   searchPathToParent,
-  validateCodeLensOptions,
   getDirName,
   getFileName,
   normalizePath,
-  escapeRegExp,
   escapeRegExpForPath,
+  resolveConfigPathOrMapping,
+} from '../utils/PathUtils';
+import {
+  escapeRegExp,
   escapeSingleQuotes,
   quote,
   unquote,
-  pushMany,
   updateTestNameIfUsingProperties,
-  resolveConfigPathOrMapping,
   findFullTestName,
-} from '../util';
+} from '../utils/TestNameUtils';
 import * as fs from 'node:fs';
 
 const its = {
@@ -488,7 +489,7 @@ describe('searchPathToParent', () => {
 });
 
 
-import { parseShellCommand } from '../util';
+import { parseShellCommand } from '../utils/ShellUtils';
 
 describe('parseShellCommand', () => {
   it('should parse simple command', () => {

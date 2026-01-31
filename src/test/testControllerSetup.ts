@@ -9,6 +9,7 @@ import {
 import { JestTestController } from '../TestController';
 import * as parser from '../parser';
 import * as util from '../util';
+import * as TestNameUtils from '../utils/TestNameUtils';
 import { EventEmitter } from 'events';
 import { testFileCache } from '../testDetection/testFileCache';
 
@@ -148,10 +149,10 @@ export function setupTestControllerMocks(
   // Mock testFileCache instead of isTestFile
   jest.spyOn(testFileCache, 'isTestFile').mockReturnValue(true);
   jest
-    .spyOn(util, 'updateTestNameIfUsingProperties')
+    .spyOn(TestNameUtils, 'updateTestNameIfUsingProperties')
     .mockImplementation((name) => name);
   jest
-    .spyOn(util, 'escapeRegExp')
+    .spyOn(TestNameUtils, 'escapeRegExp')
     .mockImplementation((str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   jest
     .spyOn(util, 'pushMany')

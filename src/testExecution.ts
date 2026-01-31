@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { escapeRegExp, updateTestNameIfUsingProperties, logInfo, logDebug, normalizePath, quote, escapeSingleQuotes } from './util';
 import { TestRunnerConfig } from './testRunnerConfig';
-import { stripAnsi } from './util';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { stripAnsi } from './utils/ShellUtils';
+import { logDebug, logInfo } from './utils/Logger';
+import { escapeRegExp, escapeSingleQuotes, quote, updateTestNameIfUsingProperties } from './utils/TestNameUtils';
+import { normalizePath } from './utils/PathUtils';
 
 /**
  * Fast test execution for single tests - uses exit code instead of JSON parsing.

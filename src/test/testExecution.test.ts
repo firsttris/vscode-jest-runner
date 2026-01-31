@@ -9,11 +9,15 @@ import {
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { Uri, WorkspaceConfiguration, WorkspaceFolder, TestItem, TestItemCollection } from './__mocks__/vscode';
 
+jest.mock('../utils/PathUtils', () => ({
+    normalizePath: (path: string) => path.replace(/\\/g, '/'),
+    isWindows: () => false,
+}));
+
 jest.mock('../util', () => {
     const actual = jest.requireActual('../util');
     return {
         ...actual,
-        normalizePath: (path: string) => path.replace(/\\/g, '/'),
     };
 });
 

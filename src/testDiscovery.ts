@@ -1,14 +1,10 @@
 import * as vscode from 'vscode';
 import { relative } from 'node:path';
-import { parse, parseTestFile } from './parser';
-import {
-  escapeRegExp,
-  updateTestNameIfUsingProperties,
-  TestNode,
-  logError,
-} from './util';
+import { parseTestFile } from './parser';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { testFileCache } from './testDetection/testFileCache';
+import { logError } from './utils/Logger';
+import { escapeRegExp, TestNode, updateTestNameIfUsingProperties } from './utils/TestNameUtils';
 
 export async function discoverTests(
   workspaceFolder: vscode.WorkspaceFolder,

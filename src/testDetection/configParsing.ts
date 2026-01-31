@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import * as vscode from 'vscode';
-import { logError, resolveConfigPathOrMapping, logDebug } from '../util';
 import { TestPatterns, allTestFrameworks, DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
+import { logDebug, logError } from '../utils/Logger';
+import { resolveConfigPathOrMapping } from '../utils/PathUtils';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
   try {

@@ -2,24 +2,19 @@ import * as vscode from 'vscode';
 import { createRequire } from 'module';
 import { ConfigResolver } from './ConfigResolver';
 import {
-  normalizePath,
   validateCodeLensOptions,
   CodeLensOption,
-  resolveConfigPathOrMapping,
-  searchPathToParent,
-  resolveTestNameStringInterpolation,
-  quote,
-  logDebug,
-  logWarning,
-  parseShellCommand,
-  isWindows,
 } from './util';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
-import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
+import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 import { dirname, join, resolve } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
 import { getFrameworkAdapter } from './frameworkAdapters';
+import { isWindows, normalizePath } from './utils/PathUtils';
+import { logDebug, logWarning } from './utils/Logger';
+import { quote, resolveTestNameStringInterpolation } from './utils/TestNameUtils';
+import { parseShellCommand } from './utils/ShellUtils';
 
 
 

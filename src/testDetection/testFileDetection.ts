@@ -17,7 +17,6 @@ import {
   getCypressSpecPattern,
   getDefaultTestPatterns,
 } from './configParsing';
-import { logDebug } from '../util';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
   detectTestFramework,
@@ -26,6 +25,7 @@ import {
   findVitestDirectory,
   getParentDirectories,
 } from './frameworkDetection';
+import { logDebug } from '../utils/Logger';
 
 const createDefaultResult = (configDir: string): TestPatternResult => ({
   patterns: getDefaultTestPatterns(),
