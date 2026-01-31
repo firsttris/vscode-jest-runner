@@ -49,6 +49,16 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 
             expect(config.nodeTestCommand).toBe('tsx');
         });
+
+        it('should return default node command when custom command is empty string', () => {
+            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+                new WorkspaceConfiguration({
+                    'jestrunner.nodeTestCommand': '',
+                } as any)
+            );
+
+            expect(config.nodeTestCommand).toBe('node');
+        });
     });
 
     describe('getTestCommand', () => {

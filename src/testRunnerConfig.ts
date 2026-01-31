@@ -46,7 +46,7 @@ export class TestRunnerConfig {
   }
 
   public get nodeTestCommand(): string {
-    return Settings.getNodeTestCommand() ?? 'node';
+    return Settings.getNodeTestCommand() || 'node';
   }
 
   public getTestCommand(filePath?: string): string {
