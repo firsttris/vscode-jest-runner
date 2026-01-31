@@ -46,39 +46,4 @@ export function resolveConfigPathOrMapping(
     return undefined;
 }
 
-export function searchPathToParent<T>(
-    startingPath: string,
-    ancestorPath: string,
-    callback: (currentFolderPath: string) => false | undefined | null | 0 | T,
-) {
-    let currentFolderPath: string;
-    try {
-        currentFolderPath = statSync(startingPath).isDirectory()
-            ? startingPath
-            : dirname(startingPath);
-    } catch (error) {
-        logWarning(
-            `Could not access ${startingPath}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        currentFolderPath = dirname(startingPath);
-    }
 
-    const endPath = dirname(ancestorPath);
-    const resolvedStart = resolve(currentFolderPath);
-    const resolvedEnd = resolve(endPath);
-    if (!resolvedStart.startsWith(resolvedEnd)) {
-        return false;
-    }
-
-    let lastPath: null | string = null;
-    do {
-        const result = callback(currentFolderPath);
-        if (result) {
-            return result;
-        }
-        lastPath = currentFolderPath;
-        currentFolderPath = dirname(currentFolderPath);
-    } while (currentFolderPath !== endPath && currentFolderPath !== lastPath);
-
-    return false;
-}

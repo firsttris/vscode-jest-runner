@@ -55,3 +55,44 @@ export function resolveBinaryPath(binaryName: string, cwd: string): string | und
     }
     return undefined;
 }
+
+/**
+ * Resolve the absolute path to a configuration file by searching parent directories.
+ */
+export function resolveConfigPath(
+    configNames: string[],
+    cwd: string,
+    stopPath?: string
+): string | undefined {
+    let currentDir = normalizePath(cwd);
+    const stopDir = stopPath ? normalizePath(stopPath) : undefined;
+
+    // Safety check to prevent infinite loops (though path parsing usually prevents this)
+    const MAX_DEPTH = 50;
+    let depth = 0;
+
+    while (depth < MAX_DEPTH) {
+        for (const configName of configNames) {
+            const configPath = join(currentDir, configName);
+            if (existsSync(configPath)) {
+                logDebug(`Found config ${configName} at: ${configPath}`);
+                return normalizePath(configPath);
+            }
+        }
+
+        // Stop if we reached the top or the specific stop path
+        if (stopDir && currentDir === stopDir) {
+            break;
+        }
+
+        const parentDir = dirname(currentDir);
+        if (parentDir === currentDir) {
+            // Reached root
+            break;
+        }
+        currentDir = parentDir;
+        depth++;
+    }
+
+    return undefined;
+}

@@ -10,6 +10,20 @@ import {
 import { isWindows, normalizePath } from '../utils/PathUtils';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { cacheManager } from '../cache/CacheManager';
+
+jest.mock('../cache/CacheManager', () => ({
+  cacheManager: {
+    getConfigPath: jest.fn(),
+    setConfigPath: jest.fn(),
+    invalidateAll: jest.fn(),
+    getFileFramework: jest.fn(),
+    setFileFramework: jest.fn(),
+    getFramework: jest.fn(),
+    setFramework: jest.fn(),
+    invalidate: jest.fn(),
+  },
+}));
 
 const describes = {
   windows: isWindows() ? describe : describe.skip,
@@ -126,6 +140,7 @@ describe('TestRunnerConfig', () => {
           let jestRunnerConfig: TestRunnerConfig;
 
           beforeEach(() => {
+            cacheManager.invalidateAll();
             jestRunnerConfig = new TestRunnerConfig();
             jest
               .spyOn(vscode.workspace, 'getWorkspaceFolder')
@@ -422,6 +437,7 @@ describe('TestRunnerConfig', () => {
             let jestRunnerConfig: TestRunnerConfig;
 
             beforeEach(() => {
+              cacheManager.invalidateAll();
               jestRunnerConfig = new TestRunnerConfig();
               jest
                 .spyOn(vscode.workspace, 'getWorkspaceFolder')
@@ -546,6 +562,7 @@ describe('TestRunnerConfig', () => {
             let jestRunnerConfig: TestRunnerConfig;
 
             beforeEach(() => {
+              cacheManager.invalidateAll();
               jestRunnerConfig = new TestRunnerConfig();
               jest
                 .spyOn(vscode.workspace, 'getWorkspaceFolder')
@@ -680,6 +697,7 @@ describe('TestRunnerConfig', () => {
           let jestRunnerConfig: TestRunnerConfig;
 
           beforeEach(() => {
+            cacheManager.invalidateAll();
             jestRunnerConfig = new TestRunnerConfig();
             jest
               .spyOn(vscode.workspace, 'getWorkspaceFolder')
@@ -910,6 +928,7 @@ describe('TestRunnerConfig', () => {
           let activeTextEditorSpy: jest.SpyInstance;
 
           beforeEach(() => {
+            cacheManager.invalidateAll();
             jestRunnerConfig = new TestRunnerConfig();
             configFilePath =
               configPath && configFilename

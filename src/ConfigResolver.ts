@@ -2,8 +2,10 @@ import * as vscode from 'vscode';
 import { dirname, join, resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { TestFrameworkName, testFrameworks } from './testDetection/frameworkDefinitions';
-import { normalizePath, resolveConfigPathOrMapping, searchPathToParent } from './utils/PathUtils';
+import { normalizePath, resolveConfigPathOrMapping } from './utils/PathUtils';
+import { resolveConfigPath } from './utils/ResolverUtils';
 import { logDebug } from './utils/Logger';
+import { cacheManager } from './cache/CacheManager';
 
 export interface ConfigResolutionContext {
     currentWorkspaceFolderPath: string;
@@ -68,7 +70,7 @@ export class ConfigResolver {
         targetConfigFilename?: string,
         framework?: TestFrameworkName,
     ): string | undefined {
-        let configFiles: readonly string[];
+        let configFiles: readonly string[]; // Use readonly string[] here as well
         if (targetConfigFilename) {
             configFiles = [targetConfigFilename];
         } else if (framework) {
@@ -78,6 +80,7 @@ export class ConfigResolver {
             configFiles = testFrameworks.flatMap(f => f.configFiles);
         }
 
+
         const currentWorkspaceFolderPath = context.currentWorkspaceFolderPath;
         const startPath = targetPath ||
             dirname(vscode.window.activeTextEditor?.document.uri.fsPath || '');
@@ -86,27 +89,29 @@ export class ConfigResolver {
             return undefined;
         }
 
-        const foundPath = searchPathToParent<string>(
+        const cacheKey = `config:${startPath}:${configFiles.join(',')}`;
+        const cachedPath = cacheManager.getConfigPath(cacheKey);
+        if (cachedPath !== undefined) {
+            return cachedPath;
+        }
+
+        // Convert readonly array to mutable array for the utility function which expects string[]
+        // This is safe because the utility function doesn't modify the array, 
+        // but we cast it or copy it to satisfy the type system if needed.
+        // Actually resolveConfigPath expects string[], so we can just spread it.
+        const foundPath = resolveConfigPath(
+            [...configFiles],
             startPath,
-            currentWorkspaceFolderPath,
-            (currentFolderPath: string) => {
-                for (const configFilename of configFiles) {
-                    const currentFolderConfigPath = join(
-                        currentFolderPath,
-                        configFilename,
-                    );
-                    if (existsSync(currentFolderConfigPath)) {
-                        return currentFolderConfigPath;
-                    }
-                }
-            },
+            currentWorkspaceFolderPath
         );
-        const result = foundPath ? normalizePath(foundPath) : undefined;
-        if (result) {
-            logDebug(`findConfigPath found: ${result}`);
+
+        if (foundPath) {
+            logDebug(`findConfigPath found: ${foundPath}`);
         } else {
             logDebug(`findConfigPath failed to find config in: ${targetPath}`);
         }
-        return result;
+
+        cacheManager.setConfigPath(cacheKey, foundPath);
+        return foundPath;
     }
 }
