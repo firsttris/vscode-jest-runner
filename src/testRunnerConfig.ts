@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { createRequire } from 'module';
 import { ConfigResolver } from './ConfigResolver';
 import {
   validateCodeLensOptions,
@@ -8,71 +7,17 @@ import {
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
-import { dirname, join, resolve } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { getFrameworkAdapter } from './frameworkAdapters';
-import { isWindows, normalizePath } from './utils/PathUtils';
-import { logDebug, logWarning } from './utils/Logger';
-import { quote, resolveTestNameStringInterpolation } from './utils/TestNameUtils';
-import { parseShellCommand } from './utils/ShellUtils';
-
-
-
-/**
- * Resolve the absolute path to a binary using Node's require.resolve.
- * This recursively searches parent directories, just like npx does.
- */
-function resolveBinaryPath(binaryName: string, cwd: string): string | undefined {
-  try {
-    // Create a require function with the cwd as the base path
-    // This allows require.resolve to search from the project directory upwards
-    const requireFromCwd = createRequire(join(cwd, 'package.json'));
-
-    // Strategy 1: On non-Windows, try node_modules/.bin symlink (most reliable)
-    // These are executable symlinks created by npm/yarn/pnpm
-    if (!isWindows()) {
-      try {
-        const pkgJsonPath = requireFromCwd.resolve(`${binaryName}/package.json`);
-        // Extract the base node_modules path (works for normal, scoped, and pnpm layouts)
-        const nodeModulesMatch = pkgJsonPath.split(/[/\\]node_modules[/\\]/);
-        if (nodeModulesMatch.length > 1) {
-          const binPath = join(nodeModulesMatch[0], 'node_modules', '.bin', binaryName);
-          if (existsSync(binPath)) {
-            logDebug(`Resolved binary via node_modules/.bin for ${binaryName}: ${binPath}`);
-            return normalizePath(binPath);
-          }
-        }
-      } catch {
-        // .bin approach failed, try other strategies
-      }
-    }
-
-    // Strategy 2: Resolve via package.json and bin field
-    // Works for packages that don't export their bin (e.g., vitest)
-    try {
-      const pkgJsonPath = requireFromCwd.resolve(`${binaryName}/package.json`);
-      const pkgDir = dirname(pkgJsonPath);
-      const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
-      const binEntry = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.[binaryName];
-      if (binEntry) {
-        const binPath = join(pkgDir, binEntry);
-        if (existsSync(binPath)) {
-          logDebug(`Resolved binary via package.json for ${binaryName}: ${binPath}`);
-          return normalizePath(binPath);
-        }
-      }
-    } catch {
-      // Package.json approach also failed
-    }
-  } catch (error) {
-    logWarning(`Failed to resolve binary path for ${binaryName}: ${error}`);
-  }
-  return undefined;
-}
+import { normalizePath } from './utils/PathUtils';
+import { quote } from './utils/TestNameUtils';
+import { resolveBinaryPath } from './utils/ResolverUtils';
+import { DebugConfigurationProvider } from './debug/DebugConfigurationProvider';
 
 
 export class TestRunnerConfig {
   private configResolver = new ConfigResolver();
+  private debugConfigProvider = new DebugConfigurationProvider();
 
   private getConfig<T>(key: string, defaultValue?: T): T | undefined {
     return vscode.workspace.getConfiguration().get(key, defaultValue);
@@ -372,105 +317,6 @@ export class TestRunnerConfig {
   }
 
   public getDebugConfiguration(filePath?: string, testName?: string): vscode.DebugConfiguration {
-    const framework = this.getTestFramework(filePath);
-    const isVitest = framework === 'vitest';
-    const isNodeTest = framework === 'node-test';
-
-    const debugConfig: vscode.DebugConfiguration = {
-      console: 'integratedTerminal',
-      internalConsoleOptions: 'neverOpen',
-      name: isNodeTest
-        ? 'Debug Node.js Tests'
-        : isVitest
-          ? 'Debug Vitest Tests'
-          : 'Debug Jest Tests',
-      request: 'launch',
-      type: 'node',
-      ...(this.changeDirectoryToWorkspaceRoot ? { cwd: this.cwd } : {}),
-      ...(isNodeTest
-        ? this.nodeTestDebugOptions
-        : isVitest
-          ? this.vitestDebugOptions
-          : this.debugOptions),
-    };
-
-    if (!isVitest && !isNodeTest && this.enableESM) {
-      debugConfig.env = {
-        ...debugConfig.env,
-        NODE_OPTIONS: '--experimental-vm-modules'
-      };
-    }
-
-    // Node.js test runner uses node directly with --test flag
-    if (isNodeTest) {
-      const customCommand = this.getConfig<string>('jestrunner.nodeTestCommand');
-      if (customCommand) {
-        const parts = parseShellCommand(customCommand);
-        if (parts.length > 0) {
-          debugConfig.runtimeExecutable = parts[0];
-          debugConfig.runtimeArgs = [...parts.slice(1), '--test'];
-        }
-      } else {
-        debugConfig.runtimeArgs = ['--test'];
-      }
-
-      // Add test name pattern if specified
-      if (testName) {
-        let resolvedTestName = testName;
-        if (testName.includes('%')) {
-          resolvedTestName = resolveTestNameStringInterpolation(testName);
-        }
-        debugConfig.runtimeArgs.push('--test-name-pattern', resolvedTestName);
-      }
-
-      // Add user-configured run options
-      if (this.nodeTestRunOptions) {
-        debugConfig.runtimeArgs.push(...this.nodeTestRunOptions);
-      }
-
-      debugConfig.program = filePath || '';
-      debugConfig.args = [];
-      return debugConfig;
-    }
-
-    // Jest/Vitest: build test args and add to config (only if filePath is provided)
-    const testArgs = filePath
-      ? (isVitest
-        ? this.buildVitestArgs(filePath, testName, false)
-        : this.buildJestArgs(filePath, testName, false))
-      : [];
-
-    const customCommandKey = isVitest
-      ? 'jestrunner.vitestCommand'
-      : 'jestrunner.jestCommand';
-    const customCommand = this.getConfig(customCommandKey);
-    if (customCommand && typeof customCommand === 'string') {
-      const parts = parseShellCommand(customCommand);
-      if (parts.length > 0) {
-        debugConfig.program = parts[0];
-        debugConfig.args = isVitest
-          ? [...parts.slice(1), ...testArgs]
-          : [...parts.slice(1), ...testArgs];
-      }
-      return debugConfig;
-    }
-
-    // Use npx to resolve the binary path and execute it directly
-    const binaryName = isVitest ? 'vitest' : 'jest';
-    const binaryPath = resolveBinaryPath(binaryName, this.cwd);
-
-    if (binaryPath) {
-      debugConfig.program = binaryPath;
-      debugConfig.args = isVitest ? ['run', ...testArgs] : ['--runInBand', ...testArgs];
-    } else {
-      // Fallback to npx if binary path cannot be resolved
-      logWarning(`Could not resolve ${binaryName} binary path, falling back to npx`);
-      debugConfig.runtimeExecutable = 'npx';
-      debugConfig.args = isVitest
-        ? ['--no-install', 'vitest', 'run', ...testArgs]
-        : ['--no-install', 'jest', '--runInBand', ...testArgs];
-    }
-
-    return debugConfig;
+    return this.debugConfigProvider.getDebugConfiguration(this, filePath, testName);
   }
 }
