@@ -114,6 +114,19 @@ export class TestRunExecutor {
 
             const esmEnv = isVitest || isNodeTest ? undefined : this.testRunnerConfig.getEnvironmentForRun(allFiles[0]);
 
+            // Clean up previous Bun coverage file if it exists to avoid random hex files
+            if (framework === 'bun' && collectCoverage) {
+                try {
+                    const fs = require('fs');
+                    const coveragePath = join(this.testRunnerConfig.cwd, 'coverage', 'lcov.info');
+                    if (fs.existsSync(coveragePath)) {
+                        fs.unlinkSync(coveragePath);
+                    }
+                } catch (e) {
+                    // Ignore errors during cleanup
+                }
+            }
+
             // Fast mode: single test without coverage - skip JSON parsing
             if (canUseFastMode(testsByFile, collectCoverage) && additionalArgs.length === 0) {
                 const test = allTests[0];
@@ -185,7 +198,12 @@ export class TestRunExecutor {
                         if (fs.existsSync(bunReportPath)) {
                             const reportContent = fs.readFileSync(bunReportPath, 'utf8');
                             result.output += '\n' + reportContent;
-                            fs.unlinkSync(bunReportPath);
+                            // Clean up report file
+                            try {
+                                fs.unlinkSync(bunReportPath);
+                            } catch (e) {
+                                logError('Failed to delete Bun report file', e);
+                            }
                         }
                     } catch (e) {
                         logError('Failed to read Bun report file', e);

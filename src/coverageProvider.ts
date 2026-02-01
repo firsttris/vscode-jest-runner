@@ -109,7 +109,16 @@ export class CoverageProvider {
     try {
       if (framework === 'node-test' || framework === 'bun' || framework === 'deno') {
         const startDir = testFilePath ? dirname(testFilePath) : (configPath ? dirname(configPath) : workspaceFolder);
-        const lcovPath = this.findLcovRecursively(startDir, workspaceFolder);
+        // Try to find lcov.info in the current dir or recursively up
+        let lcovPath = this.findLcovRecursively(startDir, workspaceFolder);
+
+        // If not found, checks specifically for coverage/lcov.info which is common for Bun
+        if (!lcovPath) {
+          const coverageLcovPath = join(workspaceFolder, 'coverage', 'lcov.info');
+          if (existsSync(coverageLcovPath)) {
+            lcovPath = coverageLcovPath;
+          }
+        }
 
         if (lcovPath) {
           logInfo(`Found LCOV file at: ${lcovPath}`);
