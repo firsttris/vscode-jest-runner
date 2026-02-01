@@ -101,7 +101,7 @@ function collectTests(task, ancestors, out) {
   }
 }
 
-const reporter = {
+class VitestStructuredReporter {
   onFinished(files = []) {
     const testResults = files.map((file) => {
       const assertions = [];
@@ -137,10 +137,10 @@ const reporter = {
     };
 
     emit('results', payload);
-  },
-};
+  }
+}
 
-module.exports = reporter;
+module.exports = VitestStructuredReporter;
 `;
 
 const nodeReporterSource = String.raw`import { TestReporter } from 'node:test/reporters';

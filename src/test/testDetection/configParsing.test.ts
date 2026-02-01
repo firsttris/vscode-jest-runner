@@ -885,6 +885,39 @@ export default defineConfig({
       expect(result).toBe('./e2e');
     });
 
+    it('should extract testDir from spread call arguments (nx preset)', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from '@playwright/test';
+import { nxE2EPreset } from '@nx/playwright/preset';
+
+export default defineConfig({
+  ...nxE2EPreset(__filename, { testDir: './src' }),
+  use: {
+    baseURL: 'http://localhost:4200',
+  },
+});
+      `);
+
+      const result = getPlaywrightTestDir('/test/playwright.config.ts');
+
+      expect(result).toBe('./src');
+    });
+
+    it('should extract Cypress specPattern from spread call arguments (nx preset)', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'cypress';
+import { nxE2EPreset } from '@nx/cypress/plugins/cypress-preset';
+
+export default defineConfig({
+  ...nxE2EPreset(__dirname, { specPattern: 'src/**/*.cy.ts' }),
+});
+      `);
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toEqual(['src/**/*.cy.ts']);
+    });
+
     it('should return undefined when no testDir is found', () => {
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
 export default defineConfig({

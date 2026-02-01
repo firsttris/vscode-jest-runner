@@ -1217,6 +1217,58 @@ export default defineConfig({
       expect(result).toBe(true);
     });
 
+    it('should detect Playwright testDir when config uses nx preset spread', () => {
+      const filePath = '/workspace/project/apps/shop-e2e/src/example.spec.ts';
+      const playwrightConfigPath = path.join(rootPath, 'apps/shop-e2e/playwright.config.ts');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === playwrightConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === playwrightConfigPath) {
+          return `
+import { defineConfig } from '@playwright/test';
+import { nxE2EPreset } from '@nx/playwright/preset';
+export default defineConfig({
+  ...nxE2EPreset(__filename, { testDir: './src' }),
+});
+`;
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(true);
+    });
+
+    it('should detect Cypress specPattern when config uses nx preset spread', () => {
+      const filePath = '/workspace/project/apps/shop-e2e/src/example.cy.ts';
+      const cypressConfigPath = path.join(rootPath, 'apps/shop-e2e/cypress.config.ts');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === cypressConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === cypressConfigPath) {
+          return `
+import { defineConfig } from 'cypress';
+import { nxE2EPreset } from '@nx/cypress/plugins/cypress-preset';
+export default defineConfig({
+  ...nxE2EPreset(__dirname, { specPattern: 'src/**/*.cy.ts' }),
+});
+`;
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(true);
+    });
+
     it('should return false when Playwright config is found but file is not in testDir', () => {
       const filePath = '/workspace/project/src/utils.test.js';
       const playwrightConfigPath = path.join(rootPath, 'playwright.config.ts');
