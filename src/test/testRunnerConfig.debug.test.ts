@@ -7,7 +7,7 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows } from '../util';
+import { isWindows } from '../utils/PathUtils';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as testDetection from '../testDetection/testFileDetection';

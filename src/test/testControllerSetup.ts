@@ -9,6 +9,7 @@ import {
 import { JestTestController } from '../TestController';
 import * as parser from '../parser';
 import * as util from '../util';
+import * as TestNameUtils from '../utils/TestNameUtils';
 import { EventEmitter } from 'events';
 import { testFileCache } from '../testDetection/testFileCache';
 
@@ -108,7 +109,7 @@ export function setupTestControllerMocks(
     .spyOn(vscode.workspace, 'createFileSystemWatcher')
     .mockReturnValue(mockWatcher as any);
 
-  jest.spyOn(parser, 'parse').mockReturnValue({
+  const mockParseResult = {
     root: {
       children: [
         {
@@ -128,15 +129,30 @@ export function setupTestControllerMocks(
         },
       ],
     },
-  } as any);
+  };
+
+  jest.spyOn(parser, 'parse').mockReturnValue(mockParseResult as any);
+  // Ensure parseTestFile is also mocked
+  if (typeof parser.parseTestFile === 'function') {
+    jest.spyOn(parser, 'parseTestFile').mockReturnValue(mockParseResult as any);
+  } else {
+    // If parseTestFile is not yet available on the imported module (due to how jest.mock works with exports),
+    // we might need to handle it. But since we use jest.spyOn(parser), it requires 'parser' to be the actual module object.
+    // Assuming parseTestFile IS exported from parser.ts.
+    // Wait, if I added it to parser.ts, it should be there.
+    // But tests run against compiled JS? or TS via ts-jest?
+
+    // Let's just try mocking it.
+    jest.spyOn(parser, 'parseTestFile').mockReturnValue(mockParseResult as any);
+  }
 
   // Mock testFileCache instead of isTestFile
   jest.spyOn(testFileCache, 'isTestFile').mockReturnValue(true);
   jest
-    .spyOn(util, 'updateTestNameIfUsingProperties')
+    .spyOn(TestNameUtils, 'updateTestNameIfUsingProperties')
     .mockImplementation((name) => name);
   jest
-    .spyOn(util, 'escapeRegExp')
+    .spyOn(TestNameUtils, 'escapeRegExp')
     .mockImplementation((str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
   jest
     .spyOn(util, 'pushMany')

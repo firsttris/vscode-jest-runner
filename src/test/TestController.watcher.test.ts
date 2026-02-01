@@ -40,11 +40,11 @@ describe('JestTestController - file watcher', () => {
     );
     mockTestController.items.add(testItem);
 
-    (parser.parse as jest.Mock).mockClear();
+    (parser.parseTestFile as jest.Mock).mockClear();
 
     changeCallback({ fsPath: testFilePath });
 
-    expect(parser.parse).toHaveBeenCalledWith(testFilePath);
+    expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
   });
 
   it('should add new test file on create', () => {
@@ -96,11 +96,11 @@ describe('JestTestController - file watcher', () => {
     const createCallback = (mockWatcher.onDidCreate as jest.Mock).mock
       .calls[0][0];
 
-    (parser.parse as jest.Mock).mockClear();
+    (parser.parseTestFile as jest.Mock).mockClear();
 
     createCallback(vscode.Uri.file('/other/path/test.ts'));
 
-    expect(parser.parse).not.toHaveBeenCalled();
+    expect(parser.parseTestFile).not.toHaveBeenCalled();
   });
 
   it('should not add non-test files on create', () => {
@@ -117,11 +117,11 @@ describe('JestTestController - file watcher', () => {
     jest.spyOn(testFileCache, 'isTestFile').mockReturnValue(false);
 
     const initialItemCount = mockTestController.items.size;
-    (parser.parse as jest.Mock).mockClear();
+    (parser.parseTestFile as jest.Mock).mockClear();
 
     createCallback(vscode.Uri.file('/workspace/regular-file.ts'));
 
-    expect(parser.parse).not.toHaveBeenCalled();
+    expect(parser.parseTestFile).not.toHaveBeenCalled();
     expect(mockTestController.items.size).toBe(initialItemCount);
   });
 });

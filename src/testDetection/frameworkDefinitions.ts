@@ -1,4 +1,4 @@
-export type TestFrameworkName = 'jest' | 'vitest';
+export type TestFrameworkName = 'jest' | 'vitest' | 'node-test';
 
 export interface TestFramework {
   name: string;
@@ -72,6 +72,11 @@ export const testFrameworks: TestFramework[] = [
       'jest-e2e.json',
     ],
     binaryName: 'jest',
+  },
+  {
+    name: 'node-test',
+    configFiles: [], // Node.js test runner has no config file
+    binaryName: 'node',
   },
 ];
 

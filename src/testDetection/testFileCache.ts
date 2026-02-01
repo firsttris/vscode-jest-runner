@@ -1,59 +1,57 @@
+import { cacheManager } from '../cache/CacheManager';
 import { matchesTestFilePattern } from './testFileDetection';
 import { findTestFrameworkDirectory } from './frameworkDetection';
 import { resolveAndValidateCustomConfig } from './configParsing';
 import { hasConflictingTestFramework } from './testFileDetection';
 
 class TestFileCache {
-    private cache = new Map<string, boolean>();
-
     public isTestFile(filePath: string): boolean {
-        if (this.cache.has(filePath)) {
-            const cached = this.cache.get(filePath)!;
-            return cached;
+        const cached = cacheManager.getFileFramework(filePath);
+        if (cached !== undefined) {
+            return !!cached;
         }
 
         const result = this.computeIsTestFile(filePath);
 
-        this.cache.set(filePath, result);
+        cacheManager.setFileFramework(filePath, result);
 
-        return result;
+        return !!result;
     }
 
-    private computeIsTestFile(filePath: string): boolean {
+    private computeIsTestFile(filePath: string): { framework: string; directory: string } | null {
         if (!matchesTestFilePattern(filePath)) {
-            return false;
+            return null;
         }
 
         const frameworkResult = findTestFrameworkDirectory(filePath);
         if (!frameworkResult) {
-            return false;
+            return null;
         }
 
         if (hasConflictingTestFramework(filePath, frameworkResult.framework)) {
-            return false;
+            return null;
         }
 
-        const hasFrameworkDir = !!frameworkResult;
         const hasCustomConfig =
             !!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
             !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
 
-        return hasFrameworkDir || hasCustomConfig;
+        if (frameworkResult || hasCustomConfig) {
+            return frameworkResult;
+        }
+        return null;
     }
 
     public invalidate(filePath?: string): void {
         if (filePath) {
-            this.cache.delete(filePath);
+            cacheManager.invalidate(filePath);
         } else {
-            this.cache.clear();
+            cacheManager.invalidateAll();
         }
     }
 
     public getCacheStats(): { size: number; entries: string[] } {
-        return {
-            size: this.cache.size,
-            entries: Array.from(this.cache.keys()),
-        };
+        return cacheManager.getTestFileStats();
     }
 }
 

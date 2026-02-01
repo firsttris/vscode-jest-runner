@@ -8,16 +8,11 @@ import {
   testFrameworks,
   allTestFrameworks,
 } from './frameworkDefinitions';
-import {
-  getConfigPath,
-  getTestMatchFromJestConfig,
-  getVitestConfig,
-  resolveAndValidateCustomConfig,
-  getPlaywrightTestDir,
-  getCypressSpecPattern,
-  getDefaultTestPatterns,
-} from './configParsing';
-import { logDebug } from '../util';
+import { getConfigPath, resolveAndValidateCustomConfig, getDefaultTestPatterns } from './configParsing';
+import { getTestMatchFromJestConfig } from './configParsers/jestParser';
+import { getVitestConfig } from './configParsers/vitestParser';
+import { getPlaywrightTestDir } from './configParsers/playwrightParser';
+import { getCypressSpecPattern } from './configParsers/cypressParser';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
   detectTestFramework,
@@ -26,6 +21,7 @@ import {
   findVitestDirectory,
   getParentDirectories,
 } from './frameworkDetection';
+import { logDebug } from '../utils/Logger';
 
 const createDefaultResult = (configDir: string): TestPatternResult => ({
   patterns: getDefaultTestPatterns(),

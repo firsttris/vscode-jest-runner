@@ -68,6 +68,7 @@ type JestRunnerConfigProps = {
   'jestrunner.vitestCommand'?: string;
   'jestrunner.vitestConfigPath'?: string | Record<string, string>;
   'jestrunner.vitestRunOptions'?: string[];
+  'jestrunner.nodeTestRunOptions'?: string[];
   'jestrunner.enableCodeLens'?: boolean;
   'jestrunner.changeDirectoryToWorkspaceRoot'?: boolean;
 };
@@ -362,6 +363,13 @@ class RelativePattern {
   ) { }
 }
 
+class Location {
+  constructor(
+    public uri: Uri,
+    public range: VscodeRange | Position,
+  ) { }
+}
+
 const tests = {
   createTestController: jest.fn(
     (id: string, label: string) => new TestController(id, label),
@@ -372,6 +380,31 @@ const workspace = new Workspace();
 const window = new Window();
 const commands = new Commands();
 const debug = new Debug();
+
+
+class EventEmitter<T> {
+  private listeners: Array<(e: T) => any> = [];
+
+  event = (listener: (e: T) => any, thisArgs?: any, disposables?: any[]) => {
+    this.listeners.push(listener);
+    return {
+      dispose: () => {
+        const index = this.listeners.indexOf(listener);
+        if (index > -1) {
+          this.listeners.splice(index, 1);
+        }
+      }
+    };
+  };
+
+  fire(data: T): void {
+    this.listeners.forEach(listener => listener(data));
+  }
+
+  dispose(): void {
+    this.listeners = [];
+  }
+}
 
 export {
   workspace,
@@ -388,6 +421,7 @@ export {
   CodeLens,
   Position,
   VscodeRange,
+  Location,
   TestTag,
   TestMessage,
   TestItem,
@@ -405,4 +439,5 @@ export {
   StatementCoverage,
   BranchCoverage,
   DeclarationCoverage,
+  EventEmitter,
 };

@@ -1,4 +1,4 @@
-import { parse } from './parser';
+import { parseTestFile } from './parser';
 import {
   CodeLens,
   CodeLensProvider,
@@ -6,14 +6,10 @@ import {
   TextDocument,
   workspace,
 } from 'vscode';
-import {
-  findFullTestName,
-  escapeRegExp,
-  CodeLensOption,
-  TestNode,
-  logError,
-} from './util';
 import { testFileCache } from './testDetection/testFileCache';
+import { CodeLensOption } from './util';
+import { escapeRegExp, findFullTestName, TestNode } from './utils/TestNameUtils';
+import { logError } from './utils/Logger';
 
 const CODE_LENS_CONFIG: Record<
   CodeLensOption,
@@ -90,9 +86,7 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
         return [];
       }
 
-      const parseResults = parse(document.fileName, document.getText(), {
-        plugins: { decorators: 'legacy' },
-      }).root.children;
+      const parseResults = parseTestFile(document.fileName, document.getText()).root.children;
 
       const codeLenses = parseResults.flatMap((parseResult) =>
         getTestsBlocks(parseResult, parseResults, this.codeLensOptions),

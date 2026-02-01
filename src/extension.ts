@@ -4,8 +4,8 @@ import { TestRunner } from './testRunner';
 import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { JestTestController } from './TestController';
-import { logError } from './util';
 import { testFileCache } from './testDetection/testFileCache';
+import { logError } from './utils/Logger';
 
 function wrapCommandHandler<T extends unknown[]>(
   handler: (...args: T) => Promise<void> | void,

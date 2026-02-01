@@ -283,12 +283,12 @@ describe('JestTestController - test discovery', () => {
     };
 
     (mockTestController.createTestItem as jest.Mock).mockClear();
-    (parser.parse as jest.Mock).mockClear();
+    (parser.parseTestFile as jest.Mock).mockClear();
 
     onOpenCallback(mockDocument);
 
     expect(mockTestController.createTestItem).toHaveBeenCalled();
-    expect(parser.parse).toHaveBeenCalled();
+    expect(parser.parseTestFile).toHaveBeenCalled();
   });
 
   it('should not discover tests at startup', () => {
@@ -296,13 +296,13 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should handle parser errors gracefully', async () => {
-    const { logError } = require('../util');
+    const loggerModule = require('../utils/Logger');
     const logErrorSpy = jest
-      .spyOn({ logError }, 'logError')
+      .spyOn(loggerModule, 'logError')
       .mockImplementation();
 
     const parseError = new Error('Parse error');
-    (parser.parse as jest.Mock).mockImplementation(() => {
+    (parser.parseTestFile as jest.Mock).mockImplementation(() => {
       throw parseError;
     });
 
@@ -321,7 +321,7 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should handle empty parse results', () => {
-    jest.spyOn(parser, 'parse').mockReturnValue({
+    jest.spyOn(parser, 'parseTestFile').mockReturnValue({
       root: {
         children: [],
       },

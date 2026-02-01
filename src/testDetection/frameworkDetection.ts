@@ -1,29 +1,92 @@
 import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { logError } from '../util';
 import {
   TestFrameworkName,
   testFrameworks,
   FrameworkResult,
   SearchOutcome,
 } from './frameworkDefinitions';
-import { testDetectionCache, vitestDetectionCache } from './cache';
+import { cacheManager } from '../cache/CacheManager';
 import {
   binaryExists,
   getConfigPath,
   resolveAndValidateCustomConfig,
 } from './configParsing';
 import { detectFrameworkByPatternMatch } from './patternMatching';
+import { logDebug, logError } from '../utils/Logger';
+
+/**
+ * Check if a file uses Node.js built-in test runner (node:test)
+ * Automatically detects based on import statements in the file
+ */
+export function isNodeTestFile(filePath: string): boolean {
+  // Check cache first
+  const cached = cacheManager.getFileFramework(filePath);
+  if (cached !== undefined) {
+    return cached?.framework === 'node-test';
+  }
+
+  try {
+    if (!existsSync(filePath)) {
+      // If file doesn't exist, we can't be sure it's not a test file in general,
+      // but strictly for node-test it's false. 
+      // We don't cache 'null' indiscriminately here to avoid side effects on other frameworks.
+      return false;
+    }
+
+    const content = readFileSync(filePath, 'utf-8');
+    // Check for node:test import patterns:
+    // - import { test } from 'node:test'
+    // - import test from 'node:test'
+    // - const { test } = require('node:test')
+    // - require('node:test')
+    const isNodeTest =
+      /from\s+['"]node:test['"]/.test(content) ||
+      /require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
+
+    if (isNodeTest) {
+      // We do NOT cache here because pattern matching checks haven't run yet.
+      // The TestFileCache will handle caching valid test files.
+    }
+
+    return isNodeTest;
+  } catch (error) {
+    logError(`Error checking for node:test in ${filePath}`, error);
+    return false;
+  }
+}
+
+/**
+ * Clear the node-test file cache (useful when settings change)
+ */
+/**
+ * Clear the node-test file cache (useful when settings change)
+ */
+export function clearNodeTestCache(): void {
+  cacheManager.invalidateAll();
+}
+
+/**
+ * Invalidate the node-test cache for a specific file
+ */
+export function invalidateNodeTestCache(filePath: string): void {
+  cacheManager.invalidate(filePath);
+}
 
 function isFrameworkUsedIn(
   directoryPath: string,
   frameworkName: TestFrameworkName,
-  cache: Map<string, boolean>,
 ): boolean {
-  if (cache.has(directoryPath)) {
-    return cache.get(directoryPath)!;
+  const cached = cacheManager.getFramework(directoryPath, frameworkName);
+
+  if (cached !== undefined) {
+    return cached;
   }
+
+  const setCache = (value: boolean) => {
+    cacheManager.setFramework(directoryPath, frameworkName, value);
+  };
 
   try {
     const framework = testFrameworks.find((f) => f.name === frameworkName);
@@ -32,12 +95,12 @@ function isFrameworkUsedIn(
     }
 
     if (binaryExists(directoryPath, framework.binaryName)) {
-      cache.set(directoryPath, true);
+      setCache(true);
       return true;
     }
 
     if (getConfigPath(directoryPath, frameworkName)) {
-      cache.set(directoryPath, true);
+      setCache(true);
       return true;
     }
 
@@ -52,7 +115,7 @@ function isFrameworkUsedIn(
           packageJson.peerDependencies?.[frameworkName] ||
           packageJson[frameworkName]
         ) {
-          cache.set(directoryPath, true);
+          setCache(true);
           return true;
         }
       } catch (error) {
@@ -60,7 +123,7 @@ function isFrameworkUsedIn(
       }
     }
 
-    cache.set(directoryPath, false);
+    setCache(false);
     return false;
   } catch (error) {
     logError(`Error checking for ${frameworkName}`, error);
@@ -69,17 +132,22 @@ function isFrameworkUsedIn(
 }
 
 export function isJestUsedIn(directoryPath: string): boolean {
-  return isFrameworkUsedIn(directoryPath, 'jest', testDetectionCache);
+  return isFrameworkUsedIn(directoryPath, 'jest');
 }
 
 export function isVitestUsedIn(directoryPath: string): boolean {
-  return isFrameworkUsedIn(directoryPath, 'vitest', vitestDetectionCache);
+  return isFrameworkUsedIn(directoryPath, 'vitest');
 }
 
 export function detectTestFramework(
   directoryPath: string,
   filePath?: string,
 ): TestFrameworkName | undefined {
+  // Check for node:test first if file path is provided
+  if (filePath && isNodeTestFile(filePath)) {
+    return 'node-test';
+  }
+
   const jestConfigPath = getConfigPath(directoryPath, 'jest');
   const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
 
@@ -214,9 +282,9 @@ const detectFrameworkByDependency = (
   const checks: Array<{ framework: TestFrameworkName; isUsed: () => boolean }> = targetFramework
     ? [{ framework: targetFramework, isUsed: () => (targetFramework === 'jest' ? isJestUsedIn : isVitestUsedIn)(rootPath) }]
     : [
-        { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
-        { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
-      ];
+      { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
+      { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
+    ];
 
   const found = checks.find((check) => check.isUsed());
   return found ? { directory: rootPath, framework: found.framework } : undefined;
@@ -230,6 +298,14 @@ export function findTestFrameworkDirectory(
   if (!workspaceFolder) return undefined;
 
   const rootPath = workspaceFolder.uri.fsPath;
+
+  // Check for node:test first - it takes priority based on file content
+  const isNodeTest = isNodeTestFile(filePath);
+  logDebug(`findTestFrameworkDirectory: filePath=${filePath}, targetFramework=${targetFramework}, isNodeTest=${isNodeTest}`);
+  if (!targetFramework && isNodeTest) {
+    logDebug(`Detected node:test for ${filePath}`);
+    return { directory: dirname(filePath), framework: 'node-test' };
+  }
 
   const customResult = resolveCustomConfigs(filePath, rootPath, targetFramework);
   if (customResult) return customResult;
