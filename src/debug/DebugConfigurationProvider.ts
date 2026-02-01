@@ -15,6 +15,8 @@ export class DebugConfigurationProvider {
         const framework = config.getTestFramework(filePath);
         const isVitest = framework === 'vitest';
         const isNodeTest = framework === 'node-test';
+        const isBun = framework === 'bun';
+        const isDeno = framework === 'deno';
 
         const debugConfig: vscode.DebugConfiguration = {
             console: 'integratedTerminal',
@@ -23,16 +25,82 @@ export class DebugConfigurationProvider {
                 ? 'Debug Node.js Tests'
                 : isVitest
                     ? 'Debug Vitest Tests'
-                    : 'Debug Jest Tests',
+                    : isBun
+                        ? 'Debug Bun Tests'
+                        : isDeno
+                            ? 'Debug Deno Tests'
+                            : 'Debug Jest Tests',
             request: 'launch',
-            type: 'node',
+            type: isBun ? 'bun' : 'node', // Use 'bun' type if available (user needs Bun extension), otherwise getting 'node' + runtimeExecutable might work
             ...(config.changeDirectoryToWorkspaceRoot ? { cwd: config.cwd } : {}),
             ...(isNodeTest
                 ? config.nodeTestDebugOptions
                 : isVitest
                     ? config.vitestDebugOptions
-                    : config.debugOptions),
+                    : isBun
+                        ? config.bunDebugOptions
+                        : isDeno
+                            ? config.denoDebugOptions
+                            : config.debugOptions),
         };
+
+        // Fallback for Bun if 'bun' debug type is not available? 
+        // For now, let's assume if they want to debug Bun they have the extension or we treat it as node with runtimeExecutable.
+        // Actually, vscode-bun extension uses 'bun' type. 
+        // If we want to be safe, we can use 'pwa-node' and runtimeExecutable 'bun'.
+        if (isBun) {
+            debugConfig.type = 'pwa-node';
+            debugConfig.runtimeExecutable = 'bun';
+            debugConfig.runtimeArgs = ['test'];
+
+            if (testName) {
+                const resolved = resolveTestNameStringInterpolation(testName);
+                debugConfig.runtimeArgs.push('-t', resolved);
+            }
+
+            if (config.bunRunOptions) {
+                debugConfig.runtimeArgs.push(...config.bunRunOptions);
+            }
+
+            debugConfig.program = filePath || '';
+            // Bun runs files directly
+            debugConfig.args = [];
+            debugConfig.args.push(filePath || '');
+
+            // Clean up: bun test [args] [file]
+            // runtimeArgs gets prepended to program? No.
+            // With pwa-node: 
+            // runtimeExecutable: bun
+            // runtimeArgs: [test, ...args]
+            // program: [file] -> this gets added as last arg usually.
+            // Actually, usually program is the script to run.
+            // Let's rely on constructing args manually.
+
+            debugConfig.program = undefined; // Don't use program, just args.
+            debugConfig.args = [filePath || ''];
+
+            return debugConfig;
+        }
+
+        if (isDeno) {
+            debugConfig.type = 'pwa-node';
+            debugConfig.runtimeExecutable = 'deno';
+            debugConfig.runtimeArgs = ['test', '--inspect-brk', '--allow-all'];
+
+            if (testName) {
+                const resolved = resolveTestNameStringInterpolation(testName);
+                debugConfig.runtimeArgs.push('--filter', resolved);
+            }
+
+            if (config.denoRunOptions) {
+                debugConfig.runtimeArgs.push(...config.denoRunOptions);
+            }
+
+            debugConfig.program = undefined;
+            debugConfig.args = [filePath || ''];
+
+            return debugConfig;
+        }
 
         if (!isVitest && !isNodeTest && config.enableESM) {
             debugConfig.env = {

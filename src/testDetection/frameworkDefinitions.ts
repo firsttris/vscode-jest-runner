@@ -1,4 +1,4 @@
-export type TestFrameworkName = 'jest' | 'vitest' | 'node-test';
+export type TestFrameworkName = 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno';
 
 export interface TestFramework {
   name: string;
@@ -77,6 +77,16 @@ export const testFrameworks: TestFramework[] = [
     name: 'node-test',
     configFiles: [], // Node.js test runner has no config file
     binaryName: 'node',
+  },
+  {
+    name: 'bun',
+    configFiles: ['bun.lockb', 'bun.lock'],
+    binaryName: 'bun',
+  },
+  {
+    name: 'deno',
+    configFiles: ['deno.json', 'deno.jsonc'],
+    binaryName: 'deno',
   },
 ];
 

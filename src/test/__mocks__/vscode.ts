@@ -71,6 +71,12 @@ type JestRunnerConfigProps = {
   'jestrunner.nodeTestRunOptions'?: string[];
   'jestrunner.enableCodeLens'?: boolean;
   'jestrunner.changeDirectoryToWorkspaceRoot'?: boolean;
+  'jestrunner.bunCommand'?: string;
+  'jestrunner.bunRunOptions'?: string[];
+  'jestrunner.bunDebugOptions'?: any;
+  'jestrunner.denoCommand'?: string;
+  'jestrunner.denoRunOptions'?: string[];
+  'jestrunner.denoDebugOptions'?: any;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) { }

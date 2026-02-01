@@ -30,13 +30,14 @@ export function processTestResults(
 
   let results: JestResults | undefined;
 
-  if (framework === 'node-test') {
+  if (framework === 'node-test' || framework === 'deno') {
     // Get file path from first test for TAP parsing
     const filePath = tests[0]?.uri?.fsPath || '';
     results = parseTapOutput(output, filePath);
   } else if (framework === 'vitest') {
     results = parseVitestOutput(output);
   } else {
+    // Jest and Bun (bun output is similar to Jest, if in JSON mode it might work with parseJestOutput)
     results = parseJestOutput(output);
   }
 

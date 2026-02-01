@@ -166,6 +166,50 @@
             "description": "Add or override VS Code debug configurations for Node.js test runner. Only applies when debugging node:test tests.",
             "scope": "window"
           },
+          "jestrunner.bunCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative Bun command (e.g. /usr/local/bin/bun)",
+            "scope": "window"
+          },
+          "jestrunner.bunRunOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --silent"
+            },
+            "description": "Add CLI Options to the Bun test command",
+            "scope": "window"
+          },
+          "jestrunner.bunDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or override VS Code debug configurations for Bun. Only applies when debugging bun tests.",
+            "scope": "window"
+          },
+          "jestrunner.denoCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative Deno command",
+            "scope": "window"
+          },
+          "jestrunner.denoRunOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --allow-net"
+            },
+            "description": "Add CLI Options to the Deno test command",
+            "scope": "window"
+          },
+          "jestrunner.denoDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or override VS Code debug configurations for Deno. Only applies when debugging deno tests.",
+            "scope": "window"
+          },
           "jestrunner.disableFrameworkConfig": {
             "type": "boolean",
             "default": false,

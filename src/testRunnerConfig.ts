@@ -49,6 +49,14 @@ export class TestRunnerConfig {
     return Settings.getNodeTestCommand() || 'node';
   }
 
+  public get bunCommand(): string {
+    return Settings.getBunCommand() || 'bun';
+  }
+
+  public get denoCommand(): string {
+    return Settings.getDenoCommand() || 'deno';
+  }
+
   public getTestCommand(filePath?: string): string {
     if (filePath) {
       const framework = getTestFrameworkForFile(filePath);
@@ -57,6 +65,12 @@ export class TestRunnerConfig {
       }
       if (framework === 'node-test') {
         return this.nodeTestCommand;
+      }
+      if (framework === 'bun') {
+        return this.bunCommand;
+      }
+      if (framework === 'deno') {
+        return this.denoCommand;
       }
     }
     return this.jestCommand;
@@ -199,6 +213,22 @@ export class TestRunnerConfig {
     return Settings.getNodeTestRunOptions();
   }
 
+  public get bunRunOptions(): string[] | null {
+    return Settings.getBunRunOptions();
+  }
+
+  public get denoRunOptions(): string[] | null {
+    return Settings.getDenoRunOptions();
+  }
+
+  public get bunDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getBunDebugOptions();
+  }
+
+  public get denoDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getDenoDebugOptions();
+  }
+
   public get isCodeLensEnabled(): boolean {
     return Settings.isCodeLensEnabled();
   }
@@ -266,6 +296,38 @@ export class TestRunnerConfig {
     );
   }
 
+  public buildBunArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    return getFrameworkAdapter('bun').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '',
+      Settings.getBunRunOptions(),
+    );
+  }
+
+  public buildDenoArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    return getFrameworkAdapter('deno').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '',
+      Settings.getDenoRunOptions(),
+    );
+  }
+
   public buildTestArgs(
     filePath: string,
     testName: string | undefined,
@@ -278,6 +340,12 @@ export class TestRunnerConfig {
     }
     if (framework === 'node-test') {
       return this.buildNodeTestArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'bun') {
+      return this.buildBunArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'deno') {
+      return this.buildDenoArgs(filePath, testName, withQuotes, options);
     }
     return this.buildJestArgs(filePath, testName, withQuotes, options);
   }

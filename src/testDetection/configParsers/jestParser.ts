@@ -1,5 +1,5 @@
 import { dirname, isAbsolute, join } from 'node:path';
-import { TestPatterns } from '../frameworkDefinitions';
+import { TestPatterns, TestFrameworkName } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
   getObjectFromProperty,
@@ -118,7 +118,7 @@ const resolveCoverageDirectory = (
 
 export function parseCoverageDirectory(
   configPath: string,
-  framework: 'jest' | 'vitest'
+  framework: TestFrameworkName
 ): string | undefined {
   try {
     const content = readConfigFile(configPath);

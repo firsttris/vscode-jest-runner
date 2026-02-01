@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, isAbsolute, resolve } from 'node:path';
-import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './testDetection/frameworkDefinitions';
+import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks, TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
 import { matchesTestFilePattern } from './testDetection/testFileDetection';
 import { logError, logInfo, logWarning } from './utils/Logger';
@@ -56,7 +56,7 @@ export class CoverageProvider {
 
   private getCoverageDirFromConfigPath(
     configPath: string,
-    framework: 'jest' | 'vitest',
+    framework: TestFrameworkName,
   ): string | undefined {
     if (!existsSync(configPath)) {
       return undefined;
@@ -66,7 +66,7 @@ export class CoverageProvider {
 
   private getCoverageDirectoryFromWorkspace(
     workspaceFolder: string,
-    framework: 'jest' | 'vitest',
+    framework: TestFrameworkName,
   ): string | undefined {
     const frameworkDef = testFrameworks.find(f => f.name === framework);
     const configFiles = frameworkDef ? frameworkDef.configFiles : [];
@@ -89,7 +89,7 @@ export class CoverageProvider {
 
   public async readCoverageFromFile(
     workspaceFolder: string,
-    framework: 'jest' | 'vitest' | 'node-test' = 'jest',
+    framework: TestFrameworkName = 'jest',
     configPath?: string,
     testFilePath?: string, // New optional parameter
   ): Promise<CoverageMap | undefined> {

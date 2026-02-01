@@ -72,7 +72,7 @@ const buildNodeTestArgs: BuildArgsFn = (filePath, testName, withQuotes, options,
   if (options.includes('--jtr-structured') || options.includes('--coverage')) {
     const reporters = getReporterPaths();
     args.push('--test-reporter', reporters.node, '--test-reporter-destination', 'stdout');
-    
+
     const jtrIndex = options.indexOf('--jtr-structured');
     if (jtrIndex !== -1) {
       options.splice(jtrIndex, 1);
@@ -102,10 +102,42 @@ const buildNodeTestArgs: BuildArgsFn = (filePath, testName, withQuotes, options,
   return [...args, ...allOptions, q(normalizePath(filePath))];
 };
 
+const buildBunArgs: BuildArgsFn = (filePath, testName, withQuotes, options, _configPath, runOptions) => {
+  const q = withQuotes ? quote : (s: string) => s;
+  const args = ['test'];
+
+  const resolved = prepareTestName(testName, withQuotes);
+  if (resolved) {
+    args.push('-t', resolved);
+  }
+
+  return [...args, ...mergeOptions(options, runOptions), q(normalizePath(filePath))];
+};
+
+const buildDenoArgs: BuildArgsFn = (filePath, testName, withQuotes, options, _configPath, runOptions) => {
+  const q = withQuotes ? quote : (s: string) => s;
+  const args = ['test', '--allow-all']; // Deno needs permissions, allow-all is a safe default for local tests
+
+  // Use TAP reporter for Deno to make it compatible with existing parsers if possible, 
+  // or we can rely on standard output if we write a parser. 
+  // For now, let's stick to default or user provided options.
+  // Actually, implementation plan said use tap.
+  // args.push('--reporter=tap'); // Removed to let user control via runOptions or default, but we might enforce it later if parsing depends on it.
+
+  const resolved = prepareTestName(testName, withQuotes);
+  if (resolved) {
+    args.push('--filter', resolved);
+  }
+
+  return [...args, ...mergeOptions(options, runOptions), q(normalizePath(filePath))];
+};
+
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
   'jest': buildJestArgs,
   'vitest': buildVitestArgs,
   'node-test': buildNodeTestArgs,
+  'bun': buildBunArgs,
+  'deno': buildDenoArgs,
 };
 
 export const getFrameworkAdapter = (framework: TestFrameworkName) => ({

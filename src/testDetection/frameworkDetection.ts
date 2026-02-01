@@ -58,6 +58,51 @@ export function isNodeTestFile(filePath: string): boolean {
 }
 
 /**
+ * Check if a file uses Bun test runner (`bun:test`)
+ */
+export function isBunTestFile(filePath: string): boolean {
+  return hasImport(filePath, 'bun:test');
+}
+
+/**
+ * Check if a file uses Deno test runner (`Deno.test`)
+ */
+export function isDenoTestFile(filePath: string): boolean {
+  const cached = cacheManager.getFileFramework(filePath);
+  if (cached !== undefined) {
+    return cached?.framework === 'deno';
+  }
+
+  try {
+    if (!existsSync(filePath)) return false;
+    const content = readFileSync(filePath, 'utf-8');
+    // Check for Deno.test usage
+    return /Deno\.test/.test(content);
+  } catch (error) {
+    logError(`Error checking for Deno.test in ${filePath}`, error);
+    return false;
+  }
+}
+
+function hasImport(filePath: string, moduleName: string): boolean {
+  const cached = cacheManager.getFileFramework(filePath);
+  if (cached !== undefined) {
+    return cached?.framework === (moduleName === 'bun:test' ? 'bun' : 'node-test');
+  }
+
+  try {
+    if (!existsSync(filePath)) return false;
+
+    const content = readFileSync(filePath, 'utf-8');
+    const regex = new RegExp(`from\\s+['"]${moduleName}['"]|require\\s*\\(\\s*['"]${moduleName}['"]\\s*\\)`);
+    return regex.test(content);
+  } catch (error) {
+    logError(`Error checking for ${moduleName} in ${filePath}`, error);
+    return false;
+  }
+}
+
+/**
  * Clear the node-test file cache (useful when settings change)
  */
 /**
@@ -144,8 +189,16 @@ export function detectTestFramework(
   filePath?: string,
 ): TestFrameworkName | undefined {
   // Check for node:test first if file path is provided
-  if (filePath && isNodeTestFile(filePath)) {
-    return 'node-test';
+  if (filePath) {
+    if (isNodeTestFile(filePath)) {
+      return 'node-test';
+    }
+    if (isBunTestFile(filePath)) {
+      return 'bun';
+    }
+    if (isDenoTestFile(filePath)) {
+      return 'deno';
+    }
   }
 
   const jestConfigPath = getConfigPath(directoryPath, 'jest');
@@ -284,6 +337,8 @@ const detectFrameworkByDependency = (
     : [
       { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
       { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
+      { framework: 'bun', isUsed: () => isBunUsedIn(rootPath) },
+      { framework: 'deno', isUsed: () => isDenoUsedIn(rootPath) },
     ];
 
   const found = checks.find((check) => check.isUsed());
@@ -301,10 +356,19 @@ export function findTestFrameworkDirectory(
 
   // Check for node:test first - it takes priority based on file content
   const isNodeTest = isNodeTestFile(filePath);
-  logDebug(`findTestFrameworkDirectory: filePath=${filePath}, targetFramework=${targetFramework}, isNodeTest=${isNodeTest}`);
-  if (!targetFramework && isNodeTest) {
+  if (isNodeTest) {
     logDebug(`Detected node:test for ${filePath}`);
     return { directory: dirname(filePath), framework: 'node-test' };
+  }
+
+  const isBun = isBunTestFile(filePath);
+  if (isBun) {
+    return { directory: dirname(filePath), framework: 'bun' };
+  }
+
+  const isDeno = isDenoTestFile(filePath);
+  if (isDeno) {
+    return { directory: dirname(filePath), framework: 'deno' };
   }
 
   const customResult = resolveCustomConfigs(filePath, rootPath, targetFramework);
@@ -324,5 +388,23 @@ export function findJestDirectory(filePath: string): string | undefined {
 
 export function findVitestDirectory(filePath: string): string | undefined {
   const result = findTestFrameworkDirectory(filePath, 'vitest');
+  return result?.directory;
+}
+
+export function isBunUsedIn(directoryPath: string): boolean {
+  return isFrameworkUsedIn(directoryPath, 'bun');
+}
+
+export function isDenoUsedIn(directoryPath: string): boolean {
+  return isFrameworkUsedIn(directoryPath, 'deno');
+}
+
+export function findBunDirectory(filePath: string): string | undefined {
+  const result = findTestFrameworkDirectory(filePath, 'bun' as any);
+  return result?.directory;
+}
+
+export function findDenoDirectory(filePath: string): string | undefined {
+  const result = findTestFrameworkDirectory(filePath, 'deno' as any);
   return result?.directory;
 }

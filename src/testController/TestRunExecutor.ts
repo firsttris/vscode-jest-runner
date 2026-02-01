@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { relative } from 'node:path';
 import { TestRunnerConfig } from '../testRunnerConfig';
+import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { CoverageProvider, DetailedFileCoverage } from '../coverageProvider';
 import {
     collectTestsByFile,
@@ -207,7 +208,7 @@ export class TestRunExecutor {
     private async processCoverageData(
         run: vscode.TestRun,
         workspaceFolder: string,
-        framework: 'jest' | 'vitest' | 'node-test' = 'jest',
+        framework: TestFrameworkName = 'jest',
         configPath?: string,
         testFilePath?: string
     ): Promise<void> {
