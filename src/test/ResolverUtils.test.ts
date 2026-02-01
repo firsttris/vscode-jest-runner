@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { resolveConfigPath } from '../utils/ResolverUtils';
+import { normalizePath } from '../utils/PathUtils';
 
 describe('resolveConfigPath', () => {
     let tmpDir: string;
@@ -39,7 +40,9 @@ describe('resolveConfigPath', () => {
         fs.writeFileSync(path.join(parentDir, 'jest.config.js'), 'module.exports = {};');
         const result = resolveConfigPath(['jest.config.js'], workspaceDir);
         expect(result).toBeDefined();
-        expect(result!.toLowerCase()).toContain(path.join(parentDir, 'jest.config.js').toLowerCase());
+        // resolveConfigPath likely returns normalized paths (forward slashes) on all platforms if implemented that way
+        const expected = normalizePath(path.join(parentDir, 'jest.config.js'));
+        expect(result!.toLowerCase()).toContain(expected.toLowerCase());
     });
 
     it('should NOT find config in parent directory if stopPath is set to workspace', () => {
@@ -64,6 +67,8 @@ describe('resolveConfigPath', () => {
         );
 
         expect(result).toBeDefined();
-        expect(result!.toLowerCase()).toBe(path.join(workspaceDir, 'jest.config.js').toLowerCase());
+
+        const expected = normalizePath(path.join(workspaceDir, 'jest.config.js'));
+        expect(result!.toLowerCase()).toBe(expected.toLowerCase());
     });
 });
