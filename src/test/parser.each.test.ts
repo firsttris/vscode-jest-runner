@@ -1,5 +1,4 @@
 import { parse } from '../parser';
-import { ParsedNodeType } from '../parsers/jestParser/parserNodes';
 
 describe('parser - it.each expansion', () => {
     it('should expand it.each with 1D array', () => {
