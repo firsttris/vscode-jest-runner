@@ -45,6 +45,11 @@ export class JestTestController {
     );
     this.configWatcher = new TestConfigWatcher();
 
+    // Lazily resolve tests when VS Code requests them (expand tree, run all, etc.)
+    this.testController.resolveHandler = async () => {
+      await this.ensureTestsDiscovered();
+    };
+
     this.setupRunProfiles();
     this.setupEventListeners();
   }
@@ -53,21 +58,30 @@ export class JestTestController {
     this.testController.createRunProfile(
       'Run',
       vscode.TestRunProfileKind.Run,
-      (request, token) => this.testRunExecutor.runHandler(request, token),
+      async (request, token) => {
+        await this.ensureTestsDiscovered();
+        return this.testRunExecutor.runHandler(request, token);
+      },
       true,
     );
 
     this.testController.createRunProfile(
       'Debug',
       vscode.TestRunProfileKind.Debug,
-      (request, token) => this.debugHandler.debugHandler(request, token),
+      async (request, token) => {
+        await this.ensureTestsDiscovered();
+        return this.debugHandler.debugHandler(request, token);
+      },
       true,
     );
 
     const coverageProfile = this.testController.createRunProfile(
       'Coverage',
       vscode.TestRunProfileKind.Coverage,
-      (request, token) => this.testRunExecutor.coverageHandler(request, token),
+      async (request, token) => {
+        await this.ensureTestsDiscovered();
+        return this.testRunExecutor.coverageHandler(request, token);
+      },
       true,
     );
 
@@ -77,7 +91,10 @@ export class JestTestController {
     this.testController.createRunProfile(
       'Update Snapshots',
       vscode.TestRunProfileKind.Run,
-      (request, token) => this.testRunExecutor.runHandler(request, token, ['-u']),
+      async (request, token) => {
+        await this.ensureTestsDiscovered();
+        return this.testRunExecutor.runHandler(request, token, ['-u']);
+      },
       false,
     );
   }
@@ -102,6 +119,19 @@ export class JestTestController {
         await discoverTests(workspaceFolder, this.testController, this.jestConfig);
       }
     }
+  }
+
+  private async ensureTestsDiscovered(): Promise<void> {
+    let hasTests = false;
+    this.testController.items.forEach(() => {
+      hasTests = true;
+    });
+
+    if (hasTests) {
+      return;
+    }
+
+    await this.refreshAllTests();
   }
 
   public dispose(): void {

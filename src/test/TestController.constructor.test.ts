@@ -76,6 +76,20 @@ describe('JestTestController - constructor and dispose', () => {
       expect(typeof coverageProfile.loadDetailedCoverage).toBe('function');
     });
 
+    it('should set a resolveHandler for lazy discovery', async () => {
+      const mockTestController = (
+        vscode.tests.createTestController as jest.Mock
+      ).mock.results[0].value;
+
+      expect(mockTestController.resolveHandler).toBeDefined();
+
+      (vscode.workspace.findFiles as jest.Mock).mockClear();
+
+      await mockTestController.resolveHandler();
+
+      expect(vscode.workspace.findFiles).toHaveBeenCalled();
+    });
+
     it('should return empty array for non-DetailedFileCoverage', async () => {
       const mockTestController = (
         vscode.tests.createTestController as jest.Mock
@@ -130,7 +144,7 @@ describe('JestTestController - constructor and dispose', () => {
       expect(Array.isArray(result)).toBe(true);
     });
 
-    it('should setup document open handler instead of discovering all tests at startup', () => {
+    it('should setup document open handler without running discovery at startup', () => {
       expect(vscode.workspace.onDidOpenTextDocument).toHaveBeenCalled();
       expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
     });
@@ -291,8 +305,29 @@ describe('JestTestController - test discovery', () => {
     expect(parser.parseTestFile).toHaveBeenCalled();
   });
 
-  it('should not discover tests at startup', () => {
-    expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
+  it('should discover tests on first run request', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+
+    const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[0][2];
+
+    await runProfile({ include: undefined, exclude: [] }, { isCancellationRequested: false });
+
+    expect(vscode.workspace.findFiles).toHaveBeenCalled();
+  });
+
+  it('should discover tests via resolveHandler when tree is expanded', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+
+    (vscode.workspace.findFiles as jest.Mock).mockClear();
+
+    await mockTestController.resolveHandler();
+
+    expect(vscode.workspace.findFiles).toHaveBeenCalled();
   });
 
   it('should handle parser errors gracefully', async () => {
