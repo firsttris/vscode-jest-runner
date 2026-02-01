@@ -1,3 +1,4 @@
+import { dirname } from 'node:path';
 import { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
@@ -9,7 +10,12 @@ import {
   readConfigFile,
 } from './parseUtils';
 
-const parseJsonConfig = (content: string): TestPatterns | undefined => {
+const normalizeRootDir = (rootDir: string | undefined, configPath: string): string | undefined => {
+  if (!rootDir) return undefined;
+  return rootDir === '__dirname' ? dirname(configPath) : rootDir;
+};
+
+const parseJsonConfig = (content: string, configPath: string): TestPatterns | undefined => {
   try {
     const config = JSON.parse(content);
     const testConfig = config.test;
@@ -18,7 +24,10 @@ const parseJsonConfig = (content: string): TestPatterns | undefined => {
     const patterns = Array.isArray(testConfig.include) ? testConfig.include : undefined;
     const excludePatterns = Array.isArray(testConfig.exclude) ? testConfig.exclude : undefined;
     const dir = typeof testConfig.dir === 'string' ? testConfig.dir : undefined;
-    const rootDir = typeof config.root === 'string' ? config.root : undefined;
+    const rootDir = normalizeRootDir(
+      typeof config.root === 'string' ? config.root : undefined,
+      configPath,
+    );
 
     if (!patterns && !excludePatterns && !dir && !rootDir) return undefined;
 
@@ -38,7 +47,10 @@ const parseJsConfig = (content: string, configPath: string): TestPatterns | unde
   const configObject = parseConfigObject(content);
   if (!configObject) return undefined;
 
-  const rootDir = getStringFromProperty(configObject, 'root');
+  const rootDir = normalizeRootDir(
+    getStringFromProperty(configObject, 'root'),
+    configPath,
+  );
   const testObject = getObjectFromProperty(configObject, 'test');
   if (!testObject) return undefined;
 
@@ -65,7 +77,7 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
     const content = readConfigFile(configPath);
 
     if (configPath.endsWith('.json')) {
-      const parsed = parseJsonConfig(content);
+      const parsed = parseJsonConfig(content, configPath);
       return !!parsed;
     }
 
@@ -86,7 +98,7 @@ export function getVitestConfig(configPath: string): TestPatterns | undefined {
     const content = readConfigFile(configPath);
 
     return configPath.endsWith('.json')
-      ? parseJsonConfig(content)
+      ? parseJsonConfig(content, configPath)
       : parseJsConfig(content, configPath);
   } catch (error) {
     logError(`Error reading Vitest config file: ${configPath}`, error);

@@ -119,6 +119,30 @@ describe('configParsing', () => {
     });
   });
 
+  describe('getVitestConfig', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should resolve root __dirname to config directory', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  root: __dirname,
+  test: {
+    include: ['**/*.test.ts'],
+  },
+});
+      `);
+
+      const result = getVitestConfig('/test/vite.config.ts');
+
+      expect(result?.rootDir).toBe('/test');
+      expect(result?.patterns).toEqual(['**/*.test.ts']);
+    });
+  });
+
   describe('getIncludeFromVitestConfig', () => {
     beforeEach(() => {
       mockedFs.readFileSync = jest.fn();
@@ -279,6 +303,20 @@ module.exports = {
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
       expect(result).toEqual({ patterns: ['**/*.test.ts', '**/*.spec.ts'], isRegex: false });
+    });
+
+    it('should resolve rootDir __dirname to config directory', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+module.exports = {
+  rootDir: __dirname,
+  testMatch: ['<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)']
+};
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.ts');
+
+      expect(result?.rootDir).toBe('/test');
+      expect(result?.patterns).toEqual(['<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)']);
     });
 
     it('should extract testMatch from TypeScript export default config', () => {
