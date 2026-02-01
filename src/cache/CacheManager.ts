@@ -2,7 +2,6 @@ export class CacheManager {
     private directoryFrameworkCache = new Map<string, Map<string, boolean>>();
     private fileFrameworkCache = new Map<string, { framework: string; directory: string } | null>();
 
-    // Framework detection cache
     public getFramework(directory: string, framework: string): boolean | undefined {
         return this.directoryFrameworkCache.get(directory)?.get(framework);
     }
@@ -14,7 +13,6 @@ export class CacheManager {
         this.directoryFrameworkCache.get(directory)!.set(framework, value);
     }
 
-    // File framework cache (consolidated)
     public getFileFramework(filePath: string): { framework: string; directory: string } | null | undefined {
         return this.fileFrameworkCache.get(filePath);
     }
@@ -52,8 +50,6 @@ export class CacheManager {
         this.directoryFrameworkCache.delete(key);
         this.fileFrameworkCache.delete(key);
 
-        // Config cache keys have format: "config:${startPath}:${configFiles}"
-        // Delete all entries where the path component contains the invalidated key
         for (const cacheKey of this.configPathCache.keys()) {
             if (cacheKey.includes(key)) {
                 this.configPathCache.delete(cacheKey);

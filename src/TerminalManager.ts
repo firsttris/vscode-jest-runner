@@ -21,12 +21,7 @@ export class TerminalManager {
     public async runCommand(command: string, options: TerminalCommandOptions): Promise<void> {
         const { framework, cwd, env, preserveEditorFocus } = options;
         const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
-
-        // Check if environment changed
         const envChanged = JSON.stringify(env) !== JSON.stringify(this.currentTerminalEnv);
-        // Use shallow comparison for env if possible/better in future?
-
-        // Check if CWD changed
         const cwdChanged = cwd !== this.currentTerminalCwd;
 
         if (
@@ -46,8 +41,6 @@ export class TerminalManager {
             this.currentTerminalName = terminalName;
             this.currentTerminalEnv = env;
             this.currentTerminalCwd = cwd;
-
-            // Wait for terminal to initialize
             await this.terminal.processId;
         }
 
@@ -56,7 +49,6 @@ export class TerminalManager {
     }
 
     private setup() {
-        // When terminal is closed by user, we need to clean up our reference
         const terminalCloseHandler = vscode.window.onDidCloseTerminal(
             (closedTerminal: vscode.Terminal) => {
                 if (this.terminal === closedTerminal) {

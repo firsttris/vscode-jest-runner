@@ -1,8 +1,4 @@
-/**
- * Strip ANSI escape codes from a string (for clean error messages)
- */
 export function stripAnsi(str: string): string {
-    // eslint-disable-next-line no-control-regex
     return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
 }
 

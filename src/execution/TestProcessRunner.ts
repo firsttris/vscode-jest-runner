@@ -6,10 +6,6 @@ import { extractStructuredMessages } from '../reporting/structuredOutput';
 import { processTestResultsFromParsed } from '../testResultProcessor';
 import type { JestResults } from '../testResultTypes';
 
-/**
- * Fast test execution for single tests - uses exit code instead of JSON parsing.
- * This is significantly faster as it skips JSON serialization/parsing overhead.
- */
 export function executeTestCommandFast(
     command: string,
     args: string[],
@@ -32,7 +28,6 @@ export function executeTestCommandFast(
         jestProcess.stdout?.on('data', (data) => {
             const chunk = data.toString();
             stdout += chunk;
-            // Stream output with colors to the test output panel
             run.appendOutput(chunk.replace(/\n/g, '\r\n'));
         });
 
@@ -59,7 +54,6 @@ export function executeTestCommandFast(
                 return;
             }
 
-            // Exit code 0 = passed, non-zero = failed
             if (code === 0) {
                 run.passed(test);
             } else {
@@ -174,7 +168,6 @@ export function executeTestCommand(
                 return;
             }
 
-            // Parse from stdout/stderr - JSON extraction handles Nx/monorepo prefixed output
             const combinedOutput = stdout + (stderr ? '\n' + stderr : '');
 
             if (lastStructured) {

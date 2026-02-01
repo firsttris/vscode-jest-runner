@@ -42,17 +42,14 @@ const astToValue = (node: t.Node): any => {
     }, {} as any);
   }
   if (t.isTemplateLiteral(node)) {
-    // Simple template literal support (no expressions)
     if (node.quasis.length === 1) return node.quasis[0].value.raw;
   }
-  // Fallback for unsupported types (e.g. expressions) to a placeholder or undefined
   return undefined;
 };
 
 const formatTitle = (title: string, args: any, index: number): string => {
   let formatted = title;
 
-  // Handle %s, %d, etc. using util.format
   if (/%[sdifjoOc]/.test(title)) {
     if (Array.isArray(args)) {
       formatted = format(formatted, ...args);
@@ -61,16 +58,13 @@ const formatTitle = (title: string, args: any, index: number): string => {
     }
   }
 
-  // Handle $variable
   if (typeof args === 'object' && args !== null) {
     formatted = formatted.replace(/\$(\w+)/g, (match, key) => {
       if (key === '#') return index.toString();
-      // Access nested properties? Jest supports dotted access but let's stick to simple first
       return key in args ? String(args[key]) : match;
     });
   }
 
-  // Handle %#
   formatted = formatted.replace(/%#/g, index.toString());
 
   return formatted;
@@ -126,8 +120,6 @@ const applyNameInfo = (block: NamedBlock, statement: t.Node, source: string, las
       block.name = source.substring(arg.start, arg.end);
     }
   } else {
-    // eslint-disable-next-line no-console
-    console.warn(`Unable to find name start/end position: ${JSON.stringify(arg)}`);
     block.name = '';
   }
 
@@ -173,12 +165,6 @@ const addNode = (
 ): ParsedNode => {
   const child = parent.addChild(type);
   registerNode(child, babelNode, source, parseResult, lastProperty);
-
-  if (child instanceof NamedBlock && child.name == null) {
-    // eslint-disable-next-line no-console
-    console.warn(`block is missing name: ${JSON.stringify(babelNode)}`);
-  }
-
   return child;
 };
 
@@ -212,14 +198,11 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
             if (eachArgs.length > 0 && t.isArrayExpression(eachArgs[0])) {
               const table = astToValue(eachArgs[0]);
               if (Array.isArray(table)) {
-                // Get the title string
                 const titleArg = callExpr.arguments[0];
                 let titleTemplate = '';
                 if (t.isStringLiteral(titleArg)) {
                   titleTemplate = titleArg.value;
                 } else if (t.isTemplateLiteral(titleArg)) {
-                  // reconstruct template? or usually it's just a string for untagged template
-                  // For untagged `it.each([])('title', ...)`
                   if (titleArg.quasis.length === 1) titleTemplate = titleArg.quasis[0].value.raw;
                 }
 
@@ -230,12 +213,9 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
                     const newChild = addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, lastProperty);
                     if (newChild instanceof NamedBlock) {
                       newChild.name = expandedTitle;
-                      // Adjust name range? It's virtual, so maybe keep original range or no range?
-                      // Currently addNode copies location from babelNode (the whole it block).
-                      // We might want to clear nameRange since it points to the template string
                       newChild.nameRange = undefined;
                     }
-                    if (i === 0) child = newChild; // Use first child as representative for recursion
+                    if (i === 0) child = newChild;
                   });
                 }
               }

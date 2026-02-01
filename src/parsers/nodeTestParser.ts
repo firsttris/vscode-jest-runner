@@ -26,9 +26,6 @@ interface RawTestNode {
   parentStart?: { line: number; column: number };
 }
 
-/**
- * Parse a Node.js test file (node:test) and extract test structure
- */
 export function parseNodeTestFile(filePath: string, content?: string): ParseResult {
   const fileContent = content || readFileSync(filePath, 'utf-8');
 
@@ -57,7 +54,6 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
         const loc = node.loc;
         if (!loc) return;
 
-        // Get parent from stack
         const parentStart = describeStack.length > 0 ? describeStack[describeStack.length - 1].start : undefined;
 
         const testNode: RawTestNode = {
@@ -70,7 +66,6 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
 
         rawTests.push(testNode);
 
-        // If it's a describe block, push to stack
         if (testInfo.type === 'describe') {
           describeStack.push({ start: testNode.start });
         }
@@ -87,10 +82,8 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
     }
   });
 
-  // Remove duplicates (from nested traversal)
   const uniqueTests = removeDuplicates(rawTests);
 
-  // Build tree structure
   const tree = buildTestTree(uniqueTests, filePath);
 
   return {
@@ -100,7 +93,6 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
 }
 
 function getTestCallInfo(callee: any): { type: 'describe' | 'test'; modifier?: string } | null {
-  // Direct call: test(), it(), describe()
   if (callee.type === 'Identifier') {
     const name = callee.name;
     if (name === 'describe') return { type: 'describe' };
@@ -108,7 +100,6 @@ function getTestCallInfo(callee: any): { type: 'describe' | 'test'; modifier?: s
     return null;
   }
 
-  // Member expression: test.only(), test.skip(), test.todo(), describe.only(), etc.
   if (callee.type === 'MemberExpression') {
     const obj = callee.object;
     const prop = callee.property;
@@ -131,18 +122,13 @@ function getTestCallInfo(callee: any): { type: 'describe' | 'test'; modifier?: s
 function extractTestName(arg: any): string | null {
   if (!arg) return null;
 
-  // String literal: 'test name'
   if (arg.type === 'StringLiteral') {
     return arg.value;
   }
-
-  // Template literal: `test name`
   if (arg.type === 'TemplateLiteral') {
-    // For simple template literals without expressions
     if (arg.quasis.length === 1 && arg.expressions.length === 0) {
       return arg.quasis[0].value.cooked || arg.quasis[0].value.raw;
     }
-    // For template literals with expressions, use raw representation
     return arg.quasis.map((q: any) => q.value.raw).join('${...}');
   }
 
@@ -160,10 +146,8 @@ function removeDuplicates(tests: RawTestNode[]): RawTestNode[] {
 }
 
 function buildTestTree(tests: RawTestNode[], filePath: string): TestNode[] {
-  // Sort by line number
   tests.sort((a, b) => a.start.line - b.start.line);
 
-  // Build parent-child relationships
   const testMap = new Map<string, TestNode>();
   const rootTests: TestNode[] = [];
 

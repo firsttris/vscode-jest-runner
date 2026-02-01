@@ -32,25 +32,14 @@ export function processTestResults(
   let results: JestResults | undefined;
 
   if (framework === 'node-test' || framework === 'deno') {
-    // Get file path from first test for TAP parsing
     const filePath = tests[0]?.uri?.fsPath || '';
     results = parseTapOutput(output, filePath);
   } else if (framework === 'vitest') {
     results = parseVitestOutput(output);
   } else {
-    // Jest and Bun
-    // Check for Bun JUnit XML output
     if (framework === 'bun') {
-      logInfo(`Processing Bun output. Length: ${output.length}`);
-      logInfo(`Output preview: ${JSON.stringify(output.substring(0, 500))}`);
-      logInfo(`Includes <testsuites>? ${output.includes('<testsuites')}`);
-      logInfo(`Includes <testsuite>? ${output.includes('<testsuite')}`);
-
       if (output.includes('<testsuites') || output.includes('<testsuite')) {
         results = parseJUnitXML(output);
-        logInfo(`Parsed JUnit results: ${results ? 'Success' : 'Undefined'}`);
-      } else {
-        logInfo('Bun output did not contain XML tags');
       }
     }
 
@@ -203,7 +192,6 @@ function processTestResultsFallback(
 ): void {
   logWarning('Failed to parse JSON test results, falling back to text parsing');
 
-  // Look for various failure indicators in output
   const failureIndicators = [
     'FAIL',
     '✗',
@@ -221,19 +209,15 @@ function processTestResultsFallback(
     output.includes(indicator),
   );
 
-  // Look for pass indicators
   const passIndicators = ['PASS', '✓', '√', 'passed'];
   const hasPassIndicator = passIndicators.some((indicator) =>
     output.includes(indicator),
   );
-
-  // If we have clear pass indicators and no fail indicators, mark as passed
   if (hasPassIndicator && !hasFailIndicator) {
     tests.forEach((test) => run.passed(test));
     return;
   }
 
-  // If we have failure indicators, try to match them to specific tests
   if (hasFailIndicator) {
     const failLines = output
       .split('\n')
@@ -250,7 +234,6 @@ function processTestResultsFallback(
       );
 
       if (testFailed) {
-        // Find relevant error message for this test
         const relevantLines = failLines
           .filter(
             (line) => line.includes(testName) || line.includes(shortName),
@@ -261,7 +244,6 @@ function processTestResultsFallback(
           new vscode.TestMessage(relevantLines || 'Test failed'),
         );
       } else {
-        // Can't determine status - mark as errored to indicate parsing issue
         run.errored(
           test,
           new vscode.TestMessage(
@@ -273,8 +255,6 @@ function processTestResultsFallback(
     return;
   }
 
-  // No clear indicators either way - mark as errored, not passed
-  // This prevents false positives when JSON parsing fails
   logWarning(
     `No pass/fail indicators found in output. Output preview: ${output.slice(0, 500)}`,
   );

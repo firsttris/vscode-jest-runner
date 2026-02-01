@@ -3,7 +3,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { normalizePath } from '../utils/PathUtils';
 
-// Import templates as raw strings so they get bundled by Vite
 import jestReporterSource from './jestReporterTemplate.cjs?raw';
 import vitestReporterSource from './vitestReporterTemplate.cjs?raw';
 import nodeReporterSource from './nodeReporterTemplate.mjs?raw';
@@ -34,7 +33,6 @@ export function getReporterPaths(): ReporterPaths {
   writeReporterFile(vitestPath, vitestReporterSource);
   writeReporterFile(nodePath, nodeReporterSource);
 
-  // Normalize paths to use forward slashes on all platforms
   cachedPaths = { 
     jest: normalizePath(jestPath), 
     vitest: normalizePath(vitestPath), 

@@ -1,9 +1,6 @@
 import { JestResults } from '../testResultTypes';
 import { logError, logWarning } from '../utils/Logger';
 
-/**
- * Validates that a parsed object looks like Jest test results
- */
 function isJestResults(obj: unknown): obj is JestResults {
     return (
         obj !== null &&
@@ -13,14 +10,7 @@ function isJestResults(obj: unknown): obj is JestResults {
     );
 }
 
-/**
- * Extract JSON from mixed stdout output.
- * Nx/monorepo wrappers often prepend log messages before Jest's JSON output.
- * This function finds and extracts the JSON object from the output.
- */
 function extractJsonFromOutput(output: string): string | undefined {
-    // Try to find the start of Jest JSON output
-    // Jest JSON always starts with {"numFailedTestSuites": or {"testResults":
     const jsonPatterns = [
         '{"numFailedTestSuites"',
         '{"testResults"',
@@ -30,7 +20,6 @@ function extractJsonFromOutput(output: string): string | undefined {
     for (const pattern of jsonPatterns) {
         const startIndex = output.indexOf(pattern);
         if (startIndex !== -1) {
-            // Find the matching closing brace by counting braces
             let braceCount = 0;
             let inString = false;
             let escapeNext = false;
@@ -69,12 +58,7 @@ function extractJsonFromOutput(output: string): string | undefined {
     return undefined;
 }
 
-/**
- * Parse Jest JSON output.
- * Handles both clean JSON and mixed output with prepended log messages.
- */
 export function parseJestOutput(output: string): JestResults | undefined {
-    // First try to parse the whole output as JSON (fast path)
     try {
         const trimmed = output.trim();
         const parsed = JSON.parse(trimmed);
@@ -82,10 +66,8 @@ export function parseJestOutput(output: string): JestResults | undefined {
             return parsed;
         }
     } catch {
-        // Not valid JSON, try to extract it
     }
 
-    // Try to extract JSON from mixed output (Nx/monorepo case)
     const extracted = extractJsonFromOutput(output);
     if (extracted) {
         try {
@@ -123,21 +105,14 @@ export function convertVitestToJestResults(vitestOutput: any): JestResults {
     return results;
 }
 
-/**
- * Parse Vitest JSON output.
- * Handles both clean JSON and mixed output with prepended log messages.
- */
 export function parseVitestOutput(output: string): JestResults | undefined {
-    // First try to parse the whole output as JSON (fast path)
     try {
         const trimmed = output.trim();
         const parsed = JSON.parse(trimmed);
         return convertVitestToJestResults(parsed);
     } catch {
-        // Not valid JSON, try to extract it
     }
 
-    // Try to extract JSON from mixed output (Nx/monorepo case)
     const extracted = extractJsonFromOutput(output);
     if (extracted) {
         try {

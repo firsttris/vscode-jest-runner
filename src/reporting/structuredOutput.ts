@@ -20,11 +20,6 @@ export function buildMarker(
   return `${START}${sessionId}::${type}::${len}::${json}${END}${sessionId}::${type}`;
 }
 
-/**
- * Extract all complete structured messages from a buffer. The buffer can contain
- * multiple markers or partial markers (which will be left intact for the caller
- * to keep buffering).
- */
 export function extractStructuredMessages<T = unknown>(
   buffer: string,
   sessionId?: string,
@@ -42,7 +37,6 @@ export function extractStructuredMessages<T = unknown>(
     const headerSlice = buffer.slice(headerStart);
     const match = headerRegex.exec(headerSlice);
     if (!match) {
-      // Incomplete header, keep remainder for next chunk
       break;
     }
 
@@ -56,13 +50,11 @@ export function extractStructuredMessages<T = unknown>(
     const payloadStart = headerStart + match[0].length;
     const payloadEnd = payloadStart + length;
     if (payloadEnd > buffer.length) {
-      // Payload not fully buffered yet
       break;
     }
 
     const endMarker = `${END}${sessionId ?? match[1]}::${type}`;
     if (!buffer.startsWith(endMarker, payloadEnd)) {
-      // No end marker yet; keep buffering
       break;
     }
 

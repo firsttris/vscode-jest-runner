@@ -1,11 +1,7 @@
-import { JestResults, JestAssertionResult, JestFileResult } from '../testResultTypes';
+import { JestResults, JestFileResult } from '../testResultTypes';
 
-/**
- * Parses JUnit XML output from Bun/Deno into JestResults format.
- * Uses regex to avoid adding XML parser dependencies.
- */
+
 export function parseJUnitXML(xml: string): JestResults | undefined {
-    // Basic validation
     if (!xml.includes('<testsuite') && !xml.includes('<testsuites')) {
         return undefined;
     }
@@ -18,18 +14,10 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 
     const resultsByFile = new Map<string, JestFileResult>();
 
-    // Improved regex to handle self-closing tags vs open tags
-    // 1. Self-closing: <testcase ... />
-    // 2. Open-close:   <testcase ...> ... </testcase>
-    // We search globally for both patterns.
-    // Note: [\s\S]*? is non-greedy match for content
     const caseRegex = /<testcase\s+([^>]*?)\/>|<testcase\s+([^>]*?)>([\s\S]*?)<\/testcase>/g;
     let caseMatch;
 
     while ((caseMatch = caseRegex.exec(xml)) !== null) {
-        // Group 1: attributes for self-closing
-        // Group 2: attributes for open-close
-        // Group 3: content for open-close
         const attributesStr = caseMatch[1] || caseMatch[2];
         const content = caseMatch[3] || '';
         const attributes = parseAttributes(attributesStr);
@@ -57,7 +45,6 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
         let status: 'passed' | 'failed' | 'skipped' | 'pending' | 'todo' = 'passed';
         let failureMessages: string[] = [];
 
-        // Check for failure/error/skipped
         if (content.includes('<failure') || content.includes('<error')) {
             status = 'failed';
             fileResult.status = 'failed';
@@ -77,7 +64,7 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
             status,
             title: name,
             fullName: name,
-            ancestorTitles: [], // We don't have full ancestor path easily in flattened mode
+            ancestorTitles: [],
             duration,
             failureMessages,
             location: attributes['line'] ? {

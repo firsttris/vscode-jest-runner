@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { CodeLensOption, validateCodeLensOptions } from '../util';
 
-// Pure helper - no side effects
 const getConfig = <T>(key: string, defaultValue?: T): T | undefined =>
   vscode.workspace.getConfiguration().get(key, defaultValue);
 

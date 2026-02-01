@@ -17,13 +17,10 @@ function extractErrorMessage(details) {
   const error = details.error;
   if (!error) return undefined;
   
-  // Build a comprehensive error message
   const parts = [];
   
-  // Extract cause information (assertion details)
   const cause = error.cause;
   if (cause) {
-    // For assertion errors, show expected/received first
     if (cause.code === 'ERR_ASSERTION') {
       const actual = cause.actual !== undefined ? JSON.stringify(cause.actual) : undefined;
       const expected = cause.expected !== undefined ? JSON.stringify(cause.expected) : undefined;
@@ -34,17 +31,15 @@ function extractErrorMessage(details) {
         if (operator) {
           parts.push(`Operator: ${operator}`);
         }
-        parts.push(''); // blank line before stack
+        parts.push('');
       }
     }
-    // Include stack trace (which includes the message)
     if (cause.stack) {
       parts.push(cause.stack);
     } else if (cause.message) {
       parts.push(cause.message);
     }
   } else if (error.stack) {
-    // Fallback to error stack if no cause
     parts.push(error.stack);
   } else if (error.message) {
     parts.push(error.message);
@@ -65,7 +60,6 @@ export default async function*(source) {
     const title = test?.name || 'unknown';
     const duration = durationMs ?? (typeof test?.duration === 'number' ? test.duration : undefined);
     const failureMessages = failureMessage ? [failureMessage] : undefined;
-    // Location from test data (line/column at top level)
     const location = test?.line && typeof test.line === 'number'
       ? { line: test.line, column: test.column || 0 }
       : undefined;
@@ -114,7 +108,6 @@ export default async function*(source) {
     } catch (err) {}
   }
 
-  // Stream has ended - emit final results
   const testResults = Array.from(files.entries()).map(([file, fileAssertions]) => {
     const failed = fileAssertions.filter((a) => a.status === 'failed').length;
     const pending = fileAssertions.filter((a) => a.status === 'skipped').length;

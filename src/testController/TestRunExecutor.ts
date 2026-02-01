@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { relative, join } from 'node:path';
+import * as fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
@@ -23,6 +24,13 @@ import { parseShellCommand } from '../utils/ShellUtils';
 import { escapeRegExp, updateTestNameIfUsingProperties, quote } from '../utils/TestNameUtils';
 import { logInfo, logError } from '../utils/Logger';
 import { randomUUID } from 'node:crypto';
+
+interface RunContext {
+    allFiles: string[];
+    allTests: vscode.TestItem[];
+    framework: TestFrameworkName;
+    workspaceFolder: string;
+}
 
 export class TestRunExecutor {
     constructor(
@@ -76,185 +84,261 @@ export class TestRunExecutor {
         }
 
         try {
-            const allFiles = Array.from(testsByFile.keys());
-            const allTests = Array.from(testsByFile.values()).flat();
-            const sessionId = randomUUID();
-
-            if (allFiles.length === 0) {
+            const context = this.validateRunContext(testsByFile, run);
+            if (!context) {
                 run.end();
                 return;
             }
 
-            const workspaceFolder = vscode.workspace.getWorkspaceFolder(
-                vscode.Uri.file(allFiles[0])
-            )?.uri.fsPath;
+            const { allFiles, allTests, framework, workspaceFolder } = context;
 
-            if (!workspaceFolder) {
-                allTests.forEach((test) =>
-                    run.failed(
-                        test,
-                        new vscode.TestMessage('Could not determine workspace folder')
-                    )
-                );
-                run.end();
-                return;
-            }
+            this.cleanupBunCoverage(framework, collectCoverage);
 
-            const framework = getTestFrameworkForFile(allFiles[0]) || 'jest';
-            const isVitest = framework === 'vitest';
-            const isNodeTest = framework === 'node-test';
-
-            const configPath = isVitest
-                ? this.testRunnerConfig.getVitestConfigPath(allFiles[0])
-                : this.testRunnerConfig.getJestConfigPath(allFiles[0]);
-
-            const testCommand = this.testRunnerConfig.getTestCommand(allFiles[0]);
-            const commandParts = parseShellCommand(testCommand);
-            const command = commandParts[0];
-
-            const esmEnv = isVitest || isNodeTest ? undefined : this.testRunnerConfig.getEnvironmentForRun(allFiles[0]);
-
-            // Clean up previous Bun coverage file if it exists to avoid random hex files
-            if (framework === 'bun' && collectCoverage) {
-                try {
-                    const fs = require('fs');
-                    const coveragePath = join(this.testRunnerConfig.cwd, 'coverage', 'lcov.info');
-                    if (fs.existsSync(coveragePath)) {
-                        fs.unlinkSync(coveragePath);
-                    }
-                } catch (e) {
-                    // Ignore errors during cleanup
-                }
-            }
-
-            // Fast mode: single test without coverage - skip JSON parsing
-            if (canUseFastMode(testsByFile, collectCoverage) && additionalArgs.length === 0) {
-                const test = allTests[0];
-                const testName = escapeRegExp(updateTestNameIfUsingProperties(test.label));
-                const args = buildTestArgsFast(allFiles[0], testName, framework, this.testRunnerConfig);
-                const commandArgs = [...commandParts.slice(1), ...args];
-
-                logInfo(`Running fast mode: ${command} ${commandArgs.join(' ')}`);
-
-                await executeTestCommandFast(
-                    command,
-                    commandArgs,
-                    token,
-                    test,
-                    run,
-                    this.testRunnerConfig.cwd,
-                    esmEnv
-                );
-
-                run.end();
-                return;
-            }
-
-            // Standard mode: use JSON output for multiple tests or coverage
-            const args = buildTestArgs(
-                allFiles,
-                testsByFile,
-                framework,
-                additionalArgs,
-                collectCoverage,
-                this.testRunnerConfig,
-                this.testController
-            );
-
-            const commandArgs = [...commandParts.slice(1), ...args];
-
-            logTestExecution(
-                framework,
-                command,
-                commandArgs,
-                allTests.length,
-                allFiles.length,
-                !!esmEnv
-            );
-
-            const result = await executeTestCommand(
-                command,
-                commandArgs,
-                token,
-                allTests,
-                run,
-                this.testRunnerConfig.cwd,
-                { ...(esmEnv ?? {}), JSTR_SESSION_ID: sessionId },
-                sessionId
-            );
-
-            if (result === null) {
-                run.end();
-                return;
-            }
-
-            // Only process results if not already processed via structured output
-            if (!result.structuredResultsProcessed) {
-                if (framework === 'bun') {
-                    // Bun JUnit reporter writes to file, read it and inject into output
-                    const bunReportPath = join(this.testRunnerConfig.cwd, '.bun-report.xml');
-                    try {
-                        const fs = require('fs');
-                        if (fs.existsSync(bunReportPath)) {
-                            const reportContent = fs.readFileSync(bunReportPath, 'utf8');
-                            result.output += '\n' + reportContent;
-                            // Clean up report file
-                            try {
-                                fs.unlinkSync(bunReportPath);
-                            } catch (e) {
-                                logError('Failed to delete Bun report file', e);
-                            }
-                        }
-                    } catch (e) {
-                        logError('Failed to read Bun report file', e);
-                    }
-                }
-                processTestResults(result.output, allTests, run, framework, sessionId);
-            }
-
-            if (framework === 'deno' && collectCoverage && workspaceFolder) {
-                try {
-                    const coverageCommand = `deno coverage coverage --lcov > ${quote(join(workspaceFolder, 'lcov.info'))}`;
-                    await new Promise<void>((resolve, reject) => {
-                        const cp = spawn(coverageCommand, {
-                            shell: true,
-                            cwd: this.testRunnerConfig.cwd
-                        });
-                        cp.on('close', (code) => {
-                            if (code === 0) resolve();
-                            else reject(new Error(`Deno coverage conversion failed with code ${code}`));
-                        });
-                        cp.on('error', reject);
-                    });
-                } catch (e) {
-                    logError('Failed to convert Deno coverage', e);
-                }
-            }
-
-            if (collectCoverage && workspaceFolder) {
-                await this.processCoverageData(
-                    run,
-                    workspaceFolder,
+            if (this.shouldRunFastMode(testsByFile, collectCoverage, additionalArgs)) {
+                await this.runFastMode(
+                    allFiles[0],
+                    allTests[0],
                     framework,
-                    configPath,
-                    allFiles.length > 0 ? allFiles[0] : undefined
+                    token,
+                    run
+                );
+            } else {
+                await this.runStandardMode(
+                    context,
+                    testsByFile,
+                    additionalArgs,
+                    collectCoverage,
+                    token,
+                    run
                 );
             }
         } catch (error) {
-            const errOutput =
-                error instanceof Error
-                    ? error.message
-                    : error
-                        ? String(error)
-                        : 'Test execution failed';
-            testsByFile.forEach((tests) => {
-                tests.forEach((test) =>
-                    run.failed(test, new vscode.TestMessage(errOutput))
-                );
-            });
+            this.handleError(error, testsByFile, run);
+        } finally {
+            run.end();
+        }
+    }
+
+    private validateRunContext(
+        testsByFile: Map<string, vscode.TestItem[]>,
+        run: vscode.TestRun
+    ): RunContext | null {
+        const allFiles = Array.from(testsByFile.keys());
+        const allTests = Array.from(testsByFile.values()).flat();
+
+        if (allFiles.length === 0) {
+            return null;
         }
 
-        run.end();
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+            vscode.Uri.file(allFiles[0])
+        )?.uri.fsPath;
+
+        if (!workspaceFolder) {
+            allTests.forEach((test) =>
+                run.failed(
+                    test,
+                    new vscode.TestMessage('Could not determine workspace folder')
+                )
+            );
+            return null;
+        }
+
+        const framework = getTestFrameworkForFile(allFiles[0]) || 'jest';
+        return { allFiles, allTests, framework, workspaceFolder };
+    }
+
+    private cleanupBunCoverage(framework: TestFrameworkName, collectCoverage: boolean): void {
+        if (framework !== 'bun' || !collectCoverage) {
+            return;
+        }
+
+        try {
+            const coveragePath = join(this.testRunnerConfig.cwd, 'coverage', 'lcov.info');
+            if (fs.existsSync(coveragePath)) {
+                fs.unlinkSync(coveragePath);
+            }
+        } catch (e) {
+            // Ignore errors during cleanup
+        }
+    }
+
+    private shouldRunFastMode(
+        testsByFile: Map<string, vscode.TestItem[]>,
+        collectCoverage: boolean,
+        additionalArgs: string[]
+    ): boolean {
+        return canUseFastMode(testsByFile, collectCoverage) && additionalArgs.length === 0;
+    }
+
+    private async runFastMode(
+        file: string,
+        test: vscode.TestItem,
+        framework: TestFrameworkName,
+        token: vscode.CancellationToken,
+        run: vscode.TestRun
+    ): Promise<void> {
+        const testCommand = this.testRunnerConfig.getTestCommand(file);
+        const commandParts = parseShellCommand(testCommand);
+        const command = commandParts[0];
+
+        const testName = escapeRegExp(updateTestNameIfUsingProperties(test.label));
+        const args = buildTestArgsFast(file, testName, framework, this.testRunnerConfig);
+        const commandArgs = [...commandParts.slice(1), ...args];
+        const esmEnv = this.getEsmEnv(file, framework);
+
+        logInfo(`Running fast mode: ${command} ${commandArgs.join(' ')}`);
+
+        await executeTestCommandFast(
+            command,
+            commandArgs,
+            token,
+            test,
+            run,
+            this.testRunnerConfig.cwd,
+            esmEnv
+        );
+    }
+
+    private async runStandardMode(
+        context: RunContext,
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean,
+        token: vscode.CancellationToken,
+        run: vscode.TestRun
+    ): Promise<void> {
+        const { allFiles, allTests, framework, workspaceFolder } = context;
+        const sessionId = randomUUID();
+
+        const testCommand = this.testRunnerConfig.getTestCommand(allFiles[0]);
+        const commandParts = parseShellCommand(testCommand);
+        const command = commandParts[0];
+
+        const args = buildTestArgs(
+            allFiles,
+            testsByFile,
+            framework,
+            additionalArgs,
+            collectCoverage,
+            this.testRunnerConfig,
+            this.testController
+        );
+
+        const commandArgs = [...commandParts.slice(1), ...args];
+        const esmEnv = this.getEsmEnv(allFiles[0], framework);
+
+        logTestExecution(
+            framework,
+            command,
+            commandArgs,
+            allTests.length,
+            allFiles.length,
+            !!esmEnv
+        );
+
+        const result = await executeTestCommand(
+            command,
+            commandArgs,
+            token,
+            allTests,
+            run,
+            this.testRunnerConfig.cwd,
+            { ...(esmEnv ?? {}), JSTR_SESSION_ID: sessionId },
+            sessionId
+        );
+
+        if (result === null) {
+            return;
+        }
+
+        if (!result.structuredResultsProcessed) {
+            this.handleBunReport(framework, result);
+            processTestResults(result.output, allTests, run, framework, sessionId);
+        }
+
+        if (framework === 'deno' && collectCoverage) {
+            await this.handleDenoCoverage(workspaceFolder);
+        }
+
+        if (collectCoverage) {
+            const configPath = framework === 'vitest'
+                ? this.testRunnerConfig.getVitestConfigPath(allFiles[0])
+                : this.testRunnerConfig.getJestConfigPath(allFiles[0]);
+
+            await this.processCoverageData(
+                run,
+                workspaceFolder,
+                framework,
+                configPath,
+                allFiles.length > 0 ? allFiles[0] : undefined
+            );
+        }
+    }
+
+    private getEsmEnv(file: string, framework: TestFrameworkName): NodeJS.ProcessEnv | undefined {
+        const isVitest = framework === 'vitest';
+        const isNodeTest = framework === 'node-test';
+        return isVitest || isNodeTest ? undefined : this.testRunnerConfig.getEnvironmentForRun(file);
+    }
+
+    private handleBunReport(framework: TestFrameworkName, result: { output: string }): void {
+        if (framework !== 'bun') {
+            return;
+        }
+
+        const bunReportPath = join(this.testRunnerConfig.cwd, '.bun-report.xml');
+        try {
+            if (fs.existsSync(bunReportPath)) {
+                const reportContent = fs.readFileSync(bunReportPath, 'utf8');
+                result.output += '\n' + reportContent;
+                try {
+                    fs.unlinkSync(bunReportPath);
+                } catch (e) {
+                    logError('Failed to delete Bun report file', e);
+                }
+            }
+        } catch (e) {
+            logError('Failed to read Bun report file', e);
+        }
+    }
+
+    private async handleDenoCoverage(workspaceFolder: string): Promise<void> {
+        try {
+            const coverageCommand = `deno coverage coverage --lcov > ${quote(join(workspaceFolder, 'lcov.info'))}`;
+            await new Promise<void>((resolve, reject) => {
+                const cp = spawn(coverageCommand, {
+                    shell: true,
+                    cwd: this.testRunnerConfig.cwd
+                });
+                cp.on('close', (code) => {
+                    if (code === 0) resolve();
+                    else reject(new Error(`Deno coverage conversion failed with code ${code}`));
+                });
+                cp.on('error', reject);
+            });
+        } catch (e) {
+            logError('Failed to convert Deno coverage', e);
+        }
+    }
+
+    private handleError(
+        error: unknown,
+        testsByFile: Map<string, vscode.TestItem[]>,
+        run: vscode.TestRun
+    ): void {
+        const errOutput =
+            error instanceof Error
+                ? error.message
+                : error
+                    ? String(error)
+                    : 'Test execution failed';
+
+        testsByFile.forEach((tests) => {
+            tests.forEach((test) =>
+                run.failed(test, new vscode.TestMessage(errOutput))
+            );
+        });
     }
 
     private async processCoverageData(

@@ -47,7 +47,6 @@ export function findFullTestName(
             selectedLine >= element.start.line &&
             selectedLine <= element.end.line
         ) {
-            // Logic for tests
             const name = resolveTestNameStringInterpolation(element.name);
             return updateTestNameIfUsingProperties(name);
         }
@@ -55,8 +54,6 @@ export function findFullTestName(
     for (const element of children) {
         const result = findFullTestName(selectedLine, element.children || []);
         if (result) {
-            // For describe blocks, we want to just return the name as is from recursion
-            // But we should check if we need to interpolate
             const parentName = resolveTestNameStringInterpolation(element.name);
             const cleanParentName = updateTestNameIfUsingProperties(parentName);
             return (cleanParentName || parentName) + ' ' + result;

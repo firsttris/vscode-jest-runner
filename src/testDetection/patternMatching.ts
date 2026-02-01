@@ -21,7 +21,6 @@ function matchesExcludePatterns(
           return true;
         }
       } catch {
-        // Invalid regex, skip
       }
     }
   }
@@ -83,7 +82,6 @@ export function fileMatchesPatternsExplicit(
           return true;
         }
       } catch {
-        // Invalid regex, skip
       }
     } else {
       const normalizedPattern = resolveRootDirToken(pattern, rootDir);

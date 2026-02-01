@@ -10,19 +10,19 @@ export interface TestPatterns {
   patterns: string[];
   isRegex: boolean;
   rootDir?: string;
-  roots?: string[];              // Jest: multiple search directories
-  ignorePatterns?: string[];     // Jest: testPathIgnorePatterns (regex)
-  excludePatterns?: string[];    // Vitest: exclude (glob)
-  dir?: string;                  // Vitest: base directory for test discovery
+  roots?: string[];
+  ignorePatterns?: string[];
+  excludePatterns?: string[];
+  dir?: string;
 }
 
 export type TestPatternResult = {
   patterns: string[];
   configDir: string;
   isRegex: boolean;
-  roots?: string[];              // Jest: resolved roots directories
-  ignorePatterns?: string[];     // Jest: testPathIgnorePatterns (regex)
-  excludePatterns?: string[];    // Vitest: exclude (glob)
+  roots?: string[];
+  ignorePatterns?: string[];
+  excludePatterns?: string[];
 };
 
 export type FrameworkResult = {
@@ -50,7 +50,6 @@ export const testFrameworks: TestFramework[] = [
       'vitest.config.mts',
       'vitest.config.cjs',
       'vitest.config.cts',
-      // vite.config.* nur gültig wenn test-Attribut vorhanden (wird in getConfigPath geprüft)
       'vite.config.js',
       'vite.config.ts',
       'vite.config.mjs',
@@ -75,7 +74,7 @@ export const testFrameworks: TestFramework[] = [
   },
   {
     name: 'node-test',
-    configFiles: [], // Node.js test runner has no config file
+    configFiles: [],
     binaryName: 'node',
   },
   {
@@ -90,7 +89,6 @@ export const testFrameworks: TestFramework[] = [
   },
 ];
 
-// Alle bekannten Test-Frameworks, einschließlich derer, die von dieser Erweiterung nicht unterstützt werden
 export const allTestFrameworks: TestFramework[] = [
   ...testFrameworks,
   {

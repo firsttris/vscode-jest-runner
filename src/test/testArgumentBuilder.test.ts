@@ -19,8 +19,14 @@ describe('TestArgumentBuilder', () => {
             getJestConfigPath: jest.fn(),
             getVitestConfigPath: jest.fn(),
             buildNodeTestArgs: jest.fn(),
+            buildVitestArgs: jest.fn(),
+            buildJestArgs: jest.fn(),
         } as any;
-        mockController = {} as any;
+        mockController = {
+            items: {
+                get: jest.fn(),
+            }
+        } as any;
     });
 
     describe('node-test', () => {
@@ -198,4 +204,116 @@ describe('TestArgumentBuilder', () => {
             expect(args).toContain('--bail');
         });
     });
+
+    describe('vitest', () => {
+        it('should generate correct args for vitest with coverage', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+            (mockConfig.getVitestConfigPath as jest.Mock).mockReturnValue('/path/to/vitest.config.ts');
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'vitest',
+                [],
+                true, // collectCoverage
+                mockConfig,
+                mockController
+            );
+
+            expect(args[0]).toBe('run');
+            expect(args).toContain('/path/to/test.ts');
+            expect(args).toContain('--reporter=json');
+            expect(args).toContain('--config');
+            expect(args).toContain('/path/to/vitest.config.ts');
+            expect(args).toContain('--coverage');
+            expect(args).toContain('--coverage.reporter');
+            expect(args).toContain('json');
+        });
+
+        it('should use partial run logic when appropriate', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            const mockTestItem = { label: 'test1' };
+            testsByFile.set('/path/to/test.ts', [mockTestItem]);
+
+            // Mock controller to return a file item with more children, implying partial run
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 5 }
+            });
+
+            // Mock implementation of buildVitestArgs to verify it's called
+            (mockConfig.buildVitestArgs as jest.Mock).mockReturnValue(['--mocked-vitest-args']);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'vitest',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect(mockConfig.buildVitestArgs).toHaveBeenCalled();
+            expect(args).toContain('--mocked-vitest-args');
+        });
+    });
+
+    describe('jest', () => {
+        it('should generate correct args for jest with coverage', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+            (mockConfig.getJestConfigPath as jest.Mock).mockReturnValue('/path/to/jest.config.ts');
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'jest',
+                [],
+                true, // collectCoverage
+                mockConfig,
+                mockController
+            );
+
+            expect(args).toContain('/path/to/test.ts');
+            expect(args).toContain('--json');
+            expect(args).toContain('-c');
+            expect(args).toContain('/path/to/jest.config.ts');
+            expect(args).toContain('--coverage');
+            expect(args).toContain('--coverageReporters=json');
+        });
+
+        it('should use partial run logic when appropriate', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            const mockTestItem = { label: 'test1' };
+            testsByFile.set('/path/to/test.ts', [mockTestItem]);
+
+            // Mock controller to return a file item with more children, implying partial run
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 5 }
+            });
+
+            // Mock implementation of buildJestArgs to verify it's called
+            (mockConfig.buildJestArgs as jest.Mock).mockReturnValue(['--mocked-jest-args']);
+
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'jest',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect(mockConfig.buildJestArgs).toHaveBeenCalled();
+            expect(args).toContain('--mocked-jest-args');
+        });
+    });
 });
+

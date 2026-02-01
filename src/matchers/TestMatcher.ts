@@ -5,25 +5,17 @@ export type IndexedResult = { result: JestAssertionResult; index: number };
 
 const TEMPLATE_VAR_REGEX = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/i;
 
-/**
- * Escapes regex special characters in the test label while preserving
- * template variable patterns which get replaced with (.*?)
- */
 function escapeRegExpWithTemplateVars(testLabel: string): string {
     const templateVarRegex = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/gi;
     const placeholder = '\x00TEMPLATE\x00';
     const templateVars: string[] = [];
-
-    // Replace template vars with placeholders
     const withPlaceholders = testLabel.replace(templateVarRegex, (match) => {
         templateVars.push(match);
         return placeholder;
     });
 
-    // Escape regex special characters in the non-template parts
     const escaped = withPlaceholders.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // Replace placeholders back with (.*?)
     let result = escaped;
     for (let i = 0; i < templateVars.length; i++) {
         result = result.replace(placeholder, '(.*?)');
@@ -54,23 +46,15 @@ function matchesTestLabel(resultTitle: string, testLabel: string): boolean {
 export const hasTemplateVariable = (label: string): boolean =>
     TEMPLATE_VAR_REGEX.test(label);
 
-/**
- * Checks if the string is ONLY a template variable (e.g., "%d", "$foo")
- * which would result in a regex that matches everything.
- */
 const isOnlyTemplateVar = (label: string): boolean => {
     const trimmed = label.trim();
     return /^(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])$/i.test(trimmed);
 };
 
-/**
- * Gets the ancestor titles (parent describe blocks) from a TestItem's hierarchy.
- */
 const getAncestorTitles = (test: vscode.TestItem): string[] => {
     const titles: string[] = [];
     let parent = test.parent;
     while (parent) {
-        // Skip file-level items (they have a URI that matches their id)
         if (parent.uri && parent.id !== parent.uri.fsPath) {
             titles.unshift(parent.label);
         }
@@ -79,10 +63,6 @@ const getAncestorTitles = (test: vscode.TestItem): string[] => {
     return titles;
 };
 
-/**
- * Checks if the result's ancestorTitles match the test's ancestor hierarchy.
- * Used for template-only labels where we can't match by test name.
- */
 const matchesByAncestors = (
     r: JestAssertionResult,
     test: vscode.TestItem,
@@ -90,19 +70,12 @@ const matchesByAncestors = (
     const testAncestors = getAncestorTitles(test);
     const resultAncestors = r.ancestorTitles ?? [];
 
-    // If test has no ancestors, only match if result also has no ancestors
-    // (single test at file level)
     if (testAncestors.length === 0) {
         return resultAncestors.length === 0;
     }
-
-    // Check if result ancestors end with the test ancestors
-    // This handles nested describes where result might have more ancestors
     if (resultAncestors.length < testAncestors.length) {
         return false;
     }
-
-    // Compare from the end (most specific ancestor)
     const offset = resultAncestors.length - testAncestors.length;
     return testAncestors.every(
         (title, i) => resultAncestors[offset + i] === title,
@@ -124,13 +97,10 @@ const matchesTest = (r: JestAssertionResult, test: vscode.TestItem): boolean => 
         return /^ \(\d+\)$/.test(suffix);
     };
 
-    // For template-only labels (e.g., "$description"), match by ancestor titles
-    // instead of by regex which would match everything
     if (isOnlyTemplateVar(test.label)) {
         return matchesByAncestors(r, test);
     }
 
-    // Skip testName matching if it's only a template variable (would match everything)
     const testNameMatches =
         !isOnlyTemplateVar(testName) && matchesTestLabel(r.title, testName);
 

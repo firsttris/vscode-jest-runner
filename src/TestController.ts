@@ -45,7 +45,6 @@ export class JestTestController {
     );
     this.configWatcher = new TestConfigWatcher();
 
-    // Lazily resolve tests when VS Code requests them (expand tree, run all, etc.)
     this.testController.resolveHandler = async () => {
       await this.ensureTestsDiscovered();
     };
@@ -106,10 +105,7 @@ export class JestTestController {
   }
 
   private async refreshAllTests(): Promise<void> {
-    // Clear detection caches to ensure fresh framework detection
     cacheManager.invalidateAll();
-
-    // Invalidate test file cache to force re-evaluation
     testFileCache.invalidate();
 
     this.testController.items.replace([]);

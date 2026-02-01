@@ -42,12 +42,10 @@ export class TestConfigWatcher {
             this.disposables.push(watcher);
         }
 
-        // Initial setup of custom config watchers
         this.refreshCustomConfigWatchers();
     }
 
     private refreshCustomConfigWatchers(): void {
-        // Dispose existing custom watchers
         this.customConfigWatchers.forEach(w => w.dispose());
         this.customConfigWatchers = [];
 

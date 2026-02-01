@@ -15,9 +15,6 @@ interface TapTestResult {
   diagnostic?: Record<string, string>;
 }
 
-/**
- * Parse TAP output from Node.js test runner with support for nested subtests.
- */
 export function parseTapOutput(output: string, filePath: string): JestResults {
   const lines = output.split('\n');
   const results: TapTestResult[] = [];
@@ -30,12 +27,10 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Check for indentation
     const indentMatch = line.match(/^(\s*)/);
     const indent = indentMatch ? indentMatch[1].length : 0;
     const trimmedLine = line.trim();
 
-    // 1. Handle YAML Diagnostics (attached to previous result)
     if (trimmedLine === '---') {
       inDiagnostic = true;
       continue;
@@ -50,18 +45,11 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
     }
     if (inDiagnostic) {
       if (lastResultIndex >= 0) {
-        currentDiagnostic.push(trimmedLine); // Store trimmed or raw? Raw usually safer for YAML indentation but we flattened it?
-        // Actually, parseYamlDiagnostic handles indentation relative to block.
-        // Let's store raw line but maybe strip the base indent of the block?
-        // For simplicity, just push the line as is, or trimmed.
-        // The previous parser used trimmed lines in parseYamlDiagnostic logic implicitly?
-        // Let's stick to the previous logic: pass joined lines.
+        currentDiagnostic.push(trimmedLine);
       }
       continue;
     }
 
-    // 2. Handle Subtest Declaration
-    // "# Subtest: <name>"
     const subtestMatch = trimmedLine.match(/^# Subtest: (.+)$/);
     if (subtestMatch) {
       const name = subtestMatch[1].trim();
@@ -69,28 +57,20 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
       continue;
     }
 
-    // 3. Handle Test Result
-    // "ok <id> - <name>" or "not ok <id> - <name>"
     const resultMatch = trimmedLine.match(/^(not )?ok\s+(?:\d+)\s*(?:-\s*(.+?))?(?:\s+#\s*(SKIP|TODO)(?:\s+(.*))?)?$/i);
     if (resultMatch) {
       const [, notOk, rawName, directive, directiveReason] = resultMatch;
       const ok = !notOk;
       const name = rawName?.trim() || 'unknown';
-
-      // Check if this closes the top of the stack
-      // The result line should have indentation <= top of stack (usually same)
-      // And the name should match.
-
       let matchedStackItem = false;
       if (stack.length > 0) {
         const top = stack[stack.length - 1];
-        // Node.js runner outputs result at same indent level as the subtest declaration
         if (name === top.name) {
           const item = stack.pop()!;
           matchedStackItem = true;
 
           if (!item.hasChildren) {
-            // It was a leaf test!
+
             results.push({
               ok,
               name: item.name,
@@ -100,14 +80,9 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
             });
             lastResultIndex = results.length - 1;
           } else {
-            // It was a suite (had children). We don't record suites as tests in JestRepoter.
-            // But we need to make sure we didn't miss diagnostics for the suite?
-            // JestResults doesn't have a place for suite diagnostics/errors unless mapped to a specific test.
-            // We ignore suite results for now.
             lastResultIndex = -1;
           }
 
-          // Mark parent as having children
           if (stack.length > 0) {
             stack[stack.length - 1].hasChildren = true;
           }
@@ -115,8 +90,6 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
       }
 
       if (!matchedStackItem) {
-        // Must be a leaf test without a preceding "# Subtest" line (rare in node --test but possible)
-        // Or a mismatch. Treat as leaf test at current stack level.
         results.push({
           ok,
           name,

@@ -16,12 +16,7 @@ import {
 import { detectFrameworkByPatternMatch } from './patternMatching';
 import { logDebug, logError } from '../utils/Logger';
 
-/**
- * Check if a file uses Node.js built-in test runner (node:test)
- * Automatically detects based on import statements in the file
- */
 export function isNodeTestFile(filePath: string): boolean {
-  // Check cache first
   const cached = cacheManager.getFileFramework(filePath);
   if (cached !== undefined) {
     return cached?.framework === 'node-test';
@@ -29,26 +24,14 @@ export function isNodeTestFile(filePath: string): boolean {
 
   try {
     if (!existsSync(filePath)) {
-      // If file doesn't exist, we can't be sure it's not a test file in general,
-      // but strictly for node-test it's false. 
-      // We don't cache 'null' indiscriminately here to avoid side effects on other frameworks.
       return false;
     }
 
     const content = readFileSync(filePath, 'utf-8');
-    // Check for node:test import patterns:
-    // - import { test } from 'node:test'
-    // - import test from 'node:test'
-    // - const { test } = require('node:test')
-    // - require('node:test')
     const isNodeTest =
       /from\s+['"]node:test['"]/.test(content) ||
       /require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
 
-    if (isNodeTest) {
-      // We do NOT cache here because pattern matching checks haven't run yet.
-      // The TestFileCache will handle caching valid test files.
-    }
 
     return isNodeTest;
   } catch (error) {
@@ -57,16 +40,10 @@ export function isNodeTestFile(filePath: string): boolean {
   }
 }
 
-/**
- * Check if a file uses Bun test runner (`bun:test`)
- */
 export function isBunTestFile(filePath: string): boolean {
   return hasImport(filePath, 'bun:test');
 }
 
-/**
- * Check if a file uses Deno test runner (`Deno.test`)
- */
 export function isDenoTestFile(filePath: string): boolean {
   const cached = cacheManager.getFileFramework(filePath);
   if (cached !== undefined) {
@@ -76,7 +53,6 @@ export function isDenoTestFile(filePath: string): boolean {
   try {
     if (!existsSync(filePath)) return false;
     const content = readFileSync(filePath, 'utf-8');
-    // Check for Deno.test usage or standard Deno imports
     return (
       /Deno\.test/.test(content) ||
       /from\s+['"]jsr:@std\/expect['"]/.test(content) ||
@@ -108,19 +84,10 @@ function hasImport(filePath: string, moduleName: string): boolean {
   }
 }
 
-/**
- * Clear the node-test file cache (useful when settings change)
- */
-/**
- * Clear the node-test file cache (useful when settings change)
- */
 export function clearNodeTestCache(): void {
   cacheManager.invalidateAll();
 }
 
-/**
- * Invalidate the node-test cache for a specific file
- */
 export function invalidateNodeTestCache(filePath: string): void {
   cacheManager.invalidate(filePath);
 }
@@ -194,7 +161,6 @@ export function detectTestFramework(
   directoryPath: string,
   filePath?: string,
 ): TestFrameworkName | undefined {
-  // Check for node:test first if file path is provided
   if (filePath) {
     if (isNodeTestFile(filePath)) {
       return 'node-test';
@@ -360,7 +326,6 @@ export function findTestFrameworkDirectory(
 
   const rootPath = workspaceFolder.uri.fsPath;
 
-  // Check for node:test first - it takes priority based on file content
   const isNodeTest = isNodeTestFile(filePath);
   if (isNodeTest) {
     logDebug(`Detected node:test for ${filePath}`);

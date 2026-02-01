@@ -48,10 +48,8 @@ export function activate(context: vscode.ExtensionContext): void {
     let filePath: string | undefined;
 
     if (uri) {
-      // When called with a specific URI (e.g., from explorer selection)
       filePath = uri.fsPath;
     } else {
-      // When called without URI, use active editor
       const editor = vscode.window.activeTextEditor;
       if (editor) {
         filePath = editor.document.uri.fsPath;
@@ -66,7 +64,6 @@ export function activate(context: vscode.ExtensionContext): void {
         shouldInclude,
       );
     } else {
-      // No file selected, disable context
       vscode.commands.executeCommand(
         'setContext',
         'jestrunner.isTestFile',
@@ -75,13 +72,10 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   };
 
-  // Update context when active editor changes
-  // This handles both opening files from explorer and switching between open editors
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => updateJestFileContext()),
   );
 
-  // Test Explorer management
   let testController: JestTestController | undefined;
 
   const updateTestExplorer = () => {

@@ -28,7 +28,6 @@ export class ConfigResolver {
             targetPath,
         );
 
-        // If useNearestConfig is enabled, try to find config relative to the test file first
         if (!configPath || context.useNearestConfig) {
             const foundPath = this.findConfigPath(targetPath, context, configPath, framework);
             if (foundPath) {
@@ -38,7 +37,6 @@ export class ConfigResolver {
         }
 
         if (configPath) {
-            // Resolve path relative to workspace or project path
             const resolvedPath = normalizePath(
                 resolve(
                     context.currentWorkspaceFolderPath,
@@ -65,12 +63,12 @@ export class ConfigResolver {
     }
 
     public findConfigPath(
-        targetPath: string | undefined, // made optional to match previous logic but generally should be string
+        targetPath: string | undefined,
         context: ConfigResolutionContext,
         targetConfigFilename?: string,
         framework?: TestFrameworkName,
     ): string | undefined {
-        let configFiles: readonly string[]; // Use readonly string[] here as well
+        let configFiles: readonly string[];
         if (targetConfigFilename) {
             configFiles = [targetConfigFilename];
         } else if (framework) {
@@ -95,10 +93,6 @@ export class ConfigResolver {
             return cachedPath;
         }
 
-        // Convert readonly array to mutable array for the utility function which expects string[]
-        // This is safe because the utility function doesn't modify the array, 
-        // but we cast it or copy it to satisfy the type system if needed.
-        // Actually resolveConfigPath expects string[], so we can just spread it.
         const foundPath = resolveConfigPath(
             [...configFiles],
             startPath,

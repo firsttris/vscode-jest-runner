@@ -1,8 +1,5 @@
 import type { CodeLocation } from './types';
 
-/**
- * range and location here are 1-based position.
- */
 export class ParsedRange {
   start: CodeLocation;
 
@@ -94,9 +91,6 @@ export class NamedBlock extends ParsedNode {
 
   lastProperty?: string;
 
-  /**
-   * type of the name, it's the babel Node["type"], such as "Literal", "TemplateLiteral" etc
-   */
   nameType?: string;
 
   constructor(type: ParsedNodeType, file: string, name?: string) {

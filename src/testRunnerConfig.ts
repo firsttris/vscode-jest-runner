@@ -161,8 +161,8 @@ export class TestRunnerConfig {
       configKey,
       {
         currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
-        projectPathFromConfig: this.projectPathFromConfig, // accessed via public getter
-        useNearestConfig: this.useNearestConfig // accessed via public getter
+        projectPathFromConfig: this.projectPathFromConfig,
+        useNearestConfig: this.useNearestConfig
       },
       framework
     );
@@ -291,7 +291,7 @@ export class TestRunnerConfig {
       testName,
       withQuotes,
       options,
-      '', // Node test has no config file
+      '',
       this.nodeTestRunOptions,
     );
   }

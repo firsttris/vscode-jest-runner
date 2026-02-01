@@ -5,6 +5,15 @@ import { escapeRegExp, escapeSingleQuotes, quote, updateTestNameIfUsingPropertie
 import { normalizePath } from '../utils/PathUtils';
 import { getReporterPaths } from '../reporters/reporterPaths';
 
+interface TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[];
+}
+
 export function buildTestArgs(
     allFiles: string[],
     testsByFile: Map<string, vscode.TestItem[]>,
@@ -14,24 +23,51 @@ export function buildTestArgs(
     jestConfig: TestRunnerConfig,
     testController: vscode.TestController,
 ): string[] {
-    const isVitest = framework === 'vitest';
-    const isNodeTest = framework === 'node-test';
-    const reporters = getReporterPaths();
+    const strategies: Record<TestFrameworkName, TestArgumentStrategy> = {
+        'node-test': new NodeTestStrategy(),
+        'bun': new BunTestStrategy(),
+        'deno': new DenoTestStrategy(),
+        'vitest': new VitestStrategy(jestConfig, testController),
+        'jest': new JestStrategy(jestConfig, testController),
+    };
 
-    // Node.js test runner has simpler argument handling
-    if (isNodeTest) {
+    const strategy = strategies[framework];
+    if (!strategy) {
+        throw new Error(`Unsupported framework: ${framework}`);
+    }
+
+    return strategy.build(allFiles, testsByFile, additionalArgs, collectCoverage);
+}
+
+abstract class BaseStrategy {
+    protected getTests(testsByFile: Map<string, vscode.TestItem[]>): vscode.TestItem[] {
+        return Array.from(testsByFile.values()).flat();
+    }
+
+    protected getTestNamePattern(tests: vscode.TestItem[]): string | undefined {
+        if (tests.length === 0) return undefined;
+        return tests.length > 1
+            ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
+            : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
+    }
+
+    protected getNormalizedFiles(allFiles: string[]): string[] {
+        return allFiles.map(normalizePath);
+    }
+}
+
+class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[] {
+        const reporters = getReporterPaths();
         const args = ['--test'];
+        const tests = this.getTests(testsByFile);
+        const testName = this.getTestNamePattern(tests);
 
-        const tests = Array.from(testsByFile.values()).flat();
-        let testName: string | undefined;
-
-        if (tests.length > 0) {
-            testName = tests.length > 1
-                ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-                : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-        }
-
-        // Use structured reporter for batch mode (Test Explorer needs JSON output)
         args.push('--test-reporter', reporters.node);
         args.push('--test-reporter-destination', 'stdout');
 
@@ -42,80 +78,63 @@ export function buildTestArgs(
         }
 
         if (testName) {
-            // Pattern must be single-quote escaped for the quote() function if it uses single quotes
             args.push('--test-name-pattern', quote(escapeSingleQuotes(testName)));
         }
 
-        args.push(...additionalArgs);
+        const filteredArgs = additionalArgs.filter(arg => arg !== '--coverage');
+        args.push(...filteredArgs);
 
-        // Remove --coverage if it was passed in additionalArgs (as node doesn't support it)
-        const coverageIndex = args.indexOf('--coverage');
-        if (coverageIndex > -1) {
-            args.splice(coverageIndex, 1);
-        }
-
-        // Files come LAST
-        args.push(...allFiles.map(normalizePath));
+        args.push(...this.getNormalizedFiles(allFiles));
         return args;
     }
+}
 
-    if (framework === 'bun') {
+class BunTestStrategy extends BaseStrategy implements TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[] {
         const args = ['test'];
+        const tests = this.getTests(testsByFile);
+        const testName = this.getTestNamePattern(tests);
 
-        const tests = Array.from(testsByFile.values()).flat();
-        if (tests.length > 0) {
-            const testName = tests.length > 1
-                ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-                : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-
-            if (testName) {
-                args.push('-t', quote(testName));
-            }
+        if (testName) {
+            args.push('-t', quote(testName));
         }
 
-        // Use JUnit reporter for parsing (Bun doesn't support JSON reporter properly yet)
         args.push('--reporter=junit');
         args.push('--reporter-outfile=.bun-report.xml');
 
         if (collectCoverage) {
             args.push('--coverage');
-            // Ensure lcov output for coverage provider
             args.push('--coverage-reporter=lcov');
         }
 
         args.push(...additionalArgs);
 
-        // Remove --coverage from additionalArgs if manually handled to avoid duplicates?
-        // But we pushed additionalArgs after manual flags.
-        // Bun seems okay with duplicates or we can clean it.
-        const coverageIndex = args.lastIndexOf('--coverage');
-        if (coverageIndex > -1 && args.indexOf('--coverage') !== coverageIndex) {
-            // If we have duplicates, maybe we should have cleaned additionalArgs first.
-            // But simpler to just leave it if Bun doesn't crash.
-            // Or filter additionalArgs.
-            // Let's filter additionalArgs before pushing.
-        }
-
         if (allFiles.length > 0) {
-            args.push(...allFiles.map(normalizePath));
+            args.push(...this.getNormalizedFiles(allFiles));
         }
 
         return args;
     }
+}
 
-    if (framework === 'deno') {
+class DenoTestStrategy extends BaseStrategy implements TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[] {
         const args = ['test', '--allow-all'];
+        const tests = this.getTests(testsByFile);
+        const testName = this.getTestNamePattern(tests);
 
-        const tests = Array.from(testsByFile.values()).flat();
-        if (tests.length > 0) {
-            const testName = tests.length > 1
-                ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-                : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-
-            if (testName) {
-                // Pattern must be single-quote escaped for the quote() function
-                args.push('--filter', quote(escapeSingleQuotes(testName)));
-            }
+        if (testName) {
+            args.push('--filter', quote(escapeSingleQuotes(testName)));
         }
 
         if (collectCoverage) {
@@ -125,67 +144,111 @@ export function buildTestArgs(
         args.push(...additionalArgs);
 
         if (allFiles.length > 0) {
-            args.push(...allFiles.map(normalizePath));
+            args.push(...this.getNormalizedFiles(allFiles));
         }
 
         return args;
     }
+}
 
-    const fileItem =
-        allFiles.length === 1
-            ? testController.items.get(allFiles[0])
-            : undefined;
-    const totalTestsInFile = fileItem?.children.size ?? 0;
-    const isPartialRun =
-        allFiles.length === 1 &&
-        testsByFile.get(allFiles[0])!.length < totalTestsInFile;
-
-    if (isPartialRun) {
-        const tests = testsByFile.get(allFiles[0])!;
-        const testNamePattern =
-            tests.length > 1
-                ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
-                : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
-
-        const extraArgs = [
-            ...additionalArgs,
-            ...(isVitest
-                ? ['--reporter=json', '--reporter=default', `--reporter=${reporters.vitest}`]
-                : ['--json', '--reporters', 'default', '--reporters', reporters.jest]),
-        ];
-
-        if (collectCoverage) {
-            extraArgs.push(
-                '--coverage',
-                isVitest ? '--coverage.reporter' : '--coverageReporters=json',
-                ...(isVitest ? ['json'] : []),
-            );
-        }
-
-        if (isVitest) {
-            return jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, extraArgs);
-        }
-
-        return jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, extraArgs);
+abstract class JestLikeStrategy extends BaseStrategy {
+    constructor(
+        protected jestConfig: TestRunnerConfig,
+        protected testController: vscode.TestController
+    ) {
+        super();
     }
 
-    // Full file run
-    const configPath = isVitest
-        ? jestConfig.getVitestConfigPath(allFiles[0])
-        : jestConfig.getJestConfigPath(allFiles[0]);
+    protected isPartialRun(allFiles: string[], testsByFile: Map<string, vscode.TestItem[]>): boolean {
+        if (allFiles.length !== 1) return false;
 
-    // Normalize paths for Windows compatibility (backslashes -> forward slashes)
-    const normalizedFiles = allFiles.map(normalizePath);
+        const fileItem = this.testController.items.get(allFiles[0]);
+        const totalTestsInFile = fileItem?.children.size ?? 0;
+        const tests = testsByFile.get(allFiles[0]);
 
-    const args = isVitest
-        ? [
+        return !!tests && tests.length < totalTestsInFile;
+    }
+}
+
+class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[] {
+        const reporters = getReporterPaths();
+
+        if (this.isPartialRun(allFiles, testsByFile)) {
+            const tests = testsByFile.get(allFiles[0])!;
+            const testNamePattern = this.getTestNamePattern(tests)!;
+
+            const extraArgs = [
+                ...additionalArgs,
+                '--reporter=json', '--reporter=default', `--reporter=${reporters.vitest}`
+            ];
+
+            if (collectCoverage) {
+                extraArgs.push('--coverage', '--coverage.reporter', 'json');
+            }
+
+            return this.jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, extraArgs);
+        }
+
+        const configPath = this.jestConfig.getVitestConfigPath(allFiles[0]);
+        const normalizedFiles = this.getNormalizedFiles(allFiles);
+
+        const args = [
             'run',
             ...normalizedFiles,
             '--reporter=json',
             '--reporter=default',
             `--reporter=${reporters.vitest}`,
-        ]
-        : [
+        ];
+
+        if (configPath) {
+            args.push('--config', configPath);
+        }
+
+        args.push(...additionalArgs);
+
+        if (collectCoverage) {
+            args.push('--coverage', '--coverage.reporter', 'json');
+        }
+
+        return args;
+    }
+}
+
+class JestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[] {
+        const reporters = getReporterPaths();
+
+        if (this.isPartialRun(allFiles, testsByFile)) {
+            const tests = testsByFile.get(allFiles[0])!;
+            const testNamePattern = this.getTestNamePattern(tests)!;
+
+            const extraArgs = [
+                ...additionalArgs,
+                '--json', '--reporters', 'default', '--reporters', reporters.jest
+            ];
+
+            if (collectCoverage) {
+                extraArgs.push('--coverage', '--coverageReporters=json');
+            }
+
+            return this.jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, extraArgs);
+        }
+
+        const configPath = this.jestConfig.getJestConfigPath(allFiles[0]);
+        const normalizedFiles = this.getNormalizedFiles(allFiles);
+
+        const args = [
             ...normalizedFiles,
             '--json',
             '--reporters',
@@ -194,27 +257,21 @@ export function buildTestArgs(
             reporters.jest,
         ];
 
-    if (configPath) {
-        args.push(isVitest ? '--config' : '-c', configPath);
-    }
+        if (configPath) {
+            args.push('-c', configPath);
+        }
 
-    args.push(...additionalArgs);
+        args.push(...additionalArgs);
 
-    if (collectCoverage) {
-        if (isVitest) {
-            args.push('--coverage', '--coverage.reporter', 'json');
-        } else {
+        if (collectCoverage) {
             args.push('--coverage', '--coverageReporters=json');
         }
-    }
 
-    return args;
+        return args;
+    }
 }
 
-/**
- * Build test args for fast single-test execution (no JSON output).
- * This is used when running a single test to avoid JSON serialization overhead.
- */
+
 export function buildTestArgsFast(
     filePath: string,
     testName: string,
@@ -224,9 +281,6 @@ export function buildTestArgsFast(
     return jestConfig.buildTestArgs(filePath, testName, true, []);
 }
 
-/**
- * Check if a test run qualifies for fast mode (single test, no coverage).
- */
 export function canUseFastMode(
     testsByFile: Map<string, vscode.TestItem[]>,
     collectCoverage: boolean,
