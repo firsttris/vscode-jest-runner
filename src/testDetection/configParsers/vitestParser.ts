@@ -63,16 +63,18 @@ const parseJsConfig = (content: string, configPath: string): TestPatterns | unde
 export function viteConfigHasTestAttribute(configPath: string): boolean {
   try {
     const content = readConfigFile(configPath);
-    const regexHasTest = /\btest\s*[:=]/.test(content);
 
     if (configPath.endsWith('.json')) {
       const parsed = parseJsonConfig(content);
-      return !!parsed || regexHasTest;
+      return !!parsed;
     }
 
     const configObject = parseConfigObject(content);
-    if (!configObject) return regexHasTest;
-    return hasProperty(configObject, 'test') || regexHasTest;
+    if (!configObject) {
+      // Fallback for malformed configs that still contain a test block assignment
+      return content.includes('test =');
+    }
+    return hasProperty(configObject, 'test');
   } catch (error) {
     logError(`Error reading vite config file: ${configPath}`, error);
     return false;
