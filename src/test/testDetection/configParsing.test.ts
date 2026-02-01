@@ -726,7 +726,7 @@ export default defineConfig({
 
       const result = getCypressSpecPattern('/test/cypress.config.json');
 
-      expect(result).toBe('cypress/e2e/**/*.cy.{js,jsx,ts,tsx}');
+      expect(result).toEqual(['cypress/e2e/**/*.cy.{js,jsx,ts,tsx}']);
     });
 
     it('should extract specPattern from JSON config without e2e block', () => {
@@ -736,7 +736,7 @@ export default defineConfig({
 
       const result = getCypressSpecPattern('/test/cypress.config.json');
 
-      expect(result).toBe('**/*.spec.js');
+      expect(result).toEqual(['**/*.spec.js']);
     });
 
     it('should extract specPattern string from JS/TS config', () => {
@@ -760,9 +760,10 @@ export default defineConfig({
 
       const result = getCypressSpecPattern('/test/cypress.config.ts');
 
-      // Note: Current implementation doesn't properly parse arrays in JS/TS configs
-      // The regex captures array content but the check for startsWith('[') never matches
-      expect(result).toEqual(["'cypress/e2e/**/*.cy.ts', 'cypress/integration/**/*.spec.ts'"]);
+      expect(result).toEqual([
+        'cypress/e2e/**/*.cy.ts',
+        'cypress/integration/**/*.spec.ts',
+      ]);
     });
 
     it('should extract specPattern from e2e block in JS/TS config', () => {
@@ -790,8 +791,10 @@ export default defineConfig({
 
       const result = getCypressSpecPattern('/test/cypress.config.ts');
 
-      // Note: Current implementation doesn't properly parse arrays in JS/TS configs
-      expect(result).toEqual(["'cypress/e2e/**/*.cy.ts', 'cypress/component/**/*.cy.tsx'"]);
+      expect(result).toEqual([
+        'cypress/e2e/**/*.cy.ts',
+        'cypress/component/**/*.cy.tsx',
+      ]);
     });
 
     it('should return undefined when no specPattern is found', () => {

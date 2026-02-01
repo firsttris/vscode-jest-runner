@@ -1,13 +1,19 @@
 import { logError } from '../../utils/Logger';
-import { extractStringValue, readConfigFile } from './parseUtils';
+import { getStringFromProperty, parseConfigObject, readConfigFile } from './parseUtils';
 
 export function getPlaywrightTestDir(configPath: string): string | undefined {
   try {
     const content = readConfigFile(configPath);
+
     if (configPath.endsWith('.json')) {
-      return JSON.parse(content).testDir;
+      const parsed = JSON.parse(content);
+      return typeof parsed.testDir === 'string' ? parsed.testDir : undefined;
     }
-    return extractStringValue(content, 'testDir');
+
+    const configObject = parseConfigObject(content);
+    if (!configObject) return undefined;
+
+    return getStringFromProperty(configObject, 'testDir');
   } catch (error) {
     logError(`Error reading Playwright config file: ${configPath}`, error);
     return undefined;

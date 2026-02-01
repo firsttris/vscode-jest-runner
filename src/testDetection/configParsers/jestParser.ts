@@ -2,34 +2,25 @@ import { dirname, isAbsolute, join } from 'node:path';
 import { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
-  extractArrayFromText,
-  extractArrayProperty,
-  extractStringValue,
+  getObjectFromProperty,
+  getStringArrayFromProperty,
+  getStringFromProperty,
+  parseConfigObject,
   readConfigFile,
 } from './parseUtils';
 
-function extractTestRegex(config: any): string[] | undefined {
-  if (!config.testRegex) return undefined;
-  if (typeof config.testRegex === 'string') {
-    return [config.testRegex];
-  }
-  if (Array.isArray(config.testRegex)) {
-    return config.testRegex;
-  }
+const extractTestRegex = (config: any): string[] | undefined => {
+  if (!config?.testRegex) return undefined;
+  if (typeof config.testRegex === 'string') return [config.testRegex];
+  if (Array.isArray(config.testRegex)) return config.testRegex as string[];
   return undefined;
-}
+};
 
-function extractRootDir(content: string, configPath: string): string | undefined {
-  const rootDirMatch = content.match(/['"]?rootDir['"]?\s*:\s*(['"]([^'"]+)['"]|__dirname)/);
-  if (rootDirMatch) {
-    const value = rootDirMatch[1];
-    if (value === '__dirname') {
-      return dirname(configPath);
-    }
-    return rootDirMatch[2];
-  }
-  return undefined;
-}
+const extractArrayProperty = (config: any, key: string): string[] | undefined => {
+  const value = config?.[key];
+  if (typeof value === 'string') return [value];
+  return Array.isArray(value) ? value : undefined;
+};
 
 const parseJsonConfig = (content: string, configPath: string): TestPatterns | undefined => {
   try {
@@ -38,52 +29,47 @@ const parseJsonConfig = (content: string, configPath: string): TestPatterns | un
       : JSON.parse(content);
 
     if (!config) return undefined;
+
     const rootDir = config.rootDir;
     const roots = extractArrayProperty(config, 'roots');
     const ignorePatterns = extractArrayProperty(config, 'testPathIgnorePatterns');
-    if (config.testMatch && Array.isArray(config.testMatch)) {
+
+    if (Array.isArray(config.testMatch)) {
       return { patterns: config.testMatch, isRegex: false, rootDir, roots, ignorePatterns };
     }
+
     const regexPatterns = extractTestRegex(config);
     if (regexPatterns) {
       return { patterns: regexPatterns, isRegex: true, rootDir, roots, ignorePatterns };
     }
+
     if (roots || ignorePatterns) {
       return { patterns: [], isRegex: false, rootDir, roots, ignorePatterns };
     }
+
     return undefined;
   } catch {
     return undefined;
   }
 };
 
-const parseTestMatchFromText = (
-  content: string,
-  rootDir: string | undefined
-): TestPatterns | undefined => {
-  const patterns = extractArrayFromText(content, 'testMatch');
-  if (!patterns) return undefined;
-  return { patterns, isRegex: false, rootDir };
-};
-
-const parseTestRegexFromText = (
-  content: string,
-  rootDir: string | undefined
-): TestPatterns | undefined => {
-  const regex = extractStringValue(content, 'testRegex');
-  if (!regex) return undefined;
-  return { patterns: [regex.replace(/\\\\/g, '\\')], isRegex: true, rootDir };
-};
-
 const parseJsConfig = (content: string, configPath: string): TestPatterns | undefined => {
-  const rootDir = extractRootDir(content, configPath);
-  const roots = extractArrayFromText(content, 'roots');
-  const ignorePatterns = extractArrayFromText(content, 'testPathIgnorePatterns');
-  const baseResult =
-    parseTestMatchFromText(content, rootDir) ?? parseTestRegexFromText(content, rootDir);
+  const configObject = parseConfigObject(content);
+  if (!configObject) return undefined;
 
-  if (baseResult) {
-    return { ...baseResult, roots, ignorePatterns };
+  const rootDirValue = getStringFromProperty(configObject, 'rootDir');
+  const rootDir = rootDirValue === '__dirname' ? dirname(configPath) : rootDirValue;
+  const roots = getStringArrayFromProperty(configObject, 'roots');
+  const ignorePatterns = getStringArrayFromProperty(configObject, 'testPathIgnorePatterns');
+
+  const testMatch = getStringArrayFromProperty(configObject, 'testMatch');
+  if (testMatch) {
+    return { patterns: testMatch, isRegex: false, rootDir, roots, ignorePatterns };
+  }
+
+  const testRegex = getStringArrayFromProperty(configObject, 'testRegex');
+  if (testRegex) {
+    return { patterns: testRegex, isRegex: true, rootDir, roots, ignorePatterns };
   }
 
   if (roots || ignorePatterns) {
@@ -97,24 +83,38 @@ export function getTestMatchFromJestConfig(configPath: string): TestPatterns | u
   try {
     const content = readConfigFile(configPath);
 
-    if (configPath.endsWith('.json')) {
-      const result = parseJsonConfig(content, configPath);
-      if (result) {
-        logDebug(`Parsed Jest config: ${configPath}. Result: ${JSON.stringify(result)}`);
-      }
-      return result;
+    const result = configPath.endsWith('.json')
+      ? parseJsonConfig(content, configPath)
+      : parseJsConfig(content, configPath);
+
+    if (result) {
+      logDebug(`Parsed Jest config: ${configPath}. Result: ${JSON.stringify(result)}`);
     }
 
-    const result = parseJsConfig(content, configPath);
-    if (result) {
-      logDebug(`Parsed Jest config (JS): ${configPath}. Result: ${JSON.stringify(result)}`);
-    }
     return result;
   } catch (error) {
     logError(`Error reading Jest config file: ${configPath}`, error);
     return undefined;
   }
 }
+
+const resolveCoverageDirectory = (
+  dir: string | undefined,
+  root: string | undefined,
+  configDir: string,
+  configPath: string,
+): string | undefined => {
+  if (!dir) return undefined;
+
+  const normalizedRoot = root === '__dirname' ? dirname(configPath) : root;
+  const baseDir = normalizedRoot
+    ? isAbsolute(normalizedRoot)
+      ? normalizedRoot
+      : join(configDir, normalizedRoot)
+    : configDir;
+
+  return isAbsolute(dir) ? dir : join(baseDir, dir);
+};
 
 export function parseCoverageDirectory(
   configPath: string,
@@ -124,30 +124,38 @@ export function parseCoverageDirectory(
     const content = readConfigFile(configPath);
     const configDir = dirname(configPath);
 
-    const pattern =
-      framework === 'vitest'
-        ? /reportsDirectory\s*[=:]\s*["']([^"']+)["']/
-        : /["']?coverageDirectory["']?\s*[=:]\s*["']([^"']+)["']/;
+    if (configPath.endsWith('.json')) {
+      const parsed = JSON.parse(content);
+      const config = configPath.endsWith('package.json') ? parsed?.jest : parsed;
 
-    const match = content.match(pattern);
+      if (!config) return undefined;
 
-    if (match) {
-      const dir = match[1];
-
-      if (framework === 'jest') {
-        const rootDirMatch = content.match(/["']?rootDir["']?\s*:\s*["']([^"']+)["']/);
-        const rootDir = rootDirMatch ? rootDirMatch[1] : '.';
-        const rootDirPath = isAbsolute(rootDir) ? rootDir : join(configDir, rootDir);
-        return isAbsolute(dir) ? dir : join(rootDirPath, dir);
-      } else {
-        const rootMatch = content.match(/root\s*[=:]\s*["']([^"']+)["']/);
-        const root = rootMatch ? rootMatch[1] : '.';
-        const rootPath = isAbsolute(root) ? root : join(configDir, root);
-        return isAbsolute(dir) ? dir : join(rootPath, dir);
+      if (framework === 'vitest') {
+        const testConfig = config.test ?? {};
+        const coverageConfig = testConfig.coverage ?? {};
+        return resolveCoverageDirectory(coverageConfig.reportsDirectory, config.root, configDir, configPath);
       }
+
+      return resolveCoverageDirectory(config.coverageDirectory, config.rootDir, configDir, configPath);
     }
+
+    const configObject = parseConfigObject(content);
+    if (!configObject) return undefined;
+
+    if (framework === 'vitest') {
+      const root = getStringFromProperty(configObject, 'root');
+      const testObject = getObjectFromProperty(configObject, 'test');
+      const coverageObject = testObject ? getObjectFromProperty(testObject, 'coverage') : undefined;
+      const reportsDir = coverageObject ? getStringFromProperty(coverageObject, 'reportsDirectory') : undefined;
+      return resolveCoverageDirectory(reportsDir, root, configDir, configPath);
+    }
+
+    const coverageDir = getStringFromProperty(configObject, 'coverageDirectory');
+    const rootDir = getStringFromProperty(configObject, 'rootDir');
+
+    return resolveCoverageDirectory(coverageDir, rootDir, configDir, configPath);
   } catch (error) {
     logError(`Could not parse ${framework} config: ${error}`);
+    return undefined;
   }
-  return undefined;
 }

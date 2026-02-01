@@ -1,5 +1,16 @@
 import { logError } from '../../utils/Logger';
-import { extractStringsFromArray, readConfigFile } from './parseUtils';
+import {
+  getObjectFromProperty,
+  getStringArrayFromProperty,
+  parseConfigObject,
+  readConfigFile,
+} from './parseUtils';
+
+const normalizeSpecPattern = (value: unknown): string[] | undefined => {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === 'string');
+  return undefined;
+};
 
 export function getCypressSpecPattern(configPath: string): string[] | undefined {
   try {
@@ -7,31 +18,20 @@ export function getCypressSpecPattern(configPath: string): string[] | undefined 
 
     if (configPath.endsWith('.json')) {
       const config = JSON.parse(content);
-      return config.e2e?.specPattern || config.specPattern;
+      const jsonSpec = config.e2e?.specPattern ?? config.specPattern;
+      return normalizeSpecPattern(jsonSpec);
     }
 
-    const specPatternMatch = content.match(
-      /['"]?specPattern['"]?\s*:\s*(['"]([^'"]+)['"]|\[([^\]]+)\])/
-    );
-    if (specPatternMatch) {
-      const value = specPatternMatch[2] || specPatternMatch[3];
-      if (value.startsWith('[')) {
-        return extractStringsFromArray(value);
-      } else {
-        return [value];
-      }
-    }
+    const configObject = parseConfigObject(content);
+    if (!configObject) return undefined;
 
-    const e2eMatch = content.match(
-      /e2e\s*:\s*\{[^}]*['"]?specPattern['"]?\s*:\s*(['"]([^'"]+)['"]|\[([^\]]+)\])/
-    );
-    if (e2eMatch) {
-      const value = e2eMatch[2] || e2eMatch[3];
-      if (value.startsWith('[')) {
-        return extractStringsFromArray(value);
-      } else {
-        return [value];
-      }
+    const topLevel = getStringArrayFromProperty(configObject, 'specPattern');
+    if (topLevel) return topLevel;
+
+    const e2eObject = getObjectFromProperty(configObject, 'e2e');
+    if (e2eObject) {
+      const pattern = getStringArrayFromProperty(e2eObject, 'specPattern');
+      if (pattern) return pattern;
     }
 
     return undefined;
