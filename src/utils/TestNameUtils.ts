@@ -1,10 +1,12 @@
-import type { ParsedNode } from 'jest-editor-support';
 import { isWindows } from './PathUtils';
 
 const QUOTES = new Set(['"', "'", '`']);
 
-export interface TestNode extends ParsedNode {
-    name: string;
+export interface TestNode {
+    type: string;
+    name?: string;
+    start?: { line: number; column: number };
+    end?: { line: number; column: number };
     children?: TestNode[];
 }
 
