@@ -59,6 +59,34 @@ export function buildTestArgs(
         return args;
     }
 
+    if (framework === 'deno') {
+        const args = ['test', '--allow-all'];
+
+        const tests = Array.from(testsByFile.values()).flat();
+        if (tests.length > 0) {
+            const testName = tests.length > 1
+                ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
+                : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
+
+            if (testName) {
+                // Pattern must be single-quote escaped for the quote() function
+                args.push('--filter', quote(escapeSingleQuotes(testName)));
+            }
+        }
+
+        if (collectCoverage) {
+            args.push('--coverage=coverage');
+        }
+
+        args.push(...additionalArgs);
+
+        if (allFiles.length > 0) {
+            args.push(...allFiles.map(normalizePath));
+        }
+
+        return args;
+    }
+
     const fileItem =
         allFiles.length === 1
             ? testController.items.get(allFiles[0])

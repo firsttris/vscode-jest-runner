@@ -75,4 +75,66 @@ describe('TestArgumentBuilder', () => {
             expect(args.filter(a => a === '--coverage').length).toBe(0);
         });
     });
+
+    describe('deno', () => {
+        it('should generate correct args for deno with coverage', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'deno',
+                [],
+                true, // collectCoverage
+                mockConfig,
+                mockController
+            );
+
+            expect(args).toContain('--coverage=coverage');
+            expect(args).toContain('--allow-all');
+            expect(args[0]).toBe('test');
+        });
+
+        it('should include filter when specific tests are selected', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'deno',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect(args).toContain('--filter');
+            // Check if filter contains the test label (quoted)
+            // Quote implementation might vary but it should be there
+            const filterIndex = args.indexOf('--filter');
+            expect(args[filterIndex + 1]).toMatch(/test1/);
+        });
+
+        it('should pass additional args', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'deno',
+                ['--unstable'],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect(args).toContain('--unstable');
+        });
+    });
 });

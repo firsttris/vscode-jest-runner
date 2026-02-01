@@ -87,6 +87,19 @@ export class CoverageProvider {
     return undefined;
   }
 
+  private findLcovRecursively(currentDir: string, stopAt: string): string | undefined {
+    const lcovPath = join(currentDir, 'lcov.info');
+    if (existsSync(lcovPath)) {
+      return lcovPath;
+    }
+
+    if (currentDir === stopAt || currentDir === dirname(currentDir)) {
+      return undefined;
+    }
+
+    return this.findLcovRecursively(dirname(currentDir), stopAt);
+  }
+
   public async readCoverageFromFile(
     workspaceFolder: string,
     framework: TestFrameworkName = 'jest',
@@ -94,34 +107,16 @@ export class CoverageProvider {
     testFilePath?: string, // New optional parameter
   ): Promise<CoverageMap | undefined> {
     try {
-      if (framework === 'node-test') {
-        // Search locations for lcov.info
-        const candidatePaths: string[] = [];
+      if (framework === 'node-test' || framework === 'bun' || framework === 'deno') {
+        const startDir = testFilePath ? dirname(testFilePath) : (configPath ? dirname(configPath) : workspaceFolder);
+        const lcovPath = this.findLcovRecursively(startDir, workspaceFolder);
 
-        // 1. Next to the test file (if provided)
-        if (testFilePath) {
-          candidatePaths.push(join(dirname(testFilePath), 'lcov.info'));
+        if (lcovPath) {
+          logInfo(`Found LCOV file at: ${lcovPath}`);
+          return this.readLcovCoverage(lcovPath);
         }
 
-        // 2. In the directory of the config file (e.g. package.json dir)
-        if (configPath) {
-          candidatePaths.push(join(dirname(configPath), 'lcov.info'));
-        }
-
-        // 3. Workspace root (standard fallback)
-        candidatePaths.push(join(workspaceFolder, 'lcov.info'));
-
-        // Use a set to remove duplicates (e.g. if test file is in root)
-        const uniquePaths = [...new Set(candidatePaths)];
-
-        for (const lcovPath of uniquePaths) {
-          if (existsSync(lcovPath)) {
-            logInfo(`Found LCOV file at: ${lcovPath}`);
-            return this.readLcovCoverage(lcovPath);
-          }
-        }
-
-        logInfo(`LCOV file not found. Searched in: ${uniquePaths.join(', ')}`);
+        logInfo(`LCOV file not found. ensure it is generated in the project root or package root.`);
         return undefined;
       }
 

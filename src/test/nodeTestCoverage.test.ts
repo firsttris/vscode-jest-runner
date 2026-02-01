@@ -112,11 +112,11 @@ describe('Node Test Coverage Support', () => {
             expect(coverage!['/path/to/test.js'].s['1']).toBe(0);
             expect(coverage!['/path/to/test.js'].fnMap['0'].name).toBe('testFunc');
         });
-        it('should read lcov coverage from test file directory if not found in root', async () => {
-            // Mock lcov.info not existing in root but existing in test file dir
+        it('should read lcov coverage from parent directory recursively', async () => {
+            // Mock lcov.info existing in parent directory of test file
             (fs.existsSync as jest.Mock).mockImplementation((pathStr: string) => {
                 const normalizedPath = pathStr.replace(/\\/g, '/');
-                return normalizedPath.includes('/path/to/lcov.info'); // Simulate exists next to file
+                return normalizedPath.includes('/path/lcov.info'); // /path/to/test.js -> /path/lcov.info (parent)
             });
 
             const coverage = await provider.readCoverageFromFile(
@@ -129,7 +129,8 @@ describe('Node Test Coverage Support', () => {
             expect(coverage).toBeDefined();
             // Verify path normalization or finding
             const calls = (fs.existsSync as jest.Mock).mock.calls.map(c => c[0].replace(/\\/g, '/'));
-            expect(calls).toContain('/path/to/lcov.info');
+            // Should check /path/to/lcov.info (fails), then /path/lcov.info (succeeds)
+            expect(calls).toContain('/path/lcov.info');
         });
         it('should resolve relative paths in lcov file', async () => {
             // Mock lcov.info with relative path content

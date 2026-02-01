@@ -76,8 +76,12 @@ export function isDenoTestFile(filePath: string): boolean {
   try {
     if (!existsSync(filePath)) return false;
     const content = readFileSync(filePath, 'utf-8');
-    // Check for Deno.test usage
-    return /Deno\.test/.test(content);
+    // Check for Deno.test usage or standard Deno imports
+    return (
+      /Deno\.test/.test(content) ||
+      /from\s+['"]jsr:@std\/expect['"]/.test(content) ||
+      /from\s+['"]https:\/\/deno\.land\//.test(content)
+    );
   } catch (error) {
     logError(`Error checking for Deno.test in ${filePath}`, error);
     return false;

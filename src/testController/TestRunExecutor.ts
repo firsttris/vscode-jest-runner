@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { relative } from 'node:path';
+import { relative, join } from 'node:path';
+import { spawn } from 'node:child_process';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { CoverageProvider, DetailedFileCoverage } from '../coverageProvider';
@@ -19,7 +20,7 @@ import {
 import { processTestResults } from '../testResultProcessor';
 import { getTestFrameworkForFile } from '../testDetection/testFileDetection';
 import { parseShellCommand } from '../utils/ShellUtils';
-import { escapeRegExp, updateTestNameIfUsingProperties } from '../utils/TestNameUtils';
+import { escapeRegExp, updateTestNameIfUsingProperties, quote } from '../utils/TestNameUtils';
 import { logInfo, logError } from '../utils/Logger';
 import { randomUUID } from 'node:crypto';
 
@@ -177,6 +178,25 @@ export class TestRunExecutor {
             // Only process results if not already processed via structured output
             if (!result.structuredResultsProcessed) {
                 processTestResults(result.output, allTests, run, framework, sessionId);
+            }
+
+            if (framework === 'deno' && collectCoverage && workspaceFolder) {
+                try {
+                    const coverageCommand = `deno coverage coverage --lcov > ${quote(join(workspaceFolder, 'lcov.info'))}`;
+                    await new Promise<void>((resolve, reject) => {
+                        const cp = spawn(coverageCommand, {
+                            shell: true,
+                            cwd: this.testRunnerConfig.cwd
+                        });
+                        cp.on('close', (code) => {
+                            if (code === 0) resolve();
+                            else reject(new Error(`Deno coverage conversion failed with code ${code}`));
+                        });
+                        cp.on('error', reject);
+                    });
+                } catch (e) {
+                    logError('Failed to convert Deno coverage', e);
+                }
             }
 
             if (collectCoverage && workspaceFolder) {
