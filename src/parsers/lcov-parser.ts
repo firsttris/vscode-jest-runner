@@ -1,11 +1,3 @@
-/*
-Copyright (c) 2012, Yahoo! Inc. All rights reserved.
-Code licensed under the BSD License:
-http://yuilibrary.com/license/
-
-TypeScript port with async/await support
-*/
-
 import { existsSync, promises as fs } from 'node:fs';
 
 export interface LcovLineDetail {
@@ -75,7 +67,6 @@ function parseSource(content: string): LcovCoverageData[] {
   for (const rawLine of lines) {
     const line = rawLine.trim();
 
-    // Check for end_of_record first
     if (line.includes('end_of_record')) {
       data.push(item);
       item = createEmptyItem();
@@ -163,7 +154,6 @@ function parseSource(content: string): LcovCoverageData[] {
     }
   }
 
-  // Remove the first empty item added by the 'end_of_record' prepend
   data.shift();
 
   if (data.length === 0) {
@@ -173,18 +163,12 @@ function parseSource(content: string): LcovCoverageData[] {
   return data;
 }
 
-/**
- * Parse LCOV coverage data from a file path or raw content string
- * @param filePathOrContent Either a file path (if file exists) or raw LCOV content string
- * @returns Promise resolving to an array of coverage data records
- */
 export async function parseLcov(filePathOrContent: string): Promise<LcovCoverageData[]> {
-  // Check if this is a file path that exists
+
   if (existsSync(filePathOrContent)) {
     const content = await fs.readFile(filePathOrContent, 'utf8');
     return parseSource(content);
   }
 
-  // Otherwise treat it as raw LCOV content
   return parseSource(filePathOrContent);
 }
