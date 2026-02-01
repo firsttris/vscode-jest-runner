@@ -5,33 +5,40 @@ import * as fs from 'fs';
 
 // Mock dependencies
 jest.mock('fs');
-jest.mock('lcov-parse', () => {
-    return (file: string, cb: (err: any, data: any) => void) => {
-        if (file.includes('lcov.info')) {
-            cb(null, [
-                {
-                    file: file.includes('relative') ? 'node/test.js' : '/path/to/test.js',
-                    lines: {
-                        details: [
-                            { line: 1, hit: 1 },
-                            { line: 2, hit: 0 },
-                        ]
-                    },
-                    functions: {
-                        details: [
-                            { name: 'testFunc', line: 1, hit: 1 }
-                        ]
-                    },
-                    branches: {
-                        details: []
+jest.mock('../parsers/lcov-parser', () => {
+    return {
+        parseLcov: jest.fn((file: string) => {
+            if (file.includes('lcov.info')) {
+                return Promise.resolve([
+                    {
+                        file: file.includes('relative') ? 'node/test.js' : '/path/to/test.js',
+                        lines: {
+                            found: 2,
+                            hit: 1,
+                            details: [
+                                { line: 1, hit: 1 },
+                                { line: 2, hit: 0 },
+                            ]
+                        },
+                        functions: {
+                            found: 1,
+                            hit: 1,
+                            details: [
+                                { name: 'testFunc', line: 1, hit: 1 }
+                            ]
+                        },
+                        branches: {
+                            found: 0,
+                            hit: 0,
+                            details: []
+                        }
                     }
-                }
-            ]);
-        } else {
-            cb(new Error('File not found'), null);
-        }
+                ]);
+            }
+            return Promise.reject(new Error('File not found'));
+        })
     };
-}, { virtual: true });
+});
 
 describe('Node Test Coverage Support', () => {
     let config: TestRunnerConfig;

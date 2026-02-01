@@ -5,6 +5,7 @@ import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks } from './tes
 import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
 import { matchesTestFilePattern } from './testDetection/testFileDetection';
 import { logError, logInfo, logWarning } from './utils/Logger';
+import { parseLcov, type LcovCoverageData } from './parsers/lcov-parser';
 
 export interface CoverageMap {
   [filePath: string]: FileCoverageData;
@@ -181,117 +182,115 @@ export class CoverageProvider {
   }
 
   private async readLcovCoverage(lcovPath: string): Promise<CoverageMap | undefined> {
-    return new Promise((resolvePromise) => {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const parse = require('lcov-parse');
-      parse(lcovPath, (err: Error | null, data: any[]) => {
-        if (err || !data) {
-          logError(`Failed to parse LCOV file: ${err}`);
-          resolvePromise(undefined);
-          return;
+    try {
+      const data = await parseLcov(lcovPath);
+
+      const coverageMap: CoverageMap = {};
+      const baseDir = dirname(lcovPath);
+
+      for (const file of data) {
+        let filePath = file.file;
+        if (!filePath) {
+          continue;
         }
 
-        const coverageMap: CoverageMap = {};
-        const baseDir = dirname(lcovPath);
+        // Resolve relative paths against the lcov file directory
+        if (!isAbsolute(filePath)) {
+          filePath = resolve(baseDir, filePath);
+        }
 
-        for (const file of data) {
-          let filePath = file.file;
+        const lines = file.lines?.details || [];
+        const functions = file.functions?.details || [];
+        const branches = file.branches?.details || [];
 
-          // Resolve relative paths against the lcov file directory
-          if (!isAbsolute(filePath)) {
-            filePath = resolve(baseDir, filePath);
-          }
+        // Convert LCOV data to our internal format
+        // Note: LCOV is line-based, while our format supports statement/branch/function maps
+        // We'll do a best-effort conversion here
 
-          const lines = file.lines?.details || [];
-          const functions = file.functions?.details || [];
-          const branches = file.branches?.details || [];
+        const s: { [id: string]: number } = {};
+        const statementMap: { [id: string]: LocationRange } = {};
 
-          // Convert LCOV data to our internal format
-          // Note: LCOV is line-based, while our format supports statement/branch/function maps
-          // We'll do a best-effort conversion here
-
-          const s: { [id: string]: number } = {};
-          const statementMap: { [id: string]: LocationRange } = {};
-
-          lines.forEach((line: any, index: number) => {
-            const id = index.toString();
-            s[id] = line.hit;
-            statementMap[id] = {
-              start: { line: line.line, column: 0 },
-              end: { line: line.line, column: 0 }, // LCOV doesn't give columns
-            };
-          });
-
-          // Function mapping
-          const f: { [id: string]: number } = {};
-          const fnMap: { [id: string]: FunctionMapping } = {};
-
-          functions.forEach((func: any, index: number) => {
-            const id = index.toString();
-            f[id] = func.hit;
-            fnMap[id] = {
-              name: func.name,
-              decl: {
-                start: { line: func.line, column: 0 },
-                end: { line: func.line, column: 0 },
-              },
-              loc: {
-                start: { line: func.line, column: 0 },
-                end: { line: func.line, column: 0 },
-              },
-              line: func.line
-            };
-          });
-
-          // Branch mapping
-          // LCOV branch format is complex, simplifying for now
-          // We might need more robust parsing if branch coverage is critical
-          const b: { [id: string]: number[] } = {};
-          const branchMap: { [id: string]: BranchMapping } = {};
-
-          // Group branches by line
-          const branchesByLine = new Map<number, any[]>();
-          branches.forEach((branch: any) => {
-            if (!branchesByLine.has(branch.line)) {
-              branchesByLine.set(branch.line, []);
-            }
-            branchesByLine.get(branch.line)?.push(branch);
-          });
-
-          let branchIdCounter = 0;
-          branchesByLine.forEach((lineBranches, line) => {
-            const id = branchIdCounter.toString();
-            branchIdCounter++;
-
-            b[id] = lineBranches.map((br: any) => br.taken ? 1 : 0);
-            branchMap[id] = {
-              loc: {
-                start: { line: line, column: 0 },
-                end: { line: line, column: 0 },
-              },
-              type: 'branch',
-              locations: lineBranches.map(() => ({
-                start: { line: line, column: 0 },
-                end: { line: line, column: 0 },
-              })),
-              line: line
-            };
-          });
-
-          coverageMap[filePath] = {
-            path: filePath,
-            statementMap,
-            fnMap,
-            branchMap,
-            s,
-            f,
-            b
+        lines.forEach((line, index) => {
+          const id = index.toString();
+          s[id] = line.hit;
+          statementMap[id] = {
+            start: { line: line.line, column: 0 },
+            end: { line: line.line, column: 0 }, // LCOV doesn't give columns
           };
-        }
+        });
 
-        resolvePromise(coverageMap);
-      });
-    });
+        // Function mapping
+        const f: { [id: string]: number } = {};
+        const fnMap: { [id: string]: FunctionMapping } = {};
+
+        functions.forEach((func, index) => {
+          const id = index.toString();
+          f[id] = func.hit ?? 0;
+          fnMap[id] = {
+            name: func.name,
+            decl: {
+              start: { line: func.line, column: 0 },
+              end: { line: func.line, column: 0 },
+            },
+            loc: {
+              start: { line: func.line, column: 0 },
+              end: { line: func.line, column: 0 },
+            },
+            line: func.line
+          };
+        });
+
+        // Branch mapping
+        // LCOV branch format is complex, simplifying for now
+        // We might need more robust parsing if branch coverage is critical
+        const b: { [id: string]: number[] } = {};
+        const branchMap: { [id: string]: BranchMapping } = {};
+
+        // Group branches by line
+        const branchesByLine = new Map<number, LcovCoverageData['branches']['details']>();
+        branches.forEach((branch) => {
+          if (!branchesByLine.has(branch.line)) {
+            branchesByLine.set(branch.line, []);
+          }
+          branchesByLine.get(branch.line)?.push(branch);
+        });
+
+        let branchIdCounter = 0;
+        branchesByLine.forEach((lineBranches, line) => {
+          const id = branchIdCounter.toString();
+          branchIdCounter++;
+
+          b[id] = lineBranches.map((br) => br.taken ? 1 : 0);
+          branchMap[id] = {
+            loc: {
+              start: { line: line, column: 0 },
+              end: { line: line, column: 0 },
+            },
+            type: 'branch',
+            locations: lineBranches.map(() => ({
+              start: { line: line, column: 0 },
+              end: { line: line, column: 0 },
+            })),
+            line: line
+          };
+        });
+
+        coverageMap[filePath] = {
+          path: filePath,
+          statementMap,
+          fnMap,
+          branchMap,
+          s,
+          f,
+          b
+        };
+      }
+
+      return coverageMap;
+    } catch (err) {
+      logError(`Failed to parse LCOV file: ${err}`);
+      return undefined;
+    }
   }
 
   private createCoverageCount(
