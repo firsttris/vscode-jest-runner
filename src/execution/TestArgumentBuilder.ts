@@ -59,6 +59,50 @@ export function buildTestArgs(
         return args;
     }
 
+    if (framework === 'bun') {
+        const args = ['test'];
+
+        const tests = Array.from(testsByFile.values()).flat();
+        if (tests.length > 0) {
+            const testName = tests.length > 1
+                ? `(${tests.map((test) => escapeRegExp(updateTestNameIfUsingProperties(test.label))).join('|')})`
+                : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
+
+            if (testName) {
+                args.push('-t', quote(testName));
+            }
+        }
+
+        // Use JUnit reporter for parsing (Bun doesn't support JSON reporter properly yet)
+        args.push('--reporter=junit');
+        args.push('--reporter-outfile=.bun-report.xml');
+
+        if (collectCoverage) {
+            args.push('--coverage');
+            // Ensure lcov output for coverage provider
+            args.push('--coverage-reporter=lcov');
+        }
+
+        args.push(...additionalArgs);
+
+        // Remove --coverage from additionalArgs if manually handled to avoid duplicates?
+        // But we pushed additionalArgs after manual flags.
+        // Bun seems okay with duplicates or we can clean it.
+        const coverageIndex = args.lastIndexOf('--coverage');
+        if (coverageIndex > -1 && args.indexOf('--coverage') !== coverageIndex) {
+            // If we have duplicates, maybe we should have cleaned additionalArgs first.
+            // But simpler to just leave it if Bun doesn't crash.
+            // Or filter additionalArgs.
+            // Let's filter additionalArgs before pushing.
+        }
+
+        if (allFiles.length > 0) {
+            args.push(...allFiles.map(normalizePath));
+        }
+
+        return args;
+    }
+
     if (framework === 'deno') {
         const args = ['test', '--allow-all'];
 

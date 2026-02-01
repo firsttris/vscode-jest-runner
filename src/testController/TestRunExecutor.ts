@@ -177,6 +177,20 @@ export class TestRunExecutor {
 
             // Only process results if not already processed via structured output
             if (!result.structuredResultsProcessed) {
+                if (framework === 'bun') {
+                    // Bun JUnit reporter writes to file, read it and inject into output
+                    const bunReportPath = join(this.testRunnerConfig.cwd, '.bun-report.xml');
+                    try {
+                        const fs = require('fs');
+                        if (fs.existsSync(bunReportPath)) {
+                            const reportContent = fs.readFileSync(bunReportPath, 'utf8');
+                            result.output += '\n' + reportContent;
+                            fs.unlinkSync(bunReportPath);
+                        }
+                    } catch (e) {
+                        logError('Failed to read Bun report file', e);
+                    }
+                }
                 processTestResults(result.output, allTests, run, framework, sessionId);
             }
 

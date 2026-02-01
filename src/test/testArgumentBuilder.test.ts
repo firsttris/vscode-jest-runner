@@ -137,4 +137,65 @@ describe('TestArgumentBuilder', () => {
             expect(args).toContain('--unstable');
         });
     });
+    describe('bun', () => {
+        it('should generate correct args for bun with coverage', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'bun',
+                [],
+                true, // collectCoverage
+                mockConfig,
+                mockController
+            );
+
+            expect(args[0]).toBe('test');
+            expect(args).toContain('--coverage');
+            expect(args).toContain('--coverage-reporter=lcov');
+            expect(args).toContain('--reporter=junit');
+            expect(args).toContain('--reporter-outfile=.bun-report.xml');
+        });
+
+        it('should include -t filter when specific tests are selected', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'bun',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect(args).toContain('-t');
+            const filterIndex = args.indexOf('-t');
+            expect(args[filterIndex + 1]).toMatch(/test1/);
+        });
+
+        it('should pass additional args', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'bun',
+                ['--bail'],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect(args).toContain('--bail');
+        });
+    });
 });

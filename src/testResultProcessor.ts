@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { JestResults, JestAssertionResult } from './testResultTypes';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { parseTapOutput } from './parsers/tapParser';
-import { logWarning } from './utils/Logger';
+import { logWarning, logInfo } from './utils/Logger';
 import {
   parseJestOutput,
   parseVitestOutput,
@@ -14,6 +14,7 @@ import {
   IndexedResult,
 } from './matchers/TestMatcher';
 import { parseStructuredResults } from './reporting/structuredOutput';
+import { parseJUnitXML } from './parsers/junitParser';
 
 export function processTestResults(
   output: string,
@@ -37,8 +38,25 @@ export function processTestResults(
   } else if (framework === 'vitest') {
     results = parseVitestOutput(output);
   } else {
-    // Jest and Bun (bun output is similar to Jest, if in JSON mode it might work with parseJestOutput)
-    results = parseJestOutput(output);
+    // Jest and Bun
+    // Check for Bun JUnit XML output
+    if (framework === 'bun') {
+      logInfo(`Processing Bun output. Length: ${output.length}`);
+      logInfo(`Output preview: ${JSON.stringify(output.substring(0, 500))}`);
+      logInfo(`Includes <testsuites>? ${output.includes('<testsuites')}`);
+      logInfo(`Includes <testsuite>? ${output.includes('<testsuite')}`);
+
+      if (output.includes('<testsuites') || output.includes('<testsuite')) {
+        results = parseJUnitXML(output);
+        logInfo(`Parsed JUnit results: ${results ? 'Success' : 'Undefined'}`);
+      } else {
+        logInfo('Bun output did not contain XML tags');
+      }
+    }
+
+    if (!results) {
+      results = parseJestOutput(output);
+    }
   }
 
   if (results) {

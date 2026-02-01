@@ -82,7 +82,7 @@ describe('denoParser', () => {
         expect(result?.excludePatterns).toEqual(['tests/e2e/']);
     });
 
-    it('should return undefined if no test config', () => {
+    it('should return valid config with empty patterns if no test config', () => {
         const configPath = '/project/deno.json';
         mockedFs.readFileSync.mockReturnValue(JSON.stringify({
             tasks: {
@@ -91,7 +91,8 @@ describe('denoParser', () => {
         }));
 
         const result = getDenoConfig(configPath);
-        expect(result).toBeUndefined();
+        expect(result).toBeDefined();
+        expect(result?.patterns).toEqual([]); // Fallback to defaults in consumer
     });
 
     it('should return undefined if file parsing fails', () => {

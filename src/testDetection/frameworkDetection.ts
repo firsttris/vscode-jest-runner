@@ -80,6 +80,8 @@ export function isDenoTestFile(filePath: string): boolean {
     return (
       /Deno\.test/.test(content) ||
       /from\s+['"]jsr:@std\/expect['"]/.test(content) ||
+      /from\s+['"]@std\/assert['"]/.test(content) ||
+      /from\s+['"]jsr:@std\/assert['"]/.test(content) ||
       /from\s+['"]https:\/\/deno\.land\//.test(content)
     );
   } catch (error) {

@@ -41,7 +41,7 @@ export function getDenoConfig(configPath: string): TestPatterns | undefined {
         // Usually 'test' block is preferred for test runner specific settings.
 
         const testSection = config.test;
-        if (!testSection && !config.exclude) return undefined;
+        // if (!testSection && !config.exclude) return undefined; // Removed to allow task-only configs to be recognized
 
         const include = testSection?.include;
         const testExclude = testSection?.exclude;
@@ -50,7 +50,10 @@ export function getDenoConfig(configPath: string): TestPatterns | undefined {
         const patterns = Array.isArray(include) ? include : [];
         const excludePatterns = Array.isArray(testExclude) ? testExclude : [];
 
-        if (patterns.length === 0 && excludePatterns.length === 0) return undefined;
+        if (patterns.length === 0 && excludePatterns.length === 0) {
+            // If no patterns found, we still want to return a valid config object
+            // so that the detection knows a config file exists and we can use defaults.
+        }
 
         logDebug(`Parsed Deno config: ${configPath}. Include: ${patterns}, Exclude: ${excludePatterns}`);
 
