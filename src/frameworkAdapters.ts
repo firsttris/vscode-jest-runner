@@ -67,9 +67,17 @@ const buildNodeTestArgs: BuildArgsFn = (filePath, testName, withQuotes, options,
   const q = withQuotes ? quote : (s: string) => s;
   const args = ['--test'];
 
-  const reporters = getReporterPaths();
-  args.push('--test-reporter', reporters.node);
-  args.push('--test-reporter-destination', 'stdout');
+  // Add the structured reporter if we're in "batch mode" (multiple tests or need JSON output)
+  // or if coverage is requested (we need structured output to report results)
+  if (options.includes('--jtr-structured') || options.includes('--coverage')) {
+    const reporters = getReporterPaths();
+    args.push('--test-reporter', reporters.node, '--test-reporter-destination', 'stdout');
+    
+    const jtrIndex = options.indexOf('--jtr-structured');
+    if (jtrIndex !== -1) {
+      options.splice(jtrIndex, 1);
+    }
+  }
 
   const resolved = prepareTestName(testName, withQuotes);
   if (resolved) {

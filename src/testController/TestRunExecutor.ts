@@ -157,7 +157,7 @@ export class TestRunExecutor {
                 !!esmEnv
             );
 
-            const output = await executeTestCommand(
+            const result = await executeTestCommand(
                 command,
                 commandArgs,
                 token,
@@ -168,12 +168,15 @@ export class TestRunExecutor {
                 sessionId
             );
 
-            if (output === null) {
+            if (result === null) {
                 run.end();
                 return;
             }
 
-            processTestResults(output, allTests, run, framework, sessionId);
+            // Only process results if not already processed via structured output
+            if (!result.structuredResultsProcessed) {
+                processTestResults(result.output, allTests, run, framework, sessionId);
+            }
 
             if (collectCoverage && workspaceFolder) {
                 await this.processCoverageData(

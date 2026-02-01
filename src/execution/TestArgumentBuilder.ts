@@ -31,6 +31,7 @@ export function buildTestArgs(
                 : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
         }
 
+        // Use structured reporter for batch mode (Test Explorer needs JSON output)
         args.push('--test-reporter', reporters.node);
         args.push('--test-reporter-destination', 'stdout');
 

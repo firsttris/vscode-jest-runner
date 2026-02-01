@@ -78,6 +78,11 @@ export function executeTestCommandFast(
     });
 }
 
+export interface TestCommandResult {
+    output: string;
+    structuredResultsProcessed: boolean;
+}
+
 export function executeTestCommand(
     command: string,
     args: string[],
@@ -87,7 +92,7 @@ export function executeTestCommand(
     cwd: string,
     additionalEnv?: Record<string, string>,
     sessionId?: string,
-): Promise<string | null> {
+): Promise<TestCommandResult | null> {
     return new Promise((resolve) => {
         const maxBufferSize =
             vscode.workspace
@@ -174,7 +179,7 @@ export function executeTestCommand(
 
             if (lastStructured) {
                 logDebug('Parsed structured test results from reporters');
-                resolve(combinedOutput);
+                resolve({ output: combinedOutput, structuredResultsProcessed: true });
                 return;
             }
 
@@ -184,10 +189,10 @@ export function executeTestCommand(
 
                 if (hasJsonInStdout || hasJsonInStderr) {
                     logDebug(`Runner output (stdout): ${stdout.substring(0, 500)}...`);
-                    resolve(combinedOutput);
+                    resolve({ output: combinedOutput, structuredResultsProcessed: false });
                 } else if (stdout) {
                     logDebug(`Runner output (stdout): ${stdout.substring(0, 500)}...`);
-                    resolve(combinedOutput);
+                    resolve({ output: combinedOutput, structuredResultsProcessed: false });
                 } else {
                     logInfo(`Runner stderr: ${stderr}`);
                     tests.forEach((test) =>
