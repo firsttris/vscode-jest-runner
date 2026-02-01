@@ -41,12 +41,12 @@ describe('TestArgumentBuilder', () => {
 
             expect(args).toContain('--experimental-test-coverage');
 
-            // Check for tap reporter and its destination
-            const tapIndex = args.indexOf('tap');
-            expect(tapIndex).toBeGreaterThan(0);
-            expect(args[tapIndex - 1]).toBe('--test-reporter');
-            expect(args[tapIndex + 1]).toBe('--test-reporter-destination');
-            expect(args[tapIndex + 2]).toBe('stdout');
+            // Check for structured reporter and its destination
+            const reporterIndex = args.findIndex((a) => typeof a === 'string' && a.includes('node-reporter.mjs'));
+            expect(reporterIndex).toBeGreaterThan(0);
+            expect(args[reporterIndex - 1]).toBe('--test-reporter');
+            expect(args[reporterIndex + 1]).toBe('--test-reporter-destination');
+            expect(args[reporterIndex + 2]).toBe('stdout');
 
             // Check for lcov reporter and its destination
             const lcovIndex = args.indexOf('lcov');

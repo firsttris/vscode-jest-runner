@@ -3,6 +3,7 @@ import { TestRunnerConfig } from '../testRunnerConfig';
 import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { escapeRegExp, escapeSingleQuotes, quote, updateTestNameIfUsingProperties } from '../utils/TestNameUtils';
 import { normalizePath } from '../utils/PathUtils';
+import { getReporterPaths } from '../reporters/reporterPaths';
 
 export function buildTestArgs(
     allFiles: string[],
@@ -15,6 +16,7 @@ export function buildTestArgs(
 ): string[] {
     const isVitest = framework === 'vitest';
     const isNodeTest = framework === 'node-test';
+    const reporters = getReporterPaths();
 
     // Node.js test runner has simpler argument handling
     if (isNodeTest) {
@@ -29,17 +31,13 @@ export function buildTestArgs(
                 : escapeRegExp(updateTestNameIfUsingProperties(tests[0].label));
         }
 
-        // Add reporters
-        // Node requires destination for ALL reporters if multiple are specified.
+        args.push('--test-reporter', reporters.node);
+        args.push('--test-reporter-destination', 'stdout');
+
         if (collectCoverage) {
-            args.push('--test-reporter', 'tap');
-            args.push('--test-reporter-destination', 'stdout');
             args.push('--test-reporter', 'lcov');
             args.push('--test-reporter-destination', 'lcov.info');
             args.push('--experimental-test-coverage');
-        } else {
-            // Single reporter, default destination (stdout) is fine
-            args.push('--test-reporter', 'tap');
         }
 
         if (testName) {
@@ -78,7 +76,9 @@ export function buildTestArgs(
 
         const extraArgs = [
             ...additionalArgs,
-            isVitest ? '--reporter=json' : '--json',
+            ...(isVitest
+                ? ['--reporter=json', '--reporter=default', `--reporter=${reporters.vitest}`]
+                : ['--json', '--reporters', 'default', '--reporters', reporters.jest]),
         ];
 
         if (collectCoverage) {
@@ -89,7 +89,11 @@ export function buildTestArgs(
             );
         }
 
-        return jestConfig.buildTestArgs(allFiles[0], testNamePattern, true, extraArgs);
+        if (isVitest) {
+            return jestConfig.buildVitestArgs(allFiles[0], testNamePattern, true, extraArgs);
+        }
+
+        return jestConfig.buildJestArgs(allFiles[0], testNamePattern, true, extraArgs);
     }
 
     // Full file run
@@ -105,10 +109,16 @@ export function buildTestArgs(
             'run',
             ...normalizedFiles,
             '--reporter=json',
+            '--reporter=default',
+            `--reporter=${reporters.vitest}`,
         ]
         : [
             ...normalizedFiles,
             '--json',
+            '--reporters',
+            'default',
+            '--reporters',
+            reporters.jest,
         ];
 
     if (configPath) {

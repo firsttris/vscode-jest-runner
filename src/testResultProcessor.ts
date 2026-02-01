@@ -13,13 +13,21 @@ import {
   hasTemplateVariable,
   IndexedResult,
 } from './matchers/TestMatcher';
+import { parseStructuredResults } from './reporting/structuredOutput';
 
 export function processTestResults(
   output: string,
   tests: vscode.TestItem[],
   run: vscode.TestRun,
   framework: TestFrameworkName,
+  sessionId?: string,
 ): void {
+  const structured = parseStructuredResults(output, sessionId);
+  if (structured) {
+    processTestResultsFromParsed(structured, tests, run);
+    return;
+  }
+
   let results: JestResults | undefined;
 
   if (framework === 'node-test') {
@@ -122,7 +130,7 @@ const reportTemplateTestResult = (
   }
 };
 
-function processTestResultsFromParsed(
+export function processTestResultsFromParsed(
   results: JestResults,
   tests: vscode.TestItem[],
   run: vscode.TestRun,

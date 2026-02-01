@@ -1,6 +1,7 @@
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { escapeRegExpForPath, normalizePath } from './utils/PathUtils';
 import { escapeSingleQuotes, quote, resolveTestNameStringInterpolation } from './utils/TestNameUtils';
+import { getReporterPaths } from './reporters/reporterPaths';
 
 type BuildArgsFn = (
   filePath: string,
@@ -65,6 +66,10 @@ const buildVitestArgs: BuildArgsFn = (filePath, testName, withQuotes, options, c
 const buildNodeTestArgs: BuildArgsFn = (filePath, testName, withQuotes, options, _configPath, runOptions) => {
   const q = withQuotes ? quote : (s: string) => s;
   const args = ['--test'];
+
+  const reporters = getReporterPaths();
+  args.push('--test-reporter', reporters.node);
+  args.push('--test-reporter-destination', 'stdout');
 
   const resolved = prepareTestName(testName, withQuotes);
   if (resolved) {

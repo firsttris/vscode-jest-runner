@@ -147,7 +147,7 @@ describe('testExecution', () => {
                 expect(args[0]).toBe('--test');
             });
 
-            it('should include --test-reporter tap for node-test', () => {
+            it('should include structured reporter for node-test', () => {
                 const filePath = '/path/to/test.test.js';
                 const testsByFile = new Map([[filePath, []]]);
 
@@ -162,7 +162,9 @@ describe('testExecution', () => {
                 );
 
                 expect(args).toContain('--test-reporter');
-                expect(args).toContain('tap');
+                expect(args.some((a) => typeof a === 'string' && a.includes('node-reporter.mjs'))).toBe(true);
+                expect(args).toContain('--test-reporter-destination');
+                expect(args).toContain('stdout');
             });
 
             it('should place file path at the end for node-test', () => {
@@ -236,7 +238,7 @@ describe('testExecution', () => {
         });
 
         describe('Jest framework', () => {
-            it('should include --json flag for Jest', () => {
+            it('should include reporters for Jest', () => {
                 const filePath = '/path/to/test.spec.ts';
                 const testsByFile = new Map([[filePath, []]]);
 
@@ -251,6 +253,8 @@ describe('testExecution', () => {
                 );
 
                 expect(args).toContain('--json');
+                expect(args).toContain('--reporters');
+                expect(args.some((a) => a.includes('jest-reporter.cjs'))).toBe(true);
             });
 
             it('should include config path for Jest', () => {
@@ -308,7 +312,7 @@ describe('testExecution', () => {
                 expect(args[0]).toBe('run');
             });
 
-            it('should include --reporter=json for Vitest', () => {
+            it('should include custom reporters for Vitest', () => {
                 const filePath = '/path/to/test.spec.ts';
                 const testsByFile = new Map([[filePath, []]]);
 
@@ -323,6 +327,8 @@ describe('testExecution', () => {
                 );
 
                 expect(args).toContain('--reporter=json');
+                expect(args).toContain('--reporter=default');
+                expect(args.some((a) => a.includes('vitest-reporter.cjs'))).toBe(true);
             });
 
             it('should include config path for Vitest', () => {
@@ -360,6 +366,7 @@ describe('testExecution', () => {
                 expect(args).toContain('--coverage');
                 expect(args).toContain('--coverage.reporter');
                 expect(args).toContain('json');
+                expect(args.some((a) => a.includes('vitest-reporter.cjs'))).toBe(true);
             });
         });
 
@@ -384,7 +391,7 @@ describe('testExecution', () => {
 
                 mockJestConfig = {
                     ...mockJestConfig,
-                    buildTestArgs: jest.fn().mockReturnValue(['mocked', 'partial', 'args']),
+                    buildJestArgs: jest.fn().mockReturnValue(['mocked', 'partial', 'args']),
                 } as unknown as TestRunnerConfig;
 
                 // Only running 1 test out of 3
@@ -400,11 +407,11 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                expect(mockJestConfig.buildJestArgs).toHaveBeenCalledWith(
                     filePath,
                     'test1',
                     true,
-                    ['--json'],
+                    ['--json', '--reporters', 'default', '--reporters', expect.stringContaining('jest-reporter.cjs')],
                 );
                 expect(args).toEqual(['mocked', 'partial', 'args']);
             });
@@ -428,7 +435,7 @@ describe('testExecution', () => {
 
                 mockJestConfig = {
                     ...mockJestConfig,
-                    buildTestArgs: jest.fn().mockReturnValue(['mocked', 'partial', 'args']),
+                    buildJestArgs: jest.fn().mockReturnValue(['mocked', 'partial', 'args']),
                 } as unknown as TestRunnerConfig;
 
                 // Running 2 tests out of 3
@@ -444,11 +451,11 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                expect(mockJestConfig.buildJestArgs).toHaveBeenCalledWith(
                     filePath,
                     '(test1|test2)',
                     true,
-                    ['--json'],
+                    ['--json', '--reporters', 'default', '--reporters', expect.stringContaining('jest-reporter.cjs')],
                 );
                 expect(args).toEqual(['mocked', 'partial', 'args']);
             });
@@ -470,7 +477,7 @@ describe('testExecution', () => {
 
                 mockJestConfig = {
                     ...mockJestConfig,
-                    buildTestArgs: jest.fn().mockReturnValue(['vitest', 'partial', 'args']),
+                    buildVitestArgs: jest.fn().mockReturnValue(['vitest', 'partial', 'args']),
                 } as unknown as TestRunnerConfig;
 
                 const testsByFile = new Map([[filePath, [testItem1]]]);
@@ -485,11 +492,11 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                expect(mockJestConfig.buildVitestArgs).toHaveBeenCalledWith(
                     filePath,
                     'test1',
                     true,
-                    ['--reporter=json'],
+                    ['--reporter=json', '--reporter=default', expect.stringContaining('vitest-reporter.cjs')],
                 );
                 expect(args).toEqual(['vitest', 'partial', 'args']);
             });
@@ -511,7 +518,7 @@ describe('testExecution', () => {
 
                 mockJestConfig = {
                     ...mockJestConfig,
-                    buildTestArgs: jest.fn().mockReturnValue(['coverage', 'args']),
+                    buildJestArgs: jest.fn().mockReturnValue(['coverage', 'args']),
                 } as unknown as TestRunnerConfig;
 
                 const testsByFile = new Map([[filePath, [testItem1]]]);
@@ -526,11 +533,11 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                expect(mockJestConfig.buildJestArgs).toHaveBeenCalledWith(
                     filePath,
                     'test1',
                     true,
-                    ['--json', '--coverage', '--coverageReporters=json'],
+                    ['--json', '--reporters', 'default', '--reporters', expect.stringContaining('jest-reporter.cjs'), '--coverage', '--coverageReporters=json'],
                 );
             });
 
@@ -551,7 +558,7 @@ describe('testExecution', () => {
 
                 mockJestConfig = {
                     ...mockJestConfig,
-                    buildTestArgs: jest.fn().mockReturnValue(['vitest', 'coverage', 'args']),
+                    buildVitestArgs: jest.fn().mockReturnValue(['vitest', 'coverage', 'args']),
                 } as unknown as TestRunnerConfig;
 
                 const testsByFile = new Map([[filePath, [testItem1]]]);
@@ -566,11 +573,11 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                expect(mockJestConfig.buildVitestArgs).toHaveBeenCalledWith(
                     filePath,
                     'test1',
                     true,
-                    ['--reporter=json', '--coverage', '--coverage.reporter', 'json'],
+                    ['--reporter=json', '--reporter=default', expect.stringContaining('vitest-reporter.cjs'), '--coverage', '--coverage.reporter', 'json'],
                 );
             });
 
@@ -591,7 +598,7 @@ describe('testExecution', () => {
 
                 mockJestConfig = {
                     ...mockJestConfig,
-                    buildTestArgs: jest.fn().mockReturnValue(['args']),
+                    buildJestArgs: jest.fn().mockReturnValue(['args']),
                 } as unknown as TestRunnerConfig;
 
                 const testsByFile = new Map([[filePath, [testItem1]]]);
@@ -606,11 +613,11 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                expect(mockJestConfig.buildJestArgs).toHaveBeenCalledWith(
                     filePath,
                     'test1',
                     true,
-                    ['--watch', '--verbose', '--json'],
+                    ['--watch', '--verbose', '--json', '--reporters', 'default', '--reporters', expect.stringContaining('jest-reporter.cjs')],
                 );
             });
 
@@ -631,7 +638,7 @@ describe('testExecution', () => {
 
                 mockJestConfig = {
                     ...mockJestConfig,
-                    buildTestArgs: jest.fn().mockReturnValue(['args']),
+                    buildJestArgs: jest.fn().mockReturnValue(['args']),
                 } as unknown as TestRunnerConfig;
 
                 const testsByFile = new Map([[filePath, [testItem1]]]);
@@ -646,11 +653,11 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
+                expect(mockJestConfig.buildJestArgs).toHaveBeenCalledWith(
                     filePath,
                     'test \\(with\\) special \\[chars\\]',
                     true,
-                    ['--json'],
+                    ['--json', '--reporters', 'default', '--reporters', expect.stringContaining('jest-reporter.cjs')],
                 );
             });
         });

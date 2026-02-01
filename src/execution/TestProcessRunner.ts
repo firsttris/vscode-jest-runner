@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
 import { stripAnsi } from '../utils/ShellUtils';
 import { logDebug, logInfo } from '../utils/Logger';
+import { extractStructuredMessages } from '../reporting/structuredOutput';
+import { processTestResultsFromParsed } from '../testResultProcessor';
+import type { JestResults } from '../testResultTypes';
 
 /**
  * Fast test execution for single tests - uses exit code instead of JSON parsing.
@@ -83,6 +86,7 @@ export function executeTestCommand(
     run: vscode.TestRun,
     cwd: string,
     additionalEnv?: Record<string, string>,
+    sessionId?: string,
 ): Promise<string | null> {
     return new Promise((resolve) => {
         const maxBufferSize =
@@ -100,6 +104,8 @@ export function executeTestCommand(
 
         let stdout = '';
         let stderr = '';
+        let parseBuffer = '';
+        let lastStructured: JestResults | undefined;
         let killed = false;
 
         const checkBufferSize = (
@@ -122,6 +128,17 @@ export function executeTestCommand(
             const chunk = data.toString();
             if (!checkBufferSize(stdout, chunk, 'Test output exceeded maximum buffer size')) {
                 stdout += chunk;
+                parseBuffer += chunk;
+
+                const { messages, remaining } = extractStructuredMessages<JestResults>(parseBuffer, sessionId);
+                parseBuffer = remaining;
+
+                messages.forEach((msg) => {
+                    if (msg.type === 'results') {
+                        lastStructured = msg.payload;
+                        processTestResultsFromParsed(msg.payload as any, tests, run);
+                    }
+                });
             }
         });
 
@@ -154,6 +171,12 @@ export function executeTestCommand(
 
             // Parse from stdout/stderr - JSON extraction handles Nx/monorepo prefixed output
             const combinedOutput = stdout + (stderr ? '\n' + stderr : '');
+
+            if (lastStructured) {
+                logDebug('Parsed structured test results from reporters');
+                resolve(combinedOutput);
+                return;
+            }
 
             if (combinedOutput.trim()) {
                 const hasJsonInStdout = stdout.includes('"testResults"') || stdout.includes('"numFailedTestSuites"');

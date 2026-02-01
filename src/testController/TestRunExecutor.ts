@@ -21,6 +21,7 @@ import { parseShellCommand } from '../utils/ShellUtils';
 import { escapeRegExp, updateTestNameIfUsingProperties } from '../utils/TestNameUtils';
 import { logInfo, logError } from '../utils/Logger';
 import { findTestFiles, parseTestsInFile } from '../testDiscovery';
+import { randomUUID } from 'node:crypto';
 
 export class TestRunExecutor {
     constructor(
@@ -128,6 +129,7 @@ export class TestRunExecutor {
         try {
             const allFiles = Array.from(testsByFile.keys());
             const allTests = Array.from(testsByFile.values()).flat();
+            const sessionId = randomUUID();
 
             if (allFiles.length === 0) {
                 run.end();
@@ -215,7 +217,8 @@ export class TestRunExecutor {
                 allTests,
                 run,
                 this.testRunnerConfig.cwd,
-                esmEnv
+                { ...(esmEnv ?? {}), JSTR_SESSION_ID: sessionId },
+                sessionId
             );
 
             if (output === null) {
@@ -223,7 +226,7 @@ export class TestRunExecutor {
                 return;
             }
 
-            processTestResults(output, allTests, run, framework);
+            processTestResults(output, allTests, run, framework, sessionId);
 
             if (collectCoverage && workspaceFolder) {
                 await this.processCoverageData(
