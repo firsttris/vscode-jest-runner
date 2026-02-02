@@ -7,7 +7,7 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows } from '../utils/PathUtils';
+import { isWindows, normalizePath } from '../utils/PathUtils';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as testDetection from '../testDetection/testFileDetection';
@@ -119,14 +119,15 @@ describe('TestRunnerConfig', () => {
       );
 
       jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
-        if (String(checkPath).includes('.yarn/releases')) {
+        const pathStr = normalizePath(String(checkPath));
+        if (pathStr.includes('.yarn/releases')) {
           return false;
         }
         // Simulate missing .bin binary
-        if (String(checkPath).includes('.bin/jest')) {
+        if (pathStr.includes('.bin/jest')) {
           return false;
         }
-        if (String(checkPath).includes('jest/bin/jest.js')) {
+        if (pathStr.includes('jest/bin/jest.js')) {
           return false;
         }
         // Allow jest.config.js etc to be found so framework detection works
@@ -155,14 +156,15 @@ describe('TestRunnerConfig', () => {
       jest.spyOn(testDetection, 'getTestFrameworkForFile').mockReturnValue('vitest');
 
       jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
-        if (String(checkPath).includes('.yarn/releases')) {
+        const pathStr = normalizePath(String(checkPath));
+        if (pathStr.includes('.yarn/releases')) {
           return false;
         }
         // Simulate missing .bin binary
-        if (String(checkPath).includes('.bin/vitest')) {
+        if (pathStr.includes('.bin/vitest')) {
           return false;
         }
-        if (String(checkPath).includes('vitest/vitest.mjs')) {
+        if (pathStr.includes('vitest/vitest.mjs')) {
           return false;
         }
         return false;
