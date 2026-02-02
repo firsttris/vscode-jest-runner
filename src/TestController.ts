@@ -104,6 +104,8 @@ export class JestTestController {
     this.disposables.push(this.fileWatcher);
   }
 
+  private didFullDiscovery = false;
+
   private async refreshAllTests(): Promise<void> {
     cacheManager.invalidateAll();
     testFileCache.invalidate();
@@ -115,15 +117,11 @@ export class JestTestController {
         await discoverTests(workspaceFolder, this.testController, this.jestConfig);
       }
     }
+    this.didFullDiscovery = true;
   }
 
   private async ensureTestsDiscovered(): Promise<void> {
-    let hasTests = false;
-    this.testController.items.forEach(() => {
-      hasTests = true;
-    });
-
-    if (hasTests) {
+    if (this.didFullDiscovery) {
       return;
     }
 
