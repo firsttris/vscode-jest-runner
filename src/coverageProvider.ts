@@ -88,9 +88,15 @@ export class CoverageProvider {
   }
 
   private findLcovRecursively(currentDir: string, stopAt: string): string | undefined {
+    // Check lcov.info first, then coverage/lcov.info in current directory
     const lcovPath = join(currentDir, 'lcov.info');
     if (existsSync(lcovPath)) {
       return lcovPath;
+    }
+
+    const coverageLcovPath = join(currentDir, 'coverage', 'lcov.info');
+    if (existsSync(coverageLcovPath)) {
+      return coverageLcovPath;
     }
 
     if (currentDir === stopAt || currentDir === dirname(currentDir)) {
@@ -127,14 +133,7 @@ export class CoverageProvider {
     testFilePath?: string
   ): Promise<CoverageMap | undefined> {
     const startDir = testFilePath ? dirname(testFilePath) : (configPath ? dirname(configPath) : workspaceFolder);
-    let lcovPath = this.findLcovRecursively(startDir, workspaceFolder);
-
-    if (!lcovPath) {
-      const coverageLcovPath = join(workspaceFolder, 'coverage', 'lcov.info');
-      if (existsSync(coverageLcovPath)) {
-        lcovPath = coverageLcovPath;
-      }
-    }
+    const lcovPath = this.findLcovRecursively(startDir, workspaceFolder);
 
     if (lcovPath) {
       logInfo(`Found LCOV file at: ${lcovPath}`);
