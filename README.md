@@ -1,10 +1,10 @@
 <div align="center">
 
-# 🧪 Jest & Vitest & Node-Test Runner
+# 🧪 Jest & Vitest Runner
 
 **Run and debug tests with ease, right from your editor**
 
-![Extension Example](./docs/screenshot.png)
+![Extension Example](./docs/Banner.png)
 
 [![Build](https://img.shields.io/github/actions/workflow/status/firsttris/vscode-jest-runner/master.yml?branch=master&label=Build&logo=github&style=flat-square)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/master.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/firsttris/vscode-jest-runner?logo=codecov&style=flat-square)](https://codecov.io/gh/firsttris/vscode-jest-runner)
@@ -26,11 +26,11 @@
 
 ## 🎯 Overview
 
-A **lightweight** VS Code extension for running and debugging Jest, Vitest, and Node.js (native) tests directly in your editor. Works **out-of-the-box** with minimal configuration.
+A **lightweight** VS Code extension for running and debugging Jest, Vitest, Node.js (native), Bun, and Deno tests directly in your editor. Works **out-of-the-box** with minimal configuration.
 
 > ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
 
-> ⚠️ **Important:** The extension uses **regex-based parsing** to read configuration files. It does **not** interpret the file as JavaScript/TypeScript code. If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files. More information in [Supported Framework Config](#-supported-framework-config).
+> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It does **not** execute the file as JavaScript/TypeScript code. It cannot resolve variables or function calls. If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files. More information in [Supported Framework Config](#-supported-framework-config).
 
 > ⚠️ **Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to create a GitHub issue.
 
@@ -66,7 +66,7 @@ A **lightweight** VS Code extension for running and debugging Jest, Vitest, and 
 
 ### 🎯 Smart Test Detection
 
-- 🤖 **Automatic framework detection** - distinguishes between Jest, Vitest, and Node.js native tests
+- 🤖 **Automatic framework detection** - distinguishes between Jest, Vitest, Node.js, Bun, and Deno tests
 - 🔍 **Reads and applies include/exclude patterns** (globs and regex) from [framework configs](#️-configuration) for fine-grained control over which tests appear
 
 </td>
@@ -76,7 +76,6 @@ A **lightweight** VS Code extension for running and debugging Jest, Vitest, and 
 
 - 📦 **Monorepo support** for yarn & VS Code workspaces
 - ⚙️ **Multiple configurations** with glob-based config resolution
-- 🔌 **Yarn 2 Plug'n'Play** - automatically detected, no configuration needed
 - ⚛️ **Create React App** and similar abstraction layers
 - 🛠️ **Framework support** including Vite, Tanstack Start, Nx, Next.js, and NestJS
 
@@ -207,7 +206,7 @@ This updated configuration table now includes the Node.js Test Runner settings.
 
 The extension **automatically reads configuration** from your framework config files.
 
-> ⚠️ **Important:** The extension uses **regex-based parsing** to read configuration files. It does **not** interpret the file as JavaScript/TypeScript code.
+> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It does **not** execute the file as JavaScript/TypeScript code.
 > 
 > This means:
 > - It **cannot** resolve external variables, imports, `require`, or function calls.
