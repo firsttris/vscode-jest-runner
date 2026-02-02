@@ -58,29 +58,35 @@ export class DebugConfigurationProvider {
     }
 
     private getDenoDebugConfig(config: TestRunnerConfig, filePath?: string, testName?: string): vscode.DebugConfiguration {
+        const runtimeArgs = ['test', '--inspect-brk', '--allow-all'];
+
+        if (testName) {
+            const resolved = resolveTestNameStringInterpolation(testName);
+            runtimeArgs.push('--filter', resolved);
+        }
+
+        if (config.denoRunOptions) {
+            runtimeArgs.push(...config.denoRunOptions);
+        }
+
+        if (filePath) {
+            runtimeArgs.push(filePath);
+        }
+
         const debugConfig: vscode.DebugConfiguration = {
             console: 'integratedTerminal',
             internalConsoleOptions: 'neverOpen',
             name: 'Debug Deno Tests',
             request: 'launch',
-            type: 'pwa-node',
+            type: 'node',
+            port: 9229,
             cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
             ...config.denoDebugOptions,
             runtimeExecutable: 'deno',
-            runtimeArgs: ['test', '--inspect-brk', '--allow-all'],
+            runtimeArgs,
+            attachSimplePort: 9229,
+            args: [],
         };
-
-        if (testName) {
-            const resolved = resolveTestNameStringInterpolation(testName);
-            debugConfig.runtimeArgs.push('--filter', resolved);
-        }
-
-        if (config.denoRunOptions) {
-            debugConfig.runtimeArgs.push(...config.denoRunOptions);
-        }
-
-        debugConfig.program = undefined;
-        debugConfig.args = [filePath || ''];
 
         return debugConfig;
     }

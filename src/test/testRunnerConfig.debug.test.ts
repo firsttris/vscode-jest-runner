@@ -450,4 +450,43 @@ describe('TestRunnerConfig', () => {
       expect(config.env).toBeUndefined();
     });
   });
+
+  describe('getDebugConfiguration with Deno', () => {
+    let jestRunnerConfig: TestRunnerConfig;
+    const mockFilePath = '/workspace/main.test.ts';
+
+    beforeEach(() => {
+      jestRunnerConfig = new TestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(
+          new TextEditor(new Document(new Uri(mockFilePath) as any)) as any,
+        );
+
+      jest
+        .spyOn(testDetection, 'getTestFrameworkForFile')
+        .mockReturnValue('deno');
+    });
+
+    it('configures deno debug correctly', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.denoRunOptions': ['--allow-read'],
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration(mockFilePath);
+
+      expect(config.type).toBe('node');
+      expect(config.port).toBe(9229);
+      expect(config.attachSimplePort).toBe(9229);
+      expect(config.runtimeExecutable).toBe('deno');
+      expect(config.runtimeArgs).toEqual(
+        expect.arrayContaining(['test', '--inspect-brk', '--allow-all', '--allow-read', mockFilePath]),
+      );
+    });
+  });
 });

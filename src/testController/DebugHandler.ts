@@ -54,7 +54,6 @@ export class DebugHandler {
         const debugConfig = this.testRunnerConfig.getDebugConfiguration(filePath);
         const standardArgs = this.testRunnerConfig.buildTestArgs(filePath, testName, false);
         pushMany(debugConfig.args, standardArgs);
-
         return vscode.debug.startDebugging(workspaceFolder, debugConfig);
     }
 }
