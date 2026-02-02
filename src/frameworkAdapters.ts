@@ -129,6 +129,16 @@ const buildDenoArgs: BuildArgsFn = (filePath, testName, withQuotes, options, _co
     args.push('--filter', resolved);
   }
 
+  args.push('--junit-path=.deno-report.xml');
+
+  if (options.includes('--coverage')) {
+    args.push('--coverage=coverage');
+    const coverageIndex = options.indexOf('--coverage');
+    if (coverageIndex !== -1) {
+      options.splice(coverageIndex, 1);
+    }
+  }
+
   return [...args, ...mergeOptions(options, runOptions), q(normalizePath(filePath))];
 };
 

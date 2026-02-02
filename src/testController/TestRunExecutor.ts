@@ -252,27 +252,31 @@ export class TestRunExecutor {
             return;
         }
 
-        if (!result.structuredResultsProcessed) {
-            this.handleBunReport(framework, result);
-            processTestResults(result.output, allTests, run, framework, sessionId);
-        }
+        try {
+            if (!result.structuredResultsProcessed) {
+                this.handleBunReport(framework, result);
+                this.handleDenoReport(framework, result);
+                processTestResults(result.output, allTests, run, framework, sessionId);
+            }
+        } finally {
+            // Always process coverage, even if test result processing fails
+            if (framework === 'deno' && collectCoverage) {
+                await this.handleDenoCoverage(workspaceFolder);
+            }
 
-        if (framework === 'deno' && collectCoverage) {
-            await this.handleDenoCoverage(workspaceFolder);
-        }
+            if (collectCoverage) {
+                const configPath = framework === 'vitest'
+                    ? this.testRunnerConfig.getVitestConfigPath(allFiles[0])
+                    : this.testRunnerConfig.getJestConfigPath(allFiles[0]);
 
-        if (collectCoverage) {
-            const configPath = framework === 'vitest'
-                ? this.testRunnerConfig.getVitestConfigPath(allFiles[0])
-                : this.testRunnerConfig.getJestConfigPath(allFiles[0]);
-
-            await this.processCoverageData(
-                run,
-                workspaceFolder,
-                framework,
-                configPath,
-                allFiles.length > 0 ? allFiles[0] : undefined
-            );
+                await this.processCoverageData(
+                    run,
+                    workspaceFolder,
+                    framework,
+                    configPath,
+                    allFiles.length > 0 ? allFiles[0] : undefined
+                );
+            }
         }
     }
 
@@ -300,6 +304,27 @@ export class TestRunExecutor {
             }
         } catch (e) {
             logError('Failed to read Bun report file', e);
+        }
+    }
+
+    private handleDenoReport(framework: TestFrameworkName, result: { output: string }): void {
+        if (framework !== 'deno') {
+            return;
+        }
+
+        const denoReportPath = join(this.testRunnerConfig.cwd, '.deno-report.xml');
+        try {
+            if (fs.existsSync(denoReportPath)) {
+                const reportContent = fs.readFileSync(denoReportPath, 'utf8');
+                result.output += '\n' + reportContent;
+                try {
+                    fs.unlinkSync(denoReportPath);
+                } catch (e) {
+                    logError('Failed to delete Deno report file', e);
+                }
+            }
+        } catch (e) {
+            logError('Failed to read Deno report file', e);
         }
     }
 

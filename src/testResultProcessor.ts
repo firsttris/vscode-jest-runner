@@ -31,13 +31,13 @@ export function processTestResults(
 
   let results: JestResults | undefined;
 
-  if (framework === 'node-test' || framework === 'deno') {
+  if (framework === 'node-test') {
     const filePath = tests[0]?.uri?.fsPath || '';
     results = parseTapOutput(output, filePath);
   } else if (framework === 'vitest') {
     results = parseVitestOutput(output);
   } else {
-    if (framework === 'bun') {
+    if (framework === 'bun' || framework === 'deno') {
       if (output.includes('<testsuites') || output.includes('<testsuite')) {
         results = parseJUnitXML(output);
       }

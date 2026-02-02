@@ -26,7 +26,7 @@ export function buildTestArgs(
     const strategies: Record<TestFrameworkName, TestArgumentStrategy> = {
         'node-test': new NodeTestStrategy(),
         'bun': new BunTestStrategy(),
-        'deno': new DenoTestStrategy(),
+        'deno': new DenoTestStrategy(jestConfig, testController),
         'vitest': new VitestStrategy(jestConfig, testController),
         'jest': new JestStrategy(jestConfig, testController),
     };
@@ -122,35 +122,6 @@ class BunTestStrategy extends BaseStrategy implements TestArgumentStrategy {
     }
 }
 
-class DenoTestStrategy extends BaseStrategy implements TestArgumentStrategy {
-    build(
-        allFiles: string[],
-        testsByFile: Map<string, vscode.TestItem[]>,
-        additionalArgs: string[],
-        collectCoverage: boolean
-    ): string[] {
-        const args = ['test', '--allow-all'];
-        const tests = this.getTests(testsByFile);
-        const testName = this.getTestNamePattern(tests);
-
-        if (testName) {
-            args.push('--filter', quote(escapeSingleQuotes(testName)));
-        }
-
-        if (collectCoverage) {
-            args.push('--coverage=coverage');
-        }
-
-        args.push(...additionalArgs);
-
-        if (allFiles.length > 0) {
-            args.push(...this.getNormalizedFiles(allFiles));
-        }
-
-        return args;
-    }
-}
-
 abstract class JestLikeStrategy extends BaseStrategy {
     constructor(
         protected jestConfig: TestRunnerConfig,
@@ -167,6 +138,38 @@ abstract class JestLikeStrategy extends BaseStrategy {
         const tests = testsByFile.get(allFiles[0]);
 
         return !!tests && tests.length < totalTestsInFile;
+    }
+}
+
+class DenoTestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[] {
+        const args = ['test', '--allow-all'];
+        const tests = this.getTests(testsByFile);
+        const testName = this.getTestNamePattern(tests);
+
+        // Only add filter for partial runs (specific tests selected)
+        if (testName && this.isPartialRun(allFiles, testsByFile)) {
+            args.push('--filter', quote(escapeSingleQuotes(testName)));
+        }
+
+        args.push('--junit-path=.deno-report.xml');
+
+        if (collectCoverage) {
+            args.push('--coverage=coverage');
+        }
+
+        args.push(...additionalArgs);
+
+        if (allFiles.length > 0) {
+            args.push(...this.getNormalizedFiles(allFiles));
+        }
+
+        return args;
     }
 }
 

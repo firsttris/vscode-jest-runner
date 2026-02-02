@@ -88,6 +88,11 @@ describe('TestArgumentBuilder', () => {
             const testsByFile = new Map();
             testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
 
+            // Mock file with 2 tests (partial run)
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 2 }
+            });
+
             const args = buildTestArgs(
                 files,
                 testsByFile,
@@ -100,13 +105,19 @@ describe('TestArgumentBuilder', () => {
 
             expect(args).toContain('--coverage=coverage');
             expect(args).toContain('--allow-all');
+            expect(args).toContain('--junit-path=.deno-report.xml');
             expect(args[0]).toBe('test');
         });
 
-        it('should include filter when specific tests are selected', () => {
+        it('should include filter when specific tests are selected (partial run)', () => {
             const files = ['/path/to/test.ts'];
             const testsByFile = new Map();
             testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            // Mock file with 2 tests (partial run)
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 2 }
+            });
 
             const args = buildTestArgs(
                 files,
@@ -119,16 +130,47 @@ describe('TestArgumentBuilder', () => {
             );
 
             expect(args).toContain('--filter');
+            expect(args).toContain('--junit-path=.deno-report.xml');
             // Check if filter contains the test label (quoted)
             // Quote implementation might vary but it should be there
             const filterIndex = args.indexOf('--filter');
             expect(args[filterIndex + 1]).toMatch(/test1/);
         });
 
+        it('should NOT include filter when running whole file', () => {
+            const files = ['/path/to/test.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.ts', [{ label: 'test1' }, { label: 'test2' }]);
+
+            // Mock file with 2 tests (running all tests)
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 2 }
+            });
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'deno',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect(args).not.toContain('--filter');
+            expect(args).toContain('--junit-path=.deno-report.xml');
+            expect(args).toContain('--allow-all');
+        });
+
         it('should pass additional args', () => {
             const files = ['/path/to/test.ts'];
             const testsByFile = new Map();
             testsByFile.set('/path/to/test.ts', [{ label: 'test1' }]);
+
+            // Mock file with 2 tests (partial run)
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 2 }
+            });
 
             const args = buildTestArgs(
                 files,

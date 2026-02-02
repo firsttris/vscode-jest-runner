@@ -86,12 +86,12 @@ describe('TestRunnerConfig - Deno Runner', () => {
     });
 
     describe('buildDenoArgs', () => {
-        it('should build basic args with allow-all by default', () => {
+        it('should build basic args with allow-all and junit reporter by default', () => {
             jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
                 new WorkspaceConfiguration({})
             );
             const args = config.buildDenoArgs('/path/to/test.ts', undefined, false);
-            expect(args).toEqual(['test', '--allow-all', '/path/to/test.ts']);
+            expect(args).toEqual(['test', '--allow-all', '--junit-path=.deno-report.xml', '/path/to/test.ts']);
         });
 
         it('should include filter when test name provided', () => {
@@ -99,7 +99,7 @@ describe('TestRunnerConfig - Deno Runner', () => {
                 new WorkspaceConfiguration({})
             );
             const args = config.buildDenoArgs('/path/to/test.ts', 'my test', false);
-            expect(args).toEqual(['test', '--allow-all', '--filter', 'my test', '/path/to/test.ts']);
+            expect(args).toEqual(['test', '--allow-all', '--filter', 'my test', '--junit-path=.deno-report.xml', '/path/to/test.ts']);
         });
 
         it('should include run options', () => {
@@ -109,7 +109,15 @@ describe('TestRunnerConfig - Deno Runner', () => {
                 })
             );
             const args = config.buildDenoArgs('/path/to/test.ts', undefined, false);
-            expect(args).toEqual(['test', '--allow-all', '--quiet', '/path/to/test.ts']);
+            expect(args).toEqual(['test', '--allow-all', '--junit-path=.deno-report.xml', '--quiet', '/path/to/test.ts']);
+        });
+
+        it('should include coverage flag when requested', () => {
+            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+                new WorkspaceConfiguration({})
+            );
+            const args = config.buildDenoArgs('/path/to/test.ts', undefined, false, ['--coverage']);
+            expect(args).toEqual(['test', '--allow-all', '--junit-path=.deno-report.xml', '--coverage=coverage', '/path/to/test.ts']);
         });
     });
 });
