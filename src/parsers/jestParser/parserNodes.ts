@@ -93,6 +93,8 @@ export class NamedBlock extends ParsedNode {
 
   nameType?: string;
 
+  eachTemplate?: string;  // Original template for it.each/describe.each tests
+
   constructor(type: ParsedNodeType, file: string, name?: string) {
     super(type, file);
     this.name = name ?? '';

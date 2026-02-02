@@ -214,6 +214,7 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
                     if (newChild instanceof NamedBlock) {
                       newChild.name = expandedTitle;
                       newChild.nameRange = undefined;
+                      newChild.eachTemplate = titleTemplate;  // Store original template
                     }
                     if (i === 0) child = newChild;
                   });
