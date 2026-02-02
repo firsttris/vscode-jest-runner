@@ -293,6 +293,16 @@ describe('TestRunnerConfig', () => {
           }),
         };
         jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
+
+        jest.spyOn(fs, 'readFileSync').mockImplementation((path: any) => {
+          if (path === '/home/user/project/node_modules/jest/package.json') {
+            return JSON.stringify({ bin: './bin/jest.js' });
+          }
+          if (path === '/home/user/project/node_modules/vitest/package.json') {
+            return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
+          }
+          return '{}';
+        });
       });
 
       its.linux('should prefix jest command with node when binary is resolved', () => {
@@ -300,9 +310,9 @@ describe('TestRunnerConfig', () => {
 
         const command = jestRunnerConfig.jestCommand;
 
-        // Expect direct execution via node_modules/.bin
+        // Expect direct execution via resolved path
         expect(command).toContain('node ');
-        expect(command).toContain('.bin/jest');
+        expect(command).toContain('jest/bin/jest.js');
       });
 
       its.linux('should prefix vitest command with node when binary is resolved', () => {
@@ -311,7 +321,7 @@ describe('TestRunnerConfig', () => {
         const command = jestRunnerConfig.vitestCommand;
 
         expect(command).toContain('node ');
-        expect(command).toContain('.bin/vitest');
+        expect(command).toContain('vitest/vitest.mjs');
       });
 
       it('should fallback to npx for jest if binary not found', () => {
