@@ -86,7 +86,7 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
         return [];
       }
 
-      const parseResults = parseTestFile(document.fileName, document.getText()).root.children;
+      const parseResults = parseTestFile(document.fileName, document.getText()).root.children ?? [];
 
       const codeLenses = parseResults.flatMap((parseResult) =>
         getTestsBlocks(parseResult, parseResults, this.codeLensOptions),
@@ -94,7 +94,7 @@ export class TestRunnerCodeLensProvider implements CodeLensProvider {
       this.lastSuccessfulCodeLens.set(document.fileName, codeLenses);
       return codeLenses;
     } catch (e) {
-      logError('jest-editor-support parser returned error', e);
+      logError('parser returned error', e);
     }
     return this.lastSuccessfulCodeLens.get(document.fileName) ?? [];
   }

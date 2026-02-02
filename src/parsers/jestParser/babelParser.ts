@@ -189,7 +189,7 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
 
       if (isDescribe(name)) {
         child = addNode(ParsedNodeType.describe, parentParsed, element, source, parseResult, lastProperty);
-      } else if (isTestBlock(name)) {
+      } else if (isTestBlock(name) || (name === 'Deno' && lastProperty === 'test')) {
         if (lastProperty === 'each') {
           const callExpr = getCallExpression(element);
           let expanded = false;
