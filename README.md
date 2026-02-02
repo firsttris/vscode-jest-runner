@@ -124,9 +124,13 @@ export default defineConfig({
 ```
 
 **For Node.js Native Test Runner:**
-
 - Coverage is supported natively via the `--experimental-test-coverage` flag (enabled by default for coverage runs).
 - No extra setup required!
+
+**For Bun:**
+- ⚠️ **Required:** [Bun for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=Oven.bun-vscode) extension.
+- Ensure the extension is installed and enabled for debugging to work correctly.
+
 
 **Coverage Directory Detection**
 

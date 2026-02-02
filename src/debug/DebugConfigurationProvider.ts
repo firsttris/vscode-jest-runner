@@ -36,11 +36,10 @@ export class DebugConfigurationProvider {
             internalConsoleOptions: 'neverOpen',
             name: 'Debug Bun Tests',
             request: 'launch',
-            type: 'pwa-node',
+            type: 'bun',
             cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
             ...config.bunDebugOptions,
-            runtimeExecutable: 'bun',
-            runtimeArgs: ['test'],
+            runtimeArgs: ['test', '--inspect-wait'],
         };
 
         if (testName) {
@@ -52,8 +51,8 @@ export class DebugConfigurationProvider {
             debugConfig.runtimeArgs.push(...config.bunRunOptions);
         }
 
-        debugConfig.program = undefined;
-        debugConfig.args = [filePath || ''];
+        debugConfig.program = filePath;
+        debugConfig.args = [];
 
         return debugConfig;
     }
