@@ -1,28 +1,12 @@
 import { createRequire } from 'module';
 import { dirname, join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { isWindows, normalizePath } from './PathUtils';
+import { normalizePath } from './PathUtils';
 import { logDebug, logWarning } from './Logger';
 
 export function resolveBinaryPath(binaryName: string, cwd: string): string | undefined {
     try {
         const requireFromCwd = createRequire(join(cwd, 'package.json'));
-
-        if (!isWindows()) {
-            try {
-                const pkgJsonPath = requireFromCwd.resolve(`${binaryName}/package.json`);
-                const nodeModulesMatch = pkgJsonPath.split(/[/\\]node_modules[/\\]/);
-                if (nodeModulesMatch.length > 1) {
-                    const binPath = join(nodeModulesMatch[0], 'node_modules', '.bin', binaryName);
-                    if (existsSync(binPath)) {
-                        logDebug(`Resolved binary via node_modules/.bin for ${binaryName}: ${binPath}`);
-                        return normalizePath(binPath);
-                    }
-                }
-            } catch {
-            }
-        }
-
         try {
             const pkgJsonPath = requireFromCwd.resolve(`${binaryName}/package.json`);
             const pkgDir = dirname(pkgJsonPath);
