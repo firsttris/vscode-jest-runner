@@ -69,7 +69,7 @@ const buildNodeTestArgs: BuildArgsFn = (filePath, testName, withQuotes, options,
 
   if (options.includes('--jtr-structured') || options.includes('--coverage')) {
     const reporters = getReporterPaths();
-    args.push('--test-reporter', reporters.node, '--test-reporter-destination', 'stdout');
+    args.push('--test-reporter', quote(reporters.node), '--test-reporter-destination', 'stdout');
 
     const jtrIndex = options.indexOf('--jtr-structured');
     if (jtrIndex !== -1) {

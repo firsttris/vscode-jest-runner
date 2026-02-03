@@ -11,6 +11,7 @@ import {
     logTestExecution,
 } from '../execution/TestProcessRunner';
 import { TestRunnerConfig } from '../testRunnerConfig';
+import { quote } from '../utils/TestNameUtils';
 import { Uri, WorkspaceConfiguration, WorkspaceFolder, TestItem, TestItemCollection } from './__mocks__/vscode';
 
 jest.mock('../utils/PathUtils', () => ({
@@ -181,7 +182,7 @@ describe('testExecution', () => {
                     mockTestController,
                 );
 
-                expect(args[args.length - 1]).toBe('/path/to/test.test.js');
+                expect(args[args.length - 1]).toBe(quote('/path/to/test.test.js'));
             });
 
             it('should include test name pattern for node-test when tests are specified', () => {

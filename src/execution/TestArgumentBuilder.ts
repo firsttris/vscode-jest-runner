@@ -68,7 +68,7 @@ class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
         const tests = this.getTests(testsByFile);
         const testName = this.getTestNamePattern(tests);
 
-        args.push('--test-reporter', reporters.node);
+        args.push('--test-reporter', quote(reporters.node));
         args.push('--test-reporter-destination', 'stdout');
 
         if (collectCoverage) {
@@ -84,7 +84,7 @@ class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
         const filteredArgs = additionalArgs.filter(arg => arg !== '--coverage');
         args.push(...filteredArgs);
 
-        args.push(...this.getNormalizedFiles(allFiles));
+        args.push(...this.getNormalizedFiles(allFiles).map(quote));
         return args;
     }
 }
