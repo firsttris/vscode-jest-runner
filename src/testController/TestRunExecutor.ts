@@ -20,7 +20,6 @@ import {
 } from '../execution/TestProcessRunner';
 import { processTestResults } from '../testResultProcessor';
 import { getTestFrameworkForFile } from '../testDetection/testFileDetection';
-import { parseShellCommand } from '../utils/ShellUtils';
 import { escapeRegExp, updateTestNameIfUsingProperties, quote } from '../utils/TestNameUtils';
 import { logInfo, logError } from '../utils/Logger';
 import { randomUUID } from 'node:crypto';
@@ -179,18 +178,16 @@ export class TestRunExecutor {
         run: vscode.TestRun
     ): Promise<void> {
         const testCommand = this.testRunnerConfig.getTestCommand(file);
-        const commandParts = parseShellCommand(testCommand);
-        const command = commandParts[0];
 
         const testName = escapeRegExp(updateTestNameIfUsingProperties(test.label));
         const args = buildTestArgsFast(file, testName, framework, this.testRunnerConfig);
-        const commandArgs = [...commandParts.slice(1), ...args];
+        const commandArgs = args;
         const esmEnv = this.getEsmEnv(file, framework);
 
-        logInfo(`Running fast mode: ${command} ${commandArgs.join(' ')}`);
+        logInfo(`Running fast mode: ${testCommand} ${commandArgs.join(' ')}`);
 
         await executeTestCommandFast(
-            command,
+            testCommand,
             commandArgs,
             token,
             test,
@@ -212,8 +209,6 @@ export class TestRunExecutor {
         const sessionId = randomUUID();
 
         const testCommand = this.testRunnerConfig.getTestCommand(allFiles[0]);
-        const commandParts = parseShellCommand(testCommand);
-        const command = commandParts[0];
 
         const args = buildTestArgs(
             allFiles,
@@ -225,12 +220,12 @@ export class TestRunExecutor {
             this.testController
         );
 
-        const commandArgs = [...commandParts.slice(1), ...args];
+        const commandArgs = args;
         const esmEnv = this.getEsmEnv(allFiles[0], framework);
 
         logTestExecution(
             framework,
-            command,
+            testCommand,
             commandArgs,
             allTests.length,
             allFiles.length,
@@ -238,7 +233,7 @@ export class TestRunExecutor {
         );
 
         const result = await executeTestCommand(
-            command,
+            testCommand,
             commandArgs,
             token,
             allTests,

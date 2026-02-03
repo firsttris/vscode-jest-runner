@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 import { resolveBinaryPath } from '../utils/ResolverUtils';
-import { parseShellCommand } from '../utils/ShellUtils';
+import { parseShellCommand, parseCommandAndEnv } from '../utils/ShellUtils';
 import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
 import { logWarning } from '../utils/Logger';
 import * as Settings from '../config/Settings';
@@ -104,10 +104,13 @@ export class DebugConfigurationProvider {
 
         const customCommand = Settings.getNodeTestCommand();
         if (customCommand) {
-            const parts = parseShellCommand(customCommand);
-            if (parts.length > 0) {
-                debugConfig.runtimeExecutable = parts[0];
-                debugConfig.runtimeArgs = [...parts.slice(1), '--test'];
+            const { env, executable, args } = parseCommandAndEnv(customCommand);
+            if (executable) {
+                debugConfig.runtimeExecutable = executable;
+                debugConfig.runtimeArgs = [...args, '--test'];
+                if (Object.keys(env).length > 0) {
+                    debugConfig.env = { ...debugConfig.env, ...env };
+                }
             }
         } else {
             debugConfig.runtimeArgs = ['--test'];
@@ -144,10 +147,13 @@ export class DebugConfigurationProvider {
 
         const customCommand = Settings.getVitestCommand();
         if (customCommand && typeof customCommand === 'string') {
-            const parts = parseShellCommand(customCommand);
-            if (parts.length > 0) {
-                debugConfig.program = parts[0];
-                debugConfig.args = [...parts.slice(1)];
+            const { env, executable, args } = parseCommandAndEnv(customCommand);
+            if (executable) {
+                debugConfig.program = executable;
+                debugConfig.args = [...args];
+                if (Object.keys(env).length > 0) {
+                    debugConfig.env = { ...debugConfig.env, ...env };
+                }
                 if (filePath) {
                     const testArgs = config.buildVitestArgs(filePath, testName, false);
                     debugConfig.args.push(...testArgs);
@@ -191,10 +197,13 @@ export class DebugConfigurationProvider {
 
         const customCommand = Settings.getJestCommand();
         if (customCommand && typeof customCommand === 'string') {
-            const parts = parseShellCommand(customCommand);
-            if (parts.length > 0) {
-                debugConfig.program = parts[0];
-                debugConfig.args = [...parts.slice(1)];
+            const { env, executable, args } = parseCommandAndEnv(customCommand);
+            if (executable) {
+                debugConfig.program = executable;
+                debugConfig.args = [...args];
+                if (Object.keys(env).length > 0) {
+                    debugConfig.env = { ...debugConfig.env, ...env };
+                }
                 if (filePath) {
                     const testArgs = config.buildJestArgs(filePath, testName, false);
                     debugConfig.args.push(...testArgs);
