@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 import { dirname, join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { normalizePath } from './PathUtils';
+import { normalizePath, normalizeDriveLetter } from './PathUtils';
 import { logDebug, logWarning } from './Logger';
 
 export function resolveBinaryPath(binaryName: string, cwd: string): string | undefined {
@@ -16,7 +16,7 @@ export function resolveBinaryPath(binaryName: string, cwd: string): string | und
                 const binPath = join(pkgDir, binEntry);
                 if (existsSync(binPath)) {
                     logDebug(`Resolved binary via package.json for ${binaryName}: ${binPath}`);
-                    return normalizePath(binPath);
+                    return normalizePath(normalizeDriveLetter(binPath));
                 }
             }
         } catch {

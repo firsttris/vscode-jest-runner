@@ -13,6 +13,13 @@ export function normalizePath(path: string): string {
     return IS_WINDOWS ? path.replace(/\\/g, '/') : path;
 }
 
+export function normalizeDriveLetter(path: string): string {
+    if (IS_WINDOWS && path.match(/^[a-z]:/)) {
+        return path.charAt(0).toUpperCase() + path.slice(1);
+    }
+    return path;
+}
+
 export function getDirName(filePath: string): string {
     return dirname(filePath);
 }
