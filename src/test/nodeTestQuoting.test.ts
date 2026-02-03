@@ -1,10 +1,19 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
-import { buildTestArgs } from '../execution/TestArgumentBuilder';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { quote } from '../utils/TestNameUtils';
-import * as path from 'path';
+import { pathToFileURL } from 'node:url';
+
+// Define the mock variable
+let mockIsWindows = false;
+
+// Mock PathUtils
+jest.mock('../utils/PathUtils', () => ({
+    ...jest.requireActual('../utils/PathUtils'),
+    isWindows: () => mockIsWindows,
+    normalizePath: (p: string) => p // simple pass through
+}));
 
 // Mock getReporterPaths
 const mockReporterPaths = {
@@ -16,6 +25,9 @@ const mockReporterPaths = {
 jest.mock('../reporters/reporterPaths', () => ({
     getReporterPaths: () => mockReporterPaths
 }));
+
+// Import after mocks
+import { buildTestArgs } from '../execution/TestArgumentBuilder';
 
 describe('Node Test Argument Quoting', () => {
     let mockTestController: vscode.TestController;
@@ -29,9 +41,13 @@ describe('Node Test Argument Quoting', () => {
         } as unknown as vscode.TestController;
 
         mockJestConfig = new TestRunnerConfig();
+        // Reset mock to default (non-Windows) before each test
+        mockIsWindows = false;
     });
 
-    it('should quote reporter path and file paths', () => {
+    it('should quote reporter path and file paths (Non-Windows)', () => {
+        mockIsWindows = false;
+
         const allFiles = ['/path/with spaces/test.js'];
         const testsByFile = new Map<string, vscode.TestItem[]>();
         const mockTestItem = {
@@ -61,7 +77,7 @@ describe('Node Test Argument Quoting', () => {
         // Check if reporter path is quoted
         const reporterIndex = args.indexOf('--test-reporter');
         assert.ok(reporterIndex !== -1, 'Should have --test-reporter arg');
-        assert.strictEqual(args[reporterIndex + 1], expectedReporterArg, 'Reporter path should be quoted');
+        assert.strictEqual(args[reporterIndex + 1], expectedReporterArg, 'Reporter path should be quoted (non-Windows)');
 
         // Check if file path is quoted
         const fileIndex = args.findIndex(arg => arg === expectedFileArg);
@@ -69,26 +85,12 @@ describe('Node Test Argument Quoting', () => {
     });
 
     it('should use file URL for reporter on Windows', () => {
-        // Mock isWindows to true
-        // We need to use jest.doMock for module mocking or modify the implementation to allow mocking
-        // Since isWindows is a function in PathUtils, we can spy/mock it if we change how it's imported or structure the test
-
-        // However, for this test file, let's just mock the module completely
-        jest.resetModules();
-        jest.mock('../utils/PathUtils', () => ({
-            ...jest.requireActual('../utils/PathUtils'),
-            isWindows: () => true,
-            normalizePath: (p: string) => p // simple pass through
-        }));
-
-        // Re-require modules to get fresh mocks
-        const { buildTestArgs } = require('../execution/TestArgumentBuilder');
-        const { quote } = require('../utils/TestNameUtils');
-        const { pathToFileURL } = require('node:url');
+        // Set mock to Windows
+        mockIsWindows = true;
 
         const allFiles = ['/path/test.js'];
-        const testsByFile = new Map();
-        testsByFile.set(allFiles[0], [{ label: 'test1', id: 'test1' }]);
+        const testsByFile = new Map<string, vscode.TestItem[]>();
+        testsByFile.set(allFiles[0], [{ label: 'test1', id: 'test1' } as any]);
 
         const args = buildTestArgs(
             allFiles,
