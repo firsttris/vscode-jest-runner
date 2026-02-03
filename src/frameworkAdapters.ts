@@ -1,7 +1,8 @@
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import { escapeRegExpForPath, normalizePath } from './utils/PathUtils';
+import { escapeRegExpForPath, normalizePath, isWindows } from './utils/PathUtils';
 import { escapeSingleQuotes, quote, resolveTestNameStringInterpolation } from './utils/TestNameUtils';
 import { getReporterPaths } from './reporters/reporterPaths';
+import { pathToFileURL } from 'node:url';
 
 type BuildArgsFn = (
   filePath: string,
@@ -69,7 +70,8 @@ const buildNodeTestArgs: BuildArgsFn = (filePath, testName, withQuotes, options,
 
   if (options.includes('--jtr-structured') || options.includes('--coverage')) {
     const reporters = getReporterPaths();
-    args.push('--test-reporter', quote(reporters.node), '--test-reporter-destination', 'stdout');
+    const reporterPath = isWindows() ? pathToFileURL(reporters.node).href : reporters.node;
+    args.push('--test-reporter', quote(reporterPath), '--test-reporter-destination', 'stdout');
 
     const jtrIndex = options.indexOf('--jtr-structured');
     if (jtrIndex !== -1) {

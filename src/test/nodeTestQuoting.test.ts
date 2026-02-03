@@ -67,4 +67,45 @@ describe('Node Test Argument Quoting', () => {
         const fileIndex = args.findIndex(arg => arg === expectedFileArg);
         assert.ok(fileIndex !== -1, 'File path should be in args and quoted');
     });
+
+    it('should use file URL for reporter on Windows', () => {
+        // Mock isWindows to true
+        // We need to use jest.doMock for module mocking or modify the implementation to allow mocking
+        // Since isWindows is a function in PathUtils, we can spy/mock it if we change how it's imported or structure the test
+
+        // However, for this test file, let's just mock the module completely
+        jest.resetModules();
+        jest.mock('../utils/PathUtils', () => ({
+            ...jest.requireActual('../utils/PathUtils'),
+            isWindows: () => true,
+            normalizePath: (p: string) => p // simple pass through
+        }));
+
+        // Re-require modules to get fresh mocks
+        const { buildTestArgs } = require('../execution/TestArgumentBuilder');
+        const { quote } = require('../utils/TestNameUtils');
+        const { pathToFileURL } = require('node:url');
+
+        const allFiles = ['/path/test.js'];
+        const testsByFile = new Map();
+        testsByFile.set(allFiles[0], [{ label: 'test1', id: 'test1' }]);
+
+        const args = buildTestArgs(
+            allFiles,
+            testsByFile,
+            'node-test',
+            ['--jtr-structured'], // trigger reporter usage
+            false,
+            mockJestConfig,
+            mockTestController
+        );
+
+        const reporterIndex = args.indexOf('--test-reporter');
+        assert.ok(reporterIndex !== -1, 'Should have --test-reporter arg');
+
+        const actualReporterArgs = args[reporterIndex + 1];
+        // Expected is pathToFileURL(mockReporterPaths.node).href quoted
+        const expectedUrl = pathToFileURL(mockReporterPaths.node).href;
+        assert.strictEqual(actualReporterArgs, quote(expectedUrl), 'Reporter path should be a file URL on Windows');
+    });
 });

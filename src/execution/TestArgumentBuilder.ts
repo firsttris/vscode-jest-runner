@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { escapeRegExp, escapeSingleQuotes, quote, updateTestNameIfUsingProperties } from '../utils/TestNameUtils';
-import { normalizePath } from '../utils/PathUtils';
+import { normalizePath, isWindows } from '../utils/PathUtils';
 import { getReporterPaths } from '../reporters/reporterPaths';
+import { pathToFileURL } from 'node:url';
 
 interface TestArgumentStrategy {
     build(
@@ -68,7 +69,8 @@ class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
         const tests = this.getTests(testsByFile);
         const testName = this.getTestNamePattern(tests);
 
-        args.push('--test-reporter', quote(reporters.node));
+        const reporterPath = isWindows() ? pathToFileURL(reporters.node).href : reporters.node;
+        args.push('--test-reporter', quote(reporterPath));
         args.push('--test-reporter-destination', 'stdout');
 
         if (collectCoverage) {
