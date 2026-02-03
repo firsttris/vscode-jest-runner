@@ -4,12 +4,10 @@ module.exports = {
   moduleNameMapper: {
     '^vscode$': '<rootDir>/src/test/__mocks__/vscode.ts',
     // Handle Vite's ?raw imports for Jest - map to actual files
-    '^(.*)\\.cjs\\?raw$': '$1.cjs',
-    '^(.*)\\.mjs\\?raw$': '$1.mjs',
+    '^(.*)Template\\.js\\?raw$': '$1Template.js',
   },
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
-    '\\.cjs$': '<rootDir>/src/test/__mocks__/rawTransform.js',
-    '\\.mjs$': '<rootDir>/src/test/__mocks__/rawTransform.js',
+    'Template\\.js$': '<rootDir>/src/test/__mocks__/rawTransform.js',
   },
 };
