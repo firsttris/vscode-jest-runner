@@ -166,12 +166,6 @@
             "description": "Add or override VS Code debug configurations for Node.js test runner. Only applies when debugging node:test tests.",
             "scope": "window"
           },
-          "jestrunner.bunCommand": {
-            "type": "string",
-            "default": "",
-            "description": "Define an alternative Bun command (e.g. /usr/local/bin/bun)",
-            "scope": "window"
-          },
           "jestrunner.bunRunOptions": {
             "type": "array",
             "default": [],
@@ -186,12 +180,6 @@
             "type": "object",
             "default": {},
             "description": "Add or override VS Code debug configurations for Bun. Only applies when debugging bun tests.",
-            "scope": "window"
-          },
-          "jestrunner.denoCommand": {
-            "type": "string",
-            "default": "",
-            "description": "Define an alternative Deno command",
             "scope": "window"
           },
           "jestrunner.denoRunOptions": {

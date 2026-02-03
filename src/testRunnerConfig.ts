@@ -50,11 +50,11 @@ export class TestRunnerConfig {
   }
 
   public get bunCommand(): string {
-    return Settings.getBunCommand() || 'bun';
+    return 'bun';
   }
 
   public get denoCommand(): string {
-    return Settings.getDenoCommand() || 'deno';
+    return 'deno';
   }
 
   public getTestCommand(filePath?: string): string {

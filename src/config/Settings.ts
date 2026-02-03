@@ -56,8 +56,7 @@ export const getNodeTestDebugOptions = (): Partial<vscode.DebugConfiguration> =>
 
 // === Bun Settings ===
 
-export const getBunCommand = (): string | undefined =>
-  getConfig<string>('jestrunner.bunCommand');
+
 
 export const getBunRunOptions = (): string[] | null => {
   const options = getConfig<string[]>('jestrunner.bunRunOptions');
@@ -69,8 +68,7 @@ export const getBunDebugOptions = (): Partial<vscode.DebugConfiguration> =>
 
 // === Deno Settings ===
 
-export const getDenoCommand = (): string | undefined =>
-  getConfig<string>('jestrunner.denoCommand');
+
 
 export const getDenoRunOptions = (): string[] | null => {
   const options = getConfig<string[]>('jestrunner.denoRunOptions');

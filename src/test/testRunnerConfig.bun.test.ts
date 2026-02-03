@@ -33,22 +33,12 @@ describe('TestRunnerConfig - Bun Runner', () => {
     });
 
     describe('bunCommand', () => {
-        it('should return default bun command when no custom command is set', () => {
+        it('should return default bun command', () => {
             jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
                 new WorkspaceConfiguration({})
             );
 
             expect(config.bunCommand).toBe('bun');
-        });
-
-        it('should return custom command when set', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.bunCommand': '/usr/bin/bun',
-                } as any)
-            );
-
-            expect(config.bunCommand).toBe('/usr/bin/bun');
         });
     });
 

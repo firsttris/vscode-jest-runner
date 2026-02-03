@@ -33,22 +33,12 @@ describe('TestRunnerConfig - Deno Runner', () => {
     });
 
     describe('denoCommand', () => {
-        it('should return default deno command when no custom command is set', () => {
+        it('should return default deno command', () => {
             jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
                 new WorkspaceConfiguration({})
             );
 
             expect(config.denoCommand).toBe('deno');
-        });
-
-        it('should return custom command when set', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.denoCommand': '/bin/deno',
-                } as any)
-            );
-
-            expect(config.denoCommand).toBe('/bin/deno');
         });
     });
 
