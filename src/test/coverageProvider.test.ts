@@ -191,7 +191,6 @@ describe('CoverageProvider', () => {
   });
 
   describe('convertToVSCodeCoverage', () => {
-    const workspaceFolder = '/workspace';
 
     it('should convert coverage map to VS Code format', () => {
       const coverageMap: CoverageMap = {
@@ -202,7 +201,6 @@ describe('CoverageProvider', () => {
 
       const result = provider.convertToVSCodeCoverage(
         coverageMap,
-        workspaceFolder,
       );
 
       expect(result).toHaveLength(1);
@@ -222,7 +220,6 @@ describe('CoverageProvider', () => {
 
       const result = provider.convertToVSCodeCoverage(
         coverageMap,
-        workspaceFolder,
       );
 
       expect(result).toHaveLength(1);
@@ -244,7 +241,6 @@ describe('CoverageProvider', () => {
 
       const result = provider.convertToVSCodeCoverage(
         coverageMap,
-        workspaceFolder,
       );
 
       expect(result).toHaveLength(1);
@@ -279,7 +275,6 @@ describe('CoverageProvider', () => {
 
       const result = provider.convertToVSCodeCoverage(
         coverageMap,
-        workspaceFolder,
       );
 
       expect(result[0].statementCoverage.covered).toBe(2);
@@ -314,7 +309,6 @@ describe('CoverageProvider', () => {
 
       const result = provider.convertToVSCodeCoverage(
         coverageMap,
-        workspaceFolder,
       );
 
       expect(result[0].branchCoverage?.covered).toBe(1);
@@ -361,7 +355,6 @@ describe('CoverageProvider', () => {
 
       const result = provider.convertToVSCodeCoverage(
         coverageMap,
-        workspaceFolder,
       );
 
       expect(result[0].declarationCoverage?.covered).toBe(1);
@@ -369,7 +362,7 @@ describe('CoverageProvider', () => {
     });
 
     it('should return empty array for empty coverage map', () => {
-      const result = provider.convertToVSCodeCoverage({}, workspaceFolder);
+      const result = provider.convertToVSCodeCoverage({});
 
       expect(result).toHaveLength(0);
     });

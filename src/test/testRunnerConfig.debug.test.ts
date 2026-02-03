@@ -7,7 +7,7 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows } from '../util';
+import { isWindows, normalizePath } from '../utils/PathUtils';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as testDetection from '../testDetection/testFileDetection';
@@ -52,6 +52,16 @@ describe('TestRunnerConfig', () => {
       };
       jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
 
+      jest.spyOn(fs, 'readFileSync').mockImplementation((path: any) => {
+        if (String(path).endsWith('jest/package.json')) {
+          return JSON.stringify({ bin: './bin/jest.js' });
+        }
+        if (String(path).endsWith('vitest/package.json')) {
+          return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
+        }
+        return '{}';
+      });
+
       // Default to 'jest' framework to prevent leakage and ensure predictable test behavior
       jest.spyOn(testDetection, 'getTestFrameworkForFile').mockReturnValue('jest');
     });
@@ -78,6 +88,9 @@ describe('TestRunnerConfig', () => {
         if (pathStr.includes('.bin/jest')) {
           return true;
         }
+        if (pathStr.includes('jest/bin/jest.js')) {
+          return true;
+        }
 
         // Default permissive for others (jest.config.js checks etc)
         return true;
@@ -94,7 +107,7 @@ describe('TestRunnerConfig', () => {
       });
       // On non-Windows, binary is resolved via .bin symlink
       if (!isWindows()) {
-        expect(config.program).toBe('/home/user/project/node_modules/.bin/jest');
+        expect(config.program).toBe('/home/user/project/node_modules/jest/bin/jest.js');
         expect(config.args).toEqual(['--runInBand']);
       }
       expect(config.cwd).toBeTruthy(); // cwd may vary based on test setup
@@ -106,11 +119,15 @@ describe('TestRunnerConfig', () => {
       );
 
       jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
-        if (String(checkPath).includes('.yarn/releases')) {
+        const pathStr = normalizePath(String(checkPath));
+        if (pathStr.includes('.yarn/releases')) {
           return false;
         }
         // Simulate missing .bin binary
-        if (String(checkPath).includes('.bin/jest')) {
+        if (pathStr.includes('.bin/jest')) {
+          return false;
+        }
+        if (pathStr.includes('jest/bin/jest.js')) {
           return false;
         }
         // Allow jest.config.js etc to be found so framework detection works
@@ -139,11 +156,15 @@ describe('TestRunnerConfig', () => {
       jest.spyOn(testDetection, 'getTestFrameworkForFile').mockReturnValue('vitest');
 
       jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
-        if (String(checkPath).includes('.yarn/releases')) {
+        const pathStr = normalizePath(String(checkPath));
+        if (pathStr.includes('.yarn/releases')) {
           return false;
         }
         // Simulate missing .bin binary
-        if (String(checkPath).includes('.bin/vitest')) {
+        if (pathStr.includes('.bin/vitest')) {
+          return false;
+        }
+        if (pathStr.includes('vitest/vitest.mjs')) {
           return false;
         }
         return false;
@@ -369,7 +390,7 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.program).toBe('/home/user/project/node_modules/.bin/jest');
+      expect(config.program).toBe('/home/user/project/node_modules/jest/bin/jest.js');
       expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toEqual({
         NODE_OPTIONS: '--experimental-vm-modules',
@@ -387,7 +408,7 @@ describe('TestRunnerConfig', () => {
 
       const config = jestRunnerConfig.getDebugConfiguration();
 
-      expect(config.program).toBe('/home/user/project/node_modules/.bin/jest');
+      expect(config.program).toBe('/home/user/project/node_modules/jest/bin/jest.js');
       expect(config.args).toEqual(['--runInBand']);
       expect(config.env).toBeUndefined();
     });
@@ -429,10 +450,27 @@ describe('TestRunnerConfig', () => {
       jest
         .spyOn(fs, 'existsSync')
         .mockImplementation((filePath: fs.PathLike) => {
+
+          jest.spyOn(fs, 'readFileSync').mockImplementation((path: any) => {
+            if (String(path).endsWith('vitest/package.json')) {
+              return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
+            }
+            if (String(path).endsWith('jest/package.json')) {
+              return JSON.stringify({ bin: './bin/jest.js' });
+            }
+            return '{}';
+          });
+
           if (String(filePath).includes('.yarn/releases')) {
             return false;
           }
           if (String(filePath).includes('vitest.config')) {
+            return true;
+          }
+          if (String(filePath).includes('vitest.mjs')) {
+            return true;
+          }
+          if (String(filePath).includes('jest.js')) {
             return true;
           }
           return true;
@@ -446,8 +484,47 @@ describe('TestRunnerConfig', () => {
       const config = jestRunnerConfig.getDebugConfiguration(vitestFilePath);
 
       expect(config.name).toBe('Debug Vitest Tests');
-      expect(config.program).toBe('/workspace/node_modules/.bin/vitest');
+      expect(config.program).toBe('/workspace/node_modules/vitest/vitest.mjs');
       expect(config.env).toBeUndefined();
+    });
+  });
+
+  describe('getDebugConfiguration with Deno', () => {
+    let jestRunnerConfig: TestRunnerConfig;
+    const mockFilePath = '/workspace/main.test.ts';
+
+    beforeEach(() => {
+      jestRunnerConfig = new TestRunnerConfig();
+      jest
+        .spyOn(vscode.workspace, 'getWorkspaceFolder')
+        .mockReturnValue(new WorkspaceFolder(new Uri('/workspace') as any) as any);
+      jest
+        .spyOn(vscode.window, 'activeTextEditor', 'get')
+        .mockReturnValue(
+          new TextEditor(new Document(new Uri(mockFilePath) as any)) as any,
+        );
+
+      jest
+        .spyOn(testDetection, 'getTestFrameworkForFile')
+        .mockReturnValue('deno');
+    });
+
+    it('configures deno debug correctly', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.denoRunOptions': ['--allow-read'],
+        }),
+      );
+
+      const config = jestRunnerConfig.getDebugConfiguration(mockFilePath);
+
+      expect(config.type).toBe('node');
+      expect(config.port).toBe(9229);
+      expect(config.attachSimplePort).toBe(9229);
+      expect(config.runtimeExecutable).toBe('deno');
+      expect(config.runtimeArgs).toEqual(
+        expect.arrayContaining(['test', '--inspect-brk', '--allow-all', '--allow-read', mockFilePath]),
+      );
     });
   });
 });

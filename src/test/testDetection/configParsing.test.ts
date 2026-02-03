@@ -1,5 +1,9 @@
 import * as fs from 'node:fs';
-import { getIncludeFromVitestConfig, getTestMatchFromJestConfig, getVitestConfig, packageJsonHasJestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsing';
+import { packageJsonHasJestConfig } from '../../testDetection/configParsing';
+import { getCypressSpecPattern } from '../../testDetection/configParsers/cypressParser';
+import { getTestMatchFromJestConfig } from '../../testDetection/configParsers/jestParser';
+import { getPlaywrightTestDir } from '../../testDetection/configParsers/playwrightParser';
+import { getIncludeFromVitestConfig, getVitestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsers/vitestParser';
 
 jest.mock('fs');
 jest.mock('vscode');
@@ -112,6 +116,30 @@ describe('configParsing', () => {
       const result = packageJsonHasJestConfig('/test/package.json');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('getVitestConfig', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should resolve root __dirname to config directory', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  root: __dirname,
+  test: {
+    include: ['**/*.test.ts'],
+  },
+});
+      `);
+
+      const result = getVitestConfig('/test/vite.config.ts');
+
+      expect(result?.rootDir).toBe('/test');
+      expect(result?.patterns).toEqual(['**/*.test.ts']);
     });
   });
 
@@ -275,6 +303,20 @@ module.exports = {
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
       expect(result).toEqual({ patterns: ['**/*.test.ts', '**/*.spec.ts'], isRegex: false });
+    });
+
+    it('should resolve rootDir __dirname to config directory', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+module.exports = {
+  rootDir: __dirname,
+  testMatch: ['<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)']
+};
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.ts');
+
+      expect(result?.rootDir).toBe('/test');
+      expect(result?.patterns).toEqual(['<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)']);
     });
 
     it('should extract testMatch from TypeScript export default config', () => {
@@ -703,6 +745,197 @@ export default defineConfig({
       });
 
       const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('getCypressSpecPattern', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should extract specPattern from JSON config with e2e block', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "e2e": {
+    "specPattern": "cypress/e2e/**/*.cy.{js,jsx,ts,tsx}"
+  }
+}`);
+
+      const result = getCypressSpecPattern('/test/cypress.config.json');
+
+      expect(result).toEqual(['cypress/e2e/**/*.cy.{js,jsx,ts,tsx}']);
+    });
+
+    it('should extract specPattern from JSON config without e2e block', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "specPattern": "**/*.spec.js"
+}`);
+
+      const result = getCypressSpecPattern('/test/cypress.config.json');
+
+      expect(result).toEqual(['**/*.spec.js']);
+    });
+
+    it('should extract specPattern string from JS/TS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  specPattern: 'cypress/e2e/**/*.cy.ts'
+});
+      `);
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toEqual(['cypress/e2e/**/*.cy.ts']);
+    });
+
+    it('should extract specPattern array from JS/TS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  specPattern: ['cypress/e2e/**/*.cy.ts', 'cypress/integration/**/*.spec.ts']
+});
+      `);
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toEqual([
+        'cypress/e2e/**/*.cy.ts',
+        'cypress/integration/**/*.spec.ts',
+      ]);
+    });
+
+    it('should extract specPattern from e2e block in JS/TS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  e2e: {
+    specPattern: 'cypress/e2e/**/*.cy.{js,ts}'
+  }
+});
+      `);
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toEqual(['cypress/e2e/**/*.cy.{js,ts}']);
+    });
+
+    it('should extract specPattern array from e2e block in JS/TS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  e2e: {
+    specPattern: ['cypress/e2e/**/*.cy.ts', 'cypress/component/**/*.cy.tsx']
+  }
+});
+      `);
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toEqual([
+        'cypress/e2e/**/*.cy.ts',
+        'cypress/component/**/*.cy.tsx',
+      ]);
+    });
+
+    it('should return undefined when no specPattern is found', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  baseUrl: 'http://localhost:3000'
+});
+      `);
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined on file read error', () => {
+      mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('getPlaywrightTestDir', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should extract testDir from JSON config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "testDir": "./tests"
+}`);
+
+      const result = getPlaywrightTestDir('/test/playwright.config.json');
+
+      expect(result).toBe('./tests');
+    });
+
+    it('should extract testDir from JS/TS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testDir: './e2e'
+});
+      `);
+
+      const result = getPlaywrightTestDir('/test/playwright.config.ts');
+
+      expect(result).toBe('./e2e');
+    });
+
+    it('should extract testDir from spread call arguments (nx preset)', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from '@playwright/test';
+import { nxE2EPreset } from '@nx/playwright/preset';
+
+export default defineConfig({
+  ...nxE2EPreset(__filename, { testDir: './src' }),
+  use: {
+    baseURL: 'http://localhost:4200',
+  },
+});
+      `);
+
+      const result = getPlaywrightTestDir('/test/playwright.config.ts');
+
+      expect(result).toBe('./src');
+    });
+
+    it('should extract Cypress specPattern from spread call arguments (nx preset)', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { defineConfig } from 'cypress';
+import { nxE2EPreset } from '@nx/cypress/plugins/cypress-preset';
+
+export default defineConfig({
+  ...nxE2EPreset(__dirname, { specPattern: 'src/**/*.cy.ts' }),
+});
+      `);
+
+      const result = getCypressSpecPattern('/test/cypress.config.ts');
+
+      expect(result).toEqual(['src/**/*.cy.ts']);
+    });
+
+    it('should return undefined when no testDir is found', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  use: { browserName: 'chromium' }
+});
+      `);
+
+      const result = getPlaywrightTestDir('/test/playwright.config.ts');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined on file read error', () => {
+      mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
+      const result = getPlaywrightTestDir('/test/playwright.config.ts');
 
       expect(result).toBeUndefined();
     });

@@ -1,6 +1,8 @@
 import { relative, resolve } from 'node:path';
 import { isMatch } from 'micromatch';
-import { getTestMatchFromJestConfig, getVitestConfig, getDefaultTestPatterns } from './configParsing';
+import { getTestMatchFromJestConfig } from './configParsers/jestParser';
+import { getVitestConfig } from './configParsers/vitestParser';
+import { getDefaultTestPatterns } from './configParsing';
 
 function matchesExcludePatterns(
   filePath: string,
@@ -19,7 +21,6 @@ function matchesExcludePatterns(
           return true;
         }
       } catch {
-        // Invalid regex, skip
       }
     }
   }
@@ -81,7 +82,6 @@ export function fileMatchesPatternsExplicit(
           return true;
         }
       } catch {
-        // Invalid regex, skip
       }
     } else {
       const normalizedPattern = resolveRootDirToken(pattern, rootDir);

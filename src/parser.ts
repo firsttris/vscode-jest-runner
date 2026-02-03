@@ -1,4 +1,12 @@
-import type { ParsedNode } from 'jest-editor-support';
-import parse from 'jest-editor-support/build/parsers';
+import parse, { type ParsedNode } from './parsers/jestParser';
+import { parseNodeTestFile, type ParseResult as NodeTestParseResult } from './parsers/nodeTestParser';
+import { isNodeTestFile } from './testDetection/frameworkDetection';
 
 export { parse, ParsedNode };
+
+export function parseTestFile(filePath: string, content?: string): NodeTestParseResult | ReturnType<typeof parse> {
+  if (isNodeTestFile(filePath)) {
+    return parseNodeTestFile(filePath, content);
+  }
+  return parse(filePath, content);
+}

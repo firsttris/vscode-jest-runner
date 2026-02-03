@@ -440,5 +440,92 @@ describe('TestRunnerCodeLensProvider', () => {
       const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
       expect(codeLenses.length).toBeGreaterThan(0);
     });
+
+    it('should provide individual lenses and "Run All" for it.each expanded tests', async () => {
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
+      mockDocument.getText = jest.fn().mockReturnValue(`
+        it.each([1, 2, 3])('test %s', (n) => {
+          expect(n).toBeTruthy();
+        });
+      `);
+
+      // Mock parser to return expanded it.each tests
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'it',
+              name: 'test 1',
+              start: { line: 2, column: 8 },
+              end: { line: 4, column: 10 },
+              file: '/workspace/test.spec.ts',
+              children: [],
+              eachTemplate: 'test %s',
+            },
+            {
+              type: 'it',
+              name: 'test 2',
+              start: { line: 2, column: 8 }, // Same line as above
+              end: { line: 4, column: 10 },
+              file: '/workspace/test.spec.ts',
+              children: [],
+              eachTemplate: 'test %s',
+            },
+            {
+              type: 'it',
+              name: 'test 3',
+              start: { line: 2, column: 8 }, // Same line as above
+              end: { line: 4, column: 10 },
+              file: '/workspace/test.spec.ts',
+              children: [],
+              eachTemplate: 'test %s',
+            },
+          ],
+        },
+      } as any);
+
+      const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
+
+      // Should have 2 lenses per test (run, debug) + 2 "Run All" lenses (run all, debug all)
+      // = 3 tests * 2 + 2 = 8 lenses
+      expect(codeLenses.length).toBe(8);
+
+      // Check individual test lenses have index prefix
+      const lens1Run = codeLenses.find((lens) => lens.command?.title === '[1] Run');
+      expect(lens1Run).toBeDefined();
+      expect(lens1Run?.command?.arguments?.[0]).toBe('test 1');
+
+      const lens2Run = codeLenses.find((lens) => lens.command?.title === '[2] Run');
+      expect(lens2Run).toBeDefined();
+      expect(lens2Run?.command?.arguments?.[0]).toBe('test 2');
+
+      const lens3Run = codeLenses.find((lens) => lens.command?.title === '[3] Run');
+      expect(lens3Run).toBeDefined();
+      expect(lens3Run?.command?.arguments?.[0]).toBe('test 3');
+
+      const lens1Debug = codeLenses.find((lens) => lens.command?.title === '[1] Debug');
+      expect(lens1Debug).toBeDefined();
+
+      const lens2Debug = codeLenses.find((lens) => lens.command?.title === '[2] Debug');
+      expect(lens2Debug).toBeDefined();
+
+      const lens3Debug = codeLenses.find((lens) => lens.command?.title === '[3] Debug');
+      expect(lens3Debug).toBeDefined();
+
+      // Check "Run All" and "Debug All" lenses exist
+      const runAllLens = codeLenses.find(
+        (lens) => lens.command?.title === 'Run All',
+      );
+      expect(runAllLens).toBeDefined();
+      expect(runAllLens?.command?.command).toBe('extension.runJest');
+      expect(runAllLens?.command?.arguments?.[0]).toContain('test (.*?)');
+
+      const debugAllLens = codeLenses.find(
+        (lens) => lens.command?.title === 'Debug All',
+      );
+      expect(debugAllLens).toBeDefined();
+      expect(debugAllLens?.command?.command).toBe('extension.debugJest');
+      expect(debugAllLens?.command?.arguments?.[0]).toContain('test (.*?)');
+    });
   });
 });

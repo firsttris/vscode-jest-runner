@@ -6,6 +6,8 @@ import {
   CancellationTokenSource,
   TestControllerSetup,
 } from './testControllerSetup';
+import { WorkspaceConfiguration } from './__mocks__/vscode';
+import * as testDetection from '../testDetection/testFileDetection';
 
 jest.mock('child_process');
 
@@ -300,5 +302,42 @@ describe('JestTestController - debug handler', () => {
     const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[0][1];
     expect(debugCall.args).toContain('-t');
     expect(debugCall.args).toContain('Test with \\+ and \\* chars');
+  });
+
+  it('should debug Deno tests correctly', async () => {
+    const mockTestController = (
+      vscode.tests.createTestController as jest.Mock
+    ).mock.results[0].value;
+    const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[1][2];
+
+    const denoTestItem = new TestItem(
+      'denoTest',
+      'add test',
+      vscode.Uri.file('/workspace/main.test.ts'),
+    );
+    const request = { include: [denoTestItem], exclude: [] } as any;
+
+    jest
+      .spyOn(vscode.workspace, 'getConfiguration')
+      .mockReturnValue(
+        new WorkspaceConfiguration({}) as any,
+      );
+    jest
+      .spyOn(testDetection, 'getTestFrameworkForFile')
+      .mockReturnValue('deno');
+
+    await debugProfile(request, mockToken);
+
+    const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls.pop();
+    const config = debugCall?.[1] as any;
+
+    expect(config.type).toBe('node');
+    expect(config.port).toBe(9229);
+    expect(config.attachSimplePort).toBe(9229);
+    expect(config.runtimeExecutable).toBe('deno');
+    expect(config.runtimeArgs).toEqual(
+      expect.arrayContaining(['test', '--inspect-brk', '--allow-all', '/workspace/main.test.ts']),
+    );
   });
 });

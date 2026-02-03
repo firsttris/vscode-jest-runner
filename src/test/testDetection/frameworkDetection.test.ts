@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { clearTestDetectionCache, clearVitestDetectionCache } from '../../testDetection/cache';
+import { cacheManager } from '../../cache/CacheManager';
 import { detectTestFramework, findJestDirectory, findVitestDirectory, isJestUsedIn, isVitestUsedIn } from '../../testDetection/frameworkDetection';
 import { isJestTestFile } from '../../testDetection/testFileDetection';
 
@@ -13,8 +13,7 @@ const mockedFs = fs as jest.Mocked<typeof fs>;
 describe('frameworkDetection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    clearTestDetectionCache();
-    clearVitestDetectionCache();
+    cacheManager.invalidateAll();
   });
 
   describe('isJestUsedIn', () => {
@@ -870,8 +869,7 @@ describe('frameworkDetection', () => {
   describe('detectTestFramework with pattern matching (monorepo support)', () => {
     beforeEach(() => {
       jest.clearAllMocks();
-      clearTestDetectionCache();
-      clearVitestDetectionCache();
+      cacheManager.invalidateAll();
       mockedFs.existsSync = jest.fn().mockReturnValue(false);
       mockedFs.readFileSync = jest.fn();
     });

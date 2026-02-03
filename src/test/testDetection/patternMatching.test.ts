@@ -6,7 +6,7 @@ import {
   fileMatchesPatterns,
   detectFrameworkByPatternMatch,
 } from '../../testDetection/patternMatching';
-import { clearTestDetectionCache, clearVitestDetectionCache } from '../../testDetection/cache';
+import { cacheManager } from '../../cache/CacheManager';
 import { matchesTestFilePattern } from '../../testDetection/testFileDetection';
 
 jest.mock('fs');
@@ -548,8 +548,7 @@ describe('patternMatching', () => {
   describe('matchesTestFilePattern with custom config paths', () => {
     beforeEach(() => {
       jest.clearAllMocks();
-      clearTestDetectionCache();
-      clearVitestDetectionCache();
+      cacheManager.invalidateAll();
       mockedFs.existsSync = jest.fn().mockReturnValue(false);
       mockedFs.readFileSync = jest.fn();
     });

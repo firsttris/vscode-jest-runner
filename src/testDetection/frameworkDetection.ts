@@ -1,29 +1,110 @@
 import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { logError } from '../util';
 import {
   TestFrameworkName,
   testFrameworks,
   FrameworkResult,
   SearchOutcome,
 } from './frameworkDefinitions';
-import { testDetectionCache, vitestDetectionCache } from './cache';
+import { cacheManager } from '../cache/CacheManager';
 import {
   binaryExists,
   getConfigPath,
   resolveAndValidateCustomConfig,
 } from './configParsing';
 import { detectFrameworkByPatternMatch } from './patternMatching';
+import { logDebug, logError } from '../utils/Logger';
+
+export function isNodeTestFile(filePath: string): boolean {
+  const cached = cacheManager.getFileFramework(filePath);
+  if (cached !== undefined) {
+    return cached?.framework === 'node-test';
+  }
+
+  try {
+    if (!existsSync(filePath)) {
+      return false;
+    }
+
+    const content = readFileSync(filePath, 'utf-8');
+    const isNodeTest =
+      /from\s+['"]node:test['"]/.test(content) ||
+      /require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
+
+
+    return isNodeTest;
+  } catch (error) {
+    logError(`Error checking for node:test in ${filePath}`, error);
+    return false;
+  }
+}
+
+export function isBunTestFile(filePath: string): boolean {
+  return hasImport(filePath, 'bun:test');
+}
+
+export function isDenoTestFile(filePath: string): boolean {
+  const cached = cacheManager.getFileFramework(filePath);
+  if (cached !== undefined) {
+    return cached?.framework === 'deno';
+  }
+
+  try {
+    if (!existsSync(filePath)) return false;
+    const content = readFileSync(filePath, 'utf-8');
+    return (
+      /Deno\.test/.test(content) ||
+      /from\s+['"]jsr:@std\/expect['"]/.test(content) ||
+      /from\s+['"]@std\/assert['"]/.test(content) ||
+      /from\s+['"]jsr:@std\/assert['"]/.test(content) ||
+      /from\s+['"]https:\/\/deno\.land\//.test(content)
+    );
+  } catch (error) {
+    logError(`Error checking for Deno.test in ${filePath}`, error);
+    return false;
+  }
+}
+
+function hasImport(filePath: string, moduleName: string): boolean {
+  const cached = cacheManager.getFileFramework(filePath);
+  if (cached !== undefined) {
+    return cached?.framework === (moduleName === 'bun:test' ? 'bun' : 'node-test');
+  }
+
+  try {
+    if (!existsSync(filePath)) return false;
+
+    const content = readFileSync(filePath, 'utf-8');
+    const regex = new RegExp(`from\\s+['"]${moduleName}['"]|require\\s*\\(\\s*['"]${moduleName}['"]\\s*\\)`);
+    return regex.test(content);
+  } catch (error) {
+    logError(`Error checking for ${moduleName} in ${filePath}`, error);
+    return false;
+  }
+}
+
+export function clearNodeTestCache(): void {
+  cacheManager.invalidateAll();
+}
+
+export function invalidateNodeTestCache(filePath: string): void {
+  cacheManager.invalidate(filePath);
+}
 
 function isFrameworkUsedIn(
   directoryPath: string,
   frameworkName: TestFrameworkName,
-  cache: Map<string, boolean>,
 ): boolean {
-  if (cache.has(directoryPath)) {
-    return cache.get(directoryPath)!;
+  const cached = cacheManager.getFramework(directoryPath, frameworkName);
+
+  if (cached !== undefined) {
+    return cached;
   }
+
+  const setCache = (value: boolean) => {
+    cacheManager.setFramework(directoryPath, frameworkName, value);
+  };
 
   try {
     const framework = testFrameworks.find((f) => f.name === frameworkName);
@@ -32,12 +113,12 @@ function isFrameworkUsedIn(
     }
 
     if (binaryExists(directoryPath, framework.binaryName)) {
-      cache.set(directoryPath, true);
+      setCache(true);
       return true;
     }
 
     if (getConfigPath(directoryPath, frameworkName)) {
-      cache.set(directoryPath, true);
+      setCache(true);
       return true;
     }
 
@@ -52,7 +133,7 @@ function isFrameworkUsedIn(
           packageJson.peerDependencies?.[frameworkName] ||
           packageJson[frameworkName]
         ) {
-          cache.set(directoryPath, true);
+          setCache(true);
           return true;
         }
       } catch (error) {
@@ -60,7 +141,7 @@ function isFrameworkUsedIn(
       }
     }
 
-    cache.set(directoryPath, false);
+    setCache(false);
     return false;
   } catch (error) {
     logError(`Error checking for ${frameworkName}`, error);
@@ -69,17 +150,29 @@ function isFrameworkUsedIn(
 }
 
 export function isJestUsedIn(directoryPath: string): boolean {
-  return isFrameworkUsedIn(directoryPath, 'jest', testDetectionCache);
+  return isFrameworkUsedIn(directoryPath, 'jest');
 }
 
 export function isVitestUsedIn(directoryPath: string): boolean {
-  return isFrameworkUsedIn(directoryPath, 'vitest', vitestDetectionCache);
+  return isFrameworkUsedIn(directoryPath, 'vitest');
 }
 
 export function detectTestFramework(
   directoryPath: string,
   filePath?: string,
 ): TestFrameworkName | undefined {
+  if (filePath) {
+    if (isNodeTestFile(filePath)) {
+      return 'node-test';
+    }
+    if (isBunTestFile(filePath)) {
+      return 'bun';
+    }
+    if (isDenoTestFile(filePath)) {
+      return 'deno';
+    }
+  }
+
   const jestConfigPath = getConfigPath(directoryPath, 'jest');
   const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
 
@@ -214,9 +307,11 @@ const detectFrameworkByDependency = (
   const checks: Array<{ framework: TestFrameworkName; isUsed: () => boolean }> = targetFramework
     ? [{ framework: targetFramework, isUsed: () => (targetFramework === 'jest' ? isJestUsedIn : isVitestUsedIn)(rootPath) }]
     : [
-        { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
-        { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
-      ];
+      { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
+      { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
+      { framework: 'bun', isUsed: () => isBunUsedIn(rootPath) },
+      { framework: 'deno', isUsed: () => isDenoUsedIn(rootPath) },
+    ];
 
   const found = checks.find((check) => check.isUsed());
   return found ? { directory: rootPath, framework: found.framework } : undefined;
@@ -230,6 +325,22 @@ export function findTestFrameworkDirectory(
   if (!workspaceFolder) return undefined;
 
   const rootPath = workspaceFolder.uri.fsPath;
+
+  const isNodeTest = isNodeTestFile(filePath);
+  if (isNodeTest) {
+    logDebug(`Detected node:test for ${filePath}`);
+    return { directory: dirname(filePath), framework: 'node-test' };
+  }
+
+  const isBun = isBunTestFile(filePath);
+  if (isBun) {
+    return { directory: dirname(filePath), framework: 'bun' };
+  }
+
+  const isDeno = isDenoTestFile(filePath);
+  if (isDeno) {
+    return { directory: dirname(filePath), framework: 'deno' };
+  }
 
   const customResult = resolveCustomConfigs(filePath, rootPath, targetFramework);
   if (customResult) return customResult;
@@ -248,5 +359,23 @@ export function findJestDirectory(filePath: string): string | undefined {
 
 export function findVitestDirectory(filePath: string): string | undefined {
   const result = findTestFrameworkDirectory(filePath, 'vitest');
+  return result?.directory;
+}
+
+export function isBunUsedIn(directoryPath: string): boolean {
+  return isFrameworkUsedIn(directoryPath, 'bun');
+}
+
+export function isDenoUsedIn(directoryPath: string): boolean {
+  return isFrameworkUsedIn(directoryPath, 'deno');
+}
+
+export function findBunDirectory(filePath: string): string | undefined {
+  const result = findTestFrameworkDirectory(filePath, 'bun' as any);
+  return result?.directory;
+}
+
+export function findDenoDirectory(filePath: string): string | undefined {
+  const result = findTestFrameworkDirectory(filePath, 'deno' as any);
   return result?.directory;
 }

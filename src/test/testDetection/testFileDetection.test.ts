@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { clearTestDetectionCache, clearVitestDetectionCache } from '../../testDetection/cache';
+import { cacheManager } from '../../cache/CacheManager';
 import { getTestFrameworkForFile, hasConflictingTestFramework, isJestTestFile, isTestFile, isVitestTestFile } from '../../testDetection/testFileDetection';
 import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
 
@@ -13,8 +13,7 @@ const mockedFs = fs as jest.Mocked<typeof fs>;
 describe('testFileDetection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    clearTestDetectionCache();
-    clearVitestDetectionCache();
+    cacheManager.invalidateAll();
   });
 
   describe('isJestTestFile', () => {
@@ -892,7 +891,7 @@ describe('testFileDetection', () => {
 
         // Mock configuration to return custom patterns
         configMock.get.mockImplementation((key: string) => {
-          if (key === 'defaultTestPatterns') {
+          if (key === 'jestrunner.defaultTestPatterns') {
             return ['**/*.custom.js'];
           }
           return undefined;
@@ -1017,8 +1016,7 @@ describe('testFileDetection', () => {
   describe('findTestFrameworkDirectory with custom config paths (monorepo)', () => {
     beforeEach(() => {
       jest.clearAllMocks();
-      clearTestDetectionCache();
-      clearVitestDetectionCache();
+      cacheManager.invalidateAll();
       mockedFs.existsSync = jest.fn().mockReturnValue(false);
       mockedFs.readFileSync = jest.fn();
     });
@@ -1210,6 +1208,58 @@ export default defineConfig({
       mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
         if (fsPath === playwrightConfigPath) {
           return 'export default { testDir: "test" };';
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(true);
+    });
+
+    it('should detect Playwright testDir when config uses nx preset spread', () => {
+      const filePath = '/workspace/project/apps/shop-e2e/src/example.spec.ts';
+      const playwrightConfigPath = path.join(rootPath, 'apps/shop-e2e/playwright.config.ts');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === playwrightConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === playwrightConfigPath) {
+          return `
+import { defineConfig } from '@playwright/test';
+import { nxE2EPreset } from '@nx/playwright/preset';
+export default defineConfig({
+  ...nxE2EPreset(__filename, { testDir: './src' }),
+});
+`;
+        }
+        return '';
+      });
+
+      const result = hasConflictingTestFramework(filePath, 'jest');
+
+      expect(result).toBe(true);
+    });
+
+    it('should detect Cypress specPattern when config uses nx preset spread', () => {
+      const filePath = '/workspace/project/apps/shop-e2e/src/example.cy.ts';
+      const cypressConfigPath = path.join(rootPath, 'apps/shop-e2e/cypress.config.ts');
+
+      mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+        return fsPath === cypressConfigPath;
+      });
+
+      mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+        if (fsPath === cypressConfigPath) {
+          return `
+import { defineConfig } from 'cypress';
+import { nxE2EPreset } from '@nx/cypress/plugins/cypress-preset';
+export default defineConfig({
+  ...nxE2EPreset(__dirname, { specPattern: 'src/**/*.cy.ts' }),
+});
+`;
         }
         return '';
       });

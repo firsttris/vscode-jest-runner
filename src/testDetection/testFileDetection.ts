@@ -8,16 +8,12 @@ import {
   testFrameworks,
   allTestFrameworks,
 } from './frameworkDefinitions';
-import {
-  getConfigPath,
-  getTestMatchFromJestConfig,
-  getVitestConfig,
-  resolveAndValidateCustomConfig,
-  getPlaywrightTestDir,
-  getCypressSpecPattern,
-  getDefaultTestPatterns,
-} from './configParsing';
-import { logDebug } from '../util';
+import { getConfigPath, resolveAndValidateCustomConfig, getDefaultTestPatterns } from './configParsing';
+import { getTestMatchFromJestConfig } from './configParsers/jestParser';
+import { getVitestConfig } from './configParsers/vitestParser';
+import { getDenoConfig } from './configParsers/denoParser';
+import { getPlaywrightTestDir } from './configParsers/playwrightParser';
+import { getCypressSpecPattern } from './configParsers/cypressParser';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
   detectTestFramework,
@@ -26,6 +22,7 @@ import {
   findVitestDirectory,
   getParentDirectories,
 } from './frameworkDetection';
+import { logDebug } from '../utils/Logger';
 
 const createDefaultResult = (configDir: string): TestPatternResult => ({
   patterns: getDefaultTestPatterns(),
@@ -189,6 +186,21 @@ const findVitestConfigInDir = (dir: string): TestPatternResult => {
   };
 };
 
+const findDenoConfigInDir = (dir: string): TestPatternResult => {
+  const denoFramework = testFrameworks.find((f) => f.name === 'deno')!;
+  const configPaths = denoFramework.configFiles.map((f) => join(dir, f));
+
+  const found = findFirstValidConfig(configPaths, getDenoConfig);
+  if (!found) return createDefaultResult(dir);
+
+  return {
+    patterns: found.config.patterns.length > 0 ? found.config.patterns : getDefaultTestPatterns(),
+    configDir: dir,
+    isRegex: false,
+    excludePatterns: found.config.excludePatterns,
+  };
+};
+
 const detectPatternsInParentDirs = (
   filePath: string,
   rootPath: string
@@ -201,6 +213,7 @@ const detectPatternsInParentDirs = (
 
     if (framework === 'jest') return findJestConfigInDir(dir);
     if (framework === 'vitest') return findVitestConfigInDir(dir);
+    if (framework === 'deno') return findDenoConfigInDir(dir);
 
     return search(rest);
   };

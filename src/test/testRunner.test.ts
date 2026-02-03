@@ -33,6 +33,7 @@ describe('TestRunner', () => {
       getJestConfigPath: jest.fn().mockReturnValue(''),
       getVitestConfigPath: jest.fn().mockReturnValue(''),
       getTestFramework: jest.fn().mockReturnValue('jest'),
+      getTestCommand: jest.fn().mockReturnValue('node jest'),
       getEnvironmentForRun: jest.fn().mockReturnValue(undefined),
       buildJestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
         const args = [filePath];
@@ -52,7 +53,23 @@ describe('TestRunner', () => {
           return args;
         },
       ),
-      getDebugConfiguration: jest.fn(() => ({
+      buildTestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
+        const args = [filePath];
+        if (testName) {
+          args.push('-t', testName);
+        }
+        args.push(...options);
+        return args;
+      }),
+      buildNodeTestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
+        const args = ['--test'];
+        if (options.includes('--coverage')) {
+          args.push('--experimental-test-coverage');
+          args.push('--test-reporter', 'lcov');
+        }
+        return args;
+      }),
+      getDebugConfiguration: jest.fn((filePath?: string, testName?: string) => ({
         console: 'integratedTerminal',
         internalConsoleOptions: 'neverOpen',
         name: 'Debug Jest Tests',
@@ -60,7 +77,9 @@ describe('TestRunner', () => {
         type: 'node',
         runtimeExecutable: 'npx',
         cwd: '/workspace',
-        args: ['--no-install', 'jest', '--runInBand'],
+        args: testName
+          ? ['--no-install', 'jest', '--runInBand', filePath, '-t', testName]
+          : ['--no-install', 'jest', '--runInBand'],
       })),
       get runOptions() {
         return null;
@@ -242,6 +261,14 @@ describe('TestRunner', () => {
       jest
         .spyOn(vscode.window, 'activeTextEditor', 'get')
         .mockReturnValue(mockEditor as any);
+    });
+
+    it('should generate correct args for node-test with coverage', () => {
+      const args = mockConfig.buildNodeTestArgs('test.js', 'testName', false, ['--coverage']);
+      expect(args).toContain('--experimental-test-coverage');
+      expect(args).toContain('--test-reporter');
+      expect(args).toContain('lcov');
+      expect(args).not.toContain('--coverage');
     });
 
     it('should run the previous command', async () => {
