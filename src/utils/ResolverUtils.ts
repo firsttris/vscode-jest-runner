@@ -16,7 +16,7 @@ export function resolveBinaryPath(binaryName: string, cwd: string): string | und
                 const binPath = join(pkgDir, binEntry);
                 if (existsSync(binPath)) {
                     logDebug(`Resolved binary via package.json for ${binaryName}: ${binPath}`);
-                    return normalizePath(normalizeDriveLetter(binPath));
+                    return normalizePath(binPath);
                 }
             }
         } catch {

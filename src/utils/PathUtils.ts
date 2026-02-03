@@ -1,7 +1,6 @@
-import { basename, dirname, resolve } from 'node:path';
-import { statSync } from 'node:fs';
+import { basename, dirname } from 'node:path';
 import { matcher } from 'micromatch';
-import { logDebug, logWarning } from './Logger';
+import { logDebug } from './Logger';
 
 const IS_WINDOWS = process.platform.includes('win32');
 
@@ -10,7 +9,8 @@ export function isWindows(): boolean {
 }
 
 export function normalizePath(path: string): string {
-    return IS_WINDOWS ? path.replace(/\\/g, '/') : path;
+    const normalized = IS_WINDOWS ? path.replace(/\\/g, '/') : path;
+    return normalizeDriveLetter(normalized);
 }
 
 export function normalizeDriveLetter(path: string): string {
