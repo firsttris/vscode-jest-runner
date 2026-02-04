@@ -79,5 +79,25 @@ describe('parser', () => {
       expect(result).toBeDefined();
       expect(result.root).toBeDefined();
     });
+
+    it('should resolve Class.name in test name', () => {
+      const testCode = `
+        class Calculator {
+          add(a, b) { return a + b; }
+        }
+        
+        describe(Calculator.name, () => {
+          it(Calculator.name + ' method existence', () => {
+            expect(true).toBe(true);
+          });
+        });
+      `;
+      const result = parse('test.ts', testCode);
+      const describeBlock = result.root.children[0] as any;
+      expect(describeBlock.name).toBe('Calculator');
+
+      const testBlock = describeBlock.children[0] as any;
+      expect(testBlock.name).toBe('Calculator method existence');
+    });
   });
 });

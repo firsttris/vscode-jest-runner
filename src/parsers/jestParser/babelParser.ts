@@ -25,24 +25,61 @@ const isDescribe = (name?: string) => name === 'describe';
 
 const isTestBlock = (name?: string) => name === 'it' || name === 'fit' || name === 'test';
 
-const astToValue = (node: t.Node): any => {
+const astToValue = (node: t.Node, bindings: Record<string, any> = {}): any => {
   if (t.isStringLiteral(node)) return node.value;
   if (t.isNumericLiteral(node)) return node.value;
   if (t.isBooleanLiteral(node)) return node.value;
   if (t.isNullLiteral(node)) return null;
-  if (t.isIdentifier(node) && node.name === 'undefined') return undefined;
-  if (t.isArrayExpression(node)) return node.elements.map((e) => (e ? astToValue(e) : null));
+  if (t.isIdentifier(node)) {
+    if (node.name === 'undefined') return undefined;
+    if (Object.prototype.hasOwnProperty.call(bindings, node.name)) return bindings[node.name];
+  }
+  if (t.isArrayExpression(node)) return node.elements.map((e) => (e ? astToValue(e, bindings) : null));
   if (t.isObjectExpression(node)) {
     return node.properties.reduce((acc, prop) => {
       if (t.isObjectProperty(prop)) {
         const key = t.isIdentifier(prop.key) ? prop.key.name : t.isStringLiteral(prop.key) ? prop.key.value : null;
-        if (key) acc[key] = astToValue(prop.value as t.Node);
+        if (key) acc[key] = astToValue(prop.value as t.Node, bindings);
       }
       return acc;
     }, {} as any);
   }
   if (t.isTemplateLiteral(node)) {
-    if (node.quasis.length === 1) return node.quasis[0].value.raw;
+    let result = '';
+    for (let i = 0; i < node.quasis.length; i++) {
+      result += node.quasis[i].value.cooked || node.quasis[i].value.raw;
+      if (i < node.expressions.length) {
+        const exprVal = astToValue(node.expressions[i] as t.Node, bindings);
+        if (exprVal === undefined) return undefined;
+        result += String(exprVal);
+      }
+    }
+    return result;
+  }
+  if (t.isBinaryExpression(node) && node.operator === '+') {
+    const left = astToValue(node.left, bindings);
+    const right = astToValue(node.right, bindings);
+    if (typeof left === 'string' && typeof right === 'string') {
+      return left + right;
+    }
+  }
+  if (t.isMemberExpression(node)) {
+    const object = astToValue(node.object, bindings);
+    const property = node.property;
+
+    if (t.isIdentifier(property)) {
+      if (typeof object === 'object' && object !== null && property.name in object) {
+        return object[property.name];
+      }
+      if (typeof object === 'string' && property.name === 'name') {
+        return object;
+      }
+    }
+    if (t.isStringLiteral(property)) {
+      if (typeof object === 'object' && object !== null && property.value in object) {
+        return object[property.value];
+      }
+    }
   }
   return undefined;
 };
@@ -97,7 +134,13 @@ const isExpectCall = (node: t.Node): boolean => {
   return false;
 };
 
-const applyNameInfo = (block: NamedBlock, statement: t.Node, source: string, lastProperty?: string) => {
+const applyNameInfo = (
+  block: NamedBlock,
+  statement: t.Node,
+  source: string,
+  bindings: Record<string, any> = {},
+  lastProperty?: string,
+) => {
   if (!t.isExpressionStatement(statement) || !t.isCallExpression(statement.expression)) {
     throw new Error(
       `Expected an ExpressionStatement with CallExpression but got: ${JSON.stringify(statement)}`,
@@ -111,7 +154,10 @@ const applyNameInfo = (block: NamedBlock, statement: t.Node, source: string, las
     return;
   }
 
-  if (t.isStringLiteral(arg)) {
+  const resolvedName = astToValue(arg, bindings);
+  if (resolvedName !== undefined && typeof resolvedName === 'string') {
+    block.name = resolvedName;
+  } else if (t.isStringLiteral(arg)) {
     block.name = arg.value;
   } else if (arg.start != null && arg.end != null) {
     if (t.isTemplateLiteral(arg)) {
@@ -141,6 +187,7 @@ const registerNode = (
   babelNode: t.Node,
   source: string,
   parseResult: ParseResult,
+  bindings: Record<string, any>,
   lastProperty?: string,
 ) => {
   if (babelNode.loc) {
@@ -151,7 +198,7 @@ const registerNode = (
   parseResult.addNode(node);
 
   if (node instanceof NamedBlock) {
-    applyNameInfo(node, babelNode, source, lastProperty);
+    applyNameInfo(node, babelNode, source, bindings, lastProperty);
   }
 };
 
@@ -161,18 +208,20 @@ const addNode = (
   babelNode: t.Node,
   source: string,
   parseResult: ParseResult,
+  bindings: Record<string, any>,
   lastProperty?: string,
 ): ParsedNode => {
   const child = parent.addChild(type);
-  registerNode(child, babelNode, source, parseResult, lastProperty);
+  registerNode(child, babelNode, source, parseResult, bindings, lastProperty);
   return child;
 };
 
 export const parse = (file: string, data?: string, options?: ParserOptions): ParseResult => {
   const parseResult = new ParseResult(file);
   const { ast, source } = toAst(file, data, options);
+  const bindings: Record<string, any> = {};
 
-  const walk = (babelNode: t.Node | undefined, parentParsed: ParsedNode) => {
+  const walk = (babelNode: t.Node | undefined, parentParsed: ParsedNode, parentBindings: Record<string, any>) => {
     if (!babelNode) {
       return;
     }
@@ -182,13 +231,48 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
       return;
     }
 
+    // Create a new scope inheriting from parent
+    const scopeBindings = { ...parentBindings };
+
     body.forEach((element) => {
+      // Collect bindings
+      if (t.isClassDeclaration(element) && element.id) {
+        scopeBindings[element.id.name] = element.id.name;
+      } else if (t.isVariableDeclaration(element)) {
+        element.declarations.forEach((decl) => {
+          if (t.isIdentifier(decl.id) && decl.init) {
+            const val = astToValue(decl.init, scopeBindings);
+            if (val !== undefined) {
+              scopeBindings[decl.id.name] = val;
+            }
+          } else if (t.isObjectPattern(decl.id) && decl.init) {
+            const initVal = astToValue(decl.init, scopeBindings);
+            if (initVal && typeof initVal === 'object') {
+              decl.id.properties.forEach((prop) => {
+                if (t.isObjectProperty(prop) && t.isIdentifier(prop.key) && t.isIdentifier(prop.value)) {
+                  // const { key: value } = initVal
+                  // prop.key.name is lookup key in initVal
+                  // prop.value.name is variable name
+                  // If shorthand: key == value
+
+                  const key = prop.key.name;
+                  const varName = prop.value.name;
+                  if (key in initVal) {
+                    scopeBindings[varName] = initVal[key];
+                  }
+                }
+              });
+            }
+          }
+        });
+      }
+
       let child: ParsedNode | undefined;
 
       const [name, lastProperty] = getNameForNode(element);
 
       if (isDescribe(name)) {
-        child = addNode(ParsedNodeType.describe, parentParsed, element, source, parseResult, lastProperty);
+        child = addNode(ParsedNodeType.describe, parentParsed, element, source, parseResult, scopeBindings, lastProperty);
       } else if (isTestBlock(name) || (name === 'Deno' && lastProperty === 'test')) {
         if (lastProperty === 'each') {
           const callExpr = getCallExpression(element);
@@ -196,7 +280,7 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
           if (callExpr && t.isCallExpression(callExpr.callee)) {
             const eachArgs = callExpr.callee.arguments;
             if (eachArgs.length > 0 && t.isArrayExpression(eachArgs[0])) {
-              const table = astToValue(eachArgs[0]);
+              const table = astToValue(eachArgs[0], scopeBindings);
               if (Array.isArray(table)) {
                 const titleArg = callExpr.arguments[0];
                 let titleTemplate = '';
@@ -210,11 +294,19 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
                   expanded = true;
                   table.forEach((row, i) => {
                     const expandedTitle = formatTitle(titleTemplate, row, i);
-                    const newChild = addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, lastProperty);
+                    const newChild = addNode(
+                      ParsedNodeType.it,
+                      parentParsed,
+                      element,
+                      source,
+                      parseResult,
+                      scopeBindings,
+                      lastProperty,
+                    );
                     if (newChild instanceof NamedBlock) {
                       newChild.name = expandedTitle;
                       newChild.nameRange = undefined;
-                      newChild.eachTemplate = titleTemplate;  // Store original template
+                      newChild.eachTemplate = titleTemplate; // Store original template
                     }
                     if (i === 0) child = newChild;
                   });
@@ -224,19 +316,19 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
           }
 
           if (!expanded) {
-            child = addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, lastProperty);
+            child = addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, scopeBindings, lastProperty);
           }
         } else {
-          child = addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, lastProperty);
+          child = addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, scopeBindings, lastProperty);
         }
       } else if (isExpectCall(element)) {
-        child = addNode(ParsedNodeType.expect, parentParsed, element, source, parseResult);
+        child = addNode(ParsedNodeType.expect, parentParsed, element, source, parseResult, scopeBindings);
       } else if (t.isVariableDeclaration(element)) {
         element.declarations
           .filter((declaration) => declaration.init && isFunctionExpression(declaration.init))
           .forEach((declaration) => {
             const target = shallowAttr<t.Node>(declaration, 'init', 'body');
-            walk(target, parentParsed);
+            walk(target, parentParsed, scopeBindings);
           });
       } else if (
         t.isExpressionStatement(element) &&
@@ -244,7 +336,7 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
         isFunctionExpression(element.expression.right)
       ) {
         const bodyNode = shallowAttr<t.Node>(element.expression, 'right', 'body');
-        walk(bodyNode, parentParsed);
+        walk(bodyNode, parentParsed, scopeBindings);
       } else if (t.isReturnStatement(element)) {
         const args = shallowAttr<t.Node[]>(element.argument, 'arguments');
         if (Array.isArray(args)) {
@@ -252,7 +344,7 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
             .filter((arg) => isFunctionExpression(arg))
             .forEach((argument) => {
               const target = shallowAttr<t.Node>(argument, 'body');
-              walk(target, parentParsed);
+              walk(target, parentParsed, scopeBindings);
             });
         }
       }
@@ -262,13 +354,13 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
         expression.arguments.forEach((argument) => {
           if (argument && typeof argument === 'object' && 'type' in (argument as t.Node)) {
             const bodyNode = shallowAttr<t.Node>(argument as t.Node, 'body');
-            walk(bodyNode, child ?? parentParsed);
+            walk(bodyNode, child ?? parentParsed, scopeBindings);
           }
         });
       }
     });
   };
 
-  walk(ast.program, parseResult.root);
+  walk(ast.program, parseResult.root, bindings);
   return parseResult;
 };
