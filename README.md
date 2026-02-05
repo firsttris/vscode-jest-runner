@@ -30,7 +30,7 @@ A **lightweight** VS Code extension for running and debugging Jest, Vitest, Node
 
 > ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
 
-> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It does **not** execute the file as JavaScript/TypeScript code. It cannot resolve variables or function calls. If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files. More information in [Supported Framework Config](#️-configuration).
+> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It supports static variable resolution and wrapper functions (like `defineConfig`), but it does **not** execute the file. Complex runtime logic or external imports are not supported. If your configuration is too complex, you can set **`jestrunner.disableFrameworkConfig: true`** to rely on default test patterns.
 
 > ⚠️ **Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to create a GitHub issue.
 
@@ -127,8 +127,8 @@ export default defineConfig({
 - No extra setup required!
 
 **For Bun:**
-- ⚠️ **Required:** [Bun for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=Oven.bun-vscode) extension.
-- Ensure the extension is installed and enabled for debugging to work correctly.
+- Coverage works out of the box! (uses `bun test --coverage`)
+- No extra setup required.
 
 
 **Coverage Directory Detection**
@@ -184,7 +184,7 @@ Customize the test runner for your project:
 | `jestrunner.nodeTestDebugOptions`           | Add or override VS Code debug configurations for local Node.js tests (e.g. `{ "args": ["--no-warnings"] }`). Only applies when debugging `node:test` tests.                                                                                                                                                                                                                                                                                                                                                                           |
 | **Bun Configuration**                       |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `jestrunner.bunRunOptions`                  | CLI options to add to Bun test command (e.g. `["--silent"]`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `jestrunner.bunDebugOptions`                | Add or override VS Code debug configurations for Bun (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging bun tests.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `jestrunner.bunDebugOptions`                | Add or override VS Code debug configurations for Bun (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging bun tests.<br><br>⚠️ **Note:** Debugging requires the [Bun for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=Oven.bun-vscode) extension. |
 | **Deno Configuration**                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `jestrunner.denoRunOptions`                 | CLI options to add to Deno test command (e.g. `["--allow-net"]`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `jestrunner.denoDebugOptions`               | Add or override VS Code debug configurations for Deno. Only applies when debugging deno tests.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
@@ -216,8 +216,8 @@ The extension **automatically reads configuration** from your framework config f
 > ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It does **not** execute the file as JavaScript/TypeScript code.
 > 
 > This means:
-> - It **cannot** resolve external variables, imports, `require`, or function calls.
-> - Configuration options (roots, testMatch, etc.) must be **static literals** in the file.
+> - It **cannot** resolve external imports or complex runtime logic.
+> - **Variables** and **Function Calls** (like `defineConfig`) are supported via static analysis as long as they are defined within the file.
 > - Only a **single configuration file** is parsed. If you use config inheritance, ensure the file the extension reads contains the necessary patterns.
 >
 > If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files.

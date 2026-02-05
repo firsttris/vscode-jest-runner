@@ -2,9 +2,6 @@ import { dirname, isAbsolute, join } from 'node:path';
 import { TestPatterns, TestFrameworkName } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
-  getObjectFromProperty,
-  getStringArrayFromProperty,
-  getStringFromProperty,
   parseConfigObject,
   readConfigFile,
 } from './parseUtils';
@@ -54,22 +51,22 @@ const parseJsonConfig = (content: string, configPath: string): TestPatterns | un
 };
 
 const parseJsConfig = (content: string, configPath: string): TestPatterns | undefined => {
-  const configObject = parseConfigObject(content);
-  if (!configObject) return undefined;
+  const config = parseConfigObject(content);
+  if (!config) return undefined;
 
-  const rootDirValue = getStringFromProperty(configObject, 'rootDir');
+  const rootDirValue = config.rootDir;
   const rootDir = rootDirValue === '__dirname' ? dirname(configPath) : rootDirValue;
-  const roots = getStringArrayFromProperty(configObject, 'roots');
-  const ignorePatterns = getStringArrayFromProperty(configObject, 'testPathIgnorePatterns');
+  const roots = extractArrayProperty(config, 'roots');
+  const ignorePatterns = extractArrayProperty(config, 'testPathIgnorePatterns');
 
-  const testMatch = getStringArrayFromProperty(configObject, 'testMatch');
+  const testMatch = extractArrayProperty(config, 'testMatch');
   if (testMatch) {
     return { patterns: testMatch, isRegex: false, rootDir, roots, ignorePatterns };
   }
 
-  const testRegex = getStringArrayFromProperty(configObject, 'testRegex');
-  if (testRegex) {
-    return { patterns: testRegex, isRegex: true, rootDir, roots, ignorePatterns };
+  const regexPatterns = extractTestRegex(config);
+  if (regexPatterns) {
+    return { patterns: regexPatterns, isRegex: true, rootDir, roots, ignorePatterns };
   }
 
   if (roots || ignorePatterns) {
@@ -139,19 +136,18 @@ export function parseCoverageDirectory(
       return resolveCoverageDirectory(config.coverageDirectory, config.rootDir, configDir, configPath);
     }
 
-    const configObject = parseConfigObject(content);
-    if (!configObject) return undefined;
+    const config = parseConfigObject(content);
+    if (!config) return undefined;
 
     if (framework === 'vitest') {
-      const root = getStringFromProperty(configObject, 'root');
-      const testObject = getObjectFromProperty(configObject, 'test');
-      const coverageObject = testObject ? getObjectFromProperty(testObject, 'coverage') : undefined;
-      const reportsDir = coverageObject ? getStringFromProperty(coverageObject, 'reportsDirectory') : undefined;
-      return resolveCoverageDirectory(reportsDir, root, configDir, configPath);
+      const root = config.root;
+      const testConfig = config.test ?? {};
+      const coverageConfig = testConfig.coverage ?? {};
+      return resolveCoverageDirectory(coverageConfig.reportsDirectory, root, configDir, configPath);
     }
 
-    const coverageDir = getStringFromProperty(configObject, 'coverageDirectory');
-    const rootDir = getStringFromProperty(configObject, 'rootDir');
+    const coverageDir = config.coverageDirectory;
+    const rootDir = config.rootDir;
 
     return resolveCoverageDirectory(coverageDir, rootDir, configDir, configPath);
   } catch (error) {

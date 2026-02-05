@@ -2,10 +2,6 @@ import { dirname } from 'node:path';
 import { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
-  getObjectFromProperty,
-  getStringArrayFromProperty,
-  getStringFromProperty,
-  hasProperty,
   parseConfigObject,
   readConfigFile,
 } from './parseUtils';
@@ -44,19 +40,19 @@ const parseJsonConfig = (content: string, configPath: string): TestPatterns | un
 };
 
 const parseJsConfig = (content: string, configPath: string): TestPatterns | undefined => {
-  const configObject = parseConfigObject(content);
-  if (!configObject) return undefined;
+  const config = parseConfigObject(content);
+  if (!config) return undefined;
 
   const rootDir = normalizeRootDir(
-    getStringFromProperty(configObject, 'root'),
+    typeof config.root === 'string' ? config.root : undefined,
     configPath,
   );
-  const testObject = getObjectFromProperty(configObject, 'test');
+  const testObject = config.test;
   if (!testObject) return undefined;
 
-  const patterns = getStringArrayFromProperty(testObject, 'include');
-  const excludePatterns = getStringArrayFromProperty(testObject, 'exclude');
-  const dir = getStringFromProperty(testObject, 'dir');
+  const patterns = Array.isArray(testObject.include) ? testObject.include : undefined;
+  const excludePatterns = Array.isArray(testObject.exclude) ? testObject.exclude : undefined;
+  const dir = typeof testObject.dir === 'string' ? testObject.dir : undefined;
 
   if (!patterns && !excludePatterns && !dir && !rootDir) return undefined;
 
@@ -81,12 +77,12 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
       return !!parsed;
     }
 
-    const configObject = parseConfigObject(content);
-    if (!configObject) {
+    const config = parseConfigObject(content);
+    if (!config) {
       // Fallback for malformed configs that still contain a test block assignment
       return content.includes('test =');
     }
-    return hasProperty(configObject, 'test');
+    return !!config.test;
   } catch (error) {
     logError(`Error reading vite config file: ${configPath}`, error);
     return false;

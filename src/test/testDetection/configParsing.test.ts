@@ -599,7 +599,7 @@ module.exports = {
         ignorePatterns: ['/fixtures/'],
       });
     });
-    it('should NOT extract roots from subsequent arrays if roots is a variable', () => {
+    it('should extract roots if roots is a variable', () => {
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
         const srcRoots = ['src'];
         export default {
@@ -610,7 +610,20 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.ts');
 
-      expect(result?.roots).toBeUndefined();
+      expect(result?.roots).toEqual(['src']);
+    });
+
+    it('should resolve testMatch from variable', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+        const commonMatch = ['**/*.test.ts'];
+        module.exports = {
+          testMatch: commonMatch
+        };
+      `);
+
+      const result = getTestMatchFromJestConfig('/test/jest.config.js');
+
+      expect(result).toEqual({ patterns: ['**/*.test.ts'], isRegex: false });
     });
   });
 

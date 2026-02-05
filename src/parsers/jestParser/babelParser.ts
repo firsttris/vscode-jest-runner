@@ -4,6 +4,7 @@ import { parse as babelParse, type ParserOptions } from '@babel/parser';
 import * as t from '@babel/types';
 import { getNameForNode, getCallExpression, parseOptions, shallowAttr, type JESParserOptions } from './helper';
 import { NamedBlock, ParseResult, ParsedNode, ParsedNodeType, ParsedRange } from './parserNodes';
+import { astToValue } from '../../utils/AstUtils';
 
 const isFunctionExpression = (
   node: t.Node,
@@ -25,64 +26,7 @@ const isDescribe = (name?: string) => name === 'describe';
 
 const isTestBlock = (name?: string) => name === 'it' || name === 'fit' || name === 'test';
 
-const astToValue = (node: t.Node, bindings: Record<string, any> = {}): any => {
-  if (t.isStringLiteral(node)) return node.value;
-  if (t.isNumericLiteral(node)) return node.value;
-  if (t.isBooleanLiteral(node)) return node.value;
-  if (t.isNullLiteral(node)) return null;
-  if (t.isIdentifier(node)) {
-    if (node.name === 'undefined') return undefined;
-    if (Object.prototype.hasOwnProperty.call(bindings, node.name)) return bindings[node.name];
-  }
-  if (t.isArrayExpression(node)) return node.elements.map((e) => (e ? astToValue(e, bindings) : null));
-  if (t.isObjectExpression(node)) {
-    return node.properties.reduce((acc, prop) => {
-      if (t.isObjectProperty(prop)) {
-        const key = t.isIdentifier(prop.key) ? prop.key.name : t.isStringLiteral(prop.key) ? prop.key.value : null;
-        if (key) acc[key] = astToValue(prop.value as t.Node, bindings);
-      }
-      return acc;
-    }, {} as any);
-  }
-  if (t.isTemplateLiteral(node)) {
-    let result = '';
-    for (let i = 0; i < node.quasis.length; i++) {
-      result += node.quasis[i].value.cooked || node.quasis[i].value.raw;
-      if (i < node.expressions.length) {
-        const exprVal = astToValue(node.expressions[i] as t.Node, bindings);
-        if (exprVal === undefined) return undefined;
-        result += String(exprVal);
-      }
-    }
-    return result;
-  }
-  if (t.isBinaryExpression(node) && node.operator === '+') {
-    const left = astToValue(node.left, bindings);
-    const right = astToValue(node.right, bindings);
-    if (typeof left === 'string' && typeof right === 'string') {
-      return left + right;
-    }
-  }
-  if (t.isMemberExpression(node)) {
-    const object = astToValue(node.object, bindings);
-    const property = node.property;
 
-    if (t.isIdentifier(property)) {
-      if (typeof object === 'object' && object !== null && property.name in object) {
-        return object[property.name];
-      }
-      if (typeof object === 'string' && property.name === 'name') {
-        return object;
-      }
-    }
-    if (t.isStringLiteral(property)) {
-      if (typeof object === 'object' && object !== null && property.value in object) {
-        return object[property.value];
-      }
-    }
-  }
-  return undefined;
-};
 
 const formatTitle = (title: string, args: any, index: number): string => {
   let formatted = title;

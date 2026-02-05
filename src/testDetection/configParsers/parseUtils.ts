@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { parse, type ParserPlugin, type ParserPluginWithOptions } from '@babel/parser';
 import * as t from '@babel/types';
+import { astToValue } from '../../utils/AstUtils';
 
 export const readConfigFile = (configPath: string): string => readFileSync(configPath, 'utf8');
 
@@ -35,7 +36,7 @@ const unwrapExpression = (node: t.Node | null | undefined): t.Node | undefined =
   return node;
 };
 
-const getReturnedObject = (fn: t.ArrowFunctionExpression | t.FunctionExpression): t.ObjectExpression | undefined => {
+const getReturnedObject = (fn: t.ArrowFunctionExpression | t.FunctionExpression): t.Node | undefined => {
   if (t.isObjectExpression(fn.body)) {
     return fn.body;
   }
@@ -44,7 +45,7 @@ const getReturnedObject = (fn: t.ArrowFunctionExpression | t.FunctionExpression)
     for (const statement of fn.body.body) {
       if (t.isReturnStatement(statement)) {
         const argument = unwrapExpression(statement.argument);
-        if (argument && t.isObjectExpression(argument)) {
+        if (argument) {
           return argument;
         }
       }
@@ -54,10 +55,37 @@ const getReturnedObject = (fn: t.ArrowFunctionExpression | t.FunctionExpression)
   return undefined;
 };
 
-const resolveObjectExpression = (
+const collectBindings = (ast: t.File): Record<string, any> => {
+  const bindings: Record<string, any> = {
+    __dirname: '__dirname',
+    __filename: '__filename',
+  };
+
+  for (const statement of ast.program.body) {
+    if (t.isVariableDeclaration(statement)) {
+      for (const declarator of statement.declarations) {
+        if (t.isIdentifier(declarator.id) && declarator.init) {
+          bindings[declarator.id.name] = astToValue(declarator.init, bindings);
+        }
+      }
+    }
+
+    if (t.isExportNamedDeclaration(statement) && t.isVariableDeclaration(statement.declaration)) {
+      for (const declarator of statement.declaration.declarations) {
+        if (t.isIdentifier(declarator.id) && declarator.init) {
+          bindings[declarator.id.name] = astToValue(declarator.init, bindings);
+        }
+      }
+    }
+  }
+
+  return bindings;
+};
+
+const resolveConfigNode = (
   node: t.Node | undefined,
-  objectDeclarations: Map<string, t.ObjectExpression>,
-): t.ObjectExpression | undefined => {
+  bindings: Record<string, any>,
+): t.Node | undefined => {
   if (!node) return undefined;
 
   const unwrapped = unwrapExpression(node);
@@ -67,14 +95,14 @@ const resolveObjectExpression = (
   }
 
   if (t.isIdentifier(unwrapped)) {
-    return objectDeclarations.get(unwrapped.name);
+    return bindings[unwrapped.name] !== undefined ? unwrapped : undefined;
   }
 
   if (t.isCallExpression(unwrapped)) {
     for (const arg of unwrapped.arguments) {
       if (t.isSpreadElement(arg)) continue;
 
-      const resolved = resolveObjectExpression(arg as t.Node, objectDeclarations);
+      const resolved = resolveConfigNode(arg as t.Node, bindings);
       if (resolved) return resolved;
 
       if (t.isArrowFunctionExpression(arg) || t.isFunctionExpression(arg)) {
@@ -91,31 +119,7 @@ const resolveObjectExpression = (
   return undefined;
 };
 
-const collectObjectDeclarations = (ast: t.File): Map<string, t.ObjectExpression> => {
-  const declarations = new Map<string, t.ObjectExpression>();
-
-  for (const statement of ast.program.body) {
-    if (t.isVariableDeclaration(statement)) {
-      for (const declarator of statement.declarations) {
-        if (t.isIdentifier(declarator.id) && declarator.init && t.isObjectExpression(declarator.init)) {
-          declarations.set(declarator.id.name, declarator.init);
-        }
-      }
-    }
-
-    if (t.isExportNamedDeclaration(statement) && t.isVariableDeclaration(statement.declaration)) {
-      for (const declarator of statement.declaration.declarations) {
-        if (t.isIdentifier(declarator.id) && declarator.init && t.isObjectExpression(declarator.init)) {
-          declarations.set(declarator.id.name, declarator.init);
-        }
-      }
-    }
-  }
-
-  return declarations;
-};
-
-export const parseConfigObject = (content: string): t.ObjectExpression | undefined => {
+export const parseConfigObject = (content: string): any | undefined => {
   let ast: t.File;
   try {
     ast = parse(content, {
@@ -126,12 +130,14 @@ export const parseConfigObject = (content: string): t.ObjectExpression | undefin
     return undefined;
   }
 
-  const objectDeclarations = collectObjectDeclarations(ast);
+  const bindings = collectBindings(ast);
 
   for (const statement of ast.program.body) {
     if (t.isExportDefaultDeclaration(statement)) {
-      const resolved = resolveObjectExpression(statement.declaration as t.Node, objectDeclarations);
-      if (resolved) return resolved;
+      const resolvedNode = resolveConfigNode(statement.declaration as t.Node, bindings);
+      if (resolvedNode) {
+        return astToValue(resolvedNode, bindings);
+      }
     }
 
     if (t.isExpressionStatement(statement) && t.isAssignmentExpression(statement.expression)) {
@@ -144,8 +150,10 @@ export const parseConfigObject = (content: string): t.ObjectExpression | undefin
             ((t.isIdentifier(left.property) && left.property.name === 'default') ||
               (t.isStringLiteral(left.property) && left.property.value === 'default'))))
       ) {
-        const resolved = resolveObjectExpression(right as t.Node, objectDeclarations);
-        if (resolved) return resolved;
+        const resolvedNode = resolveConfigNode(right as t.Node, bindings);
+        if (resolvedNode) {
+          return astToValue(resolvedNode, bindings);
+        }
       }
     }
   }
@@ -153,81 +161,6 @@ export const parseConfigObject = (content: string): t.ObjectExpression | undefin
   return undefined;
 };
 
-const isStringLike = (node: t.Node | null | undefined): node is t.StringLiteral | t.TemplateLiteral | t.Identifier => {
-  if (!node) return false;
-  return t.isStringLiteral(node) || t.isTemplateLiteral(node) || t.isIdentifier(node);
-};
+// Deprecated helpers - can be removed eventually but kept for now if I missed some update. 
+// Actually I will remove them to force me to update all consumers.
 
-export const stringFromNode = (node: t.Node | null | undefined): string | undefined => {
-  if (!node) return undefined;
-  const unwrapped = unwrapExpression(node);
-
-  if (t.isStringLiteral(unwrapped)) return unwrapped.value;
-
-  if (t.isTemplateLiteral(unwrapped) && unwrapped.expressions.length === 0) {
-    return unwrapped.quasis.map((q) => q.value.cooked ?? '').join('');
-  }
-
-  if (t.isIdentifier(unwrapped) && unwrapped.name === '__dirname') {
-    return '__dirname';
-  }
-
-  return undefined;
-};
-
-export const stringArrayFromNode = (node: t.Node | null | undefined): string[] | undefined => {
-  if (!node) return undefined;
-  const unwrapped = unwrapExpression(node);
-
-  if (t.isStringLiteral(unwrapped) || t.isTemplateLiteral(unwrapped) || t.isIdentifier(unwrapped)) {
-    const value = stringFromNode(unwrapped);
-    return value ? [value] : undefined;
-  }
-
-  if (t.isArrayExpression(unwrapped)) {
-    const values: string[] = [];
-    for (const element of unwrapped.elements) {
-      if (!element || t.isSpreadElement(element)) return undefined;
-      if (!isStringLike(element)) return undefined;
-      const value = stringFromNode(element);
-      if (!value) return undefined;
-      values.push(value);
-    }
-    return values.length > 0 ? values : undefined;
-  }
-
-  return undefined;
-};
-
-const findProperty = (object: t.ObjectExpression, key: string): t.Node | undefined => {
-  for (const prop of object.properties) {
-    if (!t.isObjectProperty(prop) || prop.computed) continue;
-
-    if (
-      (t.isIdentifier(prop.key) && prop.key.name === key) ||
-      (t.isStringLiteral(prop.key) && prop.key.value === key)
-    ) {
-      return prop.value as t.Node;
-    }
-  }
-
-  return undefined;
-};
-
-export const getStringFromProperty = (object: t.ObjectExpression, key: string): string | undefined => {
-  const value = findProperty(object, key);
-  return stringFromNode(value);
-};
-
-export const getStringArrayFromProperty = (object: t.ObjectExpression, key: string): string[] | undefined => {
-  const value = findProperty(object, key);
-  return stringArrayFromNode(value);
-};
-
-export const getObjectFromProperty = (object: t.ObjectExpression, key: string): t.ObjectExpression | undefined => {
-  const value = findProperty(object, key);
-  const unwrapped = unwrapExpression(value);
-  return t.isObjectExpression(unwrapped) ? unwrapped : undefined;
-};
-
-export const hasProperty = (object: t.ObjectExpression, key: string): boolean => findProperty(object, key) !== undefined;

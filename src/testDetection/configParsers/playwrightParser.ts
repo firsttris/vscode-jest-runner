@@ -1,45 +1,6 @@
-import * as t from '@babel/types';
+
 import { logError } from '../../utils/Logger';
-import { getStringFromProperty, parseConfigObject, readConfigFile } from './parseUtils';
-
-const extractTestDir = (object: t.ObjectExpression): string | undefined => {
-  const direct = getStringFromProperty(object, 'testDir');
-  if (direct) {
-    return direct;
-  }
-
-  for (const prop of object.properties) {
-    if (!t.isSpreadElement(prop)) {
-      continue;
-    }
-
-    const argument = prop.argument;
-
-    if (t.isObjectExpression(argument)) {
-      const fromSpread = extractTestDir(argument);
-      if (fromSpread) {
-        return fromSpread;
-      }
-    }
-
-    if (t.isCallExpression(argument)) {
-      for (const arg of argument.arguments) {
-        if (t.isSpreadElement(arg)) {
-          continue;
-        }
-
-        if (t.isObjectExpression(arg)) {
-          const fromCallArgument = extractTestDir(arg);
-          if (fromCallArgument) {
-            return fromCallArgument;
-          }
-        }
-      }
-    }
-  }
-
-  return undefined;
-};
+import { parseConfigObject, readConfigFile } from './parseUtils';
 
 export function getPlaywrightTestDir(configPath: string): string | undefined {
   try {
@@ -50,10 +11,10 @@ export function getPlaywrightTestDir(configPath: string): string | undefined {
       return typeof parsed.testDir === 'string' ? parsed.testDir : undefined;
     }
 
-    const configObject = parseConfigObject(content);
-    if (!configObject) return undefined;
+    const config = parseConfigObject(content);
+    if (!config) return undefined;
 
-    return extractTestDir(configObject);
+    return typeof config.testDir === 'string' ? config.testDir : undefined;
   } catch (error) {
     logError(`Error reading Playwright config file: ${configPath}`, error);
     return undefined;
