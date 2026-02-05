@@ -6,6 +6,7 @@ import { normalizePath, resolveConfigPathOrMapping } from './utils/PathUtils';
 import { resolveConfigPath } from './utils/ResolverUtils';
 import { logDebug } from './utils/Logger';
 import { cacheManager } from './cache/CacheManager';
+import { packageJsonHasJestConfig } from './testDetection/configParsing';
 
 export interface ConfigResolutionContext {
     currentWorkspaceFolderPath: string;
@@ -96,7 +97,13 @@ export class ConfigResolver {
         const foundPath = resolveConfigPath(
             [...configFiles],
             startPath,
-            currentWorkspaceFolderPath
+            currentWorkspaceFolderPath,
+            (filePath: string) => {
+                if (filePath.endsWith('package.json')) {
+                    return packageJsonHasJestConfig(filePath);
+                }
+                return true;
+            }
         );
 
         if (foundPath) {

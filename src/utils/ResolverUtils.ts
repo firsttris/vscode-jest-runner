@@ -30,7 +30,8 @@ export function resolveBinaryPath(binaryName: string, cwd: string): string | und
 export function resolveConfigPath(
     configNames: string[],
     cwd: string,
-    stopPath?: string
+    stopPath?: string,
+    validator?: (path: string) => boolean
 ): string | undefined {
     let currentDir = normalizePath(cwd);
     const stopDir = stopPath ? normalizePath(stopPath) : undefined;
@@ -42,6 +43,9 @@ export function resolveConfigPath(
         for (const configName of configNames) {
             const configPath = join(currentDir, configName);
             if (existsSync(configPath)) {
+                if (validator && !validator(configPath)) {
+                    continue;
+                }
                 logDebug(`Found config ${configName} at: ${configPath}`);
                 return normalizePath(configPath);
             }
