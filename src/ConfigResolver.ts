@@ -29,7 +29,7 @@ export class ConfigResolver {
             targetPath,
         );
 
-        if (!configPath || context.useNearestConfig) {
+        if (context.useNearestConfig) {
             const foundPath = this.findConfigPath(targetPath, context, configPath, framework);
             if (foundPath) {
                 logDebug(`Found config path using findConfigPath: ${foundPath}`);

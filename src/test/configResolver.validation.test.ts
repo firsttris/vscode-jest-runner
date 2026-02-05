@@ -38,6 +38,7 @@ describe('Issue #459: package.json without "jest" key', () => {
             new WorkspaceConfiguration({
                 'jestrunner.projectPath': undefined,
                 'jestrunner.configPath': undefined,
+                'jestrunner.useNearestConfig': true,
             })
         );
 

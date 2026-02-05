@@ -584,6 +584,7 @@ describe('TestRunnerConfig', () => {
                 new WorkspaceConfiguration({
                   'jestrunner.projectPath': projectPath,
                   'jestrunner.configPath': configPath,
+                  'jestrunner.useNearestConfig': true,
                 }),
               );
               jest
@@ -728,6 +729,7 @@ describe('TestRunnerConfig', () => {
               new WorkspaceConfiguration({
                 'jestrunner.projectPath': projectPath,
                 'jestrunner.configPath': undefined,
+                'jestrunner.useNearestConfig': true,
               }),
             );
 
@@ -757,6 +759,7 @@ describe('TestRunnerConfig', () => {
         jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
           new WorkspaceConfiguration({
             'jestrunner.configPath': customConfigPath,
+            'jestrunner.useNearestConfig': true,
           }),
         );
 
@@ -791,6 +794,7 @@ describe('TestRunnerConfig', () => {
         jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
           new WorkspaceConfiguration({
             'jestrunner.configPath': customConfigPath,
+            'jestrunner.useNearestConfig': true,
           }),
         );
 
