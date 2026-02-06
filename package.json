@@ -11,11 +11,27 @@
   },
   "license": "MIT",
   "icon": "public/icon.png",
+  "galleryBanner": {
+    "theme": "dark",
+    "color": "#99425B"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },
   "categories": [
-    "Other"
+    "Testing"
+  ],
+  "keywords": [
+    "jest",
+    "vitest",
+    "test",
+    "runner",
+    "debug",
+    "bun",
+    "deno",
+    "node",
+    "typescript",
+    "react"
   ],
   "activationEvents": [
     "onStartupFinished"
