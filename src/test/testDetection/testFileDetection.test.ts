@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { cacheManager } from '../../cache/CacheManager';
 import { getTestFrameworkForFile, hasConflictingTestFramework, isJestTestFile, isTestFile, isVitestTestFile } from '../../testDetection/testFileDetection';
 import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
+import { normalizePath } from '../../utils/PathUtils';
 
 jest.mock('fs');
 jest.mock('vscode');
@@ -405,11 +406,11 @@ describe('testFileDetection', () => {
       }));
 
       mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
-        return fsPath === configPath;
+        return normalizePath(fsPath.toString()) === normalizePath(configPath);
       });
 
       mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
-        if (fsPath.toString() === configPath) {
+        if (normalizePath(fsPath.toString()) === normalizePath(configPath)) {
           return `
             export default defineConfig({
               test: {

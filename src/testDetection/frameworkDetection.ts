@@ -15,6 +15,7 @@ import {
 } from './configParsing';
 import { detectFrameworkByPatternMatch } from './patternMatching';
 import { logDebug, logError } from '../utils/Logger';
+import { normalizePath } from '../utils/PathUtils';
 
 export function isNodeTestFile(filePath: string): boolean {
   const cached = cacheManager.getFileFramework(filePath);
@@ -228,7 +229,7 @@ const matchesTarget = (
 ): boolean => !targetFramework || framework === targetFramework;
 
 export const getParentDirectories = (startDir: string, rootPath: string): string[] => {
-  if (!startDir.startsWith(rootPath)) return [];
+  if (!normalizePath(startDir).startsWith(normalizePath(rootPath))) return [];
   const parentDir = dirname(startDir);
   return parentDir === startDir
     ? [startDir]
