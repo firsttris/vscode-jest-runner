@@ -32,7 +32,7 @@ A **lightweight** VS Code extension for running and debugging Jest, Vitest, Node
 
 > ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It supports static resolution of variables defined in the file and configuration wrappers (like `defineConfig`), but it does **not** execute the file (function calls are ignored). Complex runtime logic or external imports are not supported. If your configuration is too complex, you can set **`disableFrameworkConfig: true`** to rely on **`defaultTestPatterns`**.
 
-> 🚧 **Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to create a GitHub issue.
+> 🚧 **Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to [create a GitHub issue](https://github.com/firsttris/vscode-jest-runner/issues).
 
 ## ✨ Features
 

@@ -20,8 +20,6 @@ assignees: ''
 
 Due to the wide variety of project configurations, it is difficult to debug issues without specific details. Please provide as many information as possible so I can reproduce your setup.
 
-Most important is your jest/vitest configuration file, because the extension parses framework-config to decide where the extension is active.
-
 Please provide the following details:
 
 | Item | Value |
