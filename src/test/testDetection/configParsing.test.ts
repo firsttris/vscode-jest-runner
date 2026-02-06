@@ -1018,13 +1018,15 @@ export default defineConfig({
       mockedFs.readFileSync = jest.fn();
     });
 
-    it('should extract configs from Vitest projects', () => {
+    it('should extract configs from Vitest projects nested in test object', () => {
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
             export default {
-                projects: [
-                    { test: { include: ['packages/a/**/*.test.ts'] } },
-                    { test: { include: ['packages/b/**/*.test.ts'] } }
-                ]
+                test: {
+                    projects: [
+                        { test: { include: ['packages/nested-a/**/*.test.ts'] } },
+                        { test: { include: ['packages/nested-b/**/*.test.ts'] } }
+                    ]
+                }
             }
         `);
 
@@ -1032,8 +1034,8 @@ export default defineConfig({
 
       expect(result).toHaveLength(2);
       expect(result).toEqual(expect.arrayContaining([
-        expect.objectContaining({ patterns: ['packages/a/**/*.test.ts'] }),
-        expect.objectContaining({ patterns: ['packages/b/**/*.test.ts'] })
+        expect.objectContaining({ patterns: ['packages/nested-a/**/*.test.ts'] }),
+        expect.objectContaining({ patterns: ['packages/nested-b/**/*.test.ts'] })
       ]));
     });
   });

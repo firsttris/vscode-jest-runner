@@ -90,7 +90,7 @@ const resolveConfigNode = (
 
   const unwrapped = unwrapExpression(node);
 
-  if (t.isObjectExpression(unwrapped)) {
+  if (t.isObjectExpression(unwrapped) || t.isArrayExpression(unwrapped)) {
     return unwrapped;
   }
 

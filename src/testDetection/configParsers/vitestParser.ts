@@ -39,8 +39,9 @@ const parseJsonConfig = (content: string, configPath: string): TestPatterns[] | 
   try {
     const config = JSON.parse(content);
 
-    if (config.projects) {
-      return parseProjects(config.projects, configPath);
+
+    if (config.test?.projects) {
+      return parseProjects(config.test.projects, configPath);
     }
 
     const result = parseVitestConfigContent(config, configPath);
@@ -54,8 +55,8 @@ const parseJsConfig = (content: string, configPath: string): TestPatterns[] | un
   const config = parseConfigObject(content);
   if (!config) return undefined;
 
-  if (config.projects) {
-    return parseProjects(config.projects, configPath);
+  if (config.test?.projects) {
+    return parseProjects(config.test.projects, configPath);
   }
 
   const result = parseVitestConfigContent(config, configPath);
@@ -99,7 +100,7 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
       return content.includes('test =');
     }
 
-    if (config.projects) {
+    if (config.projects || config.test?.projects) {
       return true;
     }
 

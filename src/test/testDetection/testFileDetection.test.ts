@@ -395,6 +395,38 @@ describe('testFileDetection', () => {
       expect(result).toBe(true);
     });
 
+    it('should use default patterns when standard config has no include patterns', () => {
+      const rootPath = '/workspace/project';
+      const filePath = path.join(rootPath, 'src/component.test.ts');
+      const configPath = path.join(rootPath, 'vitest.config.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === configPath;
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        if (fsPath.toString() === configPath) {
+          return `
+            export default defineConfig({
+              test: {
+                globals: true
+              }
+            });
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = isVitestTestFile(filePath);
+
+      expect(result).toBe(true);
+      expect(mockedFs.readFileSync).toHaveBeenCalledWith(configPath, 'utf8');
+    });
+
     it('should return false for non-test files', () => {
       const filePath = '/workspace/project/src/component.ts';
 

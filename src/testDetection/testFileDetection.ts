@@ -219,6 +219,7 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult[] {
 
   const disableFrameworkConfig = vscode.workspace.getConfiguration('jestrunner').get<boolean>('disableFrameworkConfig');
   if (disableFrameworkConfig) {
+    logDebug('Framework config disabled via setting, using default patterns');
     return [createDefaultResult(workspaceFolder.uri.fsPath)];
   }
 
@@ -231,10 +232,12 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult[] {
   }
 
   if (jestConfigPath) {
+    logDebug(`Using Jest config for pattern detection: ${jestConfigPath}`);
     return resolveJestResult(getTestMatchFromJestConfig(jestConfigPath), jestConfigPath, rootPath);
   }
 
   if (vitestConfigPath) {
+    logDebug(`Using Vitest config for pattern detection: ${vitestConfigPath}`);
     return resolveVitestResult(getVitestConfig(vitestConfigPath), vitestConfigPath, rootPath);
   }
 
@@ -246,11 +249,14 @@ export function matchesTestFilePattern(filePath: string): boolean {
 
   if (results.length === 0) {
     const defaultRes = createDefaultResult(dirname(filePath));
-    return fileMatchesPatterns(filePath, defaultRes.configDir, defaultRes.patterns, defaultRes.isRegex, undefined, defaultRes.ignorePatterns, defaultRes.excludePatterns, defaultRes.roots);
+    const filePatternMatches = fileMatchesPatterns(filePath, defaultRes.configDir, defaultRes.patterns, defaultRes.isRegex, undefined, defaultRes.ignorePatterns, defaultRes.excludePatterns, defaultRes.roots);
+    logDebug(`File ${filePath} matches default pattern ${defaultRes.patterns}: ${filePatternMatches}`);
+    return filePatternMatches;
   }
 
   return results.some(res => {
     const matches = fileMatchesPatterns(filePath, res.configDir, res.patterns, res.isRegex, undefined, res.ignorePatterns, res.excludePatterns, res.roots);
+    logDebug(`File ${filePath} matches pattern ${res.patterns}: ${matches}`);
     return matches;
   });
 }
