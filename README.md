@@ -30,7 +30,7 @@ A **lightweight** VS Code extension for running and debugging Jest, Vitest, Node
 
 > ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
 
-> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It supports static variable resolution and wrapper functions (like `defineConfig`), but it does **not** execute the file. Complex runtime logic or external imports are not supported. If your configuration is too complex, you can set **`jestrunner.disableFrameworkConfig: true`** to rely on default test patterns.
+> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It supports static resolution of variables defined in the file and configuration wrappers (like `defineConfig`), but it does **not** execute the file (function calls are ignored). Complex runtime logic or external imports are not supported. If your configuration is too complex, you can set **`disableFrameworkConfig: true`** to rely on **`defaultTestPatterns`**.
 
 > 🚧 **Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to create a GitHub issue.
 
@@ -218,12 +218,19 @@ The extension **automatically reads configuration** from your framework config f
 > 
 > This means:
 > - It **cannot** resolve external imports or complex runtime logic.
-> - **Variables** and **Function Calls** (like `defineConfig`) are supported via static analysis as long as they are defined within the file.
+> - **Variables** are supported via static analysis as long as they are defined within the file.
+> - **Function Calls** are **not** executed. Only configuration wrappers (like `defineConfig`) are supported.
 > - Only a **single configuration file** is parsed. If you use config inheritance, ensure the file the extension reads contains the necessary patterns.
 >
 > If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files.
 
-> ⚠️ **Important:** `projects` attribute in vitest/jest config files is not yet supported but planned for a future release.
+### 🏗️ Projects Support
+The extension supports the `projects` configuration for both **Jest** and **Vitest**. This is essential for monorepos or multi-project workspaces.
+
+- **Jest**: Supports `projects` array defined as string paths (e.g. `['<rootDir>/packages/*']`) or configuration objects.
+- **Vitest**: Supports `projects` array in your config file or `vitest.workspace.ts` exporting an array of project configurations.
+
+The extension will recursively parse these project configurations to identify test files across your entire workspace.
 
 ### Jest Config Options
 
@@ -234,6 +241,7 @@ The extension **automatically reads configuration** from your framework config f
 | `testMatch` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
 | `testRegex` | `string \| string[]` | Regex patterns for test files |
 | `testPathIgnorePatterns` | `string[]` | Regex patterns to exclude files (e.g., `["/fixtures/", "/node_modules/"]`) |
+| `projects` | `string[] \| object[]` | List of projects or paths to project config files |
 
 **Example Jest Config:**
 
@@ -255,6 +263,7 @@ module.exports = {
 | `test.dir` | `string` | Base directory for test file discovery |
 | `test.include` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
 | `test.exclude` | `string[]` | Glob patterns to exclude (e.g., `["**/e2e/**"]`) |
+| `projects` | `object[] \| string[]` | List of project configurations (or workspace array) |
 
 **Example Vitest Config:**
 

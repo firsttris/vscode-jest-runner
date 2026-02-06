@@ -1,4 +1,4 @@
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
@@ -11,61 +11,77 @@ const normalizeRootDir = (rootDir: string | undefined, configPath: string): stri
   return rootDir === '__dirname' ? dirname(configPath) : rootDir;
 };
 
-const parseJsonConfig = (content: string, configPath: string): TestPatterns | undefined => {
-  try {
-    const config = JSON.parse(content);
-    const testConfig = config.test;
-    if (!testConfig) return undefined;
+const parseVitestConfigContent = (config: any, configPath: string): TestPatterns | undefined => {
+  const testConfig = config.test;
+  if (!testConfig) return undefined;
 
-    const patterns = Array.isArray(testConfig.include) ? testConfig.include : undefined;
-    const excludePatterns = Array.isArray(testConfig.exclude) ? testConfig.exclude : undefined;
-    const dir = typeof testConfig.dir === 'string' ? testConfig.dir : undefined;
-    const rootDir = normalizeRootDir(
-      typeof config.root === 'string' ? config.root : undefined,
-      configPath,
-    );
-
-    if (!patterns && !excludePatterns && !dir && !rootDir) return undefined;
-
-    return {
-      patterns: patterns ?? [],
-      isRegex: false,
-      rootDir,
-      excludePatterns,
-      dir,
-    };
-  } catch {
-    return undefined;
-  }
-};
-
-const parseJsConfig = (content: string, configPath: string): TestPatterns | undefined => {
-  const config = parseConfigObject(content);
-  if (!config) return undefined;
-
+  const patterns = Array.isArray(testConfig.include) ? testConfig.include : undefined;
+  const excludePatterns = Array.isArray(testConfig.exclude) ? testConfig.exclude : undefined;
+  const dir = typeof testConfig.dir === 'string' ? testConfig.dir : undefined;
   const rootDir = normalizeRootDir(
     typeof config.root === 'string' ? config.root : undefined,
     configPath,
   );
-  const testObject = config.test;
-  if (!testObject) return undefined;
-
-  const patterns = Array.isArray(testObject.include) ? testObject.include : undefined;
-  const excludePatterns = Array.isArray(testObject.exclude) ? testObject.exclude : undefined;
-  const dir = typeof testObject.dir === 'string' ? testObject.dir : undefined;
 
   if (!patterns && !excludePatterns && !dir && !rootDir) return undefined;
 
-  const result = {
+  return {
     patterns: patterns ?? [],
     isRegex: false,
     rootDir,
     excludePatterns,
     dir,
   };
+};
 
-  logDebug(`Parsed Vitest config: ${configPath}. Result: ${JSON.stringify(result)}`);
-  return result;
+const parseJsonConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
+  try {
+    const config = JSON.parse(content);
+
+    if (config.projects) {
+      return parseProjects(config.projects, configPath);
+    }
+
+    const result = parseVitestConfigContent(config, configPath);
+    return result ? [result] : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const parseJsConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
+  const config = parseConfigObject(content);
+  if (!config) return undefined;
+
+  if (config.projects) {
+    return parseProjects(config.projects, configPath);
+  }
+
+  const result = parseVitestConfigContent(config, configPath);
+  return result ? [result] : undefined;
+};
+
+const parseProjects = (projects: any[], configPath: string): TestPatterns[] => {
+  const results: TestPatterns[] = [];
+  const configDir = dirname(configPath);
+
+  for (const project of projects) {
+    if (typeof project === 'string') {
+      try {
+        const projectPath = resolve(configDir, project);
+        const result = getVitestConfig(projectPath);
+        if (result) {
+          results.push(...result);
+        }
+      } catch (e) {
+        logError(`Failed to parse project ${project} in ${configPath}`, e);
+      }
+    } else if (typeof project === 'object') {
+      const result = parseVitestConfigContent(project, configPath);
+      if (result) results.push(result);
+    }
+  }
+  return results;
 };
 
 export function viteConfigHasTestAttribute(configPath: string): boolean {
@@ -74,14 +90,18 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
 
     if (configPath.endsWith('.json')) {
       const parsed = parseJsonConfig(content, configPath);
-      return !!parsed;
+      return !!parsed && parsed.length > 0;
     }
 
     const config = parseConfigObject(content);
     if (!config) {
-      // Fallback for malformed configs that still contain a test block assignment
       return content.includes('test =');
     }
+
+    if (config.projects) {
+      return true;
+    }
+
     return !!config.test;
   } catch (error) {
     logError(`Error reading vite config file: ${configPath}`, error);
@@ -89,13 +109,19 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
   }
 }
 
-export function getVitestConfig(configPath: string): TestPatterns | undefined {
+export function getVitestConfig(configPath: string): TestPatterns[] | undefined {
   try {
     const content = readConfigFile(configPath);
 
-    return configPath.endsWith('.json')
+    const result = configPath.endsWith('.json')
       ? parseJsonConfig(content, configPath)
       : parseJsConfig(content, configPath);
+
+    if (result) {
+      logDebug(`Parsed Vitest config: ${configPath}. Projects found: ${result.length}`);
+    }
+    return result;
+
   } catch (error) {
     logError(`Error reading Vitest config file: ${configPath}`, error);
     return undefined;
@@ -103,6 +129,9 @@ export function getVitestConfig(configPath: string): TestPatterns | undefined {
 }
 
 export function getIncludeFromVitestConfig(configPath: string): string[] | undefined {
-  const config = getVitestConfig(configPath);
-  return config?.patterns && config.patterns.length > 0 ? config.patterns : undefined;
+  const configs = getVitestConfig(configPath);
+  if (!configs || configs.length === 0) return undefined;
+
+  const allPatterns = configs.flatMap(c => c.patterns);
+  return allPatterns.length > 0 ? allPatterns : undefined;
 }

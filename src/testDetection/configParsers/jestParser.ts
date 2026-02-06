@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, join } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { TestPatterns, TestFrameworkName } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
@@ -19,7 +19,44 @@ const extractArrayProperty = (config: any, key: string): string[] | undefined =>
   return Array.isArray(value) ? value : undefined;
 };
 
-const parseJsonConfig = (content: string, configPath: string): TestPatterns | undefined => {
+const parseJestConfigContent = (config: any, configPath: string, rootDirOverride?: string): TestPatterns | undefined => {
+  if (!config) return undefined;
+
+  const rootDirValue = config.rootDir;
+  const resolvedRootDir = rootDirOverride ?? (
+    rootDirValue
+      ? (rootDirValue === '__dirname' ? dirname(configPath) : rootDirValue)
+      : undefined
+  );
+
+  const roots = extractArrayProperty(config, 'roots');
+  const ignorePatterns = extractArrayProperty(config, 'testPathIgnorePatterns');
+
+  const createResult = (patterns: string[], isRegex: boolean): TestPatterns => ({
+    patterns,
+    isRegex,
+    rootDir: resolvedRootDir,
+    roots,
+    ignorePatterns,
+  });
+
+  if (Array.isArray(config.testMatch)) {
+    return createResult(config.testMatch, false);
+  }
+
+  const regexPatterns = extractTestRegex(config);
+  if (regexPatterns) {
+    return createResult(regexPatterns, true);
+  }
+
+  if (roots || ignorePatterns) {
+    return createResult([], false);
+  }
+
+  return undefined;
+};
+
+const parseJsonConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
   try {
     const config = configPath.endsWith('package.json')
       ? JSON.parse(content).jest
@@ -27,56 +64,53 @@ const parseJsonConfig = (content: string, configPath: string): TestPatterns | un
 
     if (!config) return undefined;
 
-    const rootDir = config.rootDir;
-    const roots = extractArrayProperty(config, 'roots');
-    const ignorePatterns = extractArrayProperty(config, 'testPathIgnorePatterns');
-
-    if (Array.isArray(config.testMatch)) {
-      return { patterns: config.testMatch, isRegex: false, rootDir, roots, ignorePatterns };
+    if (config.projects) {
+      return parseProjects(config.projects, configPath);
     }
 
-    const regexPatterns = extractTestRegex(config);
-    if (regexPatterns) {
-      return { patterns: regexPatterns, isRegex: true, rootDir, roots, ignorePatterns };
-    }
-
-    if (roots || ignorePatterns) {
-      return { patterns: [], isRegex: false, rootDir, roots, ignorePatterns };
-    }
-
-    return undefined;
+    const result = parseJestConfigContent(config, configPath);
+    return result ? [result] : undefined;
   } catch {
     return undefined;
   }
 };
 
-const parseJsConfig = (content: string, configPath: string): TestPatterns | undefined => {
+const parseJsConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
   const config = parseConfigObject(content);
   if (!config) return undefined;
 
-  const rootDirValue = config.rootDir;
-  const rootDir = rootDirValue === '__dirname' ? dirname(configPath) : rootDirValue;
-  const roots = extractArrayProperty(config, 'roots');
-  const ignorePatterns = extractArrayProperty(config, 'testPathIgnorePatterns');
-
-  const testMatch = extractArrayProperty(config, 'testMatch');
-  if (testMatch) {
-    return { patterns: testMatch, isRegex: false, rootDir, roots, ignorePatterns };
+  if (config.projects) {
+    return parseProjects(config.projects, configPath);
   }
 
-  const regexPatterns = extractTestRegex(config);
-  if (regexPatterns) {
-    return { patterns: regexPatterns, isRegex: true, rootDir, roots, ignorePatterns };
-  }
-
-  if (roots || ignorePatterns) {
-    return { patterns: [], isRegex: false, rootDir, roots, ignorePatterns };
-  }
-
-  return undefined;
+  const result = parseJestConfigContent(config, configPath);
+  return result ? [result] : undefined;
 };
 
-export function getTestMatchFromJestConfig(configPath: string): TestPatterns | undefined {
+const parseProjects = (projects: any[], configPath: string): TestPatterns[] => {
+  const results: TestPatterns[] = [];
+  const configDir = dirname(configPath);
+
+  for (const project of projects) {
+    if (typeof project === 'string') {
+      try {
+        const projectPath = resolve(configDir, project);
+        const result = getTestMatchFromJestConfig(projectPath);
+        if (result) {
+          results.push(...result);
+        }
+      } catch (e) {
+        logError(`Failed to parse project ${project} in ${configPath}`, e);
+      }
+    } else if (typeof project === 'object') {
+      const result = parseJestConfigContent(project, configPath);
+      if (result) results.push(result);
+    }
+  }
+  return results;
+};
+
+export function getTestMatchFromJestConfig(configPath: string): TestPatterns[] | undefined {
   try {
     const content = readConfigFile(configPath);
 
@@ -85,12 +119,12 @@ export function getTestMatchFromJestConfig(configPath: string): TestPatterns | u
       : parseJsConfig(content, configPath);
 
     if (result) {
-      logDebug(`Parsed Jest config: ${configPath}. Result: ${JSON.stringify(result)}`);
+      logDebug(`Parsed Jest config: ${configPath}. Projects found: ${result.length}`);
     }
 
     return result;
   } catch (error) {
-    logError(`Error reading Jest config file: ${configPath}`, error);
+    logDebug(`Error reading Jest config file or project path: ${configPath}. Error: ${error}`);
     return undefined;
   }
 }

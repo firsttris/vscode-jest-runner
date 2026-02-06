@@ -3,6 +3,7 @@ import { isMatch } from 'micromatch';
 import { getTestMatchFromJestConfig } from './configParsers/jestParser';
 import { getVitestConfig } from './configParsers/vitestParser';
 import { getDefaultTestPatterns } from './configParsing';
+import { TestPatterns } from './frameworkDefinitions';
 
 function matchesExcludePatterns(
   filePath: string,
@@ -111,45 +112,44 @@ export function fileMatchesPatterns(
   return fileMatchesPatternsExplicit(filePath, configDir, patterns, isRegex, rootDir, ignorePatterns, excludePatterns, roots);
 }
 
+function checkConfigMatches(
+  filePath: string,
+  directoryPath: string,
+  configs: TestPatterns[] | undefined,
+  framework: 'jest' | 'vitest'
+): boolean {
+  if (!configs || configs.length === 0) return false;
+
+  return configs.some(config => {
+    if (!config.patterns || config.patterns.length === 0) return false;
+
+    return fileMatchesPatternsExplicit(
+      filePath,
+      directoryPath,
+      config.patterns,
+      framework === 'jest' ? (config.isRegex ?? false) : false,
+      config.rootDir,
+      framework === 'jest' ? config.ignorePatterns : undefined,
+      framework === 'vitest' ? config.excludePatterns : undefined,
+      config.roots
+    );
+  });
+}
+
 export function detectFrameworkByPatternMatch(
   directoryPath: string,
   filePath: string,
   jestConfigPath: string,
   vitestConfigPath: string,
 ): 'jest' | 'vitest' | undefined {
-  const jestConfig = getTestMatchFromJestConfig(jestConfigPath);
-  const vitestConfig = getVitestConfig(vitestConfigPath);
+  const jestConfigs = getTestMatchFromJestConfig(jestConfigPath);
+  const vitestConfigs = getVitestConfig(vitestConfigPath);
 
-  const jestHasExplicitPatterns = jestConfig && jestConfig.patterns.length > 0;
-  const vitestHasExplicitPatterns = vitestConfig && vitestConfig.patterns.length > 0;
+  const jestHasExplicitPatterns = jestConfigs && jestConfigs.length > 0;
+  const vitestHasExplicitPatterns = vitestConfigs && vitestConfigs.length > 0;
 
-  if (!jestHasExplicitPatterns && !vitestHasExplicitPatterns) {
-    return undefined;
-  }
-
-  const jestMatches = jestHasExplicitPatterns
-    ? fileMatchesPatternsExplicit(
-      filePath,
-      directoryPath,
-      jestConfig.patterns,
-      jestConfig.isRegex,
-      jestConfig.rootDir,
-      jestConfig.ignorePatterns,
-      undefined,
-      jestConfig.roots
-    )
-    : false;
-  const vitestMatches = vitestHasExplicitPatterns
-    ? fileMatchesPatternsExplicit(
-      filePath,
-      directoryPath,
-      vitestConfig.patterns,
-      false,
-      vitestConfig.rootDir,
-      undefined,
-      vitestConfig.excludePatterns
-    )
-    : false;
+  const jestMatches = checkConfigMatches(filePath, directoryPath, jestConfigs, 'jest');
+  const vitestMatches = checkConfigMatches(filePath, directoryPath, vitestConfigs, 'vitest');
 
   if (jestHasExplicitPatterns && vitestHasExplicitPatterns) {
     if (jestMatches && !vitestMatches) return 'jest';
