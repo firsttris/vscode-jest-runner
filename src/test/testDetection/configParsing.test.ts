@@ -957,21 +957,21 @@ export default defineConfig({
     it('should extract testMatch from Jest projects configured as strings', () => {
       mockedFs.readFileSync = jest.fn().mockImplementation((path) => {
         const normalizedPath = normalizePath(path);
-        if (normalizedPath === '/test/jest.config.js') {
+        if (normalizedPath.endsWith('/test/jest.config.js')) {
           return `
             module.exports = {
               projects: ['packages/a/jest.config.js', 'packages/b/jest.config.js']
             };
           `;
         }
-        if (normalizedPath === '/test/packages/a/jest.config.js') {
+        if (normalizedPath.endsWith('/test/packages/a/jest.config.js')) {
           return `
             module.exports = {
               testMatch: ['<rootDir>/src/**/*.test.a.ts']
             };
           `;
         }
-        if (normalizedPath === '/test/packages/b/jest.config.js') {
+        if (normalizedPath.endsWith('/test/packages/b/jest.config.js')) {
           return `
             module.exports = {
               testMatch: ['<rootDir>/src/**/*.test.b.ts']

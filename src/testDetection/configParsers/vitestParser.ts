@@ -1,4 +1,5 @@
 import { dirname, resolve } from 'node:path';
+import { normalizePath } from '../../utils/PathUtils';
 import { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import {
@@ -68,7 +69,7 @@ const parseProjects = (projects: any[], configPath: string): TestPatterns[] => {
   for (const project of projects) {
     if (typeof project === 'string') {
       try {
-        const projectPath = resolve(configDir, project);
+        const projectPath = normalizePath(resolve(configDir, project));
         const result = getVitestConfig(projectPath);
         if (result) {
           results.push(...result);
