@@ -4,6 +4,7 @@ import { getCypressSpecPattern } from '../../testDetection/configParsers/cypress
 import { getTestMatchFromJestConfig } from '../../testDetection/configParsers/jestParser';
 import { getPlaywrightTestDir } from '../../testDetection/configParsers/playwrightParser';
 import { getIncludeFromVitestConfig, getVitestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsers/vitestParser';
+import { normalizePath } from '../../utils/PathUtils';
 
 jest.mock('fs');
 jest.mock('vscode');
@@ -955,7 +956,7 @@ export default defineConfig({
 
     it('should extract testMatch from Jest projects configured as strings', () => {
       mockedFs.readFileSync = jest.fn().mockImplementation((path) => {
-        const normalizedPath = path.replace(/\\/g, '/');
+        const normalizedPath = normalizePath(path);
         if (normalizedPath === '/test/jest.config.js') {
           return `
             module.exports = {
