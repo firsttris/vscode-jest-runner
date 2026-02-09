@@ -142,4 +142,46 @@ describe('babelParser extended tests', () => {
     const suite = result.root.children[0] as NamedBlock;
     expect(suite.name).toBe('destructured');
   });
+  it('should resolve name from required module variable', () => {
+    const code = `
+      const sum = require("./sum");
+      describe(sum.name, () => {
+        it("adds 1 + 2 to equal 3", () => {
+          expect(sum(1, 2)).toBe(3);
+        });
+      });
+    `;
+    const result = parse('test.ts', code);
+    const suite = result.root.children[0] as NamedBlock;
+    expect(suite.name).toBe('sum');
+  });
+
+  it('should resolve name from imported module variable', () => {
+    const code = `
+      import sum from "./sum";
+      describe(sum.name, () => {
+        it("adds 1 + 2 to equal 3", () => {
+          expect(sum(1, 2)).toBe(3);
+        });
+      });
+    `;
+    const result = parse('test.ts', code);
+    const suite = result.root.children[0] as NamedBlock;
+    expect(suite.name).toBe('sum');
+  });
+
+  it('should resolve name for "it" blocks with dynamic names', () => {
+    const code = `
+      const sum = require("./sum");
+      describe('suite', () => {
+        it(sum.name, () => {
+          expect(true).toBe(true);
+        });
+      });
+    `;
+    const result = parse('test.ts', code);
+    const suite = result.root.children[0] as NamedBlock;
+    const test = suite.children[0] as NamedBlock;
+    expect(test.name).toBe('sum');
+  });
 });

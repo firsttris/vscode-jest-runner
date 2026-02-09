@@ -57,6 +57,9 @@ export const astToValue = (node: t.Node | null | undefined, bindings: Record<str
             if (typeof object === 'string' && property.name === 'name') {
                 return object;
             }
+            if (object === undefined && t.isIdentifier(node.object) && property.name === 'name') {
+                return node.object.name;
+            }
         }
         if (t.isStringLiteral(property)) {
             if (typeof object === 'object' && object !== null && property.value in object) {
