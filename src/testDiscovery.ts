@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { relative } from 'node:path';
+import { relative, dirname, basename, sep, join } from 'node:path';
 import { parseTestFile } from './parser';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { testFileCache } from './testDetection/testFileCache';
@@ -15,13 +15,55 @@ export async function discoverTests(
 
   for (const file of testFiles) {
     const fileUri = vscode.Uri.file(file);
-    const relativePath = relative(workspaceFolder.uri.fsPath, file);
+    const label = basename(file);
+    const dirPath = dirname(file);
 
-    const testItem = testController.createTestItem(file, relativePath, fileUri);
-    testController.items.add(testItem);
+    const parentItem = getOrCreateFolderTestItem(
+      testController,
+      workspaceFolder,
+      dirPath
+    );
+
+    const testItem = testController.createTestItem(file, label, fileUri);
+
+    if (parentItem) {
+      parentItem.children.add(testItem);
+    } else {
+      testController.items.add(testItem);
+    }
 
     parseTestsInFile(file, testItem, testController);
   }
+}
+
+function getOrCreateFolderTestItem(
+  testController: vscode.TestController,
+  workspaceFolder: vscode.WorkspaceFolder,
+  dirPath: string
+): vscode.TestItem | undefined {
+  const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
+  if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
+    return undefined;
+  }
+
+  const parts = relativeDir.split(sep);
+  let currentCollection = testController.items;
+  let currentItem: vscode.TestItem | undefined;
+  let currentPath = workspaceFolder.uri.fsPath;
+
+  for (const part of parts) {
+    currentPath = join(currentPath, part);
+    const id = currentPath;
+    let item = currentCollection.get(id);
+    if (!item) {
+      item = testController.createTestItem(id, part, vscode.Uri.file(currentPath));
+      item.canResolveChildren = false;
+      currentCollection.add(item);
+    }
+    currentCollection = item.children;
+    currentItem = item;
+  }
+  return currentItem;
 }
 
 export function parseTestsInFile(
