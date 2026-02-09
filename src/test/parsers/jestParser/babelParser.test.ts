@@ -184,4 +184,18 @@ describe('babelParser extended tests', () => {
     const test = suite.children[0] as NamedBlock;
     expect(test.name).toBe('sum');
   });
+
+  it('should resolve deep member expression usage of .name', () => {
+    const code = `
+      class TestClass {
+        myFunction() {}
+      }
+      it(TestClass.prototype.myFunction.name, () => {
+        expect(true).toBe(true);
+      });
+    `;
+    const result = parse('test.ts', code);
+    const test = result.root.children[0] as NamedBlock;
+    expect(test.name).toBe('myFunction');
+  });
 });
