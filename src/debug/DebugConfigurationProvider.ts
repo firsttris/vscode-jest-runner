@@ -27,6 +27,10 @@ export class DebugConfigurationProvider {
             return this.getVitestDebugConfig(config, filePath, testName);
         }
 
+        if (framework === 'playwright') {
+            return this.getPlaywrightDebugConfig(config, filePath, testName);
+        }
+
         return this.getJestDebugConfig(config, filePath, testName);
     }
 
@@ -172,6 +176,49 @@ export class DebugConfigurationProvider {
             logWarning('Could not resolve vitest binary path, falling back to npx');
             debugConfig.runtimeExecutable = 'npx';
             debugConfig.args = ['--no-install', 'vitest', 'run', ...testArgs];
+        }
+
+        return debugConfig;
+    }
+
+    private getPlaywrightDebugConfig(config: TestRunnerConfig, filePath?: string, testName?: string): vscode.DebugConfiguration {
+        const debugConfig: vscode.DebugConfiguration = {
+            console: 'integratedTerminal',
+            internalConsoleOptions: 'neverOpen',
+            name: 'Debug Playwright Tests',
+            request: 'launch',
+            type: 'node',
+            cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
+            ...config.playwrightDebugOptions,
+        };
+
+        const customCommand = Settings.getPlaywrightCommand();
+        if (customCommand) {
+            const { env, executable, args } = parseCommandAndEnv(customCommand);
+            if (executable) {
+                debugConfig.program = executable;
+                debugConfig.args = [...args];
+                if (Object.keys(env).length > 0) {
+                    debugConfig.env = { ...debugConfig.env, ...env };
+                }
+                if (filePath) {
+                    const testArgs = config.buildPlaywrightArgs(filePath, testName, false);
+                    debugConfig.args.push(...testArgs);
+                }
+                return debugConfig;
+            }
+        }
+
+        const testArgs = filePath ? config.buildPlaywrightArgs(filePath, testName, false) : [];
+        const binaryPath = resolveBinaryPath('@playwright/test', config.cwd, 'playwright');
+
+        if (binaryPath) {
+            debugConfig.program = binaryPath;
+            debugConfig.args = [...testArgs, '--workers=1'];
+        } else {
+            logWarning('Could not resolve playwright binary path, falling back to npx');
+            debugConfig.runtimeExecutable = 'npx';
+            debugConfig.args = ['--no-install', 'playwright', ...testArgs, '--workers=1'];
         }
 
         return debugConfig;
