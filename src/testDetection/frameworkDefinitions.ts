@@ -1,4 +1,4 @@
-export type TestFrameworkName = 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno';
+export type TestFrameworkName = 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright';
 
 export interface TestFramework {
   name: string;
@@ -87,10 +87,6 @@ export const testFrameworks: TestFramework[] = [
     configFiles: ['deno.json', 'deno.jsonc'],
     binaryName: 'deno',
   },
-];
-
-export const allTestFrameworks: TestFramework[] = [
-  ...testFrameworks,
   {
     name: 'playwright',
     configFiles: [
@@ -101,6 +97,11 @@ export const allTestFrameworks: TestFramework[] = [
     ],
     binaryName: 'playwright',
   },
+];
+
+export const allTestFrameworks: TestFramework[] = [
+  ...testFrameworks,
+
   {
     name: 'cypress',
     configFiles: [

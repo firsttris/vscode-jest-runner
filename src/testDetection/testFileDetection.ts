@@ -13,7 +13,7 @@ import { getConfigPath, resolveAndValidateCustomConfig, getDefaultTestPatterns }
 import { getTestMatchFromJestConfig } from './configParsers/jestParser';
 import { getVitestConfig } from './configParsers/vitestParser';
 import { getDenoConfig } from './configParsers/denoParser';
-import { getPlaywrightTestDir } from './configParsers/playwrightParser';
+import { getPlaywrightTestDir, getPlaywrightConfig } from './configParsers/playwrightParser';
 import { getCypressSpecPattern } from './configParsers/cypressParser';
 import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
 import {
@@ -191,6 +191,26 @@ const findDenoConfigInDir = (dir: string): TestPatternResult[] => {
   }];
 };
 
+const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
+  const customConfigPath = resolveAndValidateCustomConfig('jestrunner.playwrightConfigPath', join(dir, 'dummy'));
+  const playwrightFramework = testFrameworks.find((f) => f.name === 'playwright')!;
+
+  const configPaths = customConfigPath
+    ? [customConfigPath]
+    : playwrightFramework.configFiles.map((f) => join(dir, f));
+
+  const found = findFirstValidConfig(configPaths, getPlaywrightConfig);
+  if (!found || !found.config || found.config.length === 0) return [createDefaultResult(dir)];
+
+  return found.config.map(config => ({
+    patterns: config.patterns.length > 0 ? config.patterns : getDefaultTestPatterns(),
+    configDir: dir,
+    isRegex: config.isRegex ?? false,
+    ignorePatterns: config.ignorePatterns,
+    excludePatterns: undefined,
+  }));
+};
+
 const detectPatternsInParentDirs = (
   filePath: string,
   rootPath: string
@@ -204,6 +224,7 @@ const detectPatternsInParentDirs = (
     if (framework === 'jest') return findJestConfigInDir(dir);
     if (framework === 'vitest') return findVitestConfigInDir(dir);
     if (framework === 'deno') return findDenoConfigInDir(dir);
+    if (framework === 'playwright') return findPlaywrightConfigInDir(dir);
 
     return search(rest);
   };
@@ -239,6 +260,21 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult[] {
   if (vitestConfigPath) {
     logDebug(`Using Vitest config for pattern detection: ${vitestConfigPath}`);
     return resolveVitestResult(getVitestConfig(vitestConfigPath), vitestConfigPath, rootPath);
+  }
+
+  const playwrightConfigPath = resolveAndValidateCustomConfig('jestrunner.playwrightConfigPath', filePath);
+  if (playwrightConfigPath) {
+    logDebug(`Using Playwright config for pattern detection: ${playwrightConfigPath}`);
+    const configs = getPlaywrightConfig(playwrightConfigPath);
+    if (configs && configs.length > 0) {
+      return configs.map(config => ({
+        patterns: config.patterns.length > 0 ? config.patterns : getDefaultTestPatterns(),
+        configDir: rootPath,
+        isRegex: config.isRegex ?? false,
+        ignorePatterns: config.ignorePatterns,
+        excludePatterns: undefined
+      }));
+    }
   }
 
   return detectPatternsInParentDirs(filePath, rootPath) ?? [createDefaultResult(rootPath)];

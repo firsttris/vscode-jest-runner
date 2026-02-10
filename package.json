@@ -82,6 +82,40 @@
             "description": "If jestrunner.configPath is set and this is true, the nearest matching jest config in the path hierarchy will be used instead of the root path.",
             "scope": "window"
           },
+          "jestrunner.playwrightConfigPath": {
+            "type": "string",
+            "default": "",
+            "description": "Absolute or relative path to the Playwright config file.",
+            "scope": "window"
+          },
+          "jestrunner.disablePlaywright": {
+            "type": "boolean",
+            "default": false,
+            "description": "Disable the Playwright test runner integration.",
+            "scope": "window"
+          },
+          "jestrunner.playwrightCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative Playwright command",
+            "scope": "window"
+          },
+          "jestrunner.playwrightRunOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --headed"
+            },
+            "description": "Add CLI Options to the Playwright Command",
+            "scope": "window"
+          },
+          "jestrunner.playwrightDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or override VS Code debug configurations for Playwright. Only applies when debugging Playwright tests.",
+            "scope": "window"
+          },
           "jestrunner.projectPath": {
             "type": "string",
             "default": "",

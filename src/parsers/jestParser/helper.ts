@@ -150,10 +150,12 @@ export const getNameForNode = (node: t.Node): [string?, string?] => {
   const lastProperty =
     shallowAttr<string>(rootCallee, ...attrs) || shallowAttr<string>(deepAttr(rootCallee, 'tag'), ...attrs);
 
-  const name =
-    shallowAttr<string>(rootCallee, 'name') ||
-    shallowAttr<string>(deepAttr(rootCallee, 'object'), 'name') ||
-    shallowAttr<string>(deepAttr(rootCallee, 'tag', 'object'), 'name');
+  let object = rootCallee;
+  while (object && typeof object === 'object' && ('object' in object || 'tag' in object)) {
+    object = (object as any).object || (object as any).tag;
+  }
+
+  const name = shallowAttr<string>(object, 'name');
 
   return [name, lastProperty];
 };

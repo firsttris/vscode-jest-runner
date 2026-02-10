@@ -78,6 +78,25 @@ export const getDenoRunOptions = (): string[] | null => {
 export const getDenoDebugOptions = (): Partial<vscode.DebugConfiguration> =>
   getConfig('jestrunner.denoDebugOptions', {});
 
+// === Playwright Settings ===
+
+export const getPlaywrightCommand = (): string | undefined =>
+  getConfig<string>('jestrunner.playwrightCommand');
+
+export const getPlaywrightConfigPath = (): string | undefined =>
+  getConfig<string>('jestrunner.playwrightConfigPath');
+
+export const isPlaywrightDisabled = (): boolean =>
+  getConfig<boolean>('jestrunner.disablePlaywright', false);
+
+export const getPlaywrightRunOptions = (): string[] | null => {
+  const options = getConfig<string[]>('jestrunner.playwrightRunOptions');
+  return options && Array.isArray(options) ? options : null;
+};
+
+export const getPlaywrightDebugOptions = (): Partial<vscode.DebugConfiguration> =>
+  getConfig('jestrunner.playwrightDebugOptions', {});
+
 // === General Settings ===
 
 export const getProjectPath = (): string | undefined =>
@@ -112,7 +131,7 @@ export const getDefaultTestPatterns = (): string[] | undefined =>
 
 // === Computed Settings ===
 
-export const getRunOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno'): string[] | null => {
+export const getRunOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright'): string[] | null => {
   switch (framework) {
     case 'vitest':
       return getVitestRunOptions() ?? getJestRunOptions();
@@ -122,12 +141,14 @@ export const getRunOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-t
       return getBunRunOptions();
     case 'deno':
       return getDenoRunOptions();
+    case 'playwright':
+      return getPlaywrightRunOptions();
     default:
       return getJestRunOptions();
   }
 };
 
-export const getDebugOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno'): Partial<vscode.DebugConfiguration> => {
+export const getDebugOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright'): Partial<vscode.DebugConfiguration> => {
   switch (framework) {
     case 'vitest':
       return getVitestDebugOptions();
@@ -137,6 +158,8 @@ export const getDebugOptionsForFramework = (framework: 'jest' | 'vitest' | 'node
       return getBunDebugOptions();
     case 'deno':
       return getDenoDebugOptions();
+    case 'playwright':
+      return getPlaywrightDebugOptions();
     default:
       return getJestDebugOptions();
   }

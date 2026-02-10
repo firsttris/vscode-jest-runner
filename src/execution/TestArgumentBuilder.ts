@@ -30,6 +30,7 @@ export function buildTestArgs(
         'deno': new DenoTestStrategy(jestConfig, testController),
         'vitest': new VitestStrategy(jestConfig, testController),
         'jest': new JestStrategy(jestConfig, testController),
+        'playwright': new PlaywrightStrategy(jestConfig, testController),
     };
 
     const strategy = strategies[framework];
@@ -275,6 +276,41 @@ class JestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
         return args;
     }
 }
+
+class PlaywrightStrategy extends JestLikeStrategy implements TestArgumentStrategy {
+    build(
+        allFiles: string[],
+        testsByFile: Map<string, vscode.TestItem[]>,
+        additionalArgs: string[],
+        collectCoverage: boolean
+    ): string[] {
+        if (this.isPartialRun(allFiles, testsByFile)) {
+            const tests = testsByFile.get(allFiles[0])!;
+            const testNamePattern = this.getTestNamePattern(tests)!;
+            return this.jestConfig.buildPlaywrightArgs(allFiles[0], testNamePattern, true, additionalArgs);
+        }
+
+        const normalizedFiles = this.getNormalizedFiles(allFiles);
+        const tests = this.getTests(testsByFile);
+        let testNamePattern: string | undefined;
+        if (tests.length > 0) {
+            testNamePattern = this.getTestNamePattern(tests);
+        }
+
+        // Use buildPlaywrightArgs to get the base arguments
+        // We pass the first file as a dummy to satisfy the signature
+        const baseArgs = this.jestConfig.buildPlaywrightArgs(allFiles[0] || '', testNamePattern, true, additionalArgs);
+
+        // Remove the file path from the end
+        baseArgs.pop();
+
+        // Add all files
+        baseArgs.push(...normalizedFiles.map(f => quote(f)));
+
+        return baseArgs;
+    }
+}
+
 
 
 export function buildTestArgsFast(
