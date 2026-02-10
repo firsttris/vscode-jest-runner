@@ -110,10 +110,7 @@ export class TestRunnerConfig {
       testName,
       withQuotes,
       options,
-      '', // Config path usually auto-detected by Playwright, but we could pass it if we have it.
-      // However, for now, specific config path passing isn't fully implemented in adapter args 
-      // (adapter signature takes configPath but Playwright adapter might not use it yet or we pass empty).
-      // Actually adapter signature is: (filePath, testName, withQuotes, options, configPath, runOptions)
+      '',
       Settings.getPlaywrightRunOptions(),
     );
   }
