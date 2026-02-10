@@ -77,6 +77,11 @@ type JestRunnerConfigProps = {
   'jestrunner.denoCommand'?: string;
   'jestrunner.denoRunOptions'?: string[];
   'jestrunner.denoDebugOptions'?: any;
+  'jestrunner.playwrightCommand'?: string;
+  'jestrunner.playwrightRunOptions'?: string[];
+  'jestrunner.playwrightDebugOptions'?: any;
+  'jestrunner.playwrightConfigPath'?: string;
+  'jestrunner.disablePlaywright'?: boolean;
 };
 class WorkspaceConfiguration {
   constructor(private dict: JestRunnerConfigProps) { }
