@@ -30,6 +30,7 @@
     "bun",
     "deno",
     "node",
+    "playwright",
     "typescript",
     "react"
   ],
