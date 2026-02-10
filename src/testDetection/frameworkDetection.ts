@@ -69,9 +69,6 @@ export function isDenoTestFile(filePath: string): boolean {
 }
 
 export function isPlaywrightTestFile(filePath: string): boolean {
-  if (isPlaywrightDisabled()) {
-    return false;
-  }
   return hasImport(filePath, '@playwright/test');
 }
 
@@ -167,9 +164,6 @@ export function isVitestUsedIn(directoryPath: string): boolean {
 }
 
 export function isPlaywrightUsedIn(directoryPath: string): boolean {
-  if (isPlaywrightDisabled()) {
-    return false;
-  }
   return isFrameworkUsedIn(directoryPath, 'playwright');
 }
 
@@ -364,6 +358,7 @@ export function findTestFrameworkDirectory(
 
   const isPlaywright = isPlaywrightTestFile(filePath);
   if (isPlaywright) {
+    if (isPlaywrightDisabled()) return undefined;
     return { directory: dirname(filePath), framework: 'playwright' };
   }
 
@@ -371,10 +366,15 @@ export function findTestFrameworkDirectory(
   if (customResult) return customResult;
 
   const parentDirResult = findFrameworkInParentDirs(filePath, rootPath, targetFramework);
-  if (parentDirResult.status === 'found') return parentDirResult.result;
+  if (parentDirResult.status === 'found') {
+    if (parentDirResult.result.framework === 'playwright' && isPlaywrightDisabled()) return undefined;
+    return parentDirResult.result;
+  }
   if (parentDirResult.status === 'wrong_framework') return undefined;
 
-  return detectFrameworkByDependency(rootPath, targetFramework);
+  const depResult = detectFrameworkByDependency(rootPath, targetFramework);
+  if (depResult?.framework === 'playwright' && isPlaywrightDisabled()) return undefined;
+  return depResult;
 }
 
 export function findJestDirectory(filePath: string): string | undefined {
