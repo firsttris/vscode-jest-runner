@@ -285,6 +285,19 @@ const handleExpect = (
   return addNode(ParsedNodeType.expect, parentParsed, element, source, parseResult, scopeBindings);
 };
 
+const isTestDescribe = (node: t.Node): boolean => {
+  const call = getCallExpression(node);
+  if (!call) return false;
+  let callee = call.callee;
+  while (t.isMemberExpression(callee)) {
+    if (t.isIdentifier(callee.property) && callee.property.name === 'describe') {
+      return true;
+    }
+    callee = callee.object;
+  }
+  return false;
+};
+
 export const parse = (file: string, data?: string, options?: ParserOptions): ParseResult => {
   const parseResult = new ParseResult(file);
   const { ast, source } = toAst(file, data, options);
@@ -306,10 +319,15 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
       let child: ParsedNode | undefined;
       const [name, lastProperty] = getNameForNode(element);
 
-      if (isDescribe(name)) {
+
+      if (isDescribe(name) || (name === 'test' && (lastProperty === 'describe' || (['parallel', 'serial', 'only', 'skip', 'fixme', 'fail'].includes(lastProperty!) && isTestDescribe(element))))) {
         child = handleDescribe(element, parentParsed, context, lastProperty);
       } else if (isTestBlock(name) || (name === 'Deno' && lastProperty === 'test')) {
-        child = handleIt(element, parentParsed, context, lastProperty);
+        if (name === 'test' && lastProperty === 'step') {
+          // ignore test.step
+        } else {
+          child = handleIt(element, parentParsed, context, lastProperty);
+        }
       } else if (isExpectCall(element)) {
         child = handleExpect(element, parentParsed, context);
       } else if (t.isVariableDeclaration(element)) {

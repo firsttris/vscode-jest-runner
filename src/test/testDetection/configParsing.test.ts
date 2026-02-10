@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import { packageJsonHasJestConfig } from '../../testDetection/configParsing';
 import { getCypressSpecPattern } from '../../testDetection/configParsers/cypressParser';
 import { getTestMatchFromJestConfig } from '../../testDetection/configParsers/jestParser';
-import { getPlaywrightTestDir } from '../../testDetection/configParsers/playwrightParser';
+import { getPlaywrightConfig, getPlaywrightTestDir } from '../../testDetection/configParsers/playwrightParser';
 import { getIncludeFromVitestConfig, getVitestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsers/vitestParser';
 import { normalizePath } from '../../utils/PathUtils';
 
@@ -1010,6 +1010,150 @@ export default defineConfig({
         expect.objectContaining({ patterns: ['<rootDir>/packages/a/**/*.test.ts'] }),
         expect.objectContaining({ patterns: ['<rootDir>/packages/b/**/*.test.ts'] })
       ]));
+    });
+  });
+
+  describe('getPlaywrightConfig', () => {
+    beforeEach(() => {
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should extract testMatch as string from TS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testMatch: '**/*.e2e.ts'
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].patterns).toEqual(['**/*.e2e.ts']);
+    });
+
+    it('should extract testMatch as array from TS config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testMatch: ['**/*.e2e.ts', '**/*.spec.ts']
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].patterns).toEqual(['**/*.e2e.ts', '**/*.spec.ts']);
+    });
+
+    it('should extract testIgnore as array', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testMatch: '**/*.spec.ts',
+  testIgnore: ['**/node_modules/**', '**/fixtures/**']
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].ignorePatterns).toEqual(['**/node_modules/**', '**/fixtures/**']);
+    });
+
+    it('should extract testIgnore as string', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testMatch: '**/*.spec.ts',
+  testIgnore: '**/fixtures/**'
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].ignorePatterns).toEqual(['**/fixtures/**']);
+    });
+
+    it('should extract testDir', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testDir: './e2e',
+  testMatch: '**/*.spec.ts'
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].dir).toBe('./e2e');
+    });
+
+    it('should use default patterns when no testMatch is defined', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testDir: './tests',
+  use: { browserName: 'chromium' }
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].patterns.length).toBeGreaterThan(0);
+      expect(result[0].dir).toBe('./tests');
+    });
+
+    it('should parse JSON config', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`{
+  "testDir": "./tests",
+  "testMatch": "**/*.spec.ts"
+}`);
+
+      const result = getPlaywrightConfig('/test/playwright.config.json');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].patterns).toEqual(['**/*.spec.ts']);
+      expect(result[0].dir).toBe('./tests');
+    });
+
+    it('should return undefined on file read error', () => {
+      mockedFs.readFileSync = jest.fn().mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should return undefined when config object cannot be parsed', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue('');
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result).toBeUndefined();
+    });
+
+    it('should set isRegex to false for glob patterns', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testMatch: '**/*.spec.ts'
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result[0].isRegex).toBe(false);
+    });
+
+    it('should not have ignorePatterns when testIgnore is not defined', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+export default defineConfig({
+  testMatch: '**/*.spec.ts'
+});
+      `);
+
+      const result = getPlaywrightConfig('/test/playwright.config.ts');
+
+      expect(result[0].ignorePatterns).toBeUndefined();
     });
   });
 

@@ -57,6 +57,14 @@ export class TestRunnerConfig {
     return 'deno';
   }
 
+  public get playwrightCommand(): string {
+    const customCommand = Settings.getPlaywrightCommand();
+    if (customCommand) {
+      return customCommand;
+    }
+    return 'npx playwright';
+  }
+
   public getTestCommand(filePath?: string): string {
     if (filePath) {
       const framework = getTestFrameworkForFile(filePath);
@@ -72,8 +80,64 @@ export class TestRunnerConfig {
       if (framework === 'deno') {
         return this.denoCommand;
       }
+      if (framework === 'playwright') {
+        return this.playwrightCommand;
+      }
     }
     return this.jestCommand;
+  }
+
+  // ... (existing getters)
+
+  public get playwrightRunOptions(): string[] | null {
+    return Settings.getPlaywrightRunOptions();
+  }
+
+  public get playwrightDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getPlaywrightDebugOptions();
+  }
+
+  // ...
+
+  public buildPlaywrightArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    return getFrameworkAdapter('playwright').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '',
+      Settings.getPlaywrightRunOptions(),
+    );
+  }
+
+  public buildTestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const framework = this.getTestFramework(filePath);
+    if (framework === 'vitest') {
+      return this.buildVitestArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'node-test') {
+      return this.buildNodeTestArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'bun') {
+      return this.buildBunArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'deno') {
+      return this.buildDenoArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'playwright') {
+      return this.buildPlaywrightArgs(filePath, testName, withQuotes, options);
+    }
+    return this.buildJestArgs(filePath, testName, withQuotes, options);
   }
 
   public get enableESM(): boolean {
@@ -328,27 +392,7 @@ export class TestRunnerConfig {
     );
   }
 
-  public buildTestArgs(
-    filePath: string,
-    testName: string | undefined,
-    withQuotes: boolean,
-    options: string[] = [],
-  ): string[] {
-    const framework = this.getTestFramework(filePath);
-    if (framework === 'vitest') {
-      return this.buildVitestArgs(filePath, testName, withQuotes, options);
-    }
-    if (framework === 'node-test') {
-      return this.buildNodeTestArgs(filePath, testName, withQuotes, options);
-    }
-    if (framework === 'bun') {
-      return this.buildBunArgs(filePath, testName, withQuotes, options);
-    }
-    if (framework === 'deno') {
-      return this.buildDenoArgs(filePath, testName, withQuotes, options);
-    }
-    return this.buildJestArgs(filePath, testName, withQuotes, options);
-  }
+
 
   public getDebugConfiguration(filePath?: string, testName?: string): vscode.DebugConfiguration {
     return this.debugConfigProvider.getDebugConfiguration(this, filePath, testName);

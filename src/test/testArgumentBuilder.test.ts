@@ -303,6 +303,112 @@ describe('TestArgumentBuilder', () => {
         });
     });
 
+    describe('playwright', () => {
+        it('should generate correct args for playwright partial run', () => {
+            const files = ['/path/to/test.spec.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.spec.ts', [{ label: 'should login' }]);
+
+            // Mock file with more tests than selected (partial run)
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 3 }
+            });
+
+            // Mock buildPlaywrightArgs for partial run path
+            (mockConfig as any).buildPlaywrightArgs = jest.fn().mockReturnValue(['test', '-g', "'should login'", '/path/to/test.spec.ts']);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'playwright',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect((mockConfig as any).buildPlaywrightArgs).toHaveBeenCalled();
+            expect(args).toContain('test');
+        });
+
+        it('should generate correct args for playwright full file run', () => {
+            const files = ['/path/to/test.spec.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.spec.ts', [{ label: 'test1' }, { label: 'test2' }]);
+
+            // Mock file with same number of tests (full run)
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 2 }
+            });
+
+            (mockConfig as any).buildPlaywrightArgs = jest.fn().mockReturnValue(['test', '-g', "'(test1|test2)'", '/path/to/test.spec.ts']);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'playwright',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect((mockConfig as any).buildPlaywrightArgs).toHaveBeenCalled();
+        });
+
+        it('should handle multiple files', () => {
+            const files = ['/path/to/test1.spec.ts', '/path/to/test2.spec.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test1.spec.ts', [{ label: 'test1' }]);
+            testsByFile.set('/path/to/test2.spec.ts', [{ label: 'test2' }]);
+
+            (mockConfig as any).buildPlaywrightArgs = jest.fn().mockReturnValue(['test', '-g', "'(test1|test2)'", '/path/to/test1.spec.ts']);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'playwright',
+                [],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            // Should contain both normalized file paths
+            expect(args.some(a => a.includes('test1.spec.ts'))).toBe(true);
+            expect(args.some(a => a.includes('test2.spec.ts'))).toBe(true);
+        });
+
+        it('should pass additional args', () => {
+            const files = ['/path/to/test.spec.ts'];
+            const testsByFile = new Map();
+            testsByFile.set('/path/to/test.spec.ts', [{ label: 'test1' }]);
+
+            (mockController.items.get as jest.Mock).mockReturnValue({
+                children: { size: 2 }
+            });
+
+            (mockConfig as any).buildPlaywrightArgs = jest.fn().mockReturnValue(['test', '-g', "'test1'", '/path/to/test.spec.ts']);
+
+            const args = buildTestArgs(
+                files,
+                testsByFile,
+                'playwright',
+                ['--project=chromium'],
+                false,
+                mockConfig,
+                mockController
+            );
+
+            expect((mockConfig as any).buildPlaywrightArgs).toHaveBeenCalledWith(
+                '/path/to/test.spec.ts',
+                expect.any(String),
+                true,
+                ['--project=chromium']
+            );
+        });
+    });
+
     describe('jest', () => {
         it('should generate correct args for jest with coverage', () => {
             const files = ['/path/to/test.ts'];

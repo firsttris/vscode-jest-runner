@@ -4,25 +4,26 @@ import { existsSync, readFileSync } from 'node:fs';
 import { normalizePath, normalizeDriveLetter } from './PathUtils';
 import { logDebug, logWarning } from './Logger';
 
-export function resolveBinaryPath(binaryName: string, cwd: string): string | undefined {
+export function resolveBinaryPath(packageName: string, cwd: string, binName?: string): string | undefined {
     try {
         const requireFromCwd = createRequire(join(cwd, 'package.json'));
         try {
-            const pkgJsonPath = requireFromCwd.resolve(`${binaryName}/package.json`);
+            const pkgJsonPath = requireFromCwd.resolve(`${packageName}/package.json`);
             const pkgDir = dirname(pkgJsonPath);
             const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
-            const binEntry = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.[binaryName];
+            const lookupName = binName || packageName;
+            const binEntry = typeof pkg.bin === 'string' ? pkg.bin : pkg.bin?.[lookupName];
             if (binEntry) {
                 const binPath = join(pkgDir, binEntry);
                 if (existsSync(binPath)) {
-                    logDebug(`Resolved binary via package.json for ${binaryName}: ${binPath}`);
+                    logDebug(`Resolved binary via package.json for ${lookupName}: ${binPath}`);
                     return normalizePath(binPath);
                 }
             }
         } catch {
         }
     } catch (error) {
-        logWarning(`Failed to resolve binary path for ${binaryName}: ${error}`);
+        logWarning(`Failed to resolve binary path for ${packageName}: ${error}`);
     }
     return undefined;
 }

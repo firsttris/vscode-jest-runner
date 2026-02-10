@@ -16,6 +16,7 @@ import {
 import { detectFrameworkByPatternMatch } from './patternMatching';
 import { logDebug, logError } from '../utils/Logger';
 import { normalizePath } from '../utils/PathUtils';
+import { isPlaywrightDisabled } from '../config/Settings';
 
 export function isNodeTestFile(filePath: string): boolean {
   const cached = cacheManager.getFileFramework(filePath);
@@ -67,10 +68,17 @@ export function isDenoTestFile(filePath: string): boolean {
   }
 }
 
+export function isPlaywrightTestFile(filePath: string): boolean {
+  if (isPlaywrightDisabled()) {
+    return false;
+  }
+  return hasImport(filePath, '@playwright/test');
+}
+
 function hasImport(filePath: string, moduleName: string): boolean {
   const cached = cacheManager.getFileFramework(filePath);
   if (cached !== undefined) {
-    return cached?.framework === (moduleName === 'bun:test' ? 'bun' : 'node-test');
+    return cached?.framework === (moduleName === 'bun:test' ? 'bun' : moduleName === '@playwright/test' ? 'playwright' : 'node-test');
   }
 
   try {
@@ -158,6 +166,13 @@ export function isVitestUsedIn(directoryPath: string): boolean {
   return isFrameworkUsedIn(directoryPath, 'vitest');
 }
 
+export function isPlaywrightUsedIn(directoryPath: string): boolean {
+  if (isPlaywrightDisabled()) {
+    return false;
+  }
+  return isFrameworkUsedIn(directoryPath, 'playwright');
+}
+
 export function detectTestFramework(
   directoryPath: string,
   filePath?: string,
@@ -171,6 +186,9 @@ export function detectTestFramework(
     }
     if (isDenoTestFile(filePath)) {
       return 'deno';
+    }
+    if (isPlaywrightTestFile(filePath)) {
+      return 'playwright';
     }
   }
 
@@ -312,6 +330,7 @@ const detectFrameworkByDependency = (
       { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
       { framework: 'bun', isUsed: () => isBunUsedIn(rootPath) },
       { framework: 'deno', isUsed: () => isDenoUsedIn(rootPath) },
+      { framework: 'playwright', isUsed: () => isPlaywrightUsedIn(rootPath) },
     ];
 
   const found = checks.find((check) => check.isUsed());
@@ -343,6 +362,11 @@ export function findTestFrameworkDirectory(
     return { directory: dirname(filePath), framework: 'deno' };
   }
 
+  const isPlaywright = isPlaywrightTestFile(filePath);
+  if (isPlaywright) {
+    return { directory: dirname(filePath), framework: 'playwright' };
+  }
+
   const customResult = resolveCustomConfigs(filePath, rootPath, targetFramework);
   if (customResult) return customResult;
 
@@ -361,6 +385,11 @@ export function findJestDirectory(filePath: string): string | undefined {
 export function findVitestDirectory(filePath: string): string | undefined {
   const result = findTestFrameworkDirectory(filePath, 'vitest');
   return result?.directory;
+}
+
+export function findPlaywrightDirectory(filePath: string): string | undefined {
+  const result = findTestFrameworkDirectory(filePath);
+  return result?.framework === 'playwright' ? result.directory : undefined;
 }
 
 export function isBunUsedIn(directoryPath: string): boolean {

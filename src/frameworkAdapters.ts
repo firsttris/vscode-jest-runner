@@ -144,12 +144,30 @@ const buildDenoArgs: BuildArgsFn = (filePath, testName, withQuotes, options, _co
   return [...args, ...mergeOptions(options, runOptions), q(normalizePath(filePath))];
 };
 
+const buildPlaywrightArgs: BuildArgsFn = (filePath, testName, withQuotes, options, _configPath, runOptions) => {
+  const q = withQuotes ? quote : (s: string) => s;
+  const args = ['test'];
+
+  const resolved = prepareTestName(testName, withQuotes);
+  if (resolved) {
+
+    if (testName) {
+      const rawName = testName.includes('%') ? resolveTestNameStringInterpolation(testName) : testName;
+      const final = withQuotes ? quote(escapeSingleQuotes(rawName)) : rawName;
+      args.push('-g', final);
+    }
+  }
+
+  return [...args, ...mergeOptions(options, runOptions), q(normalizePath(filePath))];
+};
+
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
   'jest': buildJestArgs,
   'vitest': buildVitestArgs,
   'node-test': buildNodeTestArgs,
   'bun': buildBunArgs,
   'deno': buildDenoArgs,
+  'playwright': buildPlaywrightArgs,
 };
 
 export const getFrameworkAdapter = (framework: TestFrameworkName) => ({
