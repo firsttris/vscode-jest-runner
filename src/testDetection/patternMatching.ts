@@ -67,7 +67,7 @@ export function fileMatchesPatternsExplicit(
   if (roots && roots.length > 0) {
     const absolutePath = resolve(filePath).replace(/\\/g, '/');
     const isInRoots = roots.some(root => {
-      const resolvedRoot = resolve(configDir, resolveRootDirToken(root, rootDir)).replace(/\\/g, '/');
+      const resolvedRoot = resolve(baseDir, resolveRootDirToken(root, rootDir)).replace(/\\/g, '/');
       return absolutePath.startsWith(resolvedRoot);
     });
     if (!isInRoots) {

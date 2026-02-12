@@ -26,7 +26,7 @@ const parseJestConfigContent = (config: any, configPath: string, rootDirOverride
   const rootDirValue = config.rootDir;
   const resolvedRootDir = rootDirOverride ?? (
     rootDirValue
-      ? (rootDirValue === '__dirname' ? dirname(configPath) : rootDirValue)
+      ? (rootDirValue === '__dirname' ? dirname(configPath) : resolve(dirname(configPath), rootDirValue))
       : undefined
   );
 

@@ -157,7 +157,7 @@ describe('patternMatching', () => {
           configDir,
           patterns,
           false,
-          'packages/app',  // rootDir
+          '/project/packages/app',  // rootDir (absolute)
           undefined,
           undefined,
           ['<rootDir>/src'],  // roots relative to rootDir

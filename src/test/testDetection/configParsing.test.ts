@@ -418,7 +418,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
 
-      expect(result).toEqual([{ patterns: ['.e2e-spec.ts$'], isRegex: true, rootDir: '.' }]);
+      expect(result).toEqual([{ patterns: ['.e2e-spec.ts$'], isRegex: true, rootDir: '/test' }]);
     });
 
     it('should extract testRegex array from JSON config', () => {
@@ -464,7 +464,7 @@ module.exports = {
       expect(result).toEqual([{
         patterns: ['src/.*\\.spec\\.[tj]sx?'],
         isRegex: true,
-        rootDir: '.',
+        rootDir: '/test',
       }]);
     });
 
@@ -498,7 +498,7 @@ export default {
           '**/?(.)+(spec|test).ts?(x)',
         ],
         isRegex: false,
-        rootDir: '../../tests/',
+        rootDir: '/tests',
       }]);
     });
 
@@ -579,7 +579,7 @@ module.exports = {
       expect(result).toEqual([{
         patterns: ['**/*.test.ts', '**/*.spec.ts'],
         isRegex: false,
-        rootDir: '.',
+        rootDir: '/test',
         roots: ['<rootDir>/src', '<rootDir>/tests'],
         ignorePatterns: ['/node_modules/', '/fixtures/'],
       }]);
