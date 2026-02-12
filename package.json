@@ -2,7 +2,7 @@
   "name": "vscode-jest-runner",
   "displayName": "Jest / Vitest Runner",
   "description": "Run and debug Jest, Vitest, Node.js, Bun, and Deno tests with ease, right from your editor.",
-  "version": "0.4.130",
+  "version": "0.4.131",
   "publisher": "firsttris",
   "author": "Tristan Teufel",
   "repository": {
