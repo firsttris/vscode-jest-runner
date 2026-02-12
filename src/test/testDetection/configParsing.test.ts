@@ -1,4 +1,5 @@
 import * as fs from 'node:fs';
+import { resolve } from 'node:path';
 import { packageJsonHasJestConfig } from '../../testDetection/configParsing';
 import { getCypressSpecPattern } from '../../testDetection/configParsers/cypressParser';
 import { getTestMatchFromJestConfig } from '../../testDetection/configParsers/jestParser';
@@ -418,7 +419,7 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
 
-      expect(result).toEqual([{ patterns: ['.e2e-spec.ts$'], isRegex: true, rootDir: '/test' }]);
+      expect(result).toEqual([{ patterns: ['.e2e-spec.ts$'], isRegex: true, rootDir: resolve('/test') }]);
     });
 
     it('should extract testRegex array from JSON config', () => {
@@ -464,7 +465,7 @@ module.exports = {
       expect(result).toEqual([{
         patterns: ['src/.*\\.spec\\.[tj]sx?'],
         isRegex: true,
-        rootDir: '/test',
+        rootDir: resolve('/test'),
       }]);
     });
 
@@ -498,7 +499,7 @@ export default {
           '**/?(.)+(spec|test).ts?(x)',
         ],
         isRegex: false,
-        rootDir: '/tests',
+        rootDir: resolve('/tests'),
       }]);
     });
 
@@ -579,7 +580,7 @@ module.exports = {
       expect(result).toEqual([{
         patterns: ['**/*.test.ts', '**/*.spec.ts'],
         isRegex: false,
-        rootDir: '/test',
+        rootDir: resolve('/test'),
         roots: ['<rootDir>/src', '<rootDir>/tests'],
         ignorePatterns: ['/node_modules/', '/fixtures/'],
       }]);
