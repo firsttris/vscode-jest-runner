@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { relative } from 'node:path';
+import { dirname } from 'node:path';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { testFileCache } from '../testDetection/testFileCache';
 import { invalidateNodeTestCache } from '../testDetection/frameworkDetection';
-import { parseTestsInFile } from '../testDiscovery';
+import { findFolderTestItem, getOrCreateFileTestItem, parseTestsInFile } from '../testDiscovery';
 import { cacheManager } from '../cache/CacheManager';
 
 export class TestFileWatcher {
@@ -37,17 +37,13 @@ export class TestFileWatcher {
                         if (!testFileCache.isTestFile(uri.fsPath)) {
                             return;
                         }
-                        const relativePath = relative(
-                            workspaceFolder.uri.fsPath,
+                        const testItem = getOrCreateFileTestItem(
+                            this.testController,
+                            workspaceFolder,
                             uri.fsPath,
                         );
-                        const testItem = this.testController.createTestItem(
-                            uri.fsPath,
-                            relativePath,
-                            uri,
-                        );
-                        this.testController.items.add(testItem);
                         parseTestsInFile(uri.fsPath, testItem, this.testController);
+                        return;
                     }
                 }
             }
@@ -55,9 +51,22 @@ export class TestFileWatcher {
 
         watcher.onDidDelete((uri) => {
             cacheManager.invalidate(uri.fsPath);
-            const item = this.testController.items.get(uri.fsPath);
-            if (item) {
-                this.testController.items.delete(uri.fsPath);
+
+            this.testController.items.delete(uri.fsPath);
+
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+            if (!workspaceFolder) {
+                return;
+            }
+
+            const parentItem = findFolderTestItem(
+                this.testController,
+                workspaceFolder,
+                dirname(uri.fsPath),
+            );
+
+            if (parentItem) {
+                parentItem.children.delete(uri.fsPath);
             }
         });
 
@@ -77,9 +86,11 @@ export class TestFileWatcher {
             if (!testItem) {
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
                 if (workspaceFolder) {
-                    const relativePath = relative(workspaceFolder.uri.fsPath, filePath);
-                    testItem = this.testController.createTestItem(filePath, relativePath, document.uri);
-                    this.testController.items.add(testItem);
+                    testItem = getOrCreateFileTestItem(
+                        this.testController,
+                        workspaceFolder,
+                        filePath,
+                    );
                 }
             }
 
@@ -95,9 +106,11 @@ export class TestFileWatcher {
             if (testFileCache.isTestFile(filePath)) {
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
                 if (workspaceFolder) {
-                    const relativePath = relative(workspaceFolder.uri.fsPath, filePath);
-                    const testItem = this.testController.createTestItem(filePath, relativePath, document.uri);
-                    this.testController.items.add(testItem);
+                    const testItem = getOrCreateFileTestItem(
+                        this.testController,
+                        workspaceFolder,
+                        filePath,
+                    );
                     parseTestsInFile(filePath, testItem, this.testController);
                 }
             }
