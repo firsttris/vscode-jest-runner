@@ -36,9 +36,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should start debugging for a test', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
@@ -49,9 +48,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should use workspace folder for debugging', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -64,9 +62,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should handle missing workspace folder', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -83,9 +80,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should debug leaf nodes only', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -109,9 +105,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should respect cancellation token', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -124,9 +119,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should use buildTestArgs for Vitest files', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -159,9 +153,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should pass filePath to getDebugConfiguration for framework detection', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -188,9 +181,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should include Vitest config in debug args', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -232,9 +224,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should debug all tests when request.include is undefined', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -253,9 +244,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should skip excluded tests in debug handler', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -281,9 +271,8 @@ describe('JestTestController - debug handler', () => {
   });
 
   it('should escape special regex characters in test names', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -299,15 +288,40 @@ describe('JestTestController - debug handler', () => {
 
     await debugProfile(requestWithSpecialChars, mockToken);
 
-    const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls[0][1];
+    const debugCall = (vscode.debug.startDebugging as jest.Mock).mock
+      .calls[0][1];
     expect(debugCall.args).toContain('-t');
     expect(debugCall.args).toContain('Test with \\+ and \\* chars');
   });
 
+  it('should resolve string interpolation placeholders in debug test names', async () => {
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
+    const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
+      .calls[1][2];
+
+    const testWithInterpolation = new TestItem(
+      'testInterpolation',
+      'xyz by $title',
+      vscode.Uri.file('/workspace/test.ts'),
+    );
+    const request = {
+      include: [testWithInterpolation],
+      exclude: [],
+    } as any;
+
+    await debugProfile(request, mockToken);
+
+    const debugCall = (vscode.debug.startDebugging as jest.Mock).mock
+      .calls[0][1];
+    expect(debugCall.args).toContain('-t');
+    expect(debugCall.args).toContain('xyz by (.*?)');
+    expect(debugCall.args).not.toContain('xyz by \\$title');
+  });
+
   it('should debug Deno tests correctly', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[1][2];
 
@@ -320,16 +334,16 @@ describe('JestTestController - debug handler', () => {
 
     jest
       .spyOn(vscode.workspace, 'getConfiguration')
-      .mockReturnValue(
-        new WorkspaceConfiguration({}) as any,
-      );
+      .mockReturnValue(new WorkspaceConfiguration({}) as any);
     jest
       .spyOn(testDetection, 'getTestFrameworkForFile')
       .mockReturnValue('deno');
 
     await debugProfile(request, mockToken);
 
-    const debugCall = (vscode.debug.startDebugging as jest.Mock).mock.calls.pop();
+    const debugCall = (
+      vscode.debug.startDebugging as jest.Mock
+    ).mock.calls.pop();
     const config = debugCall?.[1] as any;
 
     expect(config.type).toBe('node');
@@ -337,7 +351,12 @@ describe('JestTestController - debug handler', () => {
     expect(config.attachSimplePort).toBe(9229);
     expect(config.runtimeExecutable).toBe('deno');
     expect(config.runtimeArgs).toEqual(
-      expect.arrayContaining(['test', '--inspect-brk', '--allow-all', '/workspace/main.test.ts']),
+      expect.arrayContaining([
+        'test',
+        '--inspect-brk',
+        '--allow-all',
+        '/workspace/main.test.ts',
+      ]),
     );
   });
 });

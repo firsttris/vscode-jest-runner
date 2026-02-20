@@ -4,7 +4,11 @@ import { parseTestFile } from './parser';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { testFileCache } from './testDetection/testFileCache';
 import { logError } from './utils/Logger';
-import { escapeRegExp, TestNode, updateTestNameIfUsingProperties } from './utils/TestNameUtils';
+import {
+  escapeRegExp,
+  TestNode,
+  updateTestNameIfUsingProperties,
+} from './utils/TestNameUtils';
 
 export async function discoverTests(
   workspaceFolder: vscode.WorkspaceFolder,
@@ -14,32 +18,20 @@ export async function discoverTests(
   const testFiles = await findTestFiles(workspaceFolder.uri.fsPath, jestConfig);
 
   for (const file of testFiles) {
-    const fileUri = vscode.Uri.file(file);
-    const label = basename(file);
-    const dirPath = dirname(file);
-
-    const parentItem = getOrCreateFolderTestItem(
+    const testItem = getOrCreateFileTestItem(
       testController,
       workspaceFolder,
-      dirPath
+      file,
     );
-
-    const testItem = testController.createTestItem(file, label, fileUri);
-
-    if (parentItem) {
-      parentItem.children.add(testItem);
-    } else {
-      testController.items.add(testItem);
-    }
 
     parseTestsInFile(file, testItem, testController);
   }
 }
 
-function getOrCreateFolderTestItem(
+export function getOrCreateFolderTestItem(
   testController: vscode.TestController,
   workspaceFolder: vscode.WorkspaceFolder,
-  dirPath: string
+  dirPath: string,
 ): vscode.TestItem | undefined {
   const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
   if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
@@ -56,7 +48,11 @@ function getOrCreateFolderTestItem(
     const id = currentPath;
     let item = currentCollection.get(id);
     if (!item) {
-      item = testController.createTestItem(id, part, vscode.Uri.file(currentPath));
+      item = testController.createTestItem(
+        id,
+        part,
+        vscode.Uri.file(currentPath),
+      );
       item.canResolveChildren = false;
       currentCollection.add(item);
     }
@@ -64,6 +60,67 @@ function getOrCreateFolderTestItem(
     currentItem = item;
   }
   return currentItem;
+}
+
+export function findFolderTestItem(
+  testController: vscode.TestController,
+  workspaceFolder: vscode.WorkspaceFolder,
+  dirPath: string,
+): vscode.TestItem | undefined {
+  const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
+  if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
+    return undefined;
+  }
+
+  const parts = relativeDir.split(sep);
+  let currentCollection = testController.items;
+  let currentItem: vscode.TestItem | undefined;
+  let currentPath = workspaceFolder.uri.fsPath;
+
+  for (const part of parts) {
+    currentPath = join(currentPath, part);
+    const item = currentCollection.get(currentPath);
+    if (!item) {
+      return undefined;
+    }
+    currentCollection = item.children;
+    currentItem = item;
+  }
+
+  return currentItem;
+}
+
+export function getOrCreateFileTestItem(
+  testController: vscode.TestController,
+  workspaceFolder: vscode.WorkspaceFolder,
+  filePath: string,
+): vscode.TestItem {
+  const fileUri = vscode.Uri.file(filePath);
+  const label = basename(filePath);
+  const dirPath = dirname(filePath);
+
+  const parentItem = getOrCreateFolderTestItem(
+    testController,
+    workspaceFolder,
+    dirPath,
+  );
+
+  const existingItem = parentItem
+    ? parentItem.children.get(filePath)
+    : testController.items.get(filePath);
+
+  if (existingItem) {
+    return existingItem;
+  }
+
+  const testItem = testController.createTestItem(filePath, label, fileUri);
+  if (parentItem) {
+    parentItem.children.add(testItem);
+  } else {
+    testController.items.add(testItem);
+  }
+
+  return testItem;
 }
 
 export function parseTestsInFile(
@@ -78,7 +135,12 @@ export function parseTestsInFile(
       return;
     }
 
-    processTestNodes(testFile.root.children, parentItem, filePath, testController);
+    processTestNodes(
+      testFile.root.children,
+      parentItem,
+      filePath,
+      testController,
+    );
   } catch (error) {
     logError(`Error parsing tests in ${filePath}`, error);
   }
