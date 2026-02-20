@@ -4,7 +4,11 @@ import { parseTestFile } from './parser';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { testFileCache } from './testDetection/testFileCache';
 import { logError } from './utils/Logger';
-import { escapeRegExp, TestNode, updateTestNameIfUsingProperties } from './utils/TestNameUtils';
+import {
+  escapeRegExp,
+  TestNode,
+  updateTestNameIfUsingProperties,
+} from './utils/TestNameUtils';
 
 export async function discoverTests(
   workspaceFolder: vscode.WorkspaceFolder,
@@ -27,7 +31,7 @@ export async function discoverTests(
 export function getOrCreateFolderTestItem(
   testController: vscode.TestController,
   workspaceFolder: vscode.WorkspaceFolder,
-  dirPath: string
+  dirPath: string,
 ): vscode.TestItem | undefined {
   const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
   if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
@@ -44,7 +48,11 @@ export function getOrCreateFolderTestItem(
     const id = currentPath;
     let item = currentCollection.get(id);
     if (!item) {
-      item = testController.createTestItem(id, part, vscode.Uri.file(currentPath));
+      item = testController.createTestItem(
+        id,
+        part,
+        vscode.Uri.file(currentPath),
+      );
       item.canResolveChildren = false;
       currentCollection.add(item);
     }
@@ -127,7 +135,12 @@ export function parseTestsInFile(
       return;
     }
 
-    processTestNodes(testFile.root.children, parentItem, filePath, testController);
+    processTestNodes(
+      testFile.root.children,
+      parentItem,
+      filePath,
+      testController,
+    );
   } catch (error) {
     logError(`Error parsing tests in ${filePath}`, error);
   }
