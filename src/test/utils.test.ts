@@ -12,6 +12,7 @@ import {
   escapeSingleQuotes,
   quote,
   unquote,
+  resolveTestNameStringInterpolation,
   updateTestNameIfUsingProperties,
   findFullTestName,
 } from '../utils/TestNameUtils';
@@ -32,7 +33,7 @@ function createTestNode(data: {
   return {
     ...data,
     file: '',
-    addChild: () => { },
+    addChild: () => {},
     filter: () => [],
   };
 }
@@ -80,6 +81,39 @@ describe('escapeRegExp', () => {
 
   it('should convert match all patterns (.*?) back to non-escaped form', () => {
     expect(escapeRegExp('test(.*?)name')).toBe('test(.*?)name');
+  });
+});
+
+describe('resolveTestNameStringInterpolation', () => {
+  it('should resolve plain $ and ${} placeholders to wildcard pattern', () => {
+    expect(resolveTestNameStringInterpolation('xyz by $title')).toBe(
+      'xyz by (.*?)',
+    );
+    expect(resolveTestNameStringInterpolation('xyz by ${title}')).toBe(
+      'xyz by (.*?)',
+    );
+  });
+
+  it('should resolve escaped $ placeholders to wildcard pattern', () => {
+    expect(resolveTestNameStringInterpolation('xyz by \\$title')).toBe(
+      'xyz by (.*?)',
+    );
+    expect(resolveTestNameStringInterpolation('xyz by \\\${title}')).toBe(
+      'xyz by (.*?)',
+    );
+  });
+
+  it('should resolve dotted placeholders to wildcard pattern', () => {
+    expect(
+      resolveTestNameStringInterpolation(
+        'should run correctly for id ${test_case.id}',
+      ),
+    ).toBe('should run correctly for id (.*?)');
+    expect(
+      resolveTestNameStringInterpolation(
+        'should run correctly for id $test_case.id',
+      ),
+    ).toBe('should run correctly for id (.*?)');
   });
 });
 
@@ -309,7 +343,9 @@ describe('resolveConfigPathOrMapping', () => {
   });
 
   it('should return undefined for empty mapping', () => {
-    expect(resolveConfigPathOrMapping({}, '/path/to/my.spec.ts')).toBeUndefined();
+    expect(
+      resolveConfigPathOrMapping({}, '/path/to/my.spec.ts'),
+    ).toBeUndefined();
   });
 });
 
@@ -342,9 +378,6 @@ describe('validateCodeLensOptions', () =>
     },
   ));
 
-
-
-
 import { parseShellCommand } from '../utils/ShellUtils';
 
 describe('parseShellCommand', () => {
@@ -353,23 +386,42 @@ describe('parseShellCommand', () => {
   });
 
   it('should handle single quotes', () => {
-    expect(parseShellCommand("npm run 'test:watch'")).toEqual(['npm', 'run', 'test:watch']);
+    expect(parseShellCommand("npm run 'test:watch'")).toEqual([
+      'npm',
+      'run',
+      'test:watch',
+    ]);
   });
 
   it('should handle double quotes', () => {
-    expect(parseShellCommand('npm run "test:watch"')).toEqual(['npm', 'run', 'test:watch']);
+    expect(parseShellCommand('npm run "test:watch"')).toEqual([
+      'npm',
+      'run',
+      'test:watch',
+    ]);
   });
 
   it('should handle escaped characters', () => {
-    expect(parseShellCommand('npm run test\\:watch')).toEqual(['npm', 'run', 'test:watch']);
+    expect(parseShellCommand('npm run test\\:watch')).toEqual([
+      'npm',
+      'run',
+      'test:watch',
+    ]);
   });
 
   it('should handle quotes inside words', () => {
-    expect(parseShellCommand('npm run test="foo bar"')).toEqual(['npm', 'run', 'test=foo bar']);
+    expect(parseShellCommand('npm run test="foo bar"')).toEqual([
+      'npm',
+      'run',
+      'test=foo bar',
+    ]);
   });
 
   it('should handle spaces inside quotes', () => {
-    expect(parseShellCommand('echo "hello world"')).toEqual(['echo', 'hello world']);
+    expect(parseShellCommand('echo "hello world"')).toEqual([
+      'echo',
+      'hello world',
+    ]);
   });
 
   it('should handle empty string', () => {

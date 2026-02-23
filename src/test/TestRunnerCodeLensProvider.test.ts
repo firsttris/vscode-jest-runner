@@ -441,6 +441,51 @@ describe('TestRunnerCodeLensProvider', () => {
       expect(codeLenses.length).toBeGreaterThan(0);
     });
 
+    it('should resolve $placeholders for code lens test-name patterns', async () => {
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
+      mockDocument.getText = jest.fn().mockReturnValue(`
+        const cases = [{ title: 'test 1' }];
+        describe.each(cases)('xyz by $title', (testCase) => {
+          it('works', () => {
+            expect(testCase.title).toBeTruthy();
+          });
+        });
+      `);
+
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'describe',
+              name: 'xyz by $title',
+              start: { line: 3, column: 8 },
+              end: { line: 7, column: 10 },
+              file: '/workspace/test.spec.ts',
+              children: [
+                {
+                  type: 'it',
+                  name: 'works',
+                  start: { line: 4, column: 10 },
+                  end: { line: 6, column: 12 },
+                  file: '/workspace/test.spec.ts',
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      } as any);
+
+      const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
+      const commandArgs = codeLenses
+        .map((lens) => lens.command?.arguments?.[0] as string | undefined)
+        .filter((arg): arg is string => Boolean(arg));
+
+      expect(commandArgs.some((arg) => arg.includes('xyz by'))).toBe(true);
+      expect(commandArgs.some((arg) => arg.includes('$title'))).toBe(false);
+      expect(commandArgs.some((arg) => arg.includes('\\$title'))).toBe(false);
+    });
+
     it('should provide individual lenses and "Run All" for it.each expanded tests', async () => {
       codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
       mockDocument.getText = jest.fn().mockReturnValue(`
@@ -491,25 +536,37 @@ describe('TestRunnerCodeLensProvider', () => {
       expect(codeLenses.length).toBe(8);
 
       // Check individual test lenses have index prefix
-      const lens1Run = codeLenses.find((lens) => lens.command?.title === '[1] Run');
+      const lens1Run = codeLenses.find(
+        (lens) => lens.command?.title === '[1] Run',
+      );
       expect(lens1Run).toBeDefined();
       expect(lens1Run?.command?.arguments?.[0]).toBe('test 1');
 
-      const lens2Run = codeLenses.find((lens) => lens.command?.title === '[2] Run');
+      const lens2Run = codeLenses.find(
+        (lens) => lens.command?.title === '[2] Run',
+      );
       expect(lens2Run).toBeDefined();
       expect(lens2Run?.command?.arguments?.[0]).toBe('test 2');
 
-      const lens3Run = codeLenses.find((lens) => lens.command?.title === '[3] Run');
+      const lens3Run = codeLenses.find(
+        (lens) => lens.command?.title === '[3] Run',
+      );
       expect(lens3Run).toBeDefined();
       expect(lens3Run?.command?.arguments?.[0]).toBe('test 3');
 
-      const lens1Debug = codeLenses.find((lens) => lens.command?.title === '[1] Debug');
+      const lens1Debug = codeLenses.find(
+        (lens) => lens.command?.title === '[1] Debug',
+      );
       expect(lens1Debug).toBeDefined();
 
-      const lens2Debug = codeLenses.find((lens) => lens.command?.title === '[2] Debug');
+      const lens2Debug = codeLenses.find(
+        (lens) => lens.command?.title === '[2] Debug',
+      );
       expect(lens2Debug).toBeDefined();
 
-      const lens3Debug = codeLenses.find((lens) => lens.command?.title === '[3] Debug');
+      const lens3Debug = codeLenses.find(
+        (lens) => lens.command?.title === '[3] Debug',
+      );
       expect(lens3Debug).toBeDefined();
 
       // Check "Run All" and "Debug All" lenses exist
@@ -526,6 +583,213 @@ describe('TestRunnerCodeLensProvider', () => {
       expect(debugAllLens).toBeDefined();
       expect(debugAllLens?.command?.command).toBe('extension.debugJest');
       expect(debugAllLens?.command?.arguments?.[0]).toContain('test (.*?)');
+    });
+
+    it('should provide individual lenses and "Run All" for describe.each expanded suites', async () => {
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
+      mockDocument.getText = jest.fn().mockReturnValue(`
+        const cases = [{ title: 'A' }, { title: 'B' }];
+        describe.each(cases)('group $title', () => {});
+      `);
+
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'describe',
+              name: 'group A',
+              start: { line: 3, column: 8 },
+              end: { line: 3, column: 40 },
+              file: '/workspace/test.spec.ts',
+              children: [],
+              eachTemplate: 'group $title',
+            },
+            {
+              type: 'describe',
+              name: 'group B',
+              start: { line: 3, column: 8 },
+              end: { line: 3, column: 40 },
+              file: '/workspace/test.spec.ts',
+              children: [],
+              eachTemplate: 'group $title',
+            },
+          ],
+        },
+      } as any);
+
+      const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
+
+      const lens1Run = codeLenses.find(
+        (lens) => lens.command?.title === '[1] Run',
+      );
+      expect(lens1Run).toBeDefined();
+      expect(lens1Run?.command?.arguments?.[0]).toBe('group A');
+
+      const lens2Run = codeLenses.find(
+        (lens) => lens.command?.title === '[2] Run',
+      );
+      expect(lens2Run).toBeDefined();
+      expect(lens2Run?.command?.arguments?.[0]).toBe('group B');
+
+      const runAllLens = codeLenses.find(
+        (lens) => lens.command?.title === 'Run All',
+      );
+      expect(runAllLens).toBeDefined();
+      expect(runAllLens?.command?.arguments?.[0]).toContain('group');
+      expect(runAllLens?.command?.arguments?.[0]).not.toContain('$title');
+
+      const debugAllLens = codeLenses.find(
+        (lens) => lens.command?.title === 'Debug All',
+      );
+      expect(debugAllLens).toBeDefined();
+    });
+
+    it('should provide Run All and indexed lenses for nested it inside describe.each', async () => {
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
+      mockDocument.getText = jest.fn().mockReturnValue(`
+        const cases = [
+          { title: 'test 1', id: 42 },
+          { title: 'test 2', id: 99 }
+        ];
+
+        describe.each(cases)('xyz group by $title', (test_case) => {
+          it(\`should run correctly for id \${test_case.id}\`, () => {
+            expect(test_case.id).toBeGreaterThan(0);
+          });
+        });
+      `);
+
+      jest.spyOn(parser, 'parse').mockReturnValue({
+        root: {
+          children: [
+            {
+              type: 'describe',
+              name: 'xyz group by test 1',
+              start: { line: 7, column: 8 },
+              end: { line: 11, column: 10 },
+              file: '/workspace/test.spec.ts',
+              eachTemplate: 'xyz group by $title',
+              children: [
+                {
+                  type: 'it',
+                  name: 'should run correctly for id 42',
+                  start: { line: 8, column: 10 },
+                  end: { line: 10, column: 12 },
+                  file: '/workspace/test.spec.ts',
+                  eachTemplate: 'should run correctly for id ${test_case.id}',
+                  children: [],
+                },
+              ],
+            },
+            {
+              type: 'describe',
+              name: 'xyz group by test 2',
+              start: { line: 7, column: 8 },
+              end: { line: 11, column: 10 },
+              file: '/workspace/test.spec.ts',
+              eachTemplate: 'xyz group by $title',
+              children: [
+                {
+                  type: 'it',
+                  name: 'should run correctly for id 99',
+                  start: { line: 8, column: 10 },
+                  end: { line: 10, column: 12 },
+                  file: '/workspace/test.spec.ts',
+                  eachTemplate: 'should run correctly for id ${test_case.id}',
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      } as any);
+
+      const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
+
+      const runAllLens = codeLenses.find(
+        (lens) => lens.command?.title === 'Run All',
+      );
+      expect(runAllLens).toBeDefined();
+      expect(runAllLens?.command?.arguments?.[0]).toContain('xyz group by');
+      expect(runAllLens?.command?.arguments?.[0]).not.toContain('$title');
+
+      const debugAllLens = codeLenses.find(
+        (lens) => lens.command?.title === 'Debug All',
+      );
+      expect(debugAllLens).toBeDefined();
+
+      const lens1Run = codeLenses.find(
+        (lens) => lens.command?.title === '[1] Run',
+      );
+      expect(lens1Run).toBeDefined();
+      expect(lens1Run?.command?.arguments?.[0]).toContain('id 42');
+
+      const lens2Run = codeLenses.find(
+        (lens) => lens.command?.title === '[2] Run',
+      );
+      expect(lens2Run).toBeDefined();
+      expect(lens2Run?.command?.arguments?.[0]).toContain('id 99');
+    });
+
+    it('should provide indexed Run/Debug lenses for real it.each(cases) parser output', async () => {
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
+      mockDocument.getText = jest.fn().mockReturnValue(`
+        describe("computeTierFromScore", () => {
+          const basicContext = { isPrimary: true } as any
+          const secondaryContext = { isPrimary: false } as any
+
+          const cases = [
+            { score: 0, primary: 0, secondary: 0 },
+            { score: 12.25, primary: 0, secondary: 0 },
+            { score: 12.5, primary: 1, secondary: 2 },
+          ]
+
+          it.each(cases)(
+            "resolves tier for score $score -> primary $primary, secondary $secondary",
+            ({ score, primary, secondary }) => {
+              const primaryRes = computeTierFromScore({ score }, basicContext)
+              const secondaryRes = computeTierFromScore({ score }, secondaryContext)
+
+              expect(primaryRes?.value).toBe(primary)
+              expect(secondaryRes?.value).toBe(secondary)
+            },
+          )
+        })
+      `);
+
+      const actualParser = jest.requireActual('../parser');
+      (parser.parse as jest.Mock).mockImplementation(
+        (filePath: string, content?: string) =>
+          actualParser.parse(filePath, content),
+      );
+
+      const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
+
+      const runLenses = codeLenses.filter(
+        (lens) => lens.command?.command === 'extension.runJest',
+      );
+      const debugLenses = codeLenses.filter(
+        (lens) => lens.command?.command === 'extension.debugJest',
+      );
+
+      expect(runLenses.some((lens) => lens.command?.title === '[1] Run')).toBe(
+        true,
+      );
+      expect(runLenses.some((lens) => lens.command?.title === '[2] Run')).toBe(
+        true,
+      );
+      expect(runLenses.some((lens) => lens.command?.title === '[3] Run')).toBe(
+        true,
+      );
+      expect(
+        debugLenses.some((lens) => lens.command?.title === '[1] Debug'),
+      ).toBe(true);
+      expect(
+        debugLenses.some((lens) => lens.command?.title === '[2] Debug'),
+      ).toBe(true);
+      expect(
+        debugLenses.some((lens) => lens.command?.title === '[3] Debug'),
+      ).toBe(true);
     });
   });
 });

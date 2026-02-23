@@ -2,31 +2,57 @@ import { readFileSync } from 'node:fs';
 import { format } from 'node:util';
 import { parse as babelParse, type ParserOptions } from '@babel/parser';
 import * as t from '@babel/types';
-import { getNameForNode, getCallExpression, parseOptions, shallowAttr, type JESParserOptions } from './helper';
-import { NamedBlock, ParseResult, ParsedNode, ParsedNodeType, ParsedRange } from './parserNodes';
+import {
+  getNameForNode,
+  getCallExpression,
+  parseOptions,
+  shallowAttr,
+  type JESParserOptions,
+} from './helper';
+import {
+  NamedBlock,
+  ParseResult,
+  ParsedNode,
+  ParsedNodeType,
+  ParsedRange,
+} from './parserNodes';
 import { astToValue } from '../../utils/AstUtils';
+
+const DESCRIBE_EACH_INNER_TEST_FLAG = '__JTR_DESCRIBE_EACH_INNER_TEST' as const;
+type ScopeBindings = Record<string, any>;
+type EachCallbackFn = t.ArrowFunctionExpression | t.FunctionExpression;
 
 const isFunctionExpression = (
   node: t.Node,
 ): node is t.ArrowFunctionExpression | t.FunctionExpression =>
   t.isArrowFunctionExpression(node) || t.isFunctionExpression(node);
 
-const toAst = (file: string, data?: string, options?: ParserOptions): { ast: t.File; source: string } => {
+const toAst = (
+  file: string,
+  data?: string,
+  options?: ParserOptions,
+): { ast: t.File; source: string } => {
   const source = data ?? readFileSync(file, 'utf8');
-  const parserOptions: ParserOptions = { ...(options ?? {}), sourceType: 'module' };
+  const parserOptions: ParserOptions = {
+    ...(options ?? {}),
+    sourceType: 'module',
+  };
   return { ast: babelParse(source, parserOptions), source };
 };
 
-export const getASTfor = (file: string, data?: string, options?: JESParserOptions): t.File => {
+export const getASTfor = (
+  file: string,
+  data?: string,
+  options?: JESParserOptions,
+): t.File => {
   const { ast } = toAst(file, data, parseOptions(file, options));
   return ast;
 };
 
 const isDescribe = (name?: string) => name === 'describe';
 
-const isTestBlock = (name?: string) => name === 'it' || name === 'fit' || name === 'test';
-
-
+const isTestBlock = (name?: string) =>
+  name === 'it' || name === 'fit' || name === 'test';
 
 const formatTitle = (title: string, args: any, index: number): string => {
   let formatted = title;
@@ -51,6 +77,135 @@ const formatTitle = (title: string, args: any, index: number): string => {
   return formatted;
 };
 
+const getTitleTemplate = (titleArg: t.Node | undefined): string => {
+  if (!titleArg) {
+    return '';
+  }
+
+  if (t.isStringLiteral(titleArg)) {
+    return titleArg.value;
+  }
+
+  if (t.isTemplateLiteral(titleArg) && titleArg.quasis.length === 1) {
+    return titleArg.quasis[0].value.raw;
+  }
+
+  return '';
+};
+
+const getEachCallbackFunction = (
+  callExpr: t.CallExpression,
+): EachCallbackFn | undefined => {
+  const callbackArg = callExpr.arguments[1];
+  if (
+    t.isArrowFunctionExpression(callbackArg) ||
+    t.isFunctionExpression(callbackArg)
+  ) {
+    return callbackArg;
+  }
+  return undefined;
+};
+
+const getInlineEachTable = (
+  callExpr: t.CallExpression,
+  scopeBindings: ScopeBindings,
+): unknown[] | undefined => {
+  if (!t.isCallExpression(callExpr.callee)) {
+    return undefined;
+  }
+
+  const eachArgs = callExpr.callee.arguments;
+  if (eachArgs.length === 0 || !t.isArrayExpression(eachArgs[0])) {
+    return undefined;
+  }
+
+  const table = astToValue(eachArgs[0], scopeBindings);
+  return Array.isArray(table) ? table : undefined;
+};
+
+const getResolvableEachTable = (
+  callExpr: t.CallExpression,
+  scopeBindings: ScopeBindings,
+): unknown[] | undefined => {
+  if (!t.isCallExpression(callExpr.callee)) {
+    return undefined;
+  }
+
+  const eachArgs = callExpr.callee.arguments;
+  if (eachArgs.length === 0) {
+    return undefined;
+  }
+
+  const table = astToValue(eachArgs[0] as t.Node, scopeBindings);
+  return Array.isArray(table) ? table : undefined;
+};
+
+const applyExpandedEachMetadata = (
+  node: ParsedNode,
+  expandedTitle: string,
+  titleTemplate: string,
+): void => {
+  if (node instanceof NamedBlock) {
+    node.name = expandedTitle;
+    node.nameRange = undefined;
+    node.eachTemplate = titleTemplate;
+  }
+};
+
+const bindObjectPatternParams = (
+  pattern: t.ObjectPattern,
+  row: Record<string, unknown>,
+  rowBindings: ScopeBindings,
+): void => {
+  pattern.properties.forEach((prop) => {
+    if (
+      t.isObjectProperty(prop) &&
+      t.isIdentifier(prop.key) &&
+      t.isIdentifier(prop.value)
+    ) {
+      if (prop.key.name in row) {
+        rowBindings[prop.value.name] = row[prop.key.name];
+      }
+    }
+  });
+};
+
+const createRowBindings = (
+  callbackFn: EachCallbackFn,
+  row: unknown,
+  scopeBindings: ScopeBindings,
+): ScopeBindings => {
+  const rowBindings: ScopeBindings = { ...scopeBindings };
+  const params = callbackFn.params;
+
+  if (params.length === 1) {
+    const param = params[0];
+
+    if (t.isIdentifier(param)) {
+      rowBindings[param.name] = row;
+    } else if (
+      t.isObjectPattern(param) &&
+      row &&
+      typeof row === 'object' &&
+      !Array.isArray(row)
+    ) {
+      bindObjectPatternParams(
+        param,
+        row as Record<string, unknown>,
+        rowBindings,
+      );
+    }
+  } else if (Array.isArray(row)) {
+    params.forEach((param, idx) => {
+      if (t.isIdentifier(param)) {
+        rowBindings[param.name] = row[idx];
+      }
+    });
+  }
+
+  rowBindings[DESCRIBE_EACH_INNER_TEST_FLAG] = true;
+  return rowBindings;
+};
 
 const isExpectCall = (node: t.Node): boolean => {
   const expression = getCallExpression(node);
@@ -60,7 +215,11 @@ const isExpectCall = (node: t.Node): boolean => {
 
   let callee: unknown = expression.callee;
   while (callee) {
-    if (typeof callee === 'object' && callee && 'name' in (callee as t.Identifier)) {
+    if (
+      typeof callee === 'object' &&
+      callee &&
+      'name' in (callee as t.Identifier)
+    ) {
       const identifier = callee as t.Identifier;
       if (identifier.name === 'expect') {
         return true;
@@ -82,10 +241,13 @@ const applyNameInfo = (
   block: NamedBlock,
   statement: t.Node,
   source: string,
-  bindings: Record<string, any> = {},
+  bindings: ScopeBindings = {},
   lastProperty?: string,
 ) => {
-  if (!t.isExpressionStatement(statement) || !t.isCallExpression(statement.expression)) {
+  if (
+    !t.isExpressionStatement(statement) ||
+    !t.isCallExpression(statement.expression)
+  ) {
     throw new Error(
       `Expected an ExpressionStatement with CallExpression but got: ${JSON.stringify(statement)}`,
     );
@@ -116,6 +278,10 @@ const applyNameInfo = (
   block.nameType = arg.type;
   block.lastProperty = lastProperty;
 
+  if (t.isTemplateLiteral(arg) && bindings[DESCRIBE_EACH_INNER_TEST_FLAG]) {
+    block.eachTemplate = source.substring(arg.start + 1, arg.end - 1);
+  }
+
   if (arg.loc) {
     block.nameRange = new ParsedRange(
       arg.loc.start.line,
@@ -131,12 +297,18 @@ const registerNode = (
   babelNode: t.Node,
   source: string,
   parseResult: ParseResult,
-  bindings: Record<string, any>,
+  bindings: ScopeBindings,
   lastProperty?: string,
 ) => {
   if (babelNode.loc) {
-    node.start = { line: babelNode.loc.start.line, column: babelNode.loc.start.column + 1 };
-    node.end = { line: babelNode.loc.end.line, column: babelNode.loc.end.column };
+    node.start = {
+      line: babelNode.loc.start.line,
+      column: babelNode.loc.start.column + 1,
+    };
+    node.end = {
+      line: babelNode.loc.end.line,
+      column: babelNode.loc.end.column,
+    };
   }
 
   parseResult.addNode(node);
@@ -152,7 +324,7 @@ const addNode = (
   babelNode: t.Node,
   source: string,
   parseResult: ParseResult,
-  bindings: Record<string, any>,
+  bindings: ScopeBindings,
   lastProperty?: string,
 ): ParsedNode => {
   const child = parent.addChild(type);
@@ -160,15 +332,19 @@ const addNode = (
   return child;
 };
 
-
 interface ParseContext {
   source: string;
   parseResult: ParseResult;
-  scopeBindings: Record<string, any>;
+  scopeBindings: ScopeBindings;
   addNode: typeof addNode;
+  walk: (
+    babelNode: t.Node | undefined,
+    parentParsed: ParsedNode,
+    parentBindings: ScopeBindings,
+  ) => void;
 }
 
-const updateScopeBindings = (element: t.Node, scopeBindings: Record<string, any>) => {
+const updateScopeBindings = (element: t.Node, scopeBindings: ScopeBindings) => {
   if (t.isClassDeclaration(element) && element.id) {
     scopeBindings[element.id.name] = element.id.name;
   } else if (t.isVariableDeclaration(element)) {
@@ -182,7 +358,11 @@ const updateScopeBindings = (element: t.Node, scopeBindings: Record<string, any>
         const initVal = astToValue(decl.init, scopeBindings);
         if (initVal && typeof initVal === 'object') {
           decl.id.properties.forEach((prop) => {
-            if (t.isObjectProperty(prop) && t.isIdentifier(prop.key) && t.isIdentifier(prop.value)) {
+            if (
+              t.isObjectProperty(prop) &&
+              t.isIdentifier(prop.key) &&
+              t.isIdentifier(prop.value)
+            ) {
               const key = prop.key.name;
               const varName = prop.value.name;
               if (key in initVal) {
@@ -201,46 +381,38 @@ const handleTestEach = (
   parentParsed: ParsedNode,
   context: ParseContext,
   lastProperty?: string,
-  callExpr?: t.CallExpression
+  callExpr?: t.CallExpression,
 ): ParsedNode | undefined => {
   const { source, parseResult, scopeBindings, addNode } = context;
   let child: ParsedNode | undefined;
 
-  if (callExpr && t.isCallExpression(callExpr.callee)) {
-    const eachArgs = callExpr.callee.arguments;
-    if (eachArgs.length > 0 && t.isArrayExpression(eachArgs[0])) {
-      const table = astToValue(eachArgs[0], scopeBindings);
-      if (Array.isArray(table)) {
-        const titleArg = callExpr.arguments[0];
-        let titleTemplate = '';
-        if (t.isStringLiteral(titleArg)) {
-          titleTemplate = titleArg.value;
-        } else if (t.isTemplateLiteral(titleArg)) {
-          if (titleArg.quasis.length === 1) titleTemplate = titleArg.quasis[0].value.raw;
-        }
+  if (callExpr) {
+    const table = getResolvableEachTable(callExpr, scopeBindings);
+    const titleTemplate = getTitleTemplate(
+      callExpr.arguments[0] as t.Node | undefined,
+    );
 
-        if (titleTemplate) {
-          table.forEach((row, i) => {
-            const expandedTitle = formatTitle(titleTemplate, row, i);
-            const newChild = addNode(
-              ParsedNodeType.it,
-              parentParsed,
-              element,
-              source,
-              parseResult,
-              scopeBindings,
-              lastProperty,
-            );
-            if (newChild instanceof NamedBlock) {
-              newChild.name = expandedTitle;
-              newChild.nameRange = undefined;
-              newChild.eachTemplate = titleTemplate;
-            }
-            if (i === 0) child = newChild;
-          });
-          return child;
+    if (table && titleTemplate) {
+      table.forEach((row, i) => {
+        const expandedTitle = formatTitle(titleTemplate, row, i);
+        const newChild = addNode(
+          ParsedNodeType.it,
+          parentParsed,
+          element,
+          source,
+          parseResult,
+          scopeBindings,
+          lastProperty,
+        );
+
+        applyExpandedEachMetadata(newChild, expandedTitle, titleTemplate);
+
+        if (i === 0) {
+          child = newChild;
         }
-      }
+      });
+
+      return child;
     }
   }
   return undefined;
@@ -250,10 +422,66 @@ const handleDescribe = (
   element: t.Node,
   parentParsed: ParsedNode,
   context: ParseContext,
-  lastProperty?: string
-): ParsedNode => {
-  const { source, parseResult, scopeBindings, addNode } = context;
-  return addNode(ParsedNodeType.describe, parentParsed, element, source, parseResult, scopeBindings, lastProperty);
+  lastProperty?: string,
+): { child: ParsedNode; expandedEach: boolean } => {
+  const { source, parseResult, scopeBindings, addNode, walk } = context;
+
+  if (lastProperty === 'each') {
+    const callExpr = getCallExpression(element);
+    if (callExpr) {
+      const callbackFn = getEachCallbackFunction(callExpr);
+      const table = getResolvableEachTable(callExpr, scopeBindings);
+      const titleTemplate = getTitleTemplate(
+        callExpr.arguments[0] as t.Node | undefined,
+      );
+
+      if (table && titleTemplate && callbackFn) {
+        let firstChild: ParsedNode | undefined;
+
+        table.forEach((row, i) => {
+          const expandedTitle = formatTitle(titleTemplate, row, i);
+          const describeChild = addNode(
+            ParsedNodeType.describe,
+            parentParsed,
+            element,
+            source,
+            parseResult,
+            scopeBindings,
+            lastProperty,
+          );
+
+          applyExpandedEachMetadata(
+            describeChild,
+            expandedTitle,
+            titleTemplate,
+          );
+
+          if (!firstChild) {
+            firstChild = describeChild;
+          }
+
+          const rowBindings = createRowBindings(callbackFn, row, scopeBindings);
+
+          walk(callbackFn.body, describeChild, rowBindings);
+        });
+
+        if (firstChild) {
+          return { child: firstChild, expandedEach: true };
+        }
+      }
+    }
+  }
+
+  const child = addNode(
+    ParsedNodeType.describe,
+    parentParsed,
+    element,
+    source,
+    parseResult,
+    scopeBindings,
+    lastProperty,
+  );
+  return { child, expandedEach: false };
 };
 
 const handleIt = (
@@ -267,22 +495,51 @@ const handleIt = (
   if (lastProperty === 'each') {
     const callExpr = getCallExpression(element);
     if (!callExpr) {
-      return addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, scopeBindings, lastProperty);
+      return addNode(
+        ParsedNodeType.it,
+        parentParsed,
+        element,
+        source,
+        parseResult,
+        scopeBindings,
+        lastProperty,
+      );
     }
-    const expandedChild = handleTestEach(element, parentParsed, context, lastProperty, callExpr);
+    const expandedChild = handleTestEach(
+      element,
+      parentParsed,
+      context,
+      lastProperty,
+      callExpr,
+    );
     if (expandedChild) return expandedChild;
   }
 
-  return addNode(ParsedNodeType.it, parentParsed, element, source, parseResult, scopeBindings, lastProperty);
+  return addNode(
+    ParsedNodeType.it,
+    parentParsed,
+    element,
+    source,
+    parseResult,
+    scopeBindings,
+    lastProperty,
+  );
 };
 
 const handleExpect = (
   element: t.Node,
   parentParsed: ParsedNode,
-  context: ParseContext
+  context: ParseContext,
 ): ParsedNode => {
   const { source, parseResult, scopeBindings, addNode } = context;
-  return addNode(ParsedNodeType.expect, parentParsed, element, source, parseResult, scopeBindings);
+  return addNode(
+    ParsedNodeType.expect,
+    parentParsed,
+    element,
+    source,
+    parseResult,
+    scopeBindings,
+  );
 };
 
 const isTestDescribe = (node: t.Node): boolean => {
@@ -290,7 +547,10 @@ const isTestDescribe = (node: t.Node): boolean => {
   if (!call) return false;
   let callee = call.callee;
   while (t.isMemberExpression(callee)) {
-    if (t.isIdentifier(callee.property) && callee.property.name === 'describe') {
+    if (
+      t.isIdentifier(callee.property) &&
+      callee.property.name === 'describe'
+    ) {
       return true;
     }
     callee = callee.object;
@@ -298,12 +558,20 @@ const isTestDescribe = (node: t.Node): boolean => {
   return false;
 };
 
-export const parse = (file: string, data?: string, options?: ParserOptions): ParseResult => {
+export const parse = (
+  file: string,
+  data?: string,
+  options?: ParserOptions,
+): ParseResult => {
   const parseResult = new ParseResult(file);
   const { ast, source } = toAst(file, data, options);
-  const bindings: Record<string, any> = {};
+  const bindings: ScopeBindings = {};
 
-  const walk = (babelNode: t.Node | undefined, parentParsed: ParsedNode, parentBindings: Record<string, any>) => {
+  const walk = (
+    babelNode: t.Node | undefined,
+    parentParsed: ParsedNode,
+    parentBindings: ScopeBindings,
+  ) => {
     if (!babelNode) return;
 
     const body = shallowAttr<t.Node[]>(babelNode, 'body');
@@ -311,18 +579,42 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
 
     // Create a new scope inheriting from parent
     const scopeBindings = { ...parentBindings };
-    const context: ParseContext = { source, parseResult, scopeBindings, addNode };
+    const context: ParseContext = {
+      source,
+      parseResult,
+      scopeBindings,
+      addNode,
+      walk,
+    };
 
     body.forEach((element) => {
       updateScopeBindings(element, scopeBindings);
 
       let child: ParsedNode | undefined;
+      let skipArgumentWalk = false;
       const [name, lastProperty] = getNameForNode(element);
 
-
-      if (isDescribe(name) || (name === 'test' && (lastProperty === 'describe' || (['parallel', 'serial', 'only', 'skip', 'fixme', 'fail'].includes(lastProperty!) && isTestDescribe(element))))) {
-        child = handleDescribe(element, parentParsed, context, lastProperty);
-      } else if (isTestBlock(name) || (name === 'Deno' && lastProperty === 'test')) {
+      if (
+        isDescribe(name) ||
+        (name === 'test' &&
+          (lastProperty === 'describe' ||
+            (['parallel', 'serial', 'only', 'skip', 'fixme', 'fail'].includes(
+              lastProperty!,
+            ) &&
+              isTestDescribe(element))))
+      ) {
+        const describeResult = handleDescribe(
+          element,
+          parentParsed,
+          context,
+          lastProperty,
+        );
+        child = describeResult.child;
+        skipArgumentWalk = describeResult.expandedEach;
+      } else if (
+        isTestBlock(name) ||
+        (name === 'Deno' && lastProperty === 'test')
+      ) {
         if (name === 'test' && lastProperty === 'step') {
           // ignore test.step
         } else {
@@ -332,7 +624,10 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
         child = handleExpect(element, parentParsed, context);
       } else if (t.isVariableDeclaration(element)) {
         element.declarations
-          .filter((declaration) => declaration.init && isFunctionExpression(declaration.init))
+          .filter(
+            (declaration) =>
+              declaration.init && isFunctionExpression(declaration.init),
+          )
           .forEach((declaration) => {
             const target = shallowAttr<t.Node>(declaration, 'init', 'body');
             walk(target, parentParsed, scopeBindings);
@@ -342,7 +637,11 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
         t.isAssignmentExpression(element.expression) &&
         isFunctionExpression(element.expression.right)
       ) {
-        const bodyNode = shallowAttr<t.Node>(element.expression, 'right', 'body');
+        const bodyNode = shallowAttr<t.Node>(
+          element.expression,
+          'right',
+          'body',
+        );
         walk(bodyNode, parentParsed, scopeBindings);
       } else if (t.isReturnStatement(element)) {
         const args = shallowAttr<t.Node[]>(element.argument, 'arguments');
@@ -357,9 +656,13 @@ export const parse = (file: string, data?: string, options?: ParserOptions): Par
       }
 
       const expression = getCallExpression(element);
-      if (expression) {
+      if (expression && !skipArgumentWalk) {
         expression.arguments.forEach((argument) => {
-          if (argument && typeof argument === 'object' && 'type' in (argument as t.Node)) {
+          if (
+            argument &&
+            typeof argument === 'object' &&
+            'type' in (argument as t.Node)
+          ) {
             const bodyNode = shallowAttr<t.Node>(argument as t.Node, 'body');
             walk(bodyNode, child ?? parentParsed, scopeBindings);
           }
