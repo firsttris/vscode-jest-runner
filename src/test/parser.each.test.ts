@@ -61,9 +61,23 @@ describe('parser - it.each expansion', () => {
     expect((children![1] as any).name).toBe('test 1: b');
   });
 
-  it('should fallback to single node for dynamic array', () => {
+  it('should expand it.each when table identifier is statically resolvable', () => {
     const code = `
             const cases = [1, 2, 3];
+            it.each(cases)('test %s', (n) => {});
+        `;
+    const result = parse('test.ts', code);
+    const children = result.root.children;
+    expect(children!.length).toBe(3);
+    expect((children![0] as any).name).toBe('test 1');
+    expect((children![1] as any).name).toBe('test 2');
+    expect((children![2] as any).name).toBe('test 3');
+  });
+
+  it('should fallback to single node for dynamic array', () => {
+    const code = `
+            const base = [1, 2, 3];
+            const cases = base.map((n) => n);
             it.each(cases)('test %s', (n) => {});
         `;
     const result = parse('test.ts', code);
@@ -100,5 +114,50 @@ describe('parser - it.each expansion', () => {
     expect(secondTests.length).toBe(1);
     expect(firstTests[0].name).toBe('should run correctly for id 42');
     expect(secondTests[0].name).toBe('should run correctly for id 99');
+  });
+
+  it('should expand it.each with identifier object table and $placeholders', () => {
+    const code = `
+      describe("computeTierFromScore", () => {
+        const basicContext = { isPrimary: true } as any
+        const secondaryContext = { isPrimary: false } as any
+
+        const cases = [
+          { score: 0, primary: 0, secondary: 0 },
+          { score: 12.25, primary: 0, secondary: 0 },
+          { score: 12.5, primary: 1, secondary: 2 },
+          { score: 27, primary: 2, secondary: 3 },
+          { score: 47.5, primary: 3, secondary: 4 },
+          { score: 69.75, primary: 3, secondary: 4 },
+          { score: 70, primary: 4, secondary: 5 },
+          { score: 90, primary: 5, secondary: 5 },
+        ]
+
+        it.each(cases)(
+          "resolves tier for score $score -> primary $primary, secondary $secondary",
+          ({ score, primary, secondary }) => {
+            const primaryRes = computeTierFromScore({ score }, basicContext)
+            const secondaryRes = computeTierFromScore({ score }, secondaryContext)
+
+            expect(primaryRes?.value).toBe(primary)
+            expect(secondaryRes?.value).toBe(secondary)
+          },
+        )
+      })
+    `;
+
+    const result = parse('test.ts', code);
+    const children = result.root.children;
+
+    expect(children!.length).toBe(1);
+    const describeNode = children![0] as any;
+    expect(describeNode.name).toBe('computeTierFromScore');
+    expect(describeNode.children.length).toBe(8);
+    expect(describeNode.children[0].name).toBe(
+      'resolves tier for score 0 -> primary 0, secondary 0',
+    );
+    expect(describeNode.children[7].name).toBe(
+      'resolves tier for score 90 -> primary 5, secondary 5',
+    );
   });
 });

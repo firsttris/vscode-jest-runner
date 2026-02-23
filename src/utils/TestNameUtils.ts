@@ -40,7 +40,7 @@ export function toTestItemNamePattern(test: {
   const testId = test.id;
   const idMatch = testId?.match(/.*:(?:describe|it):\d+:(.*)$/);
   if (idMatch && idMatch[1]) {
-    return idMatch[1];
+    return resolveTestNameStringInterpolation(idMatch[1]);
   }
 
   return toTestNamePattern(test.label) || '';

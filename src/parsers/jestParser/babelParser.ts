@@ -387,7 +387,7 @@ const handleTestEach = (
   let child: ParsedNode | undefined;
 
   if (callExpr) {
-    const table = getInlineEachTable(callExpr, scopeBindings);
+    const table = getResolvableEachTable(callExpr, scopeBindings);
     const titleTemplate = getTitleTemplate(
       callExpr.arguments[0] as t.Node | undefined,
     );

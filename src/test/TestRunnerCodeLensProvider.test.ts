@@ -730,5 +730,49 @@ describe('TestRunnerCodeLensProvider', () => {
       expect(lens2Run).toBeDefined();
       expect(lens2Run?.command?.arguments?.[0]).toContain('id 99');
     });
+
+    it('should provide indexed Run/Debug lenses for real it.each(cases) parser output', async () => {
+      codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
+      mockDocument.getText = jest.fn().mockReturnValue(`
+        describe("computeTierFromScore", () => {
+          const basicContext = { isPrimary: true } as any
+          const secondaryContext = { isPrimary: false } as any
+
+          const cases = [
+            { score: 0, primary: 0, secondary: 0 },
+            { score: 12.25, primary: 0, secondary: 0 },
+            { score: 12.5, primary: 1, secondary: 2 },
+          ]
+
+          it.each(cases)(
+            "resolves tier for score $score -> primary $primary, secondary $secondary",
+            ({ score, primary, secondary }) => {
+              const primaryRes = computeTierFromScore({ score }, basicContext)
+              const secondaryRes = computeTierFromScore({ score }, secondaryContext)
+
+              expect(primaryRes?.value).toBe(primary)
+              expect(secondaryRes?.value).toBe(secondary)
+            },
+          )
+        })
+      `);
+
+      const actualParser = jest.requireActual('../parser');
+      (parser.parse as jest.Mock).mockImplementation((filePath: string, content?: string) =>
+        actualParser.parse(filePath, content),
+      );
+
+      const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
+
+      const runLenses = codeLenses.filter((lens) => lens.command?.command === 'extension.runJest');
+      const debugLenses = codeLenses.filter((lens) => lens.command?.command === 'extension.debugJest');
+
+      expect(runLenses.some((lens) => lens.command?.title === '[1] Run')).toBe(true);
+      expect(runLenses.some((lens) => lens.command?.title === '[2] Run')).toBe(true);
+      expect(runLenses.some((lens) => lens.command?.title === '[3] Run')).toBe(true);
+      expect(debugLenses.some((lens) => lens.command?.title === '[1] Debug')).toBe(true);
+      expect(debugLenses.some((lens) => lens.command?.title === '[2] Debug')).toBe(true);
+      expect(debugLenses.some((lens) => lens.command?.title === '[3] Debug')).toBe(true);
+    });
   });
 });
