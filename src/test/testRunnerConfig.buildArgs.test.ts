@@ -80,7 +80,9 @@ describe('TestRunnerConfig', () => {
         undefined,
         false,
       );
-      expect(argsPlus[0]).toBe('/home/user/project/src/\\+state/test\\.spec\\.ts');
+      expect(argsPlus[0]).toBe(
+        '/home/user/project/src/\\+state/test\\.spec\\.ts',
+      );
 
       // Test path with [] (common in dynamic routes like Next.js [id])
       const filePathWithBrackets = '/home/user/project/src/[id]/test.spec.ts';
@@ -89,7 +91,9 @@ describe('TestRunnerConfig', () => {
         undefined,
         false,
       );
-      expect(argsBrackets[0]).toBe('/home/user/project/src/\\[id\\]/test\\.spec\\.ts');
+      expect(argsBrackets[0]).toBe(
+        '/home/user/project/src/\\[id\\]/test\\.spec\\.ts',
+      );
 
       // Test path with () (can occur in folder names)
       const filePathWithParens = '/home/user/project/src/(group)/test.spec.ts';
@@ -98,7 +102,9 @@ describe('TestRunnerConfig', () => {
         undefined,
         false,
       );
-      expect(argsParens[0]).toBe('/home/user/project/src/\\(group\\)/test\\.spec\\.ts');
+      expect(argsParens[0]).toBe(
+        '/home/user/project/src/\\(group\\)/test\\.spec\\.ts',
+      );
 
       // Test path with $ (can occur in folder names)
       const filePathWithDollar = '/home/user/project/src/$lib/test.spec.ts';
@@ -107,16 +113,21 @@ describe('TestRunnerConfig', () => {
         undefined,
         false,
       );
-      expect(argsDollar[0]).toBe('/home/user/project/src/\\$lib/test\\.spec\\.ts');
+      expect(argsDollar[0]).toBe(
+        '/home/user/project/src/\\$lib/test\\.spec\\.ts',
+      );
 
       // Test path with multiple special characters
-      const filePathComplex = '/home/user/project/src/[id]+state/(group)/test.spec.ts';
+      const filePathComplex =
+        '/home/user/project/src/[id]+state/(group)/test.spec.ts';
       const argsComplex = jestRunnerConfig.buildJestArgs(
         filePathComplex,
         undefined,
         false,
       );
-      expect(argsComplex[0]).toBe('/home/user/project/src/\\[id\\]\\+state/\\(group\\)/test\\.spec\\.ts');
+      expect(argsComplex[0]).toBe(
+        '/home/user/project/src/\\[id\\]\\+state/\\(group\\)/test\\.spec\\.ts',
+      );
     });
 
     it('should escape single quotes in test name when withQuotes is true', () => {
@@ -157,7 +168,7 @@ describe('TestRunnerConfig', () => {
       if (isWindows()) {
         expect(args[testNameIndex]).toBe('"xyz by ""(.*?)"""');
       } else {
-        expect(args[testNameIndex]).toBe("'xyz by \"(.*?)\"'");
+        expect(args[testNameIndex]).toBe('\'xyz by "(.*?)"\'');
       }
     });
 
