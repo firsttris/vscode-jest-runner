@@ -93,8 +93,12 @@ export function escapeSingleQuotes(s: string): string {
 }
 
 export function quote(s: string): string {
-  const q = isWindows() ? '"' : `'`;
-  return `${q}${s}${q}`;
+  if (isWindows()) {
+    const escaped = s.replace(/"/g, '""');
+    return `"${escaped}"`;
+  }
+
+  return `'${s}'`;
 }
 
 export function unquote(s: string): string {

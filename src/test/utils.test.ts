@@ -142,6 +142,10 @@ describe('quote', () => {
     expect(quote('test')).toBe('"test"');
   });
 
+  its.windows('should escape inner double quotes on Windows', () => {
+    expect(quote('xyz by "(.*?)"')).toBe('"xyz by ""(.*?)"""');
+  });
+
   its.linux('should wrap string with single quotes on Linux', () => {
     expect(quote('test')).toBe("'test'");
   });

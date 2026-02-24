@@ -140,6 +140,27 @@ describe('TestRunnerConfig', () => {
       }
     });
 
+    it('should escape inner double quotes in test name on Windows when withQuotes is true', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.configPath': '',
+        }),
+      );
+
+      const args = jestRunnerConfig.buildJestArgs(
+        mockFilePath,
+        'xyz by "(.*?)"',
+        true,
+      );
+
+      const testNameIndex = args.indexOf('-t') + 1;
+      if (isWindows()) {
+        expect(args[testNameIndex]).toBe('"xyz by ""(.*?)"""');
+      } else {
+        expect(args[testNameIndex]).toBe("'xyz by \"(.*?)\"'");
+      }
+    });
+
     it('should resolve test name string interpolation', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({
