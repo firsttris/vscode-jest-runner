@@ -1,10 +1,36 @@
 import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { stripAnsi } from '../utils/ShellUtils';
+import { parseCommandAndEnv, stripAnsi } from '../utils/ShellUtils';
 import { logDebug, logInfo } from '../utils/Logger';
 import { extractStructuredMessages } from '../reporting/structuredOutput';
 import { processTestResultsFromParsed } from '../testResultProcessor';
 import type { JestResults } from '../testResultTypes';
+
+interface ResolvedSpawnCommand {
+    executable: string;
+    args: string[];
+    env: NodeJS.ProcessEnv;
+}
+
+function resolveSpawnCommand(
+    command: string,
+    args: string[],
+    additionalEnv?: Record<string, string>,
+): ResolvedSpawnCommand {
+    const { env: parsedEnv, executable, args: baseArgs } = parseCommandAndEnv(command);
+    const commandExecutable = executable || command;
+
+    return {
+        executable: commandExecutable,
+        args: [...baseArgs, ...args],
+        env: {
+            ...process.env,
+            FORCE_COLOR: 'true',
+            ...parsedEnv,
+            ...additionalEnv,
+        },
+    };
+}
 
 export function executeTestCommandFast(
     command: string,
@@ -16,10 +42,12 @@ export function executeTestCommandFast(
     additionalEnv?: Record<string, string>,
 ): Promise<void> {
     return new Promise((resolve) => {
-        const jestProcess = spawn(command, args, {
+        const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
+
+        const jestProcess = spawn(resolvedCommand.executable, resolvedCommand.args, {
             cwd,
-            env: { ...process.env, FORCE_COLOR: 'true', ...additionalEnv },
-            shell: true,
+            env: resolvedCommand.env,
+            shell: false,
         });
 
         let stdout = '';
@@ -95,10 +123,12 @@ export function executeTestCommand(
             1024 *
             1024;
 
-        const jestProcess = spawn(command, args, {
+        const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
+
+        const jestProcess = spawn(resolvedCommand.executable, resolvedCommand.args, {
             cwd,
-            env: { ...process.env, FORCE_COLOR: 'true', ...additionalEnv },
-            shell: true,
+            env: resolvedCommand.env,
+            shell: false,
         });
 
         let stdout = '';

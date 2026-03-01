@@ -20,6 +20,7 @@ import { processTestResults } from '../testResultProcessor';
 import { getTestFrameworkForFile } from '../testDetection/testFileDetection';
 import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 import { logInfo, logError } from '../utils/Logger';
+import { isWindows, normalizePath } from '../utils/PathUtils';
 import { randomUUID } from 'node:crypto';
 
 interface RunContext {
@@ -30,6 +31,8 @@ interface RunContext {
 }
 
 export class TestRunExecutor {
+  private static readonly WINDOWS_SAFE_COMMAND_LENGTH = 30000;
+
   constructor(
     private readonly testController: vscode.TestController,
     private readonly testRunnerConfig: TestRunnerConfig,
@@ -229,7 +232,12 @@ export class TestRunExecutor {
       this.testController,
     );
 
-    const commandArgs = args;
+    const commandArgs = this.adjustArgsForWindowsLengthLimit(
+      testCommand,
+      framework,
+      allFiles,
+      args,
+    );
     const esmEnv = this.getEsmEnv(allFiles[0], framework);
 
     logTestExecution(
@@ -283,6 +291,63 @@ export class TestRunExecutor {
         );
       }
     }
+  }
+
+  private adjustArgsForWindowsLengthLimit(
+    testCommand: string,
+    framework: TestFrameworkName,
+    allFiles: string[],
+    args: string[],
+  ): string[] {
+    if (!isWindows()) {
+      return args;
+    }
+
+    const commandLength = `${testCommand} ${args.join(' ')}`.length;
+    if (commandLength <= TestRunExecutor.WINDOWS_SAFE_COMMAND_LENGTH) {
+      return args;
+    }
+
+    let fallbackArgs = args;
+
+    if (framework === 'jest') {
+      const fileSet = new Set(allFiles.map(normalizePath));
+      fallbackArgs = args.filter((arg) => !fileSet.has(arg));
+    }
+
+    if (framework === 'vitest') {
+      fallbackArgs = this.removeVitestExplicitFileArgs(args);
+    }
+
+    const fallbackLength = `${testCommand} ${fallbackArgs.join(' ')}`.length;
+
+    if (fallbackArgs !== args && fallbackLength < commandLength) {
+      logInfo(
+        `Windows command length fallback activated for ${framework}: ${commandLength} -> ${fallbackLength}`,
+      );
+      return fallbackArgs;
+    }
+
+    return args;
+  }
+
+  private removeVitestExplicitFileArgs(args: string[]): string[] {
+    if (args.length === 0 || args[0] !== 'run') {
+      return args;
+    }
+
+    const nextOptionIndex = args.findIndex((arg, index) => {
+      if (index <= 0) {
+        return false;
+      }
+      return arg.startsWith('-');
+    });
+
+    if (nextOptionIndex <= 0) {
+      return args;
+    }
+
+    return ['run', ...args.slice(nextOptionIndex)];
   }
 
   private getEsmEnv(
