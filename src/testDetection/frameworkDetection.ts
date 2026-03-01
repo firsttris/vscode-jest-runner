@@ -245,6 +245,7 @@ export function detectTestFramework(
 
   const jestConfigPath = getConfigPath(directoryPath, 'jest');
   const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
+  const rstestConfigPath = getConfigPath(directoryPath, 'rstest');
 
   if (jestConfigPath && vitestConfigPath && filePath) {
     const frameworkByPattern = detectFrameworkByPatternMatch(
@@ -266,6 +267,10 @@ export function detectTestFramework(
   }
   if (jestConfigPath && vitestConfigPath) {
     return 'jest';
+  }
+
+  if (rstestConfigPath) {
+    return 'rstest';
   }
 
   const packageJsonPath = join(directoryPath, 'package.json');
