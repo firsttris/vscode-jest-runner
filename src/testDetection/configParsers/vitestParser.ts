@@ -2,12 +2,12 @@ import { dirname, resolve } from 'node:path';
 import { normalizePath } from '../../utils/PathUtils';
 import { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
-import {
-  parseConfigObject,
-  readConfigFile,
-} from './parseUtils';
+import { parseConfigObject, readConfigFile } from './parseUtils';
 
-const normalizeRootDir = (rootDir: string | undefined, configPath: string): string | undefined => {
+const normalizeRootDir = (
+  rootDir: string | undefined,
+  configPath: string,
+): string | undefined => {
   if (!rootDir) return undefined;
   return rootDir === '__dirname' ? dirname(configPath) : rootDir;
 };
@@ -17,11 +17,16 @@ const toStringArray = (value: unknown): string[] | undefined => {
     return undefined;
   }
 
-  const sanitized = value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0);
+  const sanitized = value.filter(
+    (entry): entry is string => typeof entry === 'string' && entry.length > 0,
+  );
   return sanitized;
 };
 
-const parseVitestConfigContent = (config: any, configPath: string): TestPatterns | undefined => {
+const parseVitestConfigContent = (
+  config: any,
+  configPath: string,
+): TestPatterns | undefined => {
   const testConfig = config.test;
   if (!testConfig) return undefined;
 
@@ -44,10 +49,12 @@ const parseVitestConfigContent = (config: any, configPath: string): TestPatterns
   };
 };
 
-const parseJsonConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
+const parseJsonConfig = (
+  content: string,
+  configPath: string,
+): TestPatterns[] | undefined => {
   try {
     const config = JSON.parse(content);
-
 
     if (config.test?.projects) {
       return parseProjects(config.test.projects, configPath);
@@ -60,7 +67,10 @@ const parseJsonConfig = (content: string, configPath: string): TestPatterns[] | 
   }
 };
 
-const parseJsConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
+const parseJsConfig = (
+  content: string,
+  configPath: string,
+): TestPatterns[] | undefined => {
   const config = parseConfigObject(content);
   if (!config) return undefined;
 
@@ -120,7 +130,9 @@ export function viteConfigHasTestAttribute(configPath: string): boolean {
   }
 }
 
-export function getVitestConfig(configPath: string): TestPatterns[] | undefined {
+export function getVitestConfig(
+  configPath: string,
+): TestPatterns[] | undefined {
   try {
     const content = readConfigFile(configPath);
 
@@ -129,20 +141,23 @@ export function getVitestConfig(configPath: string): TestPatterns[] | undefined 
       : parseJsConfig(content, configPath);
 
     if (result) {
-      logDebug(`Parsed Vitest config: ${configPath}. Projects found: ${result.length}`);
+      logDebug(
+        `Parsed Vitest config: ${configPath}. Projects found: ${result.length}`,
+      );
     }
     return result;
-
   } catch (error) {
     logError(`Error reading Vitest config file: ${configPath}`, error);
     return undefined;
   }
 }
 
-export function getIncludeFromVitestConfig(configPath: string): string[] | undefined {
+export function getIncludeFromVitestConfig(
+  configPath: string,
+): string[] | undefined {
   const configs = getVitestConfig(configPath);
   if (!configs || configs.length === 0) return undefined;
 
-  const allPatterns = configs.flatMap(c => c.patterns);
+  const allPatterns = configs.flatMap((c) => c.patterns);
   return allPatterns.length > 0 ? allPatterns : undefined;
 }

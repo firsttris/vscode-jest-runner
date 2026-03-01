@@ -28,7 +28,7 @@ describe('patternMatching', () => {
           patterns,
           false,
           undefined,
-          ['/node_modules/'],  // Jest ignorePatterns (regex)
+          ['/node_modules/'], // Jest ignorePatterns (regex)
           undefined,
         );
 
@@ -46,7 +46,7 @@ describe('patternMatching', () => {
           patterns,
           false,
           undefined,
-          ['<rootDir>/dist/'],  // Jest ignorePatterns with <rootDir>
+          ['<rootDir>/dist/'], // Jest ignorePatterns with <rootDir>
           undefined,
         );
 
@@ -64,11 +64,11 @@ describe('patternMatching', () => {
           patterns,
           false,
           undefined,
-          ['[invalid(regex'],  // Invalid regex - should be skipped
+          ['[invalid(regex'], // Invalid regex - should be skipped
           undefined,
         );
 
-        expect(result).toBe(true);  // Should match since invalid regex is skipped
+        expect(result).toBe(true); // Should match since invalid regex is skipped
       });
 
       it('should exclude files matching Vitest exclude patterns (glob)', () => {
@@ -83,7 +83,7 @@ describe('patternMatching', () => {
           false,
           undefined,
           undefined,
-          ['**/coverage/**'],  // Vitest exclude patterns (glob)
+          ['**/coverage/**'], // Vitest exclude patterns (glob)
         );
 
         expect(result).toBe(false);
@@ -140,7 +140,7 @@ describe('patternMatching', () => {
           undefined,
           undefined,
           undefined,
-          ['<rootDir>/src', '<rootDir>/lib'],  // roots
+          ['<rootDir>/src', '<rootDir>/lib'], // roots
         );
 
         expect(result).toBe(false);
@@ -159,7 +159,7 @@ describe('patternMatching', () => {
           undefined,
           undefined,
           undefined,
-          ['<rootDir>/src'],  // roots
+          ['<rootDir>/src'], // roots
         );
 
         expect(result).toBe(true);
@@ -175,10 +175,10 @@ describe('patternMatching', () => {
           configDir,
           patterns,
           false,
-          '/project/packages/app',  // rootDir (absolute)
+          '/project/packages/app', // rootDir (absolute)
           undefined,
           undefined,
-          ['<rootDir>/src'],  // roots relative to rootDir
+          ['<rootDir>/src'], // roots relative to rootDir
         );
 
         expect(result).toBe(true);
@@ -194,10 +194,10 @@ describe('patternMatching', () => {
           configDir,
           patterns,
           false,
-          undefined,  // rootDir
+          undefined, // rootDir
           undefined,
           undefined,
-          ['<rootDir>'],  // roots
+          ['<rootDir>'], // roots
         );
 
         expect(result).toBe(true);
@@ -214,7 +214,7 @@ describe('patternMatching', () => {
           filePath,
           configDir,
           patterns,
-          true,  // isRegex
+          true, // isRegex
           undefined,
         );
 
@@ -230,11 +230,11 @@ describe('patternMatching', () => {
           filePath,
           configDir,
           patterns,
-          true,  // isRegex
+          true, // isRegex
           undefined,
         );
 
-        expect(result).toBe(false);  // Invalid regex doesn't match
+        expect(result).toBe(false); // Invalid regex doesn't match
       });
 
       it('should ignore non-string patterns and evaluate valid regex entries', () => {
@@ -267,7 +267,7 @@ describe('patternMatching', () => {
           configDir,
           patterns,
           false,
-          'packages/app',  // rootDir
+          'packages/app', // rootDir
         );
 
         expect(result).toBe(true);
@@ -299,12 +299,12 @@ describe('patternMatching', () => {
       const result = fileMatchesPatterns(
         filePath,
         configDir,
-        undefined,  // no patterns
+        undefined, // no patterns
         false,
         undefined,
       );
 
-      expect(result).toBe(true);  // Matches default pattern **/*.test.*
+      expect(result).toBe(true); // Matches default pattern **/*.test.*
     });
 
     it('should use default patterns for empty array', () => {
@@ -314,12 +314,12 @@ describe('patternMatching', () => {
       const result = fileMatchesPatterns(
         filePath,
         configDir,
-        [],  // empty patterns
+        [], // empty patterns
         false,
         undefined,
       );
 
-      expect(result).toBe(true);  // Matches default pattern **/__tests__/**/*
+      expect(result).toBe(true); // Matches default pattern **/__tests__/**/*
     });
 
     it('should use provided patterns when available', () => {
@@ -352,10 +352,10 @@ describe('patternMatching', () => {
 
       mockedFs.readFileSync = jest.fn().mockImplementation((p: string) => {
         if (p === jestConfigPath) {
-          return 'module.exports = {};';  // No testMatch/testRegex
+          return 'module.exports = {};'; // No testMatch/testRegex
         }
         if (p === vitestConfigPath) {
-          return 'export default {};';  // No include
+          return 'export default {};'; // No include
         }
         return '';
       }) as any;
@@ -404,10 +404,10 @@ describe('patternMatching', () => {
 
       mockedFs.readFileSync = jest.fn().mockImplementation((p: string) => {
         if (p === jestConfigPath) {
-          return "module.exports = { testMatch: ['**/*.spec.ts'] };";  // Only .spec.ts
+          return "module.exports = { testMatch: ['**/*.spec.ts'] };"; // Only .spec.ts
         }
         if (p === vitestConfigPath) {
-          return 'export default {};';  // No include
+          return 'export default {};'; // No include
         }
         return '';
       }) as any;
@@ -459,7 +459,7 @@ describe('patternMatching', () => {
           return 'module.exports = {};';
         }
         if (p === vitestConfigPath) {
-          return "export default { test: { include: ['**/*.test.ts'] } };";  // Only .test.ts
+          return "export default { test: { include: ['**/*.test.ts'] } };"; // Only .test.ts
         }
         return '';
       }) as any;
@@ -626,8 +626,6 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -679,8 +677,6 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -731,8 +727,6 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -776,8 +770,6 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -792,7 +784,13 @@ describe('patternMatching', () => {
       const rootPath = '/workspace/monorepo';
       const customConfigPath = 'src/tests/configs/jest.config.ts';
       const customConfigFullPath = path.join(rootPath, customConfigPath);
-      const testFile = path.join(rootPath, 'src', 'services', '__tests__', 'api.spec.ts');
+      const testFile = path.join(
+        rootPath,
+        'src',
+        'services',
+        '__tests__',
+        'api.spec.ts',
+      );
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
@@ -823,8 +821,6 @@ describe('patternMatching', () => {
         }
         return '';
       }) as any;
-
-
 
       const result = matchesTestFilePattern(testFile);
 
@@ -835,7 +831,13 @@ describe('patternMatching', () => {
       const rootPath = 'C:\\Users\\dev\\monorepo';
       const customConfigPath = 'src\\tests\\configs\\jest.config.ts';
       const customConfigFullPath = path.join(rootPath, customConfigPath);
-      const testFile = path.join(rootPath, 'src', 'services', '__tests__', 'api.spec.ts');
+      const testFile = path.join(
+        rootPath,
+        'src',
+        'services',
+        '__tests__',
+        'api.spec.ts',
+      );
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
@@ -867,8 +869,6 @@ describe('patternMatching', () => {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -876,7 +876,12 @@ describe('patternMatching', () => {
 
     it('should handle testMatch patterns with <rootDir> placeholder', () => {
       const rootPath = '/workspace/project';
-      const testFile = path.join(rootPath, 'src', '__tests__', 'component.test.ts');
+      const testFile = path.join(
+        rootPath,
+        'src',
+        '__tests__',
+        'component.test.ts',
+      );
       const configPath = path.join(rootPath, 'jest.config.ts');
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
@@ -911,8 +916,6 @@ export default {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -922,7 +925,13 @@ export default {
       const rootPath = '/workspace/project';
       const configDir = path.join(rootPath, 'src', 'tests', 'configs');
       const configPath = path.join(configDir, 'jest.config.ts');
-      const testFile = path.join(rootPath, 'src', 'tests', 'integration', 'getUrls.test.ts');
+      const testFile = path.join(
+        rootPath,
+        'src',
+        'tests',
+        'integration',
+        'getUrls.test.ts',
+      );
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
@@ -956,8 +965,6 @@ export default {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -966,7 +973,12 @@ export default {
     it('should handle testRegex with rootDir at project root', () => {
       const rootPath = '/workspace/project';
       const configPath = path.join(rootPath, 'jest.config.ts');
-      const testFile = path.join(rootPath, 'src', 'components', 'Button.spec.tsx');
+      const testFile = path.join(
+        rootPath,
+        'src',
+        'components',
+        'Button.spec.tsx',
+      );
 
       (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
         uri: { fsPath: rootPath },
@@ -997,8 +1009,6 @@ export default {
         return '';
       }) as any;
 
-
-
       const result = matchesTestFilePattern(testFile);
 
       expect(result).toBe(true);
@@ -1024,10 +1034,7 @@ export default {
       }));
 
       mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
-        return (
-          fsPath === jestConfigFullPath ||
-          fsPath === vitestConfigFullPath
-        );
+        return fsPath === jestConfigFullPath || fsPath === vitestConfigFullPath;
       });
 
       mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
@@ -1048,8 +1055,6 @@ export default defineConfig({
         }
         return '';
       }) as any;
-
-
 
       const specFile = path.join(rootPath, 'src', 'utils.spec.ts');
       expect(matchesTestFilePattern(specFile)).toBe(true);

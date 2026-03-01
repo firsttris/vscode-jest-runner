@@ -3,8 +3,15 @@ import { resolve } from 'node:path';
 import { packageJsonHasJestConfig } from '../../testDetection/configParsing';
 import { getCypressSpecPattern } from '../../testDetection/configParsers/cypressParser';
 import { getTestMatchFromJestConfig } from '../../testDetection/configParsers/jestParser';
-import { getPlaywrightConfig, getPlaywrightTestDir } from '../../testDetection/configParsers/playwrightParser';
-import { getIncludeFromVitestConfig, getVitestConfig, viteConfigHasTestAttribute } from '../../testDetection/configParsers/vitestParser';
+import {
+  getPlaywrightConfig,
+  getPlaywrightTestDir,
+} from '../../testDetection/configParsers/playwrightParser';
+import {
+  getIncludeFromVitestConfig,
+  getVitestConfig,
+  viteConfigHasTestAttribute,
+} from '../../testDetection/configParsers/vitestParser';
 import { normalizePath } from '../../utils/PathUtils';
 
 jest.mock('fs');
@@ -90,7 +97,8 @@ describe('configParsing', () => {
     });
 
     it('should return true when package.json has jest config', () => {
-      const packageJsonContent = '{"name": "test", "jest": {"testRegex": ".*\\\\.spec\\\\.ts$"}}';
+      const packageJsonContent =
+        '{"name": "test", "jest": {"testRegex": ".*\\\\.spec\\\\.ts$"}}';
       mockedFs.readFileSync = jest.fn().mockReturnValue(packageJsonContent);
 
       const result = packageJsonHasJestConfig('/test/package.json');
@@ -304,7 +312,9 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual([{ patterns: ['**/*.test.ts', '**/*.spec.ts'], isRegex: false }]);
+      expect(result).toEqual([
+        { patterns: ['**/*.test.ts', '**/*.spec.ts'], isRegex: false },
+      ]);
     });
 
     it('should resolve rootDir __dirname to config directory', () => {
@@ -318,7 +328,9 @@ module.exports = {
       const result = getTestMatchFromJestConfig('/test/jest.config.ts');
 
       expect(result?.[0]?.rootDir).toBe('/test');
-      expect(result?.[0]?.patterns).toEqual(['<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)']);
+      expect(result?.[0]?.patterns).toEqual([
+        '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
+      ]);
     });
 
     it('should extract testMatch from TypeScript export default config', () => {
@@ -335,13 +347,15 @@ export default {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: [
-          '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
-          '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
-        ],
-        isRegex: false,
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: [
+            '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
+            '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
+          ],
+          isRegex: false,
+        },
+      ]);
     });
 
     it('should extract testMatch patterns with complex globs', () => {
@@ -353,13 +367,15 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual([{
-        patterns: [
-          '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
-          '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
-        ],
-        isRegex: false,
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: [
+            '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
+            '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
+          ],
+          isRegex: false,
+        },
+      ]);
     });
 
     it('should handle single quotes', () => {
@@ -419,7 +435,13 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest-e2e.json');
 
-      expect(result).toEqual([{ patterns: ['.e2e-spec.ts$'], isRegex: true, rootDir: resolve('/test') }]);
+      expect(result).toEqual([
+        {
+          patterns: ['.e2e-spec.ts$'],
+          isRegex: true,
+          rootDir: resolve('/test'),
+        },
+      ]);
     });
 
     it('should extract testRegex array from JSON config', () => {
@@ -429,7 +451,9 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.json');
 
-      expect(result).toEqual([{ patterns: ['.test.ts$', '.spec.ts$'], isRegex: true }]);
+      expect(result).toEqual([
+        { patterns: ['.test.ts$', '.spec.ts$'], isRegex: true },
+      ]);
     });
 
     it('should extract testRegex from JS config', () => {
@@ -462,11 +486,13 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual([{
-        patterns: ['src/.*\\.spec\\.[tj]sx?'],
-        isRegex: true,
-        rootDir: resolve('/test'),
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['src/.*\\.spec\\.[tj]sx?'],
+          isRegex: true,
+          rootDir: resolve('/test'),
+        },
+      ]);
     });
 
     it('should prefer testMatch over testRegex', () => {
@@ -493,14 +519,13 @@ export default {
 
       const result = getTestMatchFromJestConfig('/test/configs/jest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: [
-          '<rootDir>/**/*.ts?(x)',
-          '**/?(.)+(spec|test).ts?(x)',
-        ],
-        isRegex: false,
-        rootDir: resolve('/tests'),
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['<rootDir>/**/*.ts?(x)', '**/?(.)+(spec|test).ts?(x)'],
+          isRegex: false,
+          rootDir: resolve('/tests'),
+        },
+      ]);
     });
 
     it('should extract roots from JSON config', () => {
@@ -511,11 +536,13 @@ export default {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.json');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.test.ts'],
-        isRegex: false,
-        roots: ['<rootDir>/src', '<rootDir>/tests'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.test.ts'],
+          isRegex: false,
+          roots: ['<rootDir>/src', '<rootDir>/tests'],
+        },
+      ]);
     });
 
     it('should extract roots from JS config', () => {
@@ -528,11 +555,13 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.spec.ts'],
-        isRegex: false,
-        roots: ['<rootDir>/src', '<rootDir>/lib'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.spec.ts'],
+          isRegex: false,
+          roots: ['<rootDir>/src', '<rootDir>/lib'],
+        },
+      ]);
     });
 
     it('should extract testPathIgnorePatterns from JSON config', () => {
@@ -543,11 +572,13 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.json');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.test.ts'],
-        isRegex: false,
-        ignorePatterns: ['/node_modules/', '/fixtures/', '/__mocks__/'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.test.ts'],
+          isRegex: false,
+          ignorePatterns: ['/node_modules/', '/fixtures/', '/__mocks__/'],
+        },
+      ]);
     });
 
     it('should extract testPathIgnorePatterns from JS config', () => {
@@ -560,11 +591,13 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.test.ts'],
-        isRegex: false,
-        ignorePatterns: ['<rootDir>/build/', '<rootDir>/dist/'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.test.ts'],
+          isRegex: false,
+          ignorePatterns: ['<rootDir>/build/', '<rootDir>/dist/'],
+        },
+      ]);
     });
 
     it('should extract all config options together', () => {
@@ -577,13 +610,15 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.json');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.test.ts', '**/*.spec.ts'],
-        isRegex: false,
-        rootDir: resolve('/test'),
-        roots: ['<rootDir>/src', '<rootDir>/tests'],
-        ignorePatterns: ['/node_modules/', '/fixtures/'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.test.ts', '**/*.spec.ts'],
+          isRegex: false,
+          rootDir: resolve('/test'),
+          roots: ['<rootDir>/src', '<rootDir>/tests'],
+          ignorePatterns: ['/node_modules/', '/fixtures/'],
+        },
+      ]);
     });
 
     it('should return roots and ignorePatterns even without explicit patterns', () => {
@@ -594,12 +629,14 @@ module.exports = {
 
       const result = getTestMatchFromJestConfig('/test/jest.config.json');
 
-      expect(result).toEqual([{
-        patterns: [],
-        isRegex: false,
-        roots: ['<rootDir>/src'],
-        ignorePatterns: ['/fixtures/'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: [],
+          isRegex: false,
+          roots: ['<rootDir>/src'],
+          ignorePatterns: ['/fixtures/'],
+        },
+      ]);
     });
     it('should extract roots if roots is a variable', () => {
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
@@ -647,10 +684,15 @@ export default defineConfig({
 
       const result = getVitestConfig('/test/vitest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.jest.?(c|m)[jt]s?(x)', '**/__tests__/**/*.?(c|m)[jt]s?(x)'],
-        isRegex: false,
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: [
+            '**/*.jest.?(c|m)[jt]s?(x)',
+            '**/__tests__/**/*.?(c|m)[jt]s?(x)',
+          ],
+          isRegex: false,
+        },
+      ]);
     });
 
     it('should extract dir from test config', () => {
@@ -667,11 +709,13 @@ export default defineConfig({
 
       const result = getVitestConfig('/test/vitest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.test.ts'],
-        isRegex: false,
-        dir: 'src',
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.test.ts'],
+          isRegex: false,
+          dir: 'src',
+        },
+      ]);
     });
 
     it('should extract root from top-level config', () => {
@@ -688,11 +732,13 @@ export default defineConfig({
 
       const result = getVitestConfig('/test/vitest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.spec.ts'],
-        isRegex: false,
-        rootDir: './packages/app',
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.spec.ts'],
+          isRegex: false,
+          rootDir: './packages/app',
+        },
+      ]);
     });
 
     it('should extract all config options together', () => {
@@ -711,13 +757,15 @@ export default defineConfig({
 
       const result = getVitestConfig('/test/vitest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: ['**/*.{test,spec}.ts'],
-        isRegex: false,
-        rootDir: '.',
-        excludePatterns: ['**/node_modules/**', '**/fixtures/**'],
-        dir: 'src',
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: ['**/*.{test,spec}.ts'],
+          isRegex: false,
+          rootDir: '.',
+          excludePatterns: ['**/node_modules/**', '**/fixtures/**'],
+          dir: 'src',
+        },
+      ]);
     });
 
     it('should sanitize Vitest exclude patterns when spread values cannot be resolved', () => {
@@ -733,11 +781,13 @@ export default defineConfig({
 
       const result = getVitestConfig('/test/vitest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: [],
-        isRegex: false,
-        excludePatterns: ['packages/template/*'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: [],
+          isRegex: false,
+          excludePatterns: ['packages/template/*'],
+        },
+      ]);
     });
 
     it('should return undefined when no test config is present', () => {
@@ -767,11 +817,13 @@ export default defineConfig({
 
       const result = getVitestConfig('/test/vitest.config.ts');
 
-      expect(result).toEqual([{
-        patterns: [],
-        isRegex: false,
-        excludePatterns: ['**/e2e/**', '**/integration/**'],
-      }]);
+      expect(result).toEqual([
+        {
+          patterns: [],
+          isRegex: false,
+          excludePatterns: ['**/e2e/**', '**/integration/**'],
+        },
+      ]);
     });
 
     it('should return undefined on file read error', () => {
@@ -1008,10 +1060,16 @@ export default defineConfig({
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
       expect(result).toHaveLength(2);
-      expect(result).toEqual(expect.arrayContaining([
-        expect.objectContaining({ patterns: ['<rootDir>/src/**/*.test.a.ts'] }),
-        expect.objectContaining({ patterns: ['<rootDir>/src/**/*.test.b.ts'] })
-      ]));
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            patterns: ['<rootDir>/src/**/*.test.a.ts'],
+          }),
+          expect.objectContaining({
+            patterns: ['<rootDir>/src/**/*.test.b.ts'],
+          }),
+        ]),
+      );
     });
 
     it('should extract testMatch from Jest projects configured as objects', () => {
@@ -1027,10 +1085,16 @@ export default defineConfig({
       const result = getTestMatchFromJestConfig('/test/jest.config.js');
 
       expect(result).toHaveLength(2);
-      expect(result).toEqual(expect.arrayContaining([
-        expect.objectContaining({ patterns: ['<rootDir>/packages/a/**/*.test.ts'] }),
-        expect.objectContaining({ patterns: ['<rootDir>/packages/b/**/*.test.ts'] })
-      ]));
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            patterns: ['<rootDir>/packages/a/**/*.test.ts'],
+          }),
+          expect.objectContaining({
+            patterns: ['<rootDir>/packages/b/**/*.test.ts'],
+          }),
+        ]),
+      );
     });
   });
 
@@ -1076,7 +1140,10 @@ export default defineConfig({
       const result = getPlaywrightConfig('/test/playwright.config.ts');
 
       expect(result).toHaveLength(1);
-      expect(result[0].ignorePatterns).toEqual(['**/node_modules/**', '**/fixtures/**']);
+      expect(result[0].ignorePatterns).toEqual([
+        '**/node_modules/**',
+        '**/fixtures/**',
+      ]);
     });
 
     it('should extract testIgnore as string', () => {
@@ -1198,10 +1265,16 @@ export default defineConfig({
       const result = getVitestConfig('/test/vitest.config.ts');
 
       expect(result).toHaveLength(2);
-      expect(result).toEqual(expect.arrayContaining([
-        expect.objectContaining({ patterns: ['packages/nested-a/**/*.test.ts'] }),
-        expect.objectContaining({ patterns: ['packages/nested-b/**/*.test.ts'] })
-      ]));
+      expect(result).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            patterns: ['packages/nested-a/**/*.test.ts'],
+          }),
+          expect.objectContaining({
+            patterns: ['packages/nested-b/**/*.test.ts'],
+          }),
+        ]),
+      );
     });
   });
 });

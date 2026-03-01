@@ -24,8 +24,7 @@ function matchesExcludePatterns(
         if (regex.test(absolutePath)) {
           return true;
         }
-      } catch {
-      }
+      } catch {}
     }
   }
 
@@ -43,7 +42,10 @@ function matchesExcludePatterns(
   return false;
 }
 
-function resolveRootDirToken(pattern: string, rootDir: string | undefined): string {
+function resolveRootDirToken(
+  pattern: string,
+  rootDir: string | undefined,
+): string {
   const resolved = pattern.replace(/<rootDir>/gi, rootDir || '');
   if (rootDir && resolved.startsWith(rootDir)) {
     return resolved;
@@ -65,15 +67,24 @@ export function fileMatchesPatternsExplicit(
   const relativePath = relative(baseDir, filePath).replace(/\\/g, '/');
   const pathToMatch = isRegex ? filePath.replace(/\\/g, '/') : relativePath;
 
-
-  if (matchesExcludePatterns(filePath, relativePath, ignorePatterns, excludePatterns)) {
+  if (
+    matchesExcludePatterns(
+      filePath,
+      relativePath,
+      ignorePatterns,
+      excludePatterns,
+    )
+  ) {
     return false;
   }
 
   if (roots && roots.length > 0) {
     const absolutePath = resolve(filePath).replace(/\\/g, '/');
-    const isInRoots = roots.some(root => {
-      const resolvedRoot = resolve(baseDir, resolveRootDirToken(root, rootDir)).replace(/\\/g, '/');
+    const isInRoots = roots.some((root) => {
+      const resolvedRoot = resolve(
+        baseDir,
+        resolveRootDirToken(root, rootDir),
+      ).replace(/\\/g, '/');
       return absolutePath.startsWith(resolvedRoot);
     });
     if (!isInRoots) {
@@ -92,11 +103,15 @@ export function fileMatchesPatternsExplicit(
         if (regex.test(pathToMatch)) {
           return true;
         }
-      } catch {
-      }
+      } catch {}
     } else {
       const normalizedPattern = resolveRootDirToken(pattern, rootDir);
-      if (isMatch(pathToMatch, normalizedPattern, { nocase: true, extended: true })) {
+      if (
+        isMatch(pathToMatch, normalizedPattern, {
+          nocase: true,
+          extended: true,
+        })
+      ) {
         return true;
       }
     }
@@ -116,21 +131,39 @@ export function fileMatchesPatterns(
   roots?: string[],
 ): boolean {
   if (!patterns || patterns.length === 0) {
-    return fileMatchesPatternsExplicit(filePath, configDir, getDefaultTestPatterns(), false, rootDir, ignorePatterns, excludePatterns, roots);
+    return fileMatchesPatternsExplicit(
+      filePath,
+      configDir,
+      getDefaultTestPatterns(),
+      false,
+      rootDir,
+      ignorePatterns,
+      excludePatterns,
+      roots,
+    );
   }
 
-  return fileMatchesPatternsExplicit(filePath, configDir, patterns, isRegex, rootDir, ignorePatterns, excludePatterns, roots);
+  return fileMatchesPatternsExplicit(
+    filePath,
+    configDir,
+    patterns,
+    isRegex,
+    rootDir,
+    ignorePatterns,
+    excludePatterns,
+    roots,
+  );
 }
 
 function checkConfigMatches(
   filePath: string,
   directoryPath: string,
   configs: TestPatterns[] | undefined,
-  framework: 'jest' | 'vitest'
+  framework: 'jest' | 'vitest',
 ): boolean {
   if (!configs || configs.length === 0) return false;
 
-  return configs.some(config => {
+  return configs.some((config) => {
     if (!config.patterns || config.patterns.length === 0) return false;
 
     return fileMatchesPatternsExplicit(
@@ -141,7 +174,7 @@ function checkConfigMatches(
       config.rootDir,
       framework === 'jest' ? config.ignorePatterns : undefined,
       framework === 'vitest' ? config.excludePatterns : undefined,
-      config.roots
+      config.roots,
     );
   });
 }
@@ -158,8 +191,18 @@ export function detectFrameworkByPatternMatch(
   const jestHasExplicitPatterns = jestConfigs && jestConfigs.length > 0;
   const vitestHasExplicitPatterns = vitestConfigs && vitestConfigs.length > 0;
 
-  const jestMatches = checkConfigMatches(filePath, directoryPath, jestConfigs, 'jest');
-  const vitestMatches = checkConfigMatches(filePath, directoryPath, vitestConfigs, 'vitest');
+  const jestMatches = checkConfigMatches(
+    filePath,
+    directoryPath,
+    jestConfigs,
+    'jest',
+  );
+  const vitestMatches = checkConfigMatches(
+    filePath,
+    directoryPath,
+    vitestConfigs,
+    'vitest',
+  );
 
   if (jestHasExplicitPatterns && vitestHasExplicitPatterns) {
     if (jestMatches && !vitestMatches) return 'jest';
