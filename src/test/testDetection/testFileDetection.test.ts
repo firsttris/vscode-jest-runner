@@ -2,7 +2,13 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { cacheManager } from '../../cache/CacheManager';
-import { getTestFrameworkForFile, hasConflictingTestFramework, isJestTestFile, isTestFile, isVitestTestFile } from '../../testDetection/testFileDetection';
+import {
+  getTestFrameworkForFile,
+  hasConflictingTestFramework,
+  isJestTestFile,
+  isTestFile,
+  isVitestTestFile,
+} from '../../testDetection/testFileDetection';
 import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
 import { normalizePath } from '../../utils/PathUtils';
 
@@ -196,7 +202,11 @@ describe('testFileDetection', () => {
       });
 
       it('should return false when custom config exists but file does not match pattern', () => {
-        const testFile = path.join(rootPath, 'src', 'component.integrationtest.ts');
+        const testFile = path.join(
+          rootPath,
+          'src',
+          'component.integrationtest.ts',
+        );
         const customConfigPath = 'jest.config.custom.js';
         const customConfigFullPath = path.resolve(rootPath, customConfigPath);
 
@@ -230,7 +240,11 @@ describe('testFileDetection', () => {
       });
 
       it('should match integrationtest files with custom config pattern', () => {
-        const testFile = path.join(rootPath, 'src', 'somename.integrationtest.ts');
+        const testFile = path.join(
+          rootPath,
+          'src',
+          'somename.integrationtest.ts',
+        );
         const customConfigPath = 'jest.config.custom.js';
         const customConfigFullPath = path.resolve(rootPath, customConfigPath);
 
@@ -511,7 +525,11 @@ describe('testFileDetection', () => {
 
       it('should return false when custom config exists but file does not match pattern', () => {
         const rootPath = '/workspace/project';
-        const testFile = path.join(rootPath, 'src', 'component.integrationtest.ts');
+        const testFile = path.join(
+          rootPath,
+          'src',
+          'component.integrationtest.ts',
+        );
         const customConfigPath = 'vitest.config.custom.ts';
         const customConfigFullPath = path.resolve(rootPath, customConfigPath);
 
@@ -674,6 +692,76 @@ describe('testFileDetection', () => {
       const result = isTestFile(filePath);
 
       expect(result).toBe(true);
+    });
+
+    it('should use include patterns from rstest config', () => {
+      const rootPath = '/workspace/project';
+      const filePath = '/workspace/project/tests/e2e/login.e2e.ts';
+      const rstestConfigPath = path.join(rootPath, 'rstest.config.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          normalizePath(fsPath.toString()) === normalizePath(rstestConfigPath)
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = normalizePath(fsPath.toString());
+        if (pathStr === normalizePath(rstestConfigPath)) {
+          return `
+            export default {
+              include: ['tests/e2e/**/*.e2e.ts'],
+              exclude: ['tests/fixtures/**'],
+            };
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = isTestFile(filePath);
+
+      expect(result).toBe(true);
+      expect(mockedFs.readFileSync).toHaveBeenCalledWith(
+        rstestConfigPath,
+        'utf8',
+      );
+    });
+
+    it('should apply exclude patterns from rstest config', () => {
+      const rootPath = '/workspace/project';
+      const filePath = '/workspace/project/tests/fixtures/helper.ts';
+      const rstestConfigPath = path.join(rootPath, 'rstest.config.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          normalizePath(fsPath.toString()) === normalizePath(rstestConfigPath)
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        const pathStr = normalizePath(fsPath.toString());
+        if (pathStr === normalizePath(rstestConfigPath)) {
+          return `
+            export default {
+              include: ['tests/**/*.ts'],
+              exclude: ['tests/fixtures/**'],
+            };
+          `;
+        }
+        return '';
+      }) as any;
+
+      const result = isTestFile(filePath);
+
+      expect(result).toBe(false);
     });
 
     it('should return false for non-test file', () => {
@@ -1075,10 +1163,7 @@ describe('testFileDetection', () => {
       }));
 
       mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
-        return (
-          fsPath === jestConfigFullPath ||
-          fsPath === vitestConfigFullPath
-        );
+        return fsPath === jestConfigFullPath || fsPath === vitestConfigFullPath;
       });
 
       mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
@@ -1125,10 +1210,7 @@ describe('testFileDetection', () => {
       }));
 
       mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
-        return (
-          fsPath === jestConfigFullPath ||
-          fsPath === vitestConfigFullPath
-        );
+        return fsPath === jestConfigFullPath || fsPath === vitestConfigFullPath;
       });
 
       mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
@@ -1174,10 +1256,7 @@ describe('testFileDetection', () => {
       }));
 
       mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
-        return (
-          fsPath === jestConfigFullPath ||
-          fsPath === vitestConfigFullPath
-        );
+        return fsPath === jestConfigFullPath || fsPath === vitestConfigFullPath;
       });
 
       mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
@@ -1252,7 +1331,10 @@ export default defineConfig({
 
     it('should detect Playwright testDir when config uses nx preset spread', () => {
       const filePath = '/workspace/project/apps/shop-e2e/src/example.spec.ts';
-      const playwrightConfigPath = path.join(rootPath, 'apps/shop-e2e/playwright.config.ts');
+      const playwrightConfigPath = path.join(
+        rootPath,
+        'apps/shop-e2e/playwright.config.ts',
+      );
 
       mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
         return fsPath === playwrightConfigPath;
@@ -1278,7 +1360,10 @@ export default defineConfig({
 
     it('should detect Cypress specPattern when config uses nx preset spread', () => {
       const filePath = '/workspace/project/apps/shop-e2e/src/example.cy.ts';
-      const cypressConfigPath = path.join(rootPath, 'apps/shop-e2e/cypress.config.ts');
+      const cypressConfigPath = path.join(
+        rootPath,
+        'apps/shop-e2e/cypress.config.ts',
+      );
 
       mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
         return fsPath === cypressConfigPath;

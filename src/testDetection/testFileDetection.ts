@@ -17,6 +17,7 @@ import {
 import { getTestMatchFromJestConfig } from './configParsers/jestParser';
 import { getVitestConfig } from './configParsers/vitestParser';
 import { getDenoConfig } from './configParsers/denoParser';
+import { getRstestConfig } from './configParsers/rstestParser';
 import {
   getPlaywrightTestDir,
   getPlaywrightConfig,
@@ -135,6 +136,34 @@ const resolveVitestResult = (
       : result.dir
         ? resolve(defaultConfigDir, result.dir)
         : defaultConfigDir;
+
+    return {
+      patterns:
+        result.patterns && result.patterns.length > 0
+          ? result.patterns
+          : getDefaultTestPatterns(),
+      configDir,
+      isRegex: false,
+      excludePatterns: result.excludePatterns,
+      roots: undefined,
+      ignorePatterns: undefined,
+    };
+  });
+};
+
+const resolveRstestResult = (
+  results: TestPatterns[] | undefined,
+  configPath: string,
+  defaultConfigDir: string,
+): TestPatternResult[] => {
+  if (!results || results.length === 0) {
+    return [createDefaultResult(defaultConfigDir)];
+  }
+
+  return results.map((result) => {
+    const configDir = result.rootDir
+      ? resolve(dirname(configPath), result.rootDir)
+      : defaultConfigDir;
 
     return {
       patterns:
@@ -277,6 +306,16 @@ const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
   }));
 };
 
+const findRstestConfigInDir = (dir: string): TestPatternResult[] => {
+  const rstestFramework = testFrameworks.find((f) => f.name === 'rstest')!;
+  const configPaths = rstestFramework.configFiles.map((f) => join(dir, f));
+
+  const found = findFirstValidConfig(configPaths, getRstestConfig);
+  if (!found) return [createDefaultResult(dir)];
+
+  return resolveRstestResult(found.config, found.configPath, dir);
+};
+
 const detectPatternsInParentDirs = (
   filePath: string,
   rootPath: string,
@@ -291,6 +330,7 @@ const detectPatternsInParentDirs = (
     if (framework === 'vitest') return findVitestConfigInDir(dir);
     if (framework === 'deno') return findDenoConfigInDir(dir);
     if (framework === 'playwright') return findPlaywrightConfigInDir(dir);
+    if (framework === 'rstest') return findRstestConfigInDir(dir);
 
     return search(rest);
   };
