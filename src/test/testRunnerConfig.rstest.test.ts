@@ -118,6 +118,27 @@ describe('TestRunnerConfig - Rstest Runner', () => {
       expect(args).toEqual(['/path/to/example.test.ts', '-t', 'works']);
     });
 
+    it('should pass rstest config path when available', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+      jest
+        .spyOn(config, 'getRstestConfigPath')
+        .mockReturnValue('/path/to/rstest.config.ts');
+
+      const args = config.buildRstestArgs(
+        '/path/to/example.test.ts',
+        undefined,
+        false,
+      );
+
+      expect(args).toEqual([
+        '--config',
+        '/path/to/rstest.config.ts',
+        '/path/to/example.test.ts',
+      ]);
+    });
+
     it('should merge configured run options', () => {
       jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
         new WorkspaceConfiguration({

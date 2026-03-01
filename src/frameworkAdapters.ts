@@ -238,11 +238,17 @@ const buildRstestArgs: BuildArgsFn = (
   testName,
   withQuotes,
   options,
-  _configPath,
+  configPath,
   runOptions,
 ) => {
   const q = withQuotes ? quote : (s: string) => s;
-  const args = [q(normalizePath(filePath))];
+  const args: string[] = [];
+
+  if (configPath) {
+    args.push('--config', q(normalizePath(configPath)));
+  }
+
+  args.push(q(normalizePath(filePath)));
 
   const resolved = prepareTestName(testName, withQuotes);
   if (resolved) {

@@ -166,6 +166,7 @@ class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
   ): string[] {
     const coverageArgs = collectCoverage ? ['--coverage'] : [];
     const extraArgs = [...additionalArgs, ...coverageArgs, '--reporter=junit'];
+    const configPath = this.jestConfig.getRstestConfigPath(allFiles[0]);
 
     if (this.isPartialRun(allFiles, testsByFile)) {
       const tests = testsByFile.get(allFiles[0])!;
@@ -180,11 +181,17 @@ class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
     }
 
     const normalizedFiles = this.getNormalizedFiles(allFiles);
-    return [
+    const args = [
       ...normalizedFiles,
       ...extraArgs,
       ...(this.jestConfig.rstestRunOptions ?? []),
     ];
+
+    if (configPath) {
+      args.push('--config', configPath);
+    }
+
+    return args;
   }
 }
 

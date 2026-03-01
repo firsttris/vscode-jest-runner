@@ -282,6 +282,10 @@ export class TestRunnerConfig {
     );
   }
 
+  public getRstestConfigPath(targetPath: string): string {
+    return this.findConfigPath(targetPath, undefined, 'rstest') || '';
+  }
+
   public get runOptions(): string[] | null {
     return Settings.getJestRunOptions();
   }
@@ -431,12 +435,13 @@ export class TestRunnerConfig {
     withQuotes: boolean,
     options: string[] = [],
   ): string[] {
+    const configPath = this.getRstestConfigPath(filePath);
     return getFrameworkAdapter('rstest').buildArgs(
       filePath,
       testName,
       withQuotes,
       options,
-      '',
+      configPath,
       Settings.getRstestRunOptions(),
     );
   }

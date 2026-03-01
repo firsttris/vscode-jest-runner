@@ -389,6 +389,15 @@ const findFrameworkInParentDirs = (
   return search(dirs);
 };
 
+const findNearestFrameworkDirectory = (
+  filePath: string,
+  rootPath: string,
+  framework: TestFrameworkName,
+): string | undefined => {
+  const dirs = getParentDirectories(dirname(filePath), rootPath);
+  return dirs.find((dir) => isFrameworkUsedIn(dir, framework));
+};
+
 const detectFrameworkByDependency = (
   rootPath: string,
   targetFramework?: TestFrameworkName,
@@ -454,7 +463,20 @@ export function findTestFrameworkDirectory(
 
   const isRstest = isRstestTestFile(filePath);
   if (isRstest) {
-    return { directory: dirname(filePath), framework: 'rstest' };
+    if (!matchesTarget('rstest', targetFramework)) {
+      return undefined;
+    }
+
+    const nearestRstestDirectory = findNearestFrameworkDirectory(
+      filePath,
+      rootPath,
+      'rstest',
+    );
+
+    return {
+      directory: nearestRstestDirectory ?? dirname(filePath),
+      framework: 'rstest',
+    };
   }
 
   const customResult = resolveCustomConfigs(
