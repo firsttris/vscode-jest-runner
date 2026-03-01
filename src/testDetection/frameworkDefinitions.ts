@@ -1,4 +1,11 @@
-export type TestFrameworkName = 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright';
+export type TestFrameworkName =
+  | 'jest'
+  | 'vitest'
+  | 'node-test'
+  | 'bun'
+  | 'deno'
+  | 'playwright'
+  | 'rstest';
 
 export interface TestFramework {
   name: string;
@@ -96,6 +103,18 @@ export const testFrameworks: TestFramework[] = [
       'playwright.config.cjs',
     ],
     binaryName: 'playwright',
+  },
+  {
+    name: 'rstest',
+    configFiles: [
+      'rstest.config.js',
+      'rstest.config.ts',
+      'rstest.config.mjs',
+      'rstest.config.mts',
+      'rstest.config.cjs',
+      'rstest.config.cts',
+    ],
+    binaryName: 'rstest',
   },
 ];
 

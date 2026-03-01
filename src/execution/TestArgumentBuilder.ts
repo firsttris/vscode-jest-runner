@@ -35,6 +35,7 @@ export function buildTestArgs(
     vitest: new VitestStrategy(jestConfig, testController),
     jest: new JestStrategy(jestConfig, testController),
     playwright: new PlaywrightStrategy(jestConfig, testController),
+    rstest: new RstestStrategy(jestConfig, testController),
   };
 
   const strategy = strategies[framework];
@@ -153,6 +154,37 @@ abstract class JestLikeStrategy extends BaseStrategy {
     const tests = testsByFile.get(allFiles[0]);
 
     return !!tests && tests.length < totalTestsInFile;
+  }
+}
+
+class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
+  build(
+    allFiles: string[],
+    testsByFile: Map<string, vscode.TestItem[]>,
+    additionalArgs: string[],
+    collectCoverage: boolean,
+  ): string[] {
+    const coverageArgs = collectCoverage ? ['--coverage'] : [];
+    const extraArgs = [...additionalArgs, ...coverageArgs, '--reporter=junit'];
+
+    if (this.isPartialRun(allFiles, testsByFile)) {
+      const tests = testsByFile.get(allFiles[0])!;
+      const testNamePattern = this.getTestNamePattern(tests)!;
+
+      return this.jestConfig.buildRstestArgs(
+        allFiles[0],
+        testNamePattern,
+        true,
+        extraArgs,
+      );
+    }
+
+    const normalizedFiles = this.getNormalizedFiles(allFiles);
+    return [
+      ...normalizedFiles,
+      ...extraArgs,
+      ...(this.jestConfig.rstestRunOptions ?? []),
+    ];
   }
 }
 
