@@ -107,11 +107,11 @@ export const testFrameworks: TestFramework[] = [
   {
     name: 'rstest',
     configFiles: [
-      'rstest.config.js',
-      'rstest.config.ts',
       'rstest.config.mjs',
-      'rstest.config.mts',
+      'rstest.config.ts',
+      'rstest.config.js',
       'rstest.config.cjs',
+      'rstest.config.mts',
       'rstest.config.cts',
     ],
     binaryName: 'rstest',

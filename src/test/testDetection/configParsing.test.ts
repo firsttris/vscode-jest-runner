@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
-import { resolve } from 'node:path';
-import { packageJsonHasJestConfig } from '../../testDetection/configParsing';
+import { join, resolve } from 'node:path';
 import { getCypressSpecPattern } from '../../testDetection/configParsers/cypressParser';
 import { getTestMatchFromJestConfig } from '../../testDetection/configParsers/jestParser';
 import {
@@ -12,6 +11,10 @@ import {
   getVitestConfig,
   viteConfigHasTestAttribute,
 } from '../../testDetection/configParsers/vitestParser';
+import {
+  getConfigPath,
+  packageJsonHasJestConfig,
+} from '../../testDetection/configParsing';
 import { normalizePath } from '../../utils/PathUtils';
 
 jest.mock('fs');
@@ -126,6 +129,48 @@ describe('configParsing', () => {
       const result = packageJsonHasJestConfig('/test/package.json');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('getConfigPath for rstest', () => {
+    const testDir = '/test/project';
+    const rstestConfigFiles = [
+      'rstest.config.mjs',
+      'rstest.config.ts',
+      'rstest.config.js',
+      'rstest.config.cjs',
+      'rstest.config.mts',
+      'rstest.config.cts',
+    ];
+
+    beforeEach(() => {
+      mockedFs.existsSync = jest.fn().mockReturnValue(false);
+    });
+
+    it.each(rstestConfigFiles)(
+      'detects %s as a valid rstest config file',
+      (configFile) => {
+        mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+          return fsPath === join(testDir, configFile);
+        });
+
+        expect(getConfigPath(testDir, 'rstest')).toBe(
+          join(testDir, configFile),
+        );
+      },
+    );
+
+    it('resolves rstest config files in documented priority order', () => {
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === join(testDir, 'rstest.config.ts') ||
+          fsPath === join(testDir, 'rstest.config.mjs')
+        );
+      });
+
+      expect(getConfigPath(testDir, 'rstest')).toBe(
+        join(testDir, 'rstest.config.mjs'),
+      );
     });
   });
 

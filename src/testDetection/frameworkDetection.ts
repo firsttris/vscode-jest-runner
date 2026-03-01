@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-  TestFrameworkName,
+  type TestFrameworkName,
   testFrameworks,
-  FrameworkResult,
-  SearchOutcome,
+  type FrameworkResult,
+  type SearchOutcome,
 } from './frameworkDefinitions';
 import { cacheManager } from '../cache/CacheManager';
 import {
