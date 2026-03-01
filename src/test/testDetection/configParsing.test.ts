@@ -720,6 +720,26 @@ export default defineConfig({
       }]);
     });
 
+    it('should sanitize Vitest exclude patterns when spread values cannot be resolved', () => {
+      mockedFs.readFileSync = jest.fn().mockReturnValue(`
+import { configDefaults, defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    exclude: [...configDefaults.exclude, 'packages/template/*']
+  }
+});
+      `);
+
+      const result = getVitestConfig('/test/vitest.config.ts');
+
+      expect(result).toEqual([{
+        patterns: [],
+        isRegex: false,
+        excludePatterns: ['packages/template/*'],
+      }]);
+    });
+
     it('should return undefined when no test config is present', () => {
       mockedFs.readFileSync = jest.fn().mockReturnValue(`
 import { defineConfig } from 'vite';

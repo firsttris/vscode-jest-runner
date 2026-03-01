@@ -15,6 +15,9 @@ function matchesExcludePatterns(
 
   if (ignorePatterns && ignorePatterns.length > 0) {
     for (const pattern of ignorePatterns) {
+      if (typeof pattern !== 'string' || pattern.length === 0) {
+        continue;
+      }
       try {
         const normalizedPattern = pattern.replace(/<rootDir>/gi, '');
         const regex = new RegExp(normalizedPattern);
@@ -28,6 +31,9 @@ function matchesExcludePatterns(
 
   if (excludePatterns && excludePatterns.length > 0) {
     for (const pattern of excludePatterns) {
+      if (typeof pattern !== 'string' || pattern.length === 0) {
+        continue;
+      }
       if (isMatch(relativePath, pattern, { nocase: true, extended: true })) {
         return true;
       }
@@ -76,6 +82,10 @@ export function fileMatchesPatternsExplicit(
   }
 
   for (const pattern of patterns) {
+    if (typeof pattern !== 'string' || pattern.length === 0) {
+      continue;
+    }
+
     if (isRegex) {
       try {
         const regex = new RegExp(pattern);

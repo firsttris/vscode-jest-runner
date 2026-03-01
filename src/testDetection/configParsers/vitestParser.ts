@@ -12,12 +12,21 @@ const normalizeRootDir = (rootDir: string | undefined, configPath: string): stri
   return rootDir === '__dirname' ? dirname(configPath) : rootDir;
 };
 
+const toStringArray = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const sanitized = value.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0);
+  return sanitized;
+};
+
 const parseVitestConfigContent = (config: any, configPath: string): TestPatterns | undefined => {
   const testConfig = config.test;
   if (!testConfig) return undefined;
 
-  const patterns = Array.isArray(testConfig.include) ? testConfig.include : undefined;
-  const excludePatterns = Array.isArray(testConfig.exclude) ? testConfig.exclude : undefined;
+  const patterns = toStringArray(testConfig.include);
+  const excludePatterns = toStringArray(testConfig.exclude);
   const dir = typeof testConfig.dir === 'string' ? testConfig.dir : undefined;
   const rootDir = normalizeRootDir(
     typeof config.root === 'string' ? config.root : undefined,

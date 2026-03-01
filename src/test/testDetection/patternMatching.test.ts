@@ -106,6 +106,24 @@ describe('patternMatching', () => {
 
         expect(result).toBe(true);
       });
+
+      it('should ignore invalid Vitest exclude patterns and still match valid files', () => {
+        const filePath = '/project/src/component.spec.ts';
+        const configDir = '/project';
+        const patterns = ['**/*.spec.ts'];
+
+        const result = fileMatchesPatternsExplicit(
+          filePath,
+          configDir,
+          patterns,
+          false,
+          undefined,
+          undefined,
+          [undefined as unknown as string, ''],
+        );
+
+        expect(result).toBe(true);
+      });
     });
 
     describe('roots configuration', () => {
@@ -217,6 +235,22 @@ describe('patternMatching', () => {
         );
 
         expect(result).toBe(false);  // Invalid regex doesn't match
+      });
+
+      it('should ignore non-string patterns and evaluate valid regex entries', () => {
+        const filePath = '/project/src/test.spec.ts';
+        const configDir = '/project';
+        const patterns = [undefined as unknown as string, 'src/.*\\.spec\\.ts'];
+
+        const result = fileMatchesPatternsExplicit(
+          filePath,
+          configDir,
+          patterns,
+          true,
+          undefined,
+        );
+
+        expect(result).toBe(true);
       });
     });
 
