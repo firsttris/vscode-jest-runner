@@ -1,14 +1,14 @@
-import * as vscode from 'vscode';
-import { TestRunnerConfig } from '../testRunnerConfig';
-import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
+import { pathToFileURL } from 'node:url';
+import type * as vscode from 'vscode';
+import { getReporterPaths } from '../reporters/reporterPaths';
+import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
+import type { TestRunnerConfig } from '../testRunnerConfig';
+import { isWindows, normalizePath } from '../utils/PathUtils';
 import {
   escapeSingleQuotes,
   quote,
   toTestItemNamePattern,
 } from '../utils/TestNameUtils';
-import { normalizePath, isWindows } from '../utils/PathUtils';
-import { getReporterPaths } from '../reporters/reporterPaths';
-import { pathToFileURL } from 'node:url';
 
 interface TestArgumentStrategy {
   build(
@@ -175,7 +175,7 @@ class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
       return this.jestConfig.buildRstestArgs(
         allFiles[0],
         testNamePattern,
-        true,
+        false,
         extraArgs,
       );
     }
@@ -397,9 +397,13 @@ class PlaywrightStrategy
 export function buildTestArgsFast(
   filePath: string,
   testName: string | undefined,
-  _framework: TestFrameworkName,
+  framework: TestFrameworkName,
   jestConfig: TestRunnerConfig,
 ): string[] {
+  if (framework === 'rstest') {
+    return jestConfig.buildRstestArgs(filePath, testName, false, []);
+  }
+
   return jestConfig.buildTestArgs(filePath, testName, true, []);
 }
 
