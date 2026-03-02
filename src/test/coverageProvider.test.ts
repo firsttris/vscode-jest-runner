@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as vscode from 'vscode';
 import {
+  type CoverageMap,
   CoverageProvider,
-  CoverageMap,
-  FileCoverageData,
   DetailedFileCoverage,
+  type FileCoverageData,
 } from '../coverageProvider';
 import { CancellationToken, CancellationTokenSource } from './__mocks__/vscode';
 
@@ -76,9 +76,12 @@ describe('CoverageProvider', () => {
         ),
       };
 
-      mockFs.existsSync.mockImplementation((p) => typeof p === 'string' && p.includes('coverage-final.json'));
+      mockFs.existsSync.mockImplementation(
+        (p) => typeof p === 'string' && p.includes('coverage-final.json'),
+      );
       mockFs.readFileSync.mockImplementation((p) => {
-        if (typeof p === 'string' && p.includes('coverage-final.json')) return JSON.stringify(coverageData);
+        if (typeof p === 'string' && p.includes('coverage-final.json'))
+          return JSON.stringify(coverageData);
         return '';
       });
 
@@ -104,10 +107,16 @@ describe('CoverageProvider', () => {
         '/workspace/custom-coverage/coverage-final.json',
       );
 
-      mockFs.existsSync.mockImplementation((p) => typeof p === 'string' && (p.includes('jest.config') || p.includes('coverage-final.json')));
+      mockFs.existsSync.mockImplementation(
+        (p) =>
+          typeof p === 'string' &&
+          (p.includes('jest.config') || p.includes('coverage-final.json')),
+      );
       mockFs.readFileSync.mockImplementation((p) => {
-        if (typeof p === 'string' && p.includes('jest.config')) return jestConfig;
-        if (typeof p === 'string' && p.includes('coverage-final.json')) return JSON.stringify(coverageData);
+        if (typeof p === 'string' && p.includes('jest.config'))
+          return jestConfig;
+        if (typeof p === 'string' && p.includes('coverage-final.json'))
+          return JSON.stringify(coverageData);
         return '';
       });
 
@@ -133,10 +142,16 @@ describe('CoverageProvider', () => {
         '/workspace/vitest-coverage/coverage-final.json',
       );
 
-      mockFs.existsSync.mockImplementation((p) => typeof p === 'string' && (p.includes('vitest.config') || p.includes('coverage-final.json')));
+      mockFs.existsSync.mockImplementation(
+        (p) =>
+          typeof p === 'string' &&
+          (p.includes('vitest.config') || p.includes('coverage-final.json')),
+      );
       mockFs.readFileSync.mockImplementation((p) => {
-        if (typeof p === 'string' && p.includes('vitest.config')) return vitestConfig;
-        if (typeof p === 'string' && p.includes('coverage-final.json')) return JSON.stringify(coverageData);
+        if (typeof p === 'string' && p.includes('vitest.config'))
+          return vitestConfig;
+        if (typeof p === 'string' && p.includes('coverage-final.json'))
+          return JSON.stringify(coverageData);
         return '';
       });
 
@@ -144,6 +159,74 @@ describe('CoverageProvider', () => {
         workspaceFolder,
         'vitest',
         vitestConfigPath,
+      );
+
+      expect(result).toEqual(coverageData);
+    });
+
+    it('should parse Vitest top-level coverage.reportsDirectory from config', async () => {
+      const vitestConfig = `export default { coverage: { reportsDirectory: './vitest-top-level-coverage' } };`;
+      const coverageData: CoverageMap = {
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
+      };
+
+      const vitestConfigPath = normalizePath('/workspace/vitest.config.ts');
+
+      mockFs.existsSync.mockImplementation(
+        (p) =>
+          typeof p === 'string' &&
+          (p.includes('vitest.config') || p.includes('coverage-final.json')),
+      );
+      mockFs.readFileSync.mockImplementation((p) => {
+        if (typeof p === 'string' && p.includes('vitest.config')) {
+          return vitestConfig;
+        }
+        if (typeof p === 'string' && p.includes('coverage-final.json')) {
+          return JSON.stringify(coverageData);
+        }
+        return '';
+      });
+
+      const result = await provider.readCoverageFromFile(
+        workspaceFolder,
+        'vitest',
+        vitestConfigPath,
+      );
+
+      expect(result).toEqual(coverageData);
+    });
+
+    it('should parse Rstest coverage.reportsDirectory from config', async () => {
+      const rstestConfig = `export default { coverage: { reportsDirectory: './rstest-coverage' } };`;
+      const coverageData: CoverageMap = {
+        '/workspace/src/index.ts': createMockFileCoverageData(
+          '/workspace/src/index.ts',
+        ),
+      };
+
+      const rstestConfigPath = normalizePath('/workspace/rstest.config.ts');
+
+      mockFs.existsSync.mockImplementation(
+        (p) =>
+          typeof p === 'string' &&
+          (p.includes('rstest.config') || p.includes('coverage-final.json')),
+      );
+      mockFs.readFileSync.mockImplementation((p) => {
+        if (typeof p === 'string' && p.includes('rstest.config')) {
+          return rstestConfig;
+        }
+        if (typeof p === 'string' && p.includes('coverage-final.json')) {
+          return JSON.stringify(coverageData);
+        }
+        return '';
+      });
+
+      const result = await provider.readCoverageFromFile(
+        workspaceFolder,
+        'rstest',
+        rstestConfigPath,
       );
 
       expect(result).toEqual(coverageData);
@@ -164,10 +247,16 @@ describe('CoverageProvider', () => {
         '/workspace/packages/app/coverage/coverage-final.json',
       );
 
-      mockFs.existsSync.mockImplementation((p) => typeof p === 'string' && (p.includes('vitest.config') || p.includes('coverage-final.json')));
+      mockFs.existsSync.mockImplementation(
+        (p) =>
+          typeof p === 'string' &&
+          (p.includes('vitest.config') || p.includes('coverage-final.json')),
+      );
       mockFs.readFileSync.mockImplementation((p) => {
-        if (typeof p === 'string' && p.includes('vitest.config')) return vitestConfig;
-        if (typeof p === 'string' && p.includes('coverage-final.json')) return JSON.stringify(coverageData);
+        if (typeof p === 'string' && p.includes('vitest.config'))
+          return vitestConfig;
+        if (typeof p === 'string' && p.includes('coverage-final.json'))
+          return JSON.stringify(coverageData);
         return '';
       });
 
@@ -191,7 +280,6 @@ describe('CoverageProvider', () => {
   });
 
   describe('convertToVSCodeCoverage', () => {
-
     it('should convert coverage map to VS Code format', () => {
       const coverageMap: CoverageMap = {
         '/workspace/src/index.ts': createMockFileCoverageData(
@@ -199,9 +287,7 @@ describe('CoverageProvider', () => {
         ),
       };
 
-      const result = provider.convertToVSCodeCoverage(
-        coverageMap,
-      );
+      const result = provider.convertToVSCodeCoverage(coverageMap);
 
       expect(result).toHaveLength(1);
       expect(result[0]).toBeInstanceOf(DetailedFileCoverage);
@@ -218,9 +304,7 @@ describe('CoverageProvider', () => {
         ),
       };
 
-      const result = provider.convertToVSCodeCoverage(
-        coverageMap,
-      );
+      const result = provider.convertToVSCodeCoverage(coverageMap);
 
       expect(result).toHaveLength(1);
       expect(result[0].uri.fsPath).toBe('/workspace/src/index.ts');
@@ -239,9 +323,7 @@ describe('CoverageProvider', () => {
         ),
       };
 
-      const result = provider.convertToVSCodeCoverage(
-        coverageMap,
-      );
+      const result = provider.convertToVSCodeCoverage(coverageMap);
 
       expect(result).toHaveLength(1);
       expect(result[0].uri.fsPath).toBe('/workspace/src/index.ts');
@@ -273,9 +355,7 @@ describe('CoverageProvider', () => {
         },
       };
 
-      const result = provider.convertToVSCodeCoverage(
-        coverageMap,
-      );
+      const result = provider.convertToVSCodeCoverage(coverageMap);
 
       expect(result[0].statementCoverage.covered).toBe(2);
       expect(result[0].statementCoverage.total).toBe(3);
@@ -307,9 +387,7 @@ describe('CoverageProvider', () => {
         },
       };
 
-      const result = provider.convertToVSCodeCoverage(
-        coverageMap,
-      );
+      const result = provider.convertToVSCodeCoverage(coverageMap);
 
       expect(result[0].branchCoverage?.covered).toBe(1);
       expect(result[0].branchCoverage?.total).toBe(2);
@@ -353,9 +431,7 @@ describe('CoverageProvider', () => {
         },
       };
 
-      const result = provider.convertToVSCodeCoverage(
-        coverageMap,
-      );
+      const result = provider.convertToVSCodeCoverage(coverageMap);
 
       expect(result[0].declarationCoverage?.covered).toBe(1);
       expect(result[0].declarationCoverage?.total).toBe(2);
