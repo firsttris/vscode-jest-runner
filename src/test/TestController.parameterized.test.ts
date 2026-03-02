@@ -23,9 +23,8 @@ describe('JestTestController - it.each parameterized tests', () => {
   });
 
   it('should match it.each tests with $variable template', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const testItem = new TestItem(
       'test1',
@@ -82,9 +81,8 @@ describe('JestTestController - it.each parameterized tests', () => {
   });
 
   it('should aggregate it.each results - all pass', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const testItem = new TestItem(
       'test1',
@@ -130,9 +128,8 @@ describe('JestTestController - it.each parameterized tests', () => {
   });
 
   it('should aggregate it.each results - some fail', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const testItem = new TestItem(
       'test1',
@@ -182,9 +179,8 @@ describe('JestTestController - it.each parameterized tests', () => {
   });
 
   it('should handle %s and %p template variables', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const testItem = new TestItem(
       'test1',
@@ -236,9 +232,8 @@ describe('JestTestController - it.each parameterized tests', () => {
   });
 
   it('should handle nested describe with it.each', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const fileItem = new TestItem(
       '/workspace/test.ts',

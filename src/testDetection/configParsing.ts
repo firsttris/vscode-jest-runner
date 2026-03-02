@@ -1,7 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import * as vscode from 'vscode';
-import { allTestFrameworks, DEFAULT_TEST_PATTERNS } from './frameworkDefinitions';
+import {
+  allTestFrameworks,
+  DEFAULT_TEST_PATTERNS,
+} from './frameworkDefinitions';
 import { logError } from '../utils/Logger';
 import { resolveConfigPathOrMapping } from '../utils/PathUtils';
 import * as Settings from '../config/Settings';
@@ -19,7 +22,10 @@ export function packageJsonHasJestConfig(configPath: string): boolean {
   }
 }
 
-export function binaryExists(directoryPath: string, binaryName: string): boolean {
+export function binaryExists(
+  directoryPath: string,
+  binaryName: string,
+): boolean {
   const possibleBinaryPaths = [
     join(directoryPath, 'node_modules', '.bin', binaryName),
     join(directoryPath, 'node_modules', '.bin', `${binaryName}.cmd`),
@@ -28,7 +34,10 @@ export function binaryExists(directoryPath: string, binaryName: string): boolean
   return possibleBinaryPaths.some(existsSync);
 }
 
-export function getConfigPath(directoryPath: string, frameworkName: string): string | undefined {
+export function getConfigPath(
+  directoryPath: string,
+  frameworkName: string,
+): string | undefined {
   const framework = allTestFrameworks.find((f) => f.name === frameworkName);
   if (!framework) return undefined;
   for (const configFile of framework.configFiles) {
@@ -52,17 +61,21 @@ export function getConfigPath(directoryPath: string, frameworkName: string): str
 
 export function resolveAndValidateCustomConfig(
   configKey: string,
-  filePath: string
+  filePath: string,
 ): string | undefined {
-  const customConfigPath = vscode.workspace.getConfiguration().get(configKey) as
-    | string
-    | Record<string, string>
-    | undefined;
+  const customConfigPath = vscode.workspace
+    .getConfiguration()
+    .get(configKey) as string | Record<string, string> | undefined;
 
-  const resolvedConfigPath = resolveConfigPathOrMapping(customConfigPath, filePath);
+  const resolvedConfigPath = resolveConfigPathOrMapping(
+    customConfigPath,
+    filePath,
+  );
   if (!resolvedConfigPath) return undefined;
 
-  const basePath = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath))?.uri.fsPath;
+  const basePath = vscode.workspace.getWorkspaceFolder(
+    vscode.Uri.file(filePath),
+  )?.uri.fsPath;
   if (!basePath) return undefined;
 
   const fullConfigPath = resolve(basePath, resolvedConfigPath);

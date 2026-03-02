@@ -65,12 +65,12 @@ end_of_record
       expect(result[0].functions.details[0]).toEqual({
         name: 'myFunction',
         line: 1,
-        hit: 3
+        hit: 3,
       });
       expect(result[0].functions.details[1]).toEqual({
         name: 'anotherFunction',
         line: 5,
-        hit: 0
+        hit: 0,
       });
     });
 
@@ -100,13 +100,13 @@ end_of_record
         line: 1,
         block: 0,
         branch: 0,
-        taken: 5
+        taken: 5,
       });
       expect(result[0].branches.details[2]).toEqual({
         line: 5,
         block: 0,
         branch: 0,
-        taken: 0 // '-' should be converted to 0
+        taken: 0, // '-' should be converted to 0
       });
     });
 
@@ -209,7 +209,9 @@ end_of_record
     });
 
     it('should throw error for empty data', async () => {
-      await expect(parseLcov('')).rejects.toThrow('Failed to parse LCOV data: no records found');
+      await expect(parseLcov('')).rejects.toThrow(
+        'Failed to parse LCOV data: no records found',
+      );
     });
 
     it('should throw error for data without end_of_record', async () => {
@@ -220,7 +222,9 @@ LH:1
 DA:1,1
 `;
 
-      await expect(parseLcov(lcovData)).rejects.toThrow('Failed to parse LCOV data: no records found');
+      await expect(parseLcov(lcovData)).rejects.toThrow(
+        'Failed to parse LCOV data: no records found',
+      );
     });
 
     it('should handle empty lines and whitespace', async () => {
@@ -286,7 +290,7 @@ end_of_record
       expect(result[0].functions.details).toContainEqual({
         name: 'calculateTotal',
         line: 1,
-        hit: 5
+        hit: 5,
       });
     });
   });
@@ -310,7 +314,7 @@ end_of_record
       expect(result).toHaveLength(1);
       expect(result[0].functions.details[0]).toEqual({
         name: 'myFunction',
-        line: 1
+        line: 1,
         // hit should be undefined
       });
     });

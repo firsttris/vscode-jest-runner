@@ -47,9 +47,9 @@ describe('TestRunnerConfig', () => {
     });
 
     it('should use npx even when PnP is detected', () => {
-      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-        new WorkspaceConfiguration({}),
-      );
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
 
       // Mock Yarn PnP directory structure
       const expectedPath = path.join('/home/user/project', '.yarn', 'releases');
@@ -59,9 +59,7 @@ describe('TestRunnerConfig', () => {
         }
         return false;
       });
-      jest.spyOn(fs, 'readdirSync').mockReturnValue([
-        'yarn-3.2.0.cjs' as any,
-      ]);
+      jest.spyOn(fs, 'readdirSync').mockReturnValue(['yarn-3.2.0.cjs' as any]);
 
       expect(jestRunnerConfig.vitestCommand).toBe('npx --no-install vitest');
     });

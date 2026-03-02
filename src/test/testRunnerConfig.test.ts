@@ -88,87 +88,87 @@ describe('TestRunnerConfig', () => {
         installedPath: string | undefined,
       ]
     > = [
-        [
-          'linux',
-          'jest dep installed in same path as the opened file',
-          'returns the folder path of the opened file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/index.test.js',
-          '/home/user/workspace/jestProject',
-        ],
-        [
-          'linux',
-          'jest dep installed in parent path of the opened file',
-          'returns the folder path of the parent of the opened file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/src/index.test.js',
-          '/home/user/workspace/jestProject',
-        ],
-        [
-          'linux',
-          'jest dep installed in an ancestor path of the opened file',
-          'returns the folder path of the ancestor of the opened file',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          '/home/user/workspace/jestProject',
-        ],
-        [
-          'linux',
-          'jest dep installed in the workspace of the opened file',
-          "returns the folder path of the opened file's workspace",
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          '/home/user/workspace',
-        ],
-        [
-          'linux',
-          'jest dep not installed',
-          'returns empty string',
-          '/home/user/workspace',
-          '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
-          undefined,
-        ],
-        [
-          'windows',
-          'jest dep installed in same path as the opened file',
-          'returns the (normalized) folder path of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject\\src',
-        ],
-        [
-          'windows',
-          'jest dep installed in parent path of the opened file',
-          'returns the (normalized) folder path of the parent of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject',
-        ],
-        [
-          'windows',
-          'jest dep installed in an ancestor path of the opened file',
-          'returns the (normalized) folder path of the ancestor of the opened file',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\deeply\\nested\\package\\src\\index.it.spec.js',
-          'C:\\workspace\\jestProject',
-        ],
-        [
-          'windows',
-          'jest dep installed in the workspace of the opened file',
-          "returns the (normalized) folder path of the opened file's workspace",
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          'C:\\workspace',
-        ],
-        [
-          'windows',
-          'jest dep not installed',
-          'returns empty string',
-          'C:\\workspace',
-          'C:\\workspace\\jestProject\\src\\index.it.spec.js',
-          undefined,
-        ],
-      ];
+      [
+        'linux',
+        'jest dep installed in same path as the opened file',
+        'returns the folder path of the opened file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/index.test.js',
+        '/home/user/workspace/jestProject',
+      ],
+      [
+        'linux',
+        'jest dep installed in parent path of the opened file',
+        'returns the folder path of the parent of the opened file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/src/index.test.js',
+        '/home/user/workspace/jestProject',
+      ],
+      [
+        'linux',
+        'jest dep installed in an ancestor path of the opened file',
+        'returns the folder path of the ancestor of the opened file',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        '/home/user/workspace/jestProject',
+      ],
+      [
+        'linux',
+        'jest dep installed in the workspace of the opened file',
+        "returns the folder path of the opened file's workspace",
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        '/home/user/workspace',
+      ],
+      [
+        'linux',
+        'jest dep not installed',
+        'returns empty string',
+        '/home/user/workspace',
+        '/home/user/workspace/jestProject/deeply/nested/package/src/index.test.js',
+        undefined,
+      ],
+      [
+        'windows',
+        'jest dep installed in same path as the opened file',
+        'returns the (normalized) folder path of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject\\src',
+      ],
+      [
+        'windows',
+        'jest dep installed in parent path of the opened file',
+        'returns the (normalized) folder path of the parent of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject',
+      ],
+      [
+        'windows',
+        'jest dep installed in an ancestor path of the opened file',
+        'returns the (normalized) folder path of the ancestor of the opened file',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\deeply\\nested\\package\\src\\index.it.spec.js',
+        'C:\\workspace\\jestProject',
+      ],
+      [
+        'windows',
+        'jest dep installed in the workspace of the opened file',
+        "returns the (normalized) folder path of the opened file's workspace",
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        'C:\\workspace',
+      ],
+      [
+        'windows',
+        'jest dep not installed',
+        'returns empty string',
+        'C:\\workspace',
+        'C:\\workspace\\jestProject\\src\\index.it.spec.js',
+        undefined,
+      ],
+    ];
 
     describe.each(scenarios)(
       '%s: %s',
@@ -277,9 +277,9 @@ describe('TestRunnerConfig', () => {
           .mockReturnValue(
             new WorkspaceFolder(new Uri('/home/user/project') as any) as any,
           );
-        jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-          new WorkspaceConfiguration({})
-        );
+        jest
+          .spyOn(vscode.workspace, 'getConfiguration')
+          .mockReturnValue(new WorkspaceConfiguration({}));
 
         const mockRequire = {
           resolve: jest.fn().mockImplementation((pkg: string) => {
@@ -292,7 +292,9 @@ describe('TestRunnerConfig', () => {
             throw new Error(`Cannot find module '${pkg}'`);
           }),
         };
-        jest.spyOn(moduleLib, 'createRequire').mockReturnValue(mockRequire as any);
+        jest
+          .spyOn(moduleLib, 'createRequire')
+          .mockReturnValue(mockRequire as any);
 
         jest.spyOn(fs, 'readFileSync').mockImplementation((path: any) => {
           if (path === '/home/user/project/node_modules/jest/package.json') {
@@ -305,24 +307,30 @@ describe('TestRunnerConfig', () => {
         });
       });
 
-      its.linux('should prefix jest command with node when binary is resolved', () => {
-        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      its.linux(
+        'should prefix jest command with node when binary is resolved',
+        () => {
+          jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
-        const command = jestRunnerConfig.jestCommand;
+          const command = jestRunnerConfig.jestCommand;
 
-        // Expect direct execution via resolved path
-        expect(command).toContain('node ');
-        expect(command).toContain('jest/bin/jest.js');
-      });
+          // Expect direct execution via resolved path
+          expect(command).toContain('node ');
+          expect(command).toContain('jest/bin/jest.js');
+        },
+      );
 
-      its.linux('should prefix vitest command with node when binary is resolved', () => {
-        jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+      its.linux(
+        'should prefix vitest command with node when binary is resolved',
+        () => {
+          jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
-        const command = jestRunnerConfig.vitestCommand;
+          const command = jestRunnerConfig.vitestCommand;
 
-        expect(command).toContain('node ');
-        expect(command).toContain('vitest/vitest.mjs');
-      });
+          expect(command).toContain('node ');
+          expect(command).toContain('vitest/vitest.mjs');
+        },
+      );
 
       it('should fallback to npx for jest if binary not found', () => {
         // Mock fail to find script

@@ -21,7 +21,9 @@ describe('TerminalManager', () => {
       processId: Promise.resolve(12345),
     };
 
-    (vscode.window.createTerminal as jest.Mock) = jest.fn().mockReturnValue(mockTerminal);
+    (vscode.window.createTerminal as jest.Mock) = jest
+      .fn()
+      .mockReturnValue(mockTerminal);
     (vscode.window.onDidCloseTerminal as jest.Mock) = jest.fn((callback) => {
       closeTerminalCallback = callback;
       return { dispose: jest.fn() };
@@ -37,7 +39,10 @@ describe('TerminalManager', () => {
 
   describe('runCommand', () => {
     it('should create a new terminal and run command', async () => {
-      await terminalManager.runCommand('npm test', { framework: 'jest', cwd: '/project' });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        cwd: '/project',
+      });
 
       expect(vscode.window.createTerminal).toHaveBeenCalledWith({
         name: 'jest',
@@ -49,7 +54,10 @@ describe('TerminalManager', () => {
     });
 
     it('should create vitest terminal for vitest framework', async () => {
-      await terminalManager.runCommand('npx vitest', { framework: 'vitest', cwd: '/project' });
+      await terminalManager.runCommand('npx vitest', {
+        framework: 'vitest',
+        cwd: '/project',
+      });
 
       expect(vscode.window.createTerminal).toHaveBeenCalledWith({
         name: 'vitest',
@@ -59,38 +67,65 @@ describe('TerminalManager', () => {
     });
 
     it('should reuse existing terminal for same framework', async () => {
-      await terminalManager.runCommand('npm test', { framework: 'jest', cwd: '/project' });
-      await terminalManager.runCommand('npm test -- file.test.ts', { framework: 'jest', cwd: '/project' });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        cwd: '/project',
+      });
+      await terminalManager.runCommand('npm test -- file.test.ts', {
+        framework: 'jest',
+        cwd: '/project',
+      });
 
       expect(vscode.window.createTerminal).toHaveBeenCalledTimes(1);
       expect(mockTerminal.sendText).toHaveBeenCalledTimes(2);
     });
 
     it('should create new terminal when framework changes', async () => {
-      await terminalManager.runCommand('npm test', { framework: 'jest', cwd: '/project' });
-      await terminalManager.runCommand('npx vitest', { framework: 'vitest', cwd: '/project' });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        cwd: '/project',
+      });
+      await terminalManager.runCommand('npx vitest', {
+        framework: 'vitest',
+        cwd: '/project',
+      });
 
       expect(vscode.window.createTerminal).toHaveBeenCalledTimes(2);
       expect(mockTerminal.dispose).toHaveBeenCalledTimes(1);
     });
 
     it('should create new terminal when cwd changes', async () => {
-      await terminalManager.runCommand('npm test', { framework: 'jest', cwd: '/project1' });
-      await terminalManager.runCommand('npm test', { framework: 'jest', cwd: '/project2' });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        cwd: '/project1',
+      });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        cwd: '/project2',
+      });
 
       expect(vscode.window.createTerminal).toHaveBeenCalledTimes(2);
       expect(mockTerminal.dispose).toHaveBeenCalledTimes(1);
     });
 
     it('should create new terminal when env changes', async () => {
-      await terminalManager.runCommand('npm test', { framework: 'jest', env: { NODE_ENV: 'test' } });
-      await terminalManager.runCommand('npm test', { framework: 'jest', env: { NODE_ENV: 'development' } });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        env: { NODE_ENV: 'test' },
+      });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        env: { NODE_ENV: 'development' },
+      });
 
       expect(vscode.window.createTerminal).toHaveBeenCalledTimes(2);
     });
 
     it('should pass preserveEditorFocus to terminal.show', async () => {
-      await terminalManager.runCommand('npm test', { framework: 'jest', preserveEditorFocus: true });
+      await terminalManager.runCommand('npm test', {
+        framework: 'jest',
+        preserveEditorFocus: true,
+      });
 
       expect(mockTerminal.show).toHaveBeenCalledWith(true);
     });

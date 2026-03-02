@@ -7,10 +7,21 @@ function emit(type, payload) {
   try {
     const json = JSON.stringify(payload);
     const len = Buffer.byteLength(json, 'utf8');
-    const message = START + sessionId + '::' + type + '::' + len + '::' + json + END + sessionId + '::' + type;
+    const message =
+      START +
+      sessionId +
+      '::' +
+      type +
+      '::' +
+      len +
+      '::' +
+      json +
+      END +
+      sessionId +
+      '::' +
+      type;
     process.stdout.write(message);
-  } catch (err) {
-  }
+  } catch (err) {}
 }
 
 class JestStructuredReporter {
@@ -29,17 +40,25 @@ class JestStructuredReporter {
         assertionResults: (fileResult.testResults || []).map((assertion) => ({
           ancestorTitles: assertion.ancestorTitles || [],
           title: assertion.title,
-          fullName: assertion.fullName || [...(assertion.ancestorTitles || []), assertion.title].join(' '),
+          fullName:
+            assertion.fullName ||
+            [...(assertion.ancestorTitles || []), assertion.title].join(' '),
           status: assertion.status,
           duration: assertion.duration,
           failureMessages: assertion.failureMessages,
-          location: assertion.location || (assertion.line ? { line: assertion.line, column: assertion.column || 0 } : undefined),
+          location:
+            assertion.location ||
+            (assertion.line
+              ? { line: assertion.line, column: assertion.column || 0 }
+              : undefined),
         })),
         name: fileResult.name,
         status: fileResult.numFailingTests > 0 ? 'failed' : 'passed',
         message: fileResult.failureMessage || '',
-        startTime: fileResult.perfStats?.start || fileResult.perfStats?.startTime || 0,
-        endTime: fileResult.perfStats?.end || fileResult.perfStats?.endTime || 0,
+        startTime:
+          fileResult.perfStats?.start || fileResult.perfStats?.startTime || 0,
+        endTime:
+          fileResult.perfStats?.end || fileResult.perfStats?.endTime || 0,
       })),
     };
 

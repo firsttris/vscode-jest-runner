@@ -1,222 +1,263 @@
-
 import * as vscode from 'vscode';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
-    Document,
-    TextEditor,
-    Uri,
-    WorkspaceConfiguration,
-    WorkspaceFolder,
+  Document,
+  TextEditor,
+  Uri,
+  WorkspaceConfiguration,
+  WorkspaceFolder,
 } from './__mocks__/vscode';
 import * as testFileDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Playwright Runner', () => {
-    let config: TestRunnerConfig;
+  let config: TestRunnerConfig;
 
-    beforeEach(() => {
-        config = new TestRunnerConfig();
-        jest
-            .spyOn(vscode.workspace, 'getWorkspaceFolder')
-            .mockReturnValue(
-                new WorkspaceFolder(new Uri('/home/user/project') as any) as any,
-            );
-        jest
-            .spyOn(vscode.window, 'activeTextEditor', 'get')
-            .mockReturnValue(
-                new TextEditor(new Document(new Uri('/home/user/project/tests/example.spec.ts') as any)) as any,
-            );
+  beforeEach(() => {
+    config = new TestRunnerConfig();
+    jest
+      .spyOn(vscode.workspace, 'getWorkspaceFolder')
+      .mockReturnValue(
+        new WorkspaceFolder(new Uri('/home/user/project') as any) as any,
+      );
+    jest
+      .spyOn(vscode.window, 'activeTextEditor', 'get')
+      .mockReturnValue(
+        new TextEditor(
+          new Document(
+            new Uri('/home/user/project/tests/example.spec.ts') as any,
+          ),
+        ) as any,
+      );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe('playwrightCommand', () => {
+    it('should return custom playwright command when set', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.playwrightCommand': 'pnpm playwright',
+        }),
+      );
+
+      expect(config.playwrightCommand).toBe('pnpm playwright');
     });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
+    it('should return default playwright command when not set', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+
+      expect(config.playwrightCommand).toBe('npx playwright');
+    });
+  });
+
+  describe('getTestCommand', () => {
+    it('should return playwright command for playwright framework', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+      jest
+        .spyOn(testFileDetection, 'getTestFrameworkForFile')
+        .mockReturnValue('playwright');
+
+      const command = config.getTestCommand('/path/to/test.spec.ts');
+
+      expect(command).toBe('npx playwright');
     });
 
-    describe('playwrightCommand', () => {
-        it('should return custom playwright command when set', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.playwrightCommand': 'pnpm playwright',
-                }),
-            );
+    it('should return custom playwright command for playwright framework', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.playwrightCommand': 'yarn playwright',
+        }),
+      );
+      jest
+        .spyOn(testFileDetection, 'getTestFrameworkForFile')
+        .mockReturnValue('playwright');
 
-            expect(config.playwrightCommand).toBe('pnpm playwright');
-        });
+      const command = config.getTestCommand('/path/to/test.spec.ts');
 
-        it('should return default playwright command when not set', () => {
-            jest
-                .spyOn(vscode.workspace, 'getConfiguration')
-                .mockReturnValue(new WorkspaceConfiguration({}));
+      expect(command).toBe('yarn playwright');
+    });
+  });
 
-            expect(config.playwrightCommand).toBe('npx playwright');
-        });
+  describe('playwrightRunOptions', () => {
+    it('should return null when no options configured', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+
+      expect(config.playwrightRunOptions).toBeNull();
     });
 
-    describe('getTestCommand', () => {
-        it('should return playwright command for playwright framework', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
-            jest.spyOn(testFileDetection, 'getTestFrameworkForFile').mockReturnValue('playwright');
+    it('should return configured options', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.playwrightRunOptions': ['--headed', '--workers=2'],
+        }),
+      );
 
-            const command = config.getTestCommand('/path/to/test.spec.ts');
+      expect(config.playwrightRunOptions).toEqual(['--headed', '--workers=2']);
+    });
+  });
 
-            expect(command).toBe('npx playwright');
-        });
+  describe('playwrightDebugOptions', () => {
+    it('should return empty object when not configured', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
 
-        it('should return custom playwright command for playwright framework', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.playwrightCommand': 'yarn playwright',
-                }),
-            );
-            jest.spyOn(testFileDetection, 'getTestFrameworkForFile').mockReturnValue('playwright');
-
-            const command = config.getTestCommand('/path/to/test.spec.ts');
-
-            expect(command).toBe('yarn playwright');
-        });
+      expect(config.playwrightDebugOptions).toEqual({});
     });
 
-    describe('playwrightRunOptions', () => {
-        it('should return null when no options configured', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
+    it('should return configured debug options', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.playwrightDebugOptions': {
+            env: { PWDEBUG: '1' },
+          },
+        }),
+      );
 
-            expect(config.playwrightRunOptions).toBeNull();
-        });
+      expect(config.playwrightDebugOptions).toEqual({
+        env: { PWDEBUG: '1' },
+      });
+    });
+  });
 
-        it('should return configured options', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.playwrightRunOptions': ['--headed', '--workers=2'],
-                }),
-            );
+  describe('buildPlaywrightArgs', () => {
+    it('should build basic args with test subcommand and file path', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
 
-            expect(config.playwrightRunOptions).toEqual(['--headed', '--workers=2']);
-        });
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        undefined,
+        false,
+      );
+
+      expect(args[0]).toBe('test');
+      expect(args).toContain('/path/to/test.spec.ts');
     });
 
-    describe('playwrightDebugOptions', () => {
-        it('should return empty object when not configured', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
+    it('should include -g flag when test name is provided', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
 
-            expect(config.playwrightDebugOptions).toEqual({});
-        });
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        'my test',
+        false,
+      );
 
-        it('should return configured debug options', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.playwrightDebugOptions': {
-                        env: { PWDEBUG: '1' },
-                    },
-                }),
-            );
-
-            expect(config.playwrightDebugOptions).toEqual({
-                env: { PWDEBUG: '1' },
-            });
-        });
+      expect(args).toContain('test');
+      expect(args).toContain('-g');
+      expect(args).toContain('my test');
+      expect(args).toContain('/path/to/test.spec.ts');
     });
 
-    describe('buildPlaywrightArgs', () => {
-        it('should build basic args with test subcommand and file path', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
+    it('should quote test name when withQuotes is true', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
 
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', undefined, false);
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        'my test',
+        true,
+      );
 
-            expect(args[0]).toBe('test');
-            expect(args).toContain('/path/to/test.spec.ts');
-        });
-
-        it('should include -g flag when test name is provided', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
-
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', 'my test', false);
-
-            expect(args).toContain('test');
-            expect(args).toContain('-g');
-            expect(args).toContain('my test');
-            expect(args).toContain('/path/to/test.spec.ts');
-        });
-
-        it('should quote test name when withQuotes is true', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
-
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', 'my test', true);
-
-            expect(args).toContain('test');
-            expect(args).toContain('-g');
-            // On Linux, quotes are single quotes
-            const gIndex = args.indexOf('-g');
-            expect(args[gIndex + 1]).toMatch(/my test/);
-        });
-
-        it('should include run options', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.playwrightRunOptions': ['--headed'],
-                }),
-            );
-
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', undefined, false);
-
-            expect(args).toContain('--headed');
-        });
-
-        it('should include additional options', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
-
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', undefined, false, ['--project=chromium']);
-
-            expect(args).toContain('--project=chromium');
-        });
-
-        it('should merge additional options with run options', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({
-                    'jestrunner.playwrightRunOptions': ['--headed'],
-                }),
-            );
-
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', undefined, false, ['--project=chromium']);
-
-            expect(args).toContain('--headed');
-            expect(args).toContain('--project=chromium');
-        });
-
-        it('should handle test name with string interpolation', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
-
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', 'test %s works', false);
-
-            expect(args).toContain('-g');
-            // String interpolation should be resolved
-            const gIndex = args.indexOf('-g');
-            expect(args[gIndex + 1]).toMatch(/test .* works/);
-        });
-
-        it('should place file path at the end', () => {
-            jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-                new WorkspaceConfiguration({}),
-            );
-
-            const args = config.buildPlaywrightArgs('/path/to/test.spec.ts', 'my test', false);
-            const lastArg = args[args.length - 1];
-
-            expect(lastArg).toBe('/path/to/test.spec.ts');
-        });
+      expect(args).toContain('test');
+      expect(args).toContain('-g');
+      // On Linux, quotes are single quotes
+      const gIndex = args.indexOf('-g');
+      expect(args[gIndex + 1]).toMatch(/my test/);
     });
+
+    it('should include run options', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.playwrightRunOptions': ['--headed'],
+        }),
+      );
+
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        undefined,
+        false,
+      );
+
+      expect(args).toContain('--headed');
+    });
+
+    it('should include additional options', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        undefined,
+        false,
+        ['--project=chromium'],
+      );
+
+      expect(args).toContain('--project=chromium');
+    });
+
+    it('should merge additional options with run options', () => {
+      jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+        new WorkspaceConfiguration({
+          'jestrunner.playwrightRunOptions': ['--headed'],
+        }),
+      );
+
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        undefined,
+        false,
+        ['--project=chromium'],
+      );
+
+      expect(args).toContain('--headed');
+      expect(args).toContain('--project=chromium');
+    });
+
+    it('should handle test name with string interpolation', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        'test %s works',
+        false,
+      );
+
+      expect(args).toContain('-g');
+      // String interpolation should be resolved
+      const gIndex = args.indexOf('-g');
+      expect(args[gIndex + 1]).toMatch(/test .* works/);
+    });
+
+    it('should place file path at the end', () => {
+      jest
+        .spyOn(vscode.workspace, 'getConfiguration')
+        .mockReturnValue(new WorkspaceConfiguration({}));
+
+      const args = config.buildPlaywrightArgs(
+        '/path/to/test.spec.ts',
+        'my test',
+        false,
+      );
+      const lastArg = args[args.length - 1];
+
+      expect(lastArg).toBe('/path/to/test.spec.ts');
+    });
+  });
 });

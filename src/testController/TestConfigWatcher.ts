@@ -4,86 +4,89 @@ import { testFrameworks } from '../testDetection/frameworkDefinitions';
 import * as Settings from '../config/Settings';
 
 export class TestConfigWatcher {
-    private readonly _onDidChange = new vscode.EventEmitter<void>();
-    public readonly onDidChange = this._onDidChange.event;
+  private readonly _onDidChange = new vscode.EventEmitter<void>();
+  public readonly onDidChange = this._onDidChange.event;
 
-    private disposables: vscode.Disposable[] = [];
-    private customConfigWatchers: vscode.FileSystemWatcher[] = [];
+  private disposables: vscode.Disposable[] = [];
+  private customConfigWatchers: vscode.FileSystemWatcher[] = [];
 
-    constructor() {
-        this.setupConfigurationWatcher();
-    }
+  constructor() {
+    this.setupConfigurationWatcher();
+  }
 
-    private setupConfigurationWatcher(): void {
-        const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
-            if (
-                e.affectsConfiguration('jestrunner') ||
-                e.affectsConfiguration('vitest') ||
-                e.affectsConfiguration('jest')
-            ) {
-                this.refreshCustomConfigWatchers();
-                this._onDidChange.fire();
-            }
-        });
-
-        this.disposables.push(configWatcher);
-
-        const configFilePatterns = [
-            ...testFrameworks.flatMap(f => f.configFiles.map(c => `**/${c}`)),
-        ];
-
-        const handleConfigChange = () => this._onDidChange.fire();
-
-        for (const pattern of configFilePatterns) {
-            const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-            watcher.onDidChange(handleConfigChange);
-            watcher.onDidCreate(handleConfigChange);
-            watcher.onDidDelete(handleConfigChange);
-            this.disposables.push(watcher);
-        }
-
+  private setupConfigurationWatcher(): void {
+    const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
+      if (
+        e.affectsConfiguration('jestrunner') ||
+        e.affectsConfiguration('vitest') ||
+        e.affectsConfiguration('jest')
+      ) {
         this.refreshCustomConfigWatchers();
+        this._onDidChange.fire();
+      }
+    });
+
+    this.disposables.push(configWatcher);
+
+    const configFilePatterns = [
+      ...testFrameworks.flatMap((f) => f.configFiles.map((c) => `**/${c}`)),
+    ];
+
+    const handleConfigChange = () => this._onDidChange.fire();
+
+    for (const pattern of configFilePatterns) {
+      const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+      watcher.onDidChange(handleConfigChange);
+      watcher.onDidCreate(handleConfigChange);
+      watcher.onDidDelete(handleConfigChange);
+      this.disposables.push(watcher);
     }
 
-    private refreshCustomConfigWatchers(): void {
-        this.customConfigWatchers.forEach(w => w.dispose());
-        this.customConfigWatchers = [];
+    this.refreshCustomConfigWatchers();
+  }
 
-        const customPaths = new Set<string>();
+  private refreshCustomConfigWatchers(): void {
+    this.customConfigWatchers.forEach((w) => w.dispose());
+    this.customConfigWatchers = [];
 
-        const jestConfigPath = Settings.getJestConfigPath();
-        const vitestConfigPath = Settings.getVitestConfigPath();
+    const customPaths = new Set<string>();
 
-        const addPaths = (config: string | Record<string, string> | undefined) => {
-            if (typeof config === 'string') {
-                customPaths.add(config);
-            } else if (config && typeof config === 'object') {
-                Object.values(config).forEach(path => customPaths.add(path));
-            }
-        };
+    const jestConfigPath = Settings.getJestConfigPath();
+    const vitestConfigPath = Settings.getVitestConfigPath();
 
-        addPaths(jestConfigPath);
-        addPaths(vitestConfigPath);
+    const addPaths = (config: string | Record<string, string> | undefined) => {
+      if (typeof config === 'string') {
+        customPaths.add(config);
+      } else if (config && typeof config === 'object') {
+        Object.values(config).forEach((path) => customPaths.add(path));
+      }
+    };
 
-        const handleConfigChange = () => this._onDidChange.fire();
+    addPaths(jestConfigPath);
+    addPaths(vitestConfigPath);
 
-        for (const configPath of customPaths) {
-            if (configPath) {
-                const resolvedPath = isAbsolute(configPath)
-                    ? configPath
-                    : resolve(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '', configPath);
-                const watcher = vscode.workspace.createFileSystemWatcher(resolvedPath);
-                watcher.onDidChange(handleConfigChange);
-                watcher.onDidCreate(handleConfigChange);
-                watcher.onDidDelete(handleConfigChange);
-                this.customConfigWatchers.push(watcher);
-            }
-        }
+    const handleConfigChange = () => this._onDidChange.fire();
+
+    for (const configPath of customPaths) {
+      if (configPath) {
+        const resolvedPath = isAbsolute(configPath)
+          ? configPath
+          : resolve(
+              vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '',
+              configPath,
+            );
+        const watcher = vscode.workspace.createFileSystemWatcher(resolvedPath);
+        watcher.onDidChange(handleConfigChange);
+        watcher.onDidCreate(handleConfigChange);
+        watcher.onDidDelete(handleConfigChange);
+        this.customConfigWatchers.push(watcher);
+      }
     }
+  }
 
-    public dispose(): void {
-        this.disposables.forEach((d) => d.dispose());
-        this.customConfigWatchers.forEach((w) => w.dispose());
-        this._onDidChange.dispose();
-    }
+  public dispose(): void {
+    this.disposables.forEach((d) => d.dispose());
+    this.customConfigWatchers.forEach((w) => w.dispose());
+    this._onDidChange.dispose();
+  }
 }

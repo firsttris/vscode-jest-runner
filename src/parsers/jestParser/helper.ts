@@ -51,7 +51,11 @@ export const DefaultDecoratorPlugin: ParserPluginWithOptions = [
 ];
 export const jsPlugins: ParserPlugin[] = [...commonPlugins, 'flow', 'jsx'];
 export const tsPlugins: ParserPlugin[] = [...commonPlugins, 'typescript'];
-export const tsxPlugins: ParserPlugin[] = [...commonPlugins, 'typescript', 'jsx'];
+export const tsxPlugins: ParserPlugin[] = [
+  ...commonPlugins,
+  'typescript',
+  'jsx',
+];
 
 export interface JESParserPluginOptions {
   decorators?: 'legacy' | DecoratorsPluginOptions;
@@ -73,7 +77,10 @@ const decoratorPlugins = (options?: JESParserOptions): ParserPlugin[] => {
   return [['decorators', decorators]];
 };
 
-export const parseOptions = (filePath: string, options?: JESParserOptions): ParserOptions => {
+export const parseOptions = (
+  filePath: string,
+  options?: JESParserOptions,
+): ParserOptions => {
   const optionalPlugins = decoratorPlugins(options);
 
   if (/\.ts$/i.test(filePath)) {
@@ -88,7 +95,9 @@ export const parseOptions = (filePath: string, options?: JESParserOptions): Pars
     return { plugins: [...jsPlugins, ...optionalPlugins] };
   }
 
-  throw new TypeError(`unable to find parser options for unrecognized file extension: ${filePath}`);
+  throw new TypeError(
+    `unable to find parser options for unrecognized file extension: ${filePath}`,
+  );
 };
 
 const getNodeAttribute = <T = t.Node>(
@@ -122,13 +131,19 @@ const getNodeAttribute = <T = t.Node>(
   }, value) as T | undefined;
 };
 
-export const shallowAttr = <T = t.Node>(node: t.Node | undefined | null, ...attributes: string[]) =>
-  getNodeAttribute<T>(node, false, ...attributes);
+export const shallowAttr = <T = t.Node>(
+  node: t.Node | undefined | null,
+  ...attributes: string[]
+) => getNodeAttribute<T>(node, false, ...attributes);
 
-const deepAttr = <T = t.Node>(node: t.Node | undefined | null, ...attributes: string[]) =>
-  getNodeAttribute<T>(node, true, ...attributes);
+const deepAttr = <T = t.Node>(
+  node: t.Node | undefined | null,
+  ...attributes: string[]
+) => getNodeAttribute<T>(node, true, ...attributes);
 
-export const getCallExpression = (node: t.Node): t.CallExpression | undefined => {
+export const getCallExpression = (
+  node: t.Node,
+): t.CallExpression | undefined => {
   if (t.isExpressionStatement(node) && t.isCallExpression(node.expression)) {
     return node.expression;
   }
@@ -148,10 +163,15 @@ export const getNameForNode = (node: t.Node): [string?, string?] => {
 
   const attrs: [string, string] = ['property', 'name'];
   const lastProperty =
-    shallowAttr<string>(rootCallee, ...attrs) || shallowAttr<string>(deepAttr(rootCallee, 'tag'), ...attrs);
+    shallowAttr<string>(rootCallee, ...attrs) ||
+    shallowAttr<string>(deepAttr(rootCallee, 'tag'), ...attrs);
 
   let object = rootCallee;
-  while (object && typeof object === 'object' && ('object' in object || 'tag' in object)) {
+  while (
+    object &&
+    typeof object === 'object' &&
+    ('object' in object || 'tag' in object)
+  ) {
     object = (object as any).object || (object as any).tag;
   }
 

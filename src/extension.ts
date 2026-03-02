@@ -79,8 +79,14 @@ export function activate(context: vscode.ExtensionContext): void {
   let testController: JestTestController | undefined;
 
   const updateTestExplorer = () => {
-    const enabled = vscode.workspace.getConfiguration('jestrunner').get('enableTestExplorer', false);
-    if (enabled && !testController && vscode.workspace.workspaceFolders?.length) {
+    const enabled = vscode.workspace
+      .getConfiguration('jestrunner')
+      .get('enableTestExplorer', false);
+    if (
+      enabled &&
+      !testController &&
+      vscode.workspace.workspaceFolders?.length
+    ) {
       try {
         testController = new JestTestController(context);
       } catch (error) {
@@ -132,16 +138,12 @@ export function activate(context: vscode.ExtensionContext): void {
     async (argument: vscode.Uri) => jestRunner.runTestsOnPath(argument.fsPath),
   );
 
-  registerCommand(
-    context,
-    'extension.runJestAndUpdateSnapshots',
-    async () => jestRunner.runCurrentTest('', ['-u']),
+  registerCommand(context, 'extension.runJestAndUpdateSnapshots', async () =>
+    jestRunner.runCurrentTest('', ['-u']),
   );
 
-  registerCommand(
-    context,
-    'extension.runJestFile',
-    async () => jestRunner.runCurrentFile(),
+  registerCommand(context, 'extension.runJestFile', async () =>
+    jestRunner.runCurrentFile(),
   );
 
   registerCommand(
@@ -162,22 +164,16 @@ export function activate(context: vscode.ExtensionContext): void {
       jestRunner.debugTestsOnPath(argument.fsPath),
   );
 
-  registerCommand(
-    context,
-    'extension.runPrevJest',
-    async () => jestRunner.runPreviousTest(),
+  registerCommand(context, 'extension.runPrevJest', async () =>
+    jestRunner.runPreviousTest(),
   );
 
-  registerCommand(
-    context,
-    'extension.runJestFileWithCoverage',
-    async () => jestRunner.runCurrentFile(['--coverage']),
+  registerCommand(context, 'extension.runJestFileWithCoverage', async () =>
+    jestRunner.runCurrentFile(['--coverage']),
   );
 
-  registerCommand(
-    context,
-    'extension.runJestFileWithWatchMode',
-    async () => jestRunner.runCurrentFile(['--watch']),
+  registerCommand(context, 'extension.runJestFileWithWatchMode', async () =>
+    jestRunner.runCurrentFile(['--watch']),
   );
 
   registerCommand(
@@ -199,4 +195,4 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push({ dispose: () => jestRunner.dispose() });
 }
 
-export function deactivate(): void { }
+export function deactivate(): void {}

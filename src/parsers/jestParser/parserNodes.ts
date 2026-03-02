@@ -5,7 +5,12 @@ export class ParsedRange {
 
   end: CodeLocation;
 
-  constructor(startLine: number, startCol: number, endLine: number, endCol: number) {
+  constructor(
+    startLine: number,
+    startCol: number,
+    endLine: number,
+    endCol: number,
+  ) {
     this.start = { column: startCol, line: startLine };
     this.end = { column: endCol, line: endLine };
   }
@@ -93,7 +98,7 @@ export class NamedBlock extends ParsedNode {
 
   nameType?: string;
 
-  eachTemplate?: string;  // Original template for it.each/describe.each tests
+  eachTemplate?: string; // Original template for it.each/describe.each tests
 
   constructor(type: ParsedNodeType, file: string, name?: string) {
     super(type, file);
@@ -158,7 +163,11 @@ export class ParseResult implements IParseResults {
     if (node instanceof Expect) {
       if (
         dedup &&
-        this.expects.some((existing) => existing.start?.line === node.start?.line && existing.start?.column === node.start?.column)
+        this.expects.some(
+          (existing) =>
+            existing.start?.line === node.start?.line &&
+            existing.start?.column === node.start?.column,
+        )
       ) {
         return;
       }
@@ -166,6 +175,8 @@ export class ParseResult implements IParseResults {
       return;
     }
 
-    throw new TypeError(`unexpected node class '${typeof node}': ${JSON.stringify(node)}`);
+    throw new TypeError(
+      `unexpected node class '${typeof node}': ${JSON.stringify(node)}`,
+    );
   }
 }

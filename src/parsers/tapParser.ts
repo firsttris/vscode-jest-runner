@@ -1,4 +1,8 @@
-import type { JestAssertionResult, JestFileResult, JestResults } from '../testResultTypes';
+import type {
+  JestAssertionResult,
+  JestFileResult,
+  JestResults,
+} from '../testResultTypes';
 
 interface TapStackItem {
   name: string;
@@ -37,7 +41,9 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
     }
     if (trimmedLine === '...') {
       if (inDiagnostic && lastResultIndex >= 0) {
-        results[lastResultIndex].diagnostic = parseYamlDiagnostic(currentDiagnostic.join('\n'));
+        results[lastResultIndex].diagnostic = parseYamlDiagnostic(
+          currentDiagnostic.join('\n'),
+        );
         currentDiagnostic = [];
       }
       inDiagnostic = false;
@@ -57,7 +63,9 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
       continue;
     }
 
-    const resultMatch = trimmedLine.match(/^(not )?ok\s+(?:\d+)\s*(?:-\s*(.+?))?(?:\s+#\s*(SKIP|TODO)(?:\s+(.*))?)?$/i);
+    const resultMatch = trimmedLine.match(
+      /^(not )?ok\s+(?:\d+)\s*(?:-\s*(.+?))?(?:\s+#\s*(SKIP|TODO)(?:\s+(.*))?)?$/i,
+    );
     if (resultMatch) {
       const [, notOk, rawName, directive, directiveReason] = resultMatch;
       const ok = !notOk;
@@ -70,12 +78,14 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
           matchedStackItem = true;
 
           if (!item.hasChildren) {
-
             results.push({
               ok,
               name: item.name,
-              ancestorTitles: stack.map(s => s.name),
-              directive: directive?.toLowerCase() as 'skip' | 'todo' | undefined,
+              ancestorTitles: stack.map((s) => s.name),
+              directive: directive?.toLowerCase() as
+                | 'skip'
+                | 'todo'
+                | undefined,
               directiveReason: directiveReason?.trim(),
             });
             lastResultIndex = results.length - 1;
@@ -93,7 +103,7 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
         results.push({
           ok,
           name,
-          ancestorTitles: stack.map(s => s.name),
+          ancestorTitles: stack.map((s) => s.name),
           directive: directive?.toLowerCase() as 'skip' | 'todo' | undefined,
           directiveReason: directiveReason?.trim(),
         });
@@ -140,7 +150,10 @@ function parseYamlDiagnostic(yaml: string): Record<string, string> {
   return result;
 }
 
-function convertTapToJestResults(tapResults: TapTestResult[], filePath: string): JestResults {
+function convertTapToJestResults(
+  tapResults: TapTestResult[],
+  filePath: string,
+): JestResults {
   const assertionResults: JestAssertionResult[] = tapResults.map((tap) => {
     let status: JestAssertionResult['status'];
     if (tap.directive === 'skip') status = 'skipped';
@@ -154,7 +167,9 @@ function convertTapToJestResults(tapResults: TapTestResult[], filePath: string):
       if (tap.diagnostic.message) failureMessages.push(tap.diagnostic.message);
       if (tap.diagnostic.stack) failureMessages.push(tap.diagnostic.stack);
       if (failureMessages.length === 0) {
-        const rawDiag = Object.entries(tap.diagnostic).map(([k, v]) => `${k}: ${v}`).join('\n');
+        const rawDiag = Object.entries(tap.diagnostic)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('\n');
         if (rawDiag) failureMessages.push(rawDiag);
       }
     }
@@ -164,17 +179,24 @@ function convertTapToJestResults(tapResults: TapTestResult[], filePath: string):
       title: tap.name,
       fullName: [...tap.ancestorTitles, tap.name].join(' '),
       status,
-      duration: tap.diagnostic?.duration_ms ? Number.parseFloat(tap.diagnostic.duration_ms) : undefined,
+      duration: tap.diagnostic?.duration_ms
+        ? Number.parseFloat(tap.diagnostic.duration_ms)
+        : undefined,
       failureMessages: failureMessages.length > 0 ? failureMessages : undefined,
       location: tap.diagnostic?.line
-        ? { line: Number.parseInt(tap.diagnostic.line, 10), column: Number.parseInt(tap.diagnostic.column || '0', 10) }
+        ? {
+            line: Number.parseInt(tap.diagnostic.line, 10),
+            column: Number.parseInt(tap.diagnostic.column || '0', 10),
+          }
         : undefined,
     };
   });
 
-  const passed = assertionResults.filter(r => r.status === 'passed').length;
-  const failed = assertionResults.filter(r => r.status === 'failed').length;
-  const skipped = assertionResults.filter(r => r.status === 'skipped' || r.status === 'todo').length;
+  const passed = assertionResults.filter((r) => r.status === 'passed').length;
+  const failed = assertionResults.filter((r) => r.status === 'failed').length;
+  const skipped = assertionResults.filter(
+    (r) => r.status === 'skipped' || r.status === 'todo',
+  ).length;
 
   return {
     numFailedTestSuites: failed > 0 ? 1 : 0,
@@ -186,13 +208,15 @@ function convertTapToJestResults(tapResults: TapTestResult[], filePath: string):
     numTotalTestSuites: 1,
     numTotalTests: assertionResults.length,
     success: failed === 0,
-    testResults: [{
-      assertionResults,
-      name: filePath,
-      status: failed > 0 ? 'failed' : 'passed',
-      message: '',
-      startTime: Date.now(),
-      endTime: Date.now(),
-    }],
+    testResults: [
+      {
+        assertionResults,
+        name: filePath,
+        status: failed > 0 ? 'failed' : 'passed',
+        message: '',
+        startTime: Date.now(),
+        endTime: Date.now(),
+      },
+    ],
   };
 }

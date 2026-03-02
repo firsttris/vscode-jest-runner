@@ -26,15 +26,25 @@ describe('TestConfigWatcher', () => {
       dispose: jest.fn(),
     };
 
-    (vscode.workspace.createFileSystemWatcher as jest.Mock) = jest.fn().mockReturnValue(mockWatcher);
-    (vscode.workspace.onDidChangeConfiguration as jest.Mock) = jest.fn((callback) => {
-      configChangeCallback = callback;
-      return { dispose: jest.fn() };
-    });
-    (vscode.workspace.workspaceFolders as any) = [{ uri: { fsPath: '/workspace' } }];
+    (vscode.workspace.createFileSystemWatcher as jest.Mock) = jest
+      .fn()
+      .mockReturnValue(mockWatcher);
+    (vscode.workspace.onDidChangeConfiguration as jest.Mock) = jest.fn(
+      (callback) => {
+        configChangeCallback = callback;
+        return { dispose: jest.fn() };
+      },
+    );
+    (vscode.workspace.workspaceFolders as any) = [
+      { uri: { fsPath: '/workspace' } },
+    ];
 
-    (Settings.getJestConfigPath as jest.Mock) = jest.fn().mockReturnValue(undefined);
-    (Settings.getVitestConfigPath as jest.Mock) = jest.fn().mockReturnValue(undefined);
+    (Settings.getJestConfigPath as jest.Mock) = jest
+      .fn()
+      .mockReturnValue(undefined);
+    (Settings.getVitestConfigPath as jest.Mock) = jest
+      .fn()
+      .mockReturnValue(undefined);
 
     didChangeCallback = jest.fn();
   });
@@ -100,23 +110,27 @@ describe('TestConfigWatcher', () => {
 
   describe('custom config watchers', () => {
     it('should watch string config path', () => {
-      (Settings.getJestConfigPath as jest.Mock).mockReturnValue('jest.config.js');
+      (Settings.getJestConfigPath as jest.Mock).mockReturnValue(
+        'jest.config.js',
+      );
 
       new TestConfigWatcher();
 
       // Should create watcher for custom path
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        path.resolve('/workspace', 'jest.config.js')
+        path.resolve('/workspace', 'jest.config.js'),
       );
     });
 
     it('should watch absolute config path', () => {
-      (Settings.getJestConfigPath as jest.Mock).mockReturnValue('/absolute/path/jest.config.js');
+      (Settings.getJestConfigPath as jest.Mock).mockReturnValue(
+        '/absolute/path/jest.config.js',
+      );
 
       new TestConfigWatcher();
 
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        '/absolute/path/jest.config.js'
+        '/absolute/path/jest.config.js',
       );
     });
 
@@ -129,37 +143,48 @@ describe('TestConfigWatcher', () => {
       new TestConfigWatcher();
 
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        path.resolve('/workspace', 'jest.config.app.js')
+        path.resolve('/workspace', 'jest.config.app.js'),
       );
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        path.resolve('/workspace', 'jest.config.lib.js')
+        path.resolve('/workspace', 'jest.config.lib.js'),
       );
     });
 
     it('should watch vitest config paths', () => {
-      (Settings.getVitestConfigPath as jest.Mock).mockReturnValue('vitest.config.ts');
+      (Settings.getVitestConfigPath as jest.Mock).mockReturnValue(
+        'vitest.config.ts',
+      );
 
       new TestConfigWatcher();
 
       expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith(
-        path.resolve('/workspace', 'vitest.config.ts')
+        path.resolve('/workspace', 'vitest.config.ts'),
       );
     });
 
     it('should refresh custom watchers on config change', () => {
-      (Settings.getJestConfigPath as jest.Mock).mockReturnValue('old.config.js');
+      (Settings.getJestConfigPath as jest.Mock).mockReturnValue(
+        'old.config.js',
+      );
 
       const watcher = new TestConfigWatcher();
-      const initialCallCount = (vscode.workspace.createFileSystemWatcher as jest.Mock).mock.calls.length;
+      const initialCallCount = (
+        vscode.workspace.createFileSystemWatcher as jest.Mock
+      ).mock.calls.length;
 
       // Change config
-      (Settings.getJestConfigPath as jest.Mock).mockReturnValue('new.config.js');
+      (Settings.getJestConfigPath as jest.Mock).mockReturnValue(
+        'new.config.js',
+      );
 
       configChangeCallback?.({
         affectsConfiguration: (section: string) => section === 'jestrunner',
       });
 
-      expect((vscode.workspace.createFileSystemWatcher as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
+      expect(
+        (vscode.workspace.createFileSystemWatcher as jest.Mock).mock.calls
+          .length,
+      ).toBeGreaterThan(initialCallCount);
     });
   });
 

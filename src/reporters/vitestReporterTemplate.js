@@ -6,7 +6,19 @@ function emit(type, payload) {
   try {
     const json = JSON.stringify(payload);
     const len = Buffer.byteLength(json, 'utf8');
-    const message = START + sessionId + '::' + type + '::' + len + '::' + json + END + sessionId + '::' + type;
+    const message =
+      START +
+      sessionId +
+      '::' +
+      type +
+      '::' +
+      len +
+      '::' +
+      json +
+      END +
+      sessionId +
+      '::' +
+      type;
     process.stdout.write(message);
   } catch (err) {}
 }
@@ -17,15 +29,20 @@ function collectTests(task, ancestors, out) {
   if (task.type === 'test') {
     const res = task.result || {};
     const state = res.state || 'skipped';
-    const status = state === 'pass' ? 'passed' : state === 'fail' ? 'failed' : 'skipped';
+    const status =
+      state === 'pass' ? 'passed' : state === 'fail' ? 'failed' : 'skipped';
     out.push({
       ancestorTitles: ancestors,
       title: task.name,
       fullName: nextAncestors.join(' '),
       status,
       duration: res.duration,
-      failureMessages: res.errors ? res.errors.map((e) => e?.message || String(e)) : undefined,
-      location: task.location ? { line: task.location.line, column: task.location.column || 0 } : undefined,
+      failureMessages: res.errors
+        ? res.errors.map((e) => e?.message || String(e))
+        : undefined,
+      location: task.location
+        ? { line: task.location.line, column: task.location.column || 0 }
+        : undefined,
     });
     return;
   }
@@ -60,12 +77,19 @@ class VitestStructuredReporter {
 
     const flatAssertions = testResults.flatMap((tr) => tr.assertionResults);
     const payload = {
-      numFailedTestSuites: testResults.filter((t) => t.status === 'failed').length,
-      numFailedTests: flatAssertions.filter((a) => a.status === 'failed').length,
-      numPassedTestSuites: testResults.filter((t) => t.status === 'passed').length,
-      numPassedTests: flatAssertions.filter((a) => a.status === 'passed').length,
-      numPendingTestSuites: testResults.filter((t) => t.status !== 'passed' && t.status !== 'failed').length,
-      numPendingTests: flatAssertions.filter((a) => a.status === 'skipped').length,
+      numFailedTestSuites: testResults.filter((t) => t.status === 'failed')
+        .length,
+      numFailedTests: flatAssertions.filter((a) => a.status === 'failed')
+        .length,
+      numPassedTestSuites: testResults.filter((t) => t.status === 'passed')
+        .length,
+      numPassedTests: flatAssertions.filter((a) => a.status === 'passed')
+        .length,
+      numPendingTestSuites: testResults.filter(
+        (t) => t.status !== 'passed' && t.status !== 'failed',
+      ).length,
+      numPendingTests: flatAssertions.filter((a) => a.status === 'skipped')
+        .length,
       numTotalTestSuites: testResults.length,
       numTotalTests: flatAssertions.length,
       success: flatAssertions.every((a) => a.status === 'passed'),

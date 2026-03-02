@@ -25,9 +25,8 @@ describe('JestTestController - edge cases', () => {
   });
 
   it('should handle multiple files in single run', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
@@ -75,9 +74,8 @@ describe('JestTestController - edge cases', () => {
   });
 
   it('should handle excluded tests in request', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
@@ -140,11 +138,11 @@ describe('JestTestController - edge cases', () => {
 
     const newController = new JestTestController(setup.mockContext);
 
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[1].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[1].value;
 
-    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[1][0];
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock)
+      .mock.calls[1][0];
 
     (mockTestController.createTestItem as jest.Mock).mockClear();
 
@@ -181,9 +179,8 @@ describe('JestTestController - edge cases', () => {
   });
 
   it('should handle empty request (run all tests)', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',

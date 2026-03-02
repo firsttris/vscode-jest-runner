@@ -1,5 +1,10 @@
 import * as vscode from 'vscode';
-import { findPotentialMatches, findBestMatch, hasTemplateVariable, IndexedResult } from '../../matchers/TestMatcher';
+import {
+  findPotentialMatches,
+  findBestMatch,
+  hasTemplateVariable,
+  IndexedResult,
+} from '../../matchers/TestMatcher';
 import { JestAssertionResult } from '../../testResultTypes';
 
 jest.mock('vscode');
@@ -60,13 +65,19 @@ describe('TestMatcher', () => {
   });
 
   describe('findPotentialMatches', () => {
-    const createTestItem = (id: string, label: string, parentLabel?: string): vscode.TestItem => {
-      const parent = parentLabel ? {
-        id: 'parent',
-        label: parentLabel,
-        uri: { fsPath: '/test.ts' } as vscode.Uri,
-        parent: undefined,
-      } as vscode.TestItem : undefined;
+    const createTestItem = (
+      id: string,
+      label: string,
+      parentLabel?: string,
+    ): vscode.TestItem => {
+      const parent = parentLabel
+        ? ({
+            id: 'parent',
+            label: parentLabel,
+            uri: { fsPath: '/test.ts' } as vscode.Uri,
+            parent: undefined,
+          } as vscode.TestItem)
+        : undefined;
 
       return {
         id,
@@ -77,7 +88,11 @@ describe('TestMatcher', () => {
       } as vscode.TestItem;
     };
 
-    const createResult = (title: string, ancestorTitles: string[] = [], line?: number): JestAssertionResult => ({
+    const createResult = (
+      title: string,
+      ancestorTitles: string[] = [],
+      line?: number,
+    ): JestAssertionResult => ({
       title,
       ancestorTitles,
       status: 'passed',
@@ -184,7 +199,11 @@ describe('TestMatcher', () => {
   });
 
   describe('findBestMatch', () => {
-    const createIndexedResult = (title: string, index: number, line?: number): IndexedResult => ({
+    const createIndexedResult = (
+      title: string,
+      index: number,
+      line?: number,
+    ): IndexedResult => ({
       result: {
         title,
         ancestorTitles: [],
@@ -232,9 +251,7 @@ describe('TestMatcher', () => {
     });
 
     it('should return undefined if all matches are used', () => {
-      const matches: IndexedResult[] = [
-        createIndexedResult('test1', 0),
-      ];
+      const matches: IndexedResult[] = [createIndexedResult('test1', 0)];
       const usedIndices = new Set<number>([0]);
 
       const best = findBestMatch(matches, undefined, usedIndices);

@@ -9,7 +9,10 @@ const getConfig = <T>(key: string, defaultValue?: T): T | undefined =>
 export const getJestCommand = (): string | undefined =>
   getConfig<string>('jestrunner.jestCommand');
 
-export const getJestConfigPath = (): string | Record<string, string> | undefined =>
+export const getJestConfigPath = ():
+  | string
+  | Record<string, string>
+  | undefined =>
   getConfig<string | Record<string, string>>('jestrunner.configPath');
 
 export const getJestRunOptions = (): string[] | null => {
@@ -30,7 +33,10 @@ export const getJestDebugOptions = (): Partial<vscode.DebugConfiguration> =>
 export const getVitestCommand = (): string | undefined =>
   getConfig<string>('jestrunner.vitestCommand');
 
-export const getVitestConfigPath = (): string | Record<string, string> | undefined =>
+export const getVitestConfigPath = ():
+  | string
+  | Record<string, string>
+  | undefined =>
   getConfig<string | Record<string, string>>('jestrunner.vitestConfigPath');
 
 export const getVitestRunOptions = (): string[] | null => {
@@ -56,8 +62,6 @@ export const getNodeTestDebugOptions = (): Partial<vscode.DebugConfiguration> =>
 
 // === Bun Settings ===
 
-
-
 export const getBunRunOptions = (): string[] | null => {
   const options = getConfig<string[]>('jestrunner.bunRunOptions');
   return options && Array.isArray(options) ? options : null;
@@ -67,8 +71,6 @@ export const getBunDebugOptions = (): Partial<vscode.DebugConfiguration> =>
   getConfig('jestrunner.bunDebugOptions', {});
 
 // === Deno Settings ===
-
-
 
 export const getDenoRunOptions = (): string[] | null => {
   const options = getConfig<string[]>('jestrunner.denoRunOptions');
@@ -94,8 +96,9 @@ export const getPlaywrightRunOptions = (): string[] | null => {
   return options && Array.isArray(options) ? options : null;
 };
 
-export const getPlaywrightDebugOptions = (): Partial<vscode.DebugConfiguration> =>
-  getConfig('jestrunner.playwrightDebugOptions', {});
+export const getPlaywrightDebugOptions =
+  (): Partial<vscode.DebugConfiguration> =>
+    getConfig('jestrunner.playwrightDebugOptions', {});
 
 // === General Settings ===
 
@@ -131,7 +134,9 @@ export const getDefaultTestPatterns = (): string[] | undefined =>
 
 // === Computed Settings ===
 
-export const getRunOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright'): string[] | null => {
+export const getRunOptionsForFramework = (
+  framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright',
+): string[] | null => {
   switch (framework) {
     case 'vitest':
       return getVitestRunOptions() ?? getJestRunOptions();
@@ -148,7 +153,9 @@ export const getRunOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-t
   }
 };
 
-export const getDebugOptionsForFramework = (framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright'): Partial<vscode.DebugConfiguration> => {
+export const getDebugOptionsForFramework = (
+  framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright',
+): Partial<vscode.DebugConfiguration> => {
   switch (framework) {
     case 'vitest':
       return getVitestDebugOptions();
