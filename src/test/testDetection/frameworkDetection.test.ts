@@ -1,6 +1,6 @@
-import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
 import {
   detectTestFramework,
@@ -815,6 +815,30 @@ describe('frameworkDetection', () => {
       });
 
       const result = detectTestFramework(testDir);
+
+      expect(result).toBe('rstest');
+    });
+
+    it('should detect rstest file even when jest config also exists', () => {
+      const testDir = '/test/project';
+      const testFilePath = '/test/project/src/example.test.ts';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === path.join(testDir, 'rstest.config.ts') ||
+          fsPath === path.join(testDir, 'jest.config.js') ||
+          fsPath === testFilePath
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        if (fsPath === testFilePath) {
+          return "import { describe, it } from '@rstest/core';";
+        }
+        return '';
+      }) as any;
+
+      const result = detectTestFramework(testDir, testFilePath);
 
       expect(result).toBe('rstest');
     });
