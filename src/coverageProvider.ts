@@ -1,11 +1,16 @@
-import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, isAbsolute, resolve } from 'node:path';
-import { COVERAGE_FINAL_FILE, DEFAULT_COVERAGE_DIR, testFrameworks, TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
+import * as vscode from 'vscode';
+import { type LcovCoverageData, parseLcov } from './parsers/lcov-parser';
 import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
+import {
+  COVERAGE_FINAL_FILE,
+  DEFAULT_COVERAGE_DIR,
+  type TestFrameworkName,
+  testFrameworks,
+} from './testDetection/frameworkDefinitions';
 import { matchesTestFilePattern } from './testDetection/testFileDetection';
 import { logError, logInfo, logWarning } from './utils/Logger';
-import { parseLcov, type LcovCoverageData } from './parsers/lcov-parser';
 
 export interface CoverageMap {
   [filePath: string]: FileCoverageData;
@@ -53,7 +58,6 @@ export class DetailedFileCoverage extends vscode.FileCoverage {
 }
 
 export class CoverageProvider {
-
   private getCoverageDirFromConfigPath(
     configPath: string,
     framework: TestFrameworkName,
@@ -68,7 +72,7 @@ export class CoverageProvider {
     workspaceFolder: string,
     framework: TestFrameworkName,
   ): string | undefined {
-    const frameworkDef = testFrameworks.find(f => f.name === framework);
+    const frameworkDef = testFrameworks.find((f) => f.name === framework);
     const configFiles = frameworkDef ? frameworkDef.configFiles : [];
 
     for (const configFile of configFiles) {
@@ -87,7 +91,10 @@ export class CoverageProvider {
     return undefined;
   }
 
-  private findLcovRecursively(currentDir: string, stopAt: string): string | undefined {
+  private findLcovRecursively(
+    currentDir: string,
+    stopAt: string,
+  ): string | undefined {
     // Check lcov.info first, then coverage/lcov.info in current directory
     const lcovPath = join(currentDir, 'lcov.info');
     if (existsSync(lcovPath)) {
@@ -114,9 +121,17 @@ export class CoverageProvider {
   ): Promise<CoverageMap | undefined> {
     try {
       if (this.isLcovFramework(framework)) {
-        return await this.handleLcovCoverage(workspaceFolder, configPath, testFilePath);
+        return await this.handleLcovCoverage(
+          workspaceFolder,
+          configPath,
+          testFilePath,
+        );
       }
-      return await this.handleJsonCoverage(workspaceFolder, framework, configPath);
+      return await this.handleJsonCoverage(
+        workspaceFolder,
+        framework,
+        configPath,
+      );
     } catch (error) {
       logError(`Failed to read coverage from file: ${error}`);
       return undefined;
@@ -124,15 +139,21 @@ export class CoverageProvider {
   }
 
   private isLcovFramework(framework: TestFrameworkName): boolean {
-    return framework === 'node-test' || framework === 'bun' || framework === 'deno';
+    return (
+      framework === 'node-test' || framework === 'bun' || framework === 'deno'
+    );
   }
 
   private async handleLcovCoverage(
     workspaceFolder: string,
     configPath?: string,
-    testFilePath?: string
+    testFilePath?: string,
   ): Promise<CoverageMap | undefined> {
-    const startDir = testFilePath ? dirname(testFilePath) : (configPath ? dirname(configPath) : workspaceFolder);
+    const startDir = testFilePath
+      ? dirname(testFilePath)
+      : configPath
+        ? dirname(configPath)
+        : workspaceFolder;
     const lcovPath = this.findLcovRecursively(startDir, workspaceFolder);
 
     if (lcovPath) {
@@ -140,16 +161,22 @@ export class CoverageProvider {
       return this.readLcovCoverage(lcovPath);
     }
 
-    logInfo(`LCOV file not found. ensure it is generated in the project root or package root.`);
+    logInfo(
+      `LCOV file not found. ensure it is generated in the project root or package root.`,
+    );
     return undefined;
   }
 
   private async handleJsonCoverage(
     workspaceFolder: string,
     framework: TestFrameworkName,
-    configPath?: string
+    configPath?: string,
   ): Promise<CoverageMap | undefined> {
-    const coverageDir = this.resolveCoverageDirectory(workspaceFolder, framework, configPath);
+    const coverageDir = this.resolveCoverageDirectory(
+      workspaceFolder,
+      framework,
+      configPath,
+    );
     const coveragePath = join(coverageDir, COVERAGE_FINAL_FILE);
 
     if (!existsSync(coveragePath)) {
@@ -177,37 +204,58 @@ export class CoverageProvider {
   private resolveCoverageDirectory(
     workspaceFolder: string,
     framework: TestFrameworkName,
-    configPath?: string
+    configPath?: string,
   ): string {
     if (configPath) {
       const dir = this.getCoverageDirFromConfigPath(configPath, framework);
       if (dir) return dir;
     }
 
-    const dirFromWorkspace = this.getCoverageDirectoryFromWorkspace(workspaceFolder, framework);
+    const dirFromWorkspace = this.getCoverageDirectoryFromWorkspace(
+      workspaceFolder,
+      framework,
+    );
     if (dirFromWorkspace) return dirFromWorkspace;
 
     const baseDir = configPath ? dirname(configPath) : workspaceFolder;
     return join(baseDir, DEFAULT_COVERAGE_DIR);
   }
 
-  private logMissingCoverageFile(path: string, framework: TestFrameworkName): void {
+  private logMissingCoverageFile(
+    path: string,
+    framework: TestFrameworkName,
+  ): void {
     logInfo(`Coverage file not found at: ${path}`);
+    const coverageHint =
+      framework === 'vitest'
+        ? '@vitest/coverage-v8 or @vitest/coverage-istanbul'
+        : framework === 'rstest'
+          ? 'rstest coverage'
+          : 'jest';
     logInfo(
-      `Make sure you have ${framework === 'vitest' ? '@vitest/coverage-v8 or @vitest/coverage-istanbul' : 'jest'} configured with JSON reporter.`,
+      `Make sure you have ${coverageHint} configured with JSON reporter.`,
     );
   }
 
-  private isValidCoverageContent(content: string, framework: TestFrameworkName): boolean {
+  private isValidCoverageContent(
+    content: string,
+    framework: TestFrameworkName,
+  ): boolean {
     if (!content || content.trim() === '' || content.trim() === '{}') {
-      logWarning('Coverage file is empty. This may indicate a configuration issue.');
-      logInfo(`For ${framework}, ensure coverageReporters includes "json" in your config.`);
+      logWarning(
+        'Coverage file is empty. This may indicate a configuration issue.',
+      );
+      logInfo(
+        `For ${framework}, ensure coverageReporters includes "json" in your config.`,
+      );
       return false;
     }
     return true;
   }
 
-  private async readLcovCoverage(lcovPath: string): Promise<CoverageMap | undefined> {
+  private async readLcovCoverage(
+    lcovPath: string,
+  ): Promise<CoverageMap | undefined> {
     try {
       const data = await parseLcov(lcovPath);
       const coverageMap: CoverageMap = {};
@@ -228,7 +276,10 @@ export class CoverageProvider {
     }
   }
 
-  private processLcovRecord(file: LcovCoverageData, baseDir: string): FileCoverageData {
+  private processLcovRecord(
+    file: LcovCoverageData,
+    baseDir: string,
+  ): FileCoverageData {
     let filePath = file.file!;
     if (!isAbsolute(filePath)) {
       filePath = resolve(baseDir, filePath);
@@ -266,14 +317,17 @@ export class CoverageProvider {
           start: { line: func.line, column: 0 },
           end: { line: func.line, column: 0 },
         },
-        line: func.line
+        line: func.line,
       };
     });
 
     const b: { [id: string]: number[] } = {};
     const branchMap: { [id: string]: BranchMapping } = {};
 
-    const branchesByLine = new Map<number, LcovCoverageData['branches']['details']>();
+    const branchesByLine = new Map<
+      number,
+      LcovCoverageData['branches']['details']
+    >();
     branches.forEach((branch) => {
       if (!branchesByLine.has(branch.line)) {
         branchesByLine.set(branch.line, []);
@@ -286,7 +340,7 @@ export class CoverageProvider {
       const id = branchIdCounter.toString();
       branchIdCounter++;
 
-      b[id] = lineBranches.map((br) => br.taken ? 1 : 0);
+      b[id] = lineBranches.map((br) => (br.taken ? 1 : 0));
       branchMap[id] = {
         loc: {
           start: { line: line, column: 0 },
@@ -297,7 +351,7 @@ export class CoverageProvider {
           start: { line: line, column: 0 },
           end: { line: line, column: 0 },
         })),
-        line: line
+        line: line,
       };
     });
 
@@ -308,7 +362,7 @@ export class CoverageProvider {
       branchMap,
       s,
       f,
-      b
+      b,
     };
   }
 
@@ -342,10 +396,15 @@ export class CoverageProvider {
   }
 
   private shouldIgnoreFile(filePath: string): boolean {
-    return filePath.includes('node_modules') || matchesTestFilePattern(filePath);
+    return (
+      filePath.includes('node_modules') || matchesTestFilePattern(filePath)
+    );
   }
 
-  private processFileCoverage(filePath: string, coverageData: FileCoverageData): DetailedFileCoverage {
+  private processFileCoverage(
+    filePath: string,
+    coverageData: FileCoverageData,
+  ): DetailedFileCoverage {
     const uri = vscode.Uri.file(filePath);
     const statements = Object.values(coverageData.s);
     const statementCoverage = new vscode.TestCoverageCount(

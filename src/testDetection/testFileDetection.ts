@@ -9,13 +9,24 @@ import {
   allTestFrameworks,
   TestPatterns,
 } from './frameworkDefinitions';
-import { getConfigPath, resolveAndValidateCustomConfig, getDefaultTestPatterns } from './configParsing';
+import {
+  getConfigPath,
+  resolveAndValidateCustomConfig,
+  getDefaultTestPatterns,
+} from './configParsing';
 import { getTestMatchFromJestConfig } from './configParsers/jestParser';
 import { getVitestConfig } from './configParsers/vitestParser';
 import { getDenoConfig } from './configParsers/denoParser';
-import { getPlaywrightTestDir, getPlaywrightConfig } from './configParsers/playwrightParser';
+import { getRstestConfig } from './configParsers/rstestParser';
+import {
+  getPlaywrightTestDir,
+  getPlaywrightConfig,
+} from './configParsers/playwrightParser';
 import { getCypressSpecPattern } from './configParsers/cypressParser';
-import { fileMatchesPatterns, detectFrameworkByPatternMatch } from './patternMatching';
+import {
+  fileMatchesPatterns,
+  detectFrameworkByPatternMatch,
+} from './patternMatching';
 import {
   detectTestFramework,
   findTestFrameworkDirectory,
@@ -31,8 +42,13 @@ const createDefaultResult = (configDir: string): TestPatternResult => ({
   isRegex: false,
 });
 
-export function hasConflictingTestFramework(filePath: string, currentFramework: TestFrameworkName): boolean {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+export function hasConflictingTestFramework(
+  filePath: string,
+  currentFramework: TestFrameworkName,
+): boolean {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+    vscode.Uri.file(filePath),
+  );
   if (!workspaceFolder) return false;
 
   const rootPath = workspaceFolder.uri.fsPath;
@@ -41,14 +57,20 @@ export function hasConflictingTestFramework(filePath: string, currentFramework: 
   for (const dir of dirs) {
     for (const framework of allTestFrameworks) {
       if (framework.name === currentFramework) continue;
-      const configPath = getConfigPath(dir, framework.name as TestFrameworkName);
+      const configPath = getConfigPath(
+        dir,
+        framework.name as TestFrameworkName,
+      );
       if (!configPath) continue;
 
       if (framework.name === 'playwright') {
         const testDir = getPlaywrightTestDir(configPath);
         if (testDir) {
           const testDirPath = resolve(dir, testDir);
-          const relativePath = relative(testDirPath, filePath).replace(/\\/g, '/');
+          const relativePath = relative(testDirPath, filePath).replace(
+            /\\/g,
+            '/',
+          );
           if (!relativePath.startsWith('../')) {
             return true;
           }
@@ -58,7 +80,9 @@ export function hasConflictingTestFramework(filePath: string, currentFramework: 
         if (specPatterns) {
           for (const pattern of specPatterns) {
             const relativePath = relative(dir, filePath).replace(/\\/g, '/');
-            if (isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+            if (
+              isMatch(relativePath, pattern, { nocase: true, extended: true })
+            ) {
               return true;
             }
           }
@@ -72,19 +96,22 @@ export function hasConflictingTestFramework(filePath: string, currentFramework: 
 const resolveJestResult = (
   results: TestPatterns[] | undefined,
   configPath: string,
-  defaultConfigDir: string
+  defaultConfigDir: string,
 ): TestPatternResult[] => {
   if (!results || results.length === 0) {
     return [createDefaultResult(defaultConfigDir)];
   }
 
-  return results.map(result => {
+  return results.map((result) => {
     const configDir = result.rootDir
       ? resolve(dirname(configPath), result.rootDir)
       : defaultConfigDir;
 
     return {
-      patterns: result.patterns && result.patterns.length > 0 ? result.patterns : getDefaultTestPatterns(),
+      patterns:
+        result.patterns && result.patterns.length > 0
+          ? result.patterns
+          : getDefaultTestPatterns(),
       configDir,
       isRegex: result.isRegex ?? false,
       roots: result.roots,
@@ -97,13 +124,13 @@ const resolveJestResult = (
 const resolveVitestResult = (
   results: TestPatterns[] | undefined,
   configPath: string,
-  defaultConfigDir: string
+  defaultConfigDir: string,
 ): TestPatternResult[] => {
   if (!results || results.length === 0) {
     return [createDefaultResult(defaultConfigDir)];
   }
 
-  return results.map(result => {
+  return results.map((result) => {
     const configDir = result.rootDir
       ? resolve(dirname(configPath), result.rootDir)
       : result.dir
@@ -111,7 +138,38 @@ const resolveVitestResult = (
         : defaultConfigDir;
 
     return {
-      patterns: result.patterns && result.patterns.length > 0 ? result.patterns : getDefaultTestPatterns(),
+      patterns:
+        result.patterns && result.patterns.length > 0
+          ? result.patterns
+          : getDefaultTestPatterns(),
+      configDir,
+      isRegex: false,
+      excludePatterns: result.excludePatterns,
+      roots: undefined,
+      ignorePatterns: undefined,
+    };
+  });
+};
+
+const resolveRstestResult = (
+  results: TestPatterns[] | undefined,
+  configPath: string,
+  defaultConfigDir: string,
+): TestPatternResult[] => {
+  if (!results || results.length === 0) {
+    return [createDefaultResult(defaultConfigDir)];
+  }
+
+  return results.map((result) => {
+    const configDir = result.rootDir
+      ? resolve(dirname(configPath), result.rootDir)
+      : defaultConfigDir;
+
+    return {
+      patterns:
+        result.patterns && result.patterns.length > 0
+          ? result.patterns
+          : getDefaultTestPatterns(),
       configDir,
       isRegex: false,
       excludePatterns: result.excludePatterns,
@@ -125,27 +183,48 @@ const resolveDualConfigPatterns = (
   rootPath: string,
   filePath: string,
   jestConfigPath: string,
-  vitestConfigPath: string
+  vitestConfigPath: string,
 ): TestPatternResult[] => {
-  const frameworkByPattern = detectFrameworkByPatternMatch(rootPath, filePath, jestConfigPath, vitestConfigPath);
+  const frameworkByPattern = detectFrameworkByPatternMatch(
+    rootPath,
+    filePath,
+    jestConfigPath,
+    vitestConfigPath,
+  );
 
   if (frameworkByPattern === 'vitest') {
-    return resolveVitestResult(getVitestConfig(vitestConfigPath), vitestConfigPath, rootPath);
+    return resolveVitestResult(
+      getVitestConfig(vitestConfigPath),
+      vitestConfigPath,
+      rootPath,
+    );
   }
 
   if (frameworkByPattern === 'jest') {
-    return resolveJestResult(getTestMatchFromJestConfig(jestConfigPath), jestConfigPath, rootPath);
+    return resolveJestResult(
+      getTestMatchFromJestConfig(jestConfigPath),
+      jestConfigPath,
+      rootPath,
+    );
   }
 
-  const jestResults = resolveJestResult(getTestMatchFromJestConfig(jestConfigPath), jestConfigPath, rootPath);
-  const vitestResults = resolveVitestResult(getVitestConfig(vitestConfigPath), vitestConfigPath, rootPath);
+  const jestResults = resolveJestResult(
+    getTestMatchFromJestConfig(jestConfigPath),
+    jestConfigPath,
+    rootPath,
+  );
+  const vitestResults = resolveVitestResult(
+    getVitestConfig(vitestConfigPath),
+    vitestConfigPath,
+    rootPath,
+  );
 
   return [...jestResults, ...vitestResults];
 };
 
 const findFirstValidConfig = <T>(
   configPaths: string[],
-  getConfig: (configPath: string) => T | undefined
+  getConfig: (configPath: string) => T | undefined,
 ): { configPath: string; config: T } | undefined => {
   if (configPaths.length === 0) return undefined;
 
@@ -153,12 +232,16 @@ const findFirstValidConfig = <T>(
   if (!existsSync(configPath)) return findFirstValidConfig(rest, getConfig);
 
   const config = getConfig(configPath);
-  return config ? { configPath, config } : findFirstValidConfig(rest, getConfig);
+  return config
+    ? { configPath, config }
+    : findFirstValidConfig(rest, getConfig);
 };
 
 const findJestConfigInDir = (dir: string): TestPatternResult[] => {
   const jestFramework = testFrameworks.find((f) => f.name === 'jest')!;
-  const configPaths = [...jestFramework.configFiles, 'package.json'].map((f) => join(dir, f));
+  const configPaths = [...jestFramework.configFiles, 'package.json'].map((f) =>
+    join(dir, f),
+  );
 
   const found = findFirstValidConfig(configPaths, getTestMatchFromJestConfig);
   if (!found) return [createDefaultResult(dir)];
@@ -183,27 +266,39 @@ const findDenoConfigInDir = (dir: string): TestPatternResult[] => {
   const found = findFirstValidConfig(configPaths, getDenoConfig);
   if (!found) return [createDefaultResult(dir)];
 
-  return [{
-    patterns: found.config.patterns.length > 0 ? found.config.patterns : getDefaultTestPatterns(),
-    configDir: dir,
-    isRegex: false,
-    excludePatterns: found.config.excludePatterns,
-  }];
+  return [
+    {
+      patterns:
+        found.config.patterns.length > 0
+          ? found.config.patterns
+          : getDefaultTestPatterns(),
+      configDir: dir,
+      isRegex: false,
+      excludePatterns: found.config.excludePatterns,
+    },
+  ];
 };
 
 const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
-  const customConfigPath = resolveAndValidateCustomConfig('jestrunner.playwrightConfigPath', join(dir, 'dummy'));
-  const playwrightFramework = testFrameworks.find((f) => f.name === 'playwright')!;
+  const customConfigPath = resolveAndValidateCustomConfig(
+    'jestrunner.playwrightConfigPath',
+    join(dir, 'dummy'),
+  );
+  const playwrightFramework = testFrameworks.find(
+    (f) => f.name === 'playwright',
+  )!;
 
   const configPaths = customConfigPath
     ? [customConfigPath]
     : playwrightFramework.configFiles.map((f) => join(dir, f));
 
   const found = findFirstValidConfig(configPaths, getPlaywrightConfig);
-  if (!found || !found.config || found.config.length === 0) return [createDefaultResult(dir)];
+  if (!found || !found.config || found.config.length === 0)
+    return [createDefaultResult(dir)];
 
-  return found.config.map(config => ({
-    patterns: config.patterns.length > 0 ? config.patterns : getDefaultTestPatterns(),
+  return found.config.map((config) => ({
+    patterns:
+      config.patterns.length > 0 ? config.patterns : getDefaultTestPatterns(),
     configDir: dir,
     isRegex: config.isRegex ?? false,
     ignorePatterns: config.ignorePatterns,
@@ -211,9 +306,19 @@ const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
   }));
 };
 
+const findRstestConfigInDir = (dir: string): TestPatternResult[] => {
+  const rstestFramework = testFrameworks.find((f) => f.name === 'rstest')!;
+  const configPaths = rstestFramework.configFiles.map((f) => join(dir, f));
+
+  const found = findFirstValidConfig(configPaths, getRstestConfig);
+  if (!found) return [createDefaultResult(dir)];
+
+  return resolveRstestResult(found.config, found.configPath, dir);
+};
+
 const detectPatternsInParentDirs = (
   filePath: string,
-  rootPath: string
+  rootPath: string,
 ): TestPatternResult[] | undefined => {
   const search = (dirs: string[]): TestPatternResult[] | undefined => {
     if (dirs.length === 0) return undefined;
@@ -225,6 +330,7 @@ const detectPatternsInParentDirs = (
     if (framework === 'vitest') return findVitestConfigInDir(dir);
     if (framework === 'deno') return findDenoConfigInDir(dir);
     if (framework === 'playwright') return findPlaywrightConfigInDir(dir);
+    if (framework === 'rstest') return findRstestConfigInDir(dir);
 
     return search(rest);
   };
@@ -233,51 +339,86 @@ const detectPatternsInParentDirs = (
 };
 
 function getTestFilePatternsForFile(filePath: string): TestPatternResult[] {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+    vscode.Uri.file(filePath),
+  );
   if (!workspaceFolder) {
     return [createDefaultResult(dirname(filePath))];
   }
 
-  const disableFrameworkConfig = vscode.workspace.getConfiguration('jestrunner').get<boolean>('disableFrameworkConfig');
+  const disableFrameworkConfig = vscode.workspace
+    .getConfiguration('jestrunner')
+    .get<boolean>('disableFrameworkConfig');
   if (disableFrameworkConfig) {
     logDebug('Framework config disabled via setting, using default patterns');
     return [createDefaultResult(workspaceFolder.uri.fsPath)];
   }
 
   const rootPath = workspaceFolder.uri.fsPath;
-  const jestConfigPath = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
-  const vitestConfigPath = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
+  const jestConfigPath = resolveAndValidateCustomConfig(
+    'jestrunner.configPath',
+    filePath,
+  );
+  const vitestConfigPath = resolveAndValidateCustomConfig(
+    'jestrunner.vitestConfigPath',
+    filePath,
+  );
 
   if (jestConfigPath && vitestConfigPath) {
-    return resolveDualConfigPatterns(rootPath, filePath, jestConfigPath, vitestConfigPath);
+    return resolveDualConfigPatterns(
+      rootPath,
+      filePath,
+      jestConfigPath,
+      vitestConfigPath,
+    );
   }
 
   if (jestConfigPath) {
     logDebug(`Using Jest config for pattern detection: ${jestConfigPath}`);
-    return resolveJestResult(getTestMatchFromJestConfig(jestConfigPath), jestConfigPath, rootPath);
+    return resolveJestResult(
+      getTestMatchFromJestConfig(jestConfigPath),
+      jestConfigPath,
+      rootPath,
+    );
   }
 
   if (vitestConfigPath) {
     logDebug(`Using Vitest config for pattern detection: ${vitestConfigPath}`);
-    return resolveVitestResult(getVitestConfig(vitestConfigPath), vitestConfigPath, rootPath);
+    return resolveVitestResult(
+      getVitestConfig(vitestConfigPath),
+      vitestConfigPath,
+      rootPath,
+    );
   }
 
-  const playwrightConfigPath = resolveAndValidateCustomConfig('jestrunner.playwrightConfigPath', filePath);
+  const playwrightConfigPath = resolveAndValidateCustomConfig(
+    'jestrunner.playwrightConfigPath',
+    filePath,
+  );
   if (playwrightConfigPath) {
-    logDebug(`Using Playwright config for pattern detection: ${playwrightConfigPath}`);
+    logDebug(
+      `Using Playwright config for pattern detection: ${playwrightConfigPath}`,
+    );
     const configs = getPlaywrightConfig(playwrightConfigPath);
     if (configs && configs.length > 0) {
-      return configs.map(config => ({
-        patterns: config.patterns.length > 0 ? config.patterns : getDefaultTestPatterns(),
+      return configs.map((config) => ({
+        patterns:
+          config.patterns.length > 0
+            ? config.patterns
+            : getDefaultTestPatterns(),
         configDir: rootPath,
         isRegex: config.isRegex ?? false,
         ignorePatterns: config.ignorePatterns,
-        excludePatterns: undefined
+        excludePatterns: undefined,
       }));
     }
   }
 
-  return detectPatternsInParentDirs(filePath, rootPath) ?? [createDefaultResult(rootPath)];
+  return (
+    detectPatternsInParentDirs(filePath, rootPath) ?? [
+      createDefaultResult(rootPath),
+    ]
+  );
 }
 
 export function matchesTestFilePattern(filePath: string): boolean {
@@ -285,13 +426,33 @@ export function matchesTestFilePattern(filePath: string): boolean {
 
   if (results.length === 0) {
     const defaultRes = createDefaultResult(dirname(filePath));
-    const filePatternMatches = fileMatchesPatterns(filePath, defaultRes.configDir, defaultRes.patterns, defaultRes.isRegex, undefined, defaultRes.ignorePatterns, defaultRes.excludePatterns, defaultRes.roots);
-    logDebug(`File ${filePath} matches default pattern ${defaultRes.patterns}: ${filePatternMatches}`);
+    const filePatternMatches = fileMatchesPatterns(
+      filePath,
+      defaultRes.configDir,
+      defaultRes.patterns,
+      defaultRes.isRegex,
+      undefined,
+      defaultRes.ignorePatterns,
+      defaultRes.excludePatterns,
+      defaultRes.roots,
+    );
+    logDebug(
+      `File ${filePath} matches default pattern ${defaultRes.patterns}: ${filePatternMatches}`,
+    );
     return filePatternMatches;
   }
 
-  return results.some(res => {
-    const matches = fileMatchesPatterns(filePath, res.configDir, res.patterns, res.isRegex, undefined, res.ignorePatterns, res.excludePatterns, res.roots);
+  return results.some((res) => {
+    const matches = fileMatchesPatterns(
+      filePath,
+      res.configDir,
+      res.patterns,
+      res.isRegex,
+      undefined,
+      res.ignorePatterns,
+      res.excludePatterns,
+      res.roots,
+    );
     logDebug(`File ${filePath} matches pattern ${res.patterns}: ${matches}`);
     return matches;
   });
@@ -303,7 +464,10 @@ export function isJestTestFile(filePath: string): boolean {
   }
 
   const hasJestDir = !!findJestDirectory(filePath);
-  const hasCustomConfig = !!resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
+  const hasCustomConfig = !!resolveAndValidateCustomConfig(
+    'jestrunner.configPath',
+    filePath,
+  );
 
   return hasJestDir || hasCustomConfig;
 }
@@ -314,7 +478,10 @@ export function isVitestTestFile(filePath: string): boolean {
   }
 
   const hasVitestDir = !!findVitestDirectory(filePath);
-  const hasCustomConfig = !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
+  const hasCustomConfig = !!resolveAndValidateCustomConfig(
+    'jestrunner.vitestConfigPath',
+    filePath,
+  );
 
   return hasVitestDir || hasCustomConfig;
 }

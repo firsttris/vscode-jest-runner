@@ -1,8 +1,15 @@
-import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
-import { detectTestFramework, findJestDirectory, findVitestDirectory, isJestUsedIn, isVitestUsedIn } from '../../testDetection/frameworkDetection';
+import {
+  detectTestFramework,
+  findJestDirectory,
+  findTestFrameworkDirectory,
+  findVitestDirectory,
+  isJestUsedIn,
+  isVitestUsedIn,
+} from '../../testDetection/frameworkDetection';
 import { isJestTestFile } from '../../testDetection/testFileDetection';
 
 jest.mock('fs');
@@ -517,6 +524,71 @@ describe('frameworkDetection', () => {
     });
   });
 
+  describe('findTestFrameworkDirectory with rstest', () => {
+    beforeEach(() => {
+      mockedFs.existsSync = jest.fn().mockReturnValue(false);
+      mockedFs.readFileSync = jest.fn();
+    });
+
+    it('should resolve rstest to nearest config directory', () => {
+      const filePath =
+        '/workspace/project/app/iirp/lib/prognose/prognose.test.ts';
+      const rootPath = '/workspace/project';
+      const rstestConfigPath = path.join(rootPath, 'rstest.config.ts');
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        const value = fsPath.toString();
+        return value === filePath || value === rstestConfigPath;
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        if (fsPath.toString() === filePath) {
+          return "import { describe, it } from '@rstest/core';";
+        }
+        return '';
+      }) as any;
+
+      const result = findTestFrameworkDirectory(filePath);
+
+      expect(result).toEqual({
+        directory: rootPath,
+        framework: 'rstest',
+      });
+    });
+
+    it('should fallback to file directory when rstest config is missing', () => {
+      const filePath =
+        '/workspace/project/app/iirp/lib/prognose/prognose.test.ts';
+      const rootPath = '/workspace/project';
+
+      (vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+        uri: { fsPath: rootPath },
+      }));
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath.toString() === filePath;
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        if (fsPath.toString() === filePath) {
+          return "import { describe, it } from '@rstest/core';";
+        }
+        return '';
+      }) as any;
+
+      const result = findTestFrameworkDirectory(filePath);
+
+      expect(result).toEqual({
+        directory: path.dirname(filePath),
+        framework: 'rstest',
+      });
+    });
+  });
+
   describe('Framework detection and priority', () => {
     const rootPath = '/workspace/project';
     const filePath = '/workspace/project/src/app.test.ts';
@@ -733,6 +805,64 @@ describe('frameworkDetection', () => {
       const result = detectTestFramework(testDir);
 
       expect(result).toBe('vitest');
+    });
+
+    it('should detect rstest from config file', () => {
+      const testDir = '/test/project';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return fsPath === path.join(testDir, 'rstest.config.ts');
+      });
+
+      const result = detectTestFramework(testDir);
+
+      expect(result).toBe('rstest');
+    });
+
+    it('should detect rstest file even when jest config also exists', () => {
+      const testDir = '/test/project';
+      const testFilePath = '/test/project/src/example.test.ts';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === path.join(testDir, 'rstest.config.ts') ||
+          fsPath === path.join(testDir, 'jest.config.js') ||
+          fsPath === testFilePath
+        );
+      });
+
+      mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+        if (fsPath === testFilePath) {
+          return "import { describe, it } from '@rstest/core';";
+        }
+        return '';
+      }) as any;
+
+      const result = detectTestFramework(testDir, testFilePath);
+
+      expect(result).toBe('rstest');
+    });
+
+    it('should prefer rstest config over Jest dependency in package.json', () => {
+      const testDir = '/test/project';
+
+      mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+        return (
+          fsPath === path.join(testDir, 'rstest.config.ts') ||
+          fsPath === path.join(testDir, 'package.json')
+        );
+      });
+      mockedFs.readFileSync = jest.fn().mockReturnValue(
+        JSON.stringify({
+          devDependencies: {
+            jest: '^29.0.0',
+          },
+        }),
+      );
+
+      const result = detectTestFramework(testDir);
+
+      expect(result).toBe('rstest');
     });
 
     it('should detect Jest from package.json', () => {

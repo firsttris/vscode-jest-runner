@@ -1,14 +1,14 @@
-import * as vscode from 'vscode';
-import { TestRunnerConfig } from '../testRunnerConfig';
-import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
+import { pathToFileURL } from 'node:url';
+import type * as vscode from 'vscode';
+import { getReporterPaths } from '../reporters/reporterPaths';
+import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
+import type { TestRunnerConfig } from '../testRunnerConfig';
+import { isWindows, normalizePath } from '../utils/PathUtils';
 import {
   escapeSingleQuotes,
   quote,
   toTestItemNamePattern,
 } from '../utils/TestNameUtils';
-import { normalizePath, isWindows } from '../utils/PathUtils';
-import { getReporterPaths } from '../reporters/reporterPaths';
-import { pathToFileURL } from 'node:url';
 
 interface TestArgumentStrategy {
   build(
@@ -35,6 +35,7 @@ export function buildTestArgs(
     vitest: new VitestStrategy(jestConfig, testController),
     jest: new JestStrategy(jestConfig, testController),
     playwright: new PlaywrightStrategy(jestConfig, testController),
+    rstest: new RstestStrategy(jestConfig, testController),
   };
 
   const strategy = strategies[framework];
@@ -153,6 +154,44 @@ abstract class JestLikeStrategy extends BaseStrategy {
     const tests = testsByFile.get(allFiles[0]);
 
     return !!tests && tests.length < totalTestsInFile;
+  }
+}
+
+class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
+  build(
+    allFiles: string[],
+    testsByFile: Map<string, vscode.TestItem[]>,
+    additionalArgs: string[],
+    collectCoverage: boolean,
+  ): string[] {
+    const coverageArgs = collectCoverage ? ['--coverage'] : [];
+    const extraArgs = [...additionalArgs, ...coverageArgs, '--reporter=junit'];
+    const configPath = this.jestConfig.getRstestConfigPath(allFiles[0]);
+
+    if (this.isPartialRun(allFiles, testsByFile)) {
+      const tests = testsByFile.get(allFiles[0])!;
+      const testNamePattern = this.getTestNamePattern(tests)!;
+
+      return this.jestConfig.buildRstestArgs(
+        allFiles[0],
+        testNamePattern,
+        false,
+        extraArgs,
+      );
+    }
+
+    const normalizedFiles = this.getNormalizedFiles(allFiles);
+    const args = [
+      ...normalizedFiles,
+      ...extraArgs,
+      ...(this.jestConfig.rstestRunOptions ?? []),
+    ];
+
+    if (configPath) {
+      args.push('--config', configPath);
+    }
+
+    return args;
   }
 }
 
@@ -358,9 +397,13 @@ class PlaywrightStrategy
 export function buildTestArgsFast(
   filePath: string,
   testName: string | undefined,
-  _framework: TestFrameworkName,
+  framework: TestFrameworkName,
   jestConfig: TestRunnerConfig,
 ): string[] {
+  if (framework === 'rstest') {
+    return jestConfig.buildRstestArgs(filePath, testName, false, []);
+  }
+
   return jestConfig.buildTestArgs(filePath, testName, true, []);
 }
 

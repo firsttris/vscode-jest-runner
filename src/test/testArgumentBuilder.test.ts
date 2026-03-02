@@ -1,6 +1,9 @@
-import { buildTestArgs } from '../execution/TestArgumentBuilder';
-import { TestRunnerConfig } from '../testRunnerConfig';
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
+import {
+  buildTestArgs,
+  buildTestArgsFast,
+} from '../execution/TestArgumentBuilder';
+import type { TestRunnerConfig } from '../testRunnerConfig';
 
 // Mock vscode
 jest.mock('vscode', () => ({
@@ -18,9 +21,12 @@ describe('TestArgumentBuilder', () => {
       buildTestArgs: jest.fn(),
       getJestConfigPath: jest.fn(),
       getVitestConfigPath: jest.fn(),
+      getRstestConfigPath: jest.fn(),
       buildNodeTestArgs: jest.fn(),
       buildVitestArgs: jest.fn(),
       buildJestArgs: jest.fn(),
+      buildRstestArgs: jest.fn(),
+      rstestRunOptions: [],
     } as any;
     mockController = {
       items: {
@@ -441,6 +447,111 @@ describe('TestArgumentBuilder', () => {
         true,
         ['--project=chromium'],
       );
+    });
+  });
+
+  describe('rstest', () => {
+    it('should include rstest config path for full file runs', () => {
+      const files = ['/path/to/prognose.test.ts'];
+      const testsByFile = new Map();
+      testsByFile.set('/path/to/prognose.test.ts', [{ label: 'test1' }]);
+
+      (mockController.items.get as jest.Mock).mockReturnValue({
+        children: { size: 1 },
+      });
+      (mockConfig.getRstestConfigPath as jest.Mock).mockReturnValue(
+        '/path/to/rstest.config.ts',
+      );
+
+      const args = buildTestArgs(
+        files,
+        testsByFile,
+        'rstest',
+        [],
+        false,
+        mockConfig,
+        mockController,
+      );
+
+      expect(args).toContain('/path/to/prognose.test.ts');
+      expect(args).toContain('--reporter=junit');
+      expect(args).toContain('--config');
+      expect(args).toContain('/path/to/rstest.config.ts');
+    });
+
+    it('should delegate to buildRstestArgs for partial runs', () => {
+      const files = ['/path/to/prognose.test.ts'];
+      const testsByFile = new Map();
+      testsByFile.set('/path/to/prognose.test.ts', [{ label: 'test1' }]);
+
+      (mockController.items.get as jest.Mock).mockReturnValue({
+        children: { size: 3 },
+      });
+      (mockConfig.buildRstestArgs as jest.Mock).mockReturnValue(['--partial']);
+
+      const args = buildTestArgs(
+        files,
+        testsByFile,
+        'rstest',
+        [],
+        false,
+        mockConfig,
+        mockController,
+      );
+
+      expect(mockConfig.buildRstestArgs).toHaveBeenCalled();
+      expect(args).toContain('--partial');
+    });
+
+    it('should delegate to buildRstestArgs without quotes for partial runs', () => {
+      const files = ['/path/to/prognose.test.ts'];
+      const testsByFile = new Map();
+      testsByFile.set('/path/to/prognose.test.ts', [{ label: 'test1' }]);
+
+      (mockController.items.get as jest.Mock).mockReturnValue({
+        children: { size: 3 },
+      });
+      (mockConfig.buildRstestArgs as jest.Mock).mockReturnValue(['--partial']);
+
+      buildTestArgs(
+        files,
+        testsByFile,
+        'rstest',
+        [],
+        false,
+        mockConfig,
+        mockController,
+      );
+
+      expect(mockConfig.buildRstestArgs).toHaveBeenCalledWith(
+        '/path/to/prognose.test.ts',
+        expect.any(String),
+        false,
+        ['--reporter=junit'],
+      );
+    });
+
+    it('should build fast rstest args without quotes', () => {
+      (mockConfig.buildRstestArgs as jest.Mock).mockReturnValue([
+        '-t',
+        'test1',
+      ]);
+
+      const args = buildTestArgsFast(
+        '/path/to/prognose.test.ts',
+        'test1',
+        'rstest',
+        mockConfig,
+      );
+
+      expect(mockConfig.buildRstestArgs).toHaveBeenCalledWith(
+        '/path/to/prognose.test.ts',
+        'test1',
+        false,
+        [],
+      );
+      expect(mockConfig.buildTestArgs).not.toHaveBeenCalled();
+      expect(args).toEqual(['-t', 'test1']);
     });
   });
 

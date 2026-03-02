@@ -1,27 +1,30 @@
-import * as vscode from 'vscode';
-import { relative, join } from 'node:path';
-import * as fs from 'node:fs';
 import { spawn } from 'node:child_process';
-import { TestRunnerConfig } from '../testRunnerConfig';
-import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
-import { CoverageProvider, DetailedFileCoverage } from '../coverageProvider';
-import { collectTestsByFile } from '../execution/TestCollector';
+import { randomUUID } from 'node:crypto';
+import * as fs from 'node:fs';
+import { join, relative } from 'node:path';
+import * as vscode from 'vscode';
+import {
+  type CoverageProvider,
+  DetailedFileCoverage,
+} from '../coverageProvider';
 import {
   buildTestArgs,
   buildTestArgsFast,
   canUseFastMode,
 } from '../execution/TestArgumentBuilder';
+import { collectTestsByFile } from '../execution/TestCollector';
 import {
   executeTestCommand,
   executeTestCommandFast,
   logTestExecution,
 } from '../execution/TestProcessRunner';
-import { processTestResults } from '../testResultProcessor';
+import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { getTestFrameworkForFile } from '../testDetection/testFileDetection';
-import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
-import { logInfo, logError } from '../utils/Logger';
+import { processTestResults } from '../testResultProcessor';
+import type { TestRunnerConfig } from '../testRunnerConfig';
+import { logError, logInfo } from '../utils/Logger';
 import { isWindows, normalizePath } from '../utils/PathUtils';
-import { randomUUID } from 'node:crypto';
+import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 
 interface RunContext {
   allFiles: string[];
@@ -69,7 +72,7 @@ export class TestRunExecutor {
     request: vscode.TestRunRequest,
     token: vscode.CancellationToken,
     additionalArgs: string[] = [],
-    collectCoverage: boolean = false,
+    collectCoverage = false,
   ): Promise<void> {
     const run = this.testController.createTestRun(request);
     const testsByFile = collectTestsByFile(request, this.testController);
@@ -277,10 +280,10 @@ export class TestRunExecutor {
       }
 
       if (collectCoverage) {
-        const configPath =
-          framework === 'vitest'
-            ? this.testRunnerConfig.getVitestConfigPath(allFiles[0])
-            : this.testRunnerConfig.getJestConfigPath(allFiles[0]);
+        const configPath = this.resolveCoverageConfigPath(
+          framework,
+          allFiles[0],
+        );
 
         await this.processCoverageData(
           run,
@@ -329,6 +332,21 @@ export class TestRunExecutor {
     }
 
     return args;
+  }
+
+  private resolveCoverageConfigPath(
+    framework: TestFrameworkName,
+    targetFile: string,
+  ): string {
+    if (framework === 'vitest') {
+      return this.testRunnerConfig.getVitestConfigPath(targetFile);
+    }
+
+    if (framework === 'rstest') {
+      return this.testRunnerConfig.getRstestConfigPath(targetFile);
+    }
+
+    return this.testRunnerConfig.getJestConfigPath(targetFile);
   }
 
   private removeVitestExplicitFileArgs(args: string[]): string[] {
