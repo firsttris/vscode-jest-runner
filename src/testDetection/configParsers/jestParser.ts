@@ -2,10 +2,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { normalizePath } from '../../utils/PathUtils';
 import { TestPatterns, TestFrameworkName } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
-import {
-  parseConfigObject,
-  readConfigFile,
-} from './parseUtils';
+import { parseConfigObject, readConfigFile } from './parseUtils';
 
 const extractTestRegex = (config: any): string[] | undefined => {
   if (!config?.testRegex) return undefined;
@@ -14,26 +11,38 @@ const extractTestRegex = (config: any): string[] | undefined => {
   return undefined;
 };
 
-const extractArrayProperty = (config: any, key: string): string[] | undefined => {
+const extractArrayProperty = (
+  config: any,
+  key: string,
+): string[] | undefined => {
   const value = config?.[key];
   if (typeof value === 'string') return [value];
   return Array.isArray(value) ? value : undefined;
 };
 
-const parseJestConfigContent = (config: any, configPath: string, rootDirOverride?: string): TestPatterns | undefined => {
+const parseJestConfigContent = (
+  config: any,
+  configPath: string,
+  rootDirOverride?: string,
+): TestPatterns | undefined => {
   if (!config) return undefined;
 
   const rootDirValue = config.rootDir;
-  const resolvedRootDir = rootDirOverride ?? (
-    rootDirValue
-      ? (rootDirValue === '__dirname' ? dirname(configPath) : resolve(dirname(configPath), rootDirValue))
-      : undefined
-  );
+  const resolvedRootDir =
+    rootDirOverride ??
+    (rootDirValue
+      ? rootDirValue === '__dirname'
+        ? dirname(configPath)
+        : resolve(dirname(configPath), rootDirValue)
+      : undefined);
 
   const roots = extractArrayProperty(config, 'roots');
   const ignorePatterns = extractArrayProperty(config, 'testPathIgnorePatterns');
 
-  const createResult = (patterns: string[], isRegex: boolean): TestPatterns => ({
+  const createResult = (
+    patterns: string[],
+    isRegex: boolean,
+  ): TestPatterns => ({
     patterns,
     isRegex,
     rootDir: resolvedRootDir,
@@ -57,7 +66,10 @@ const parseJestConfigContent = (config: any, configPath: string, rootDirOverride
   return undefined;
 };
 
-const parseJsonConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
+const parseJsonConfig = (
+  content: string,
+  configPath: string,
+): TestPatterns[] | undefined => {
   try {
     const config = configPath.endsWith('package.json')
       ? JSON.parse(content).jest
@@ -76,7 +88,10 @@ const parseJsonConfig = (content: string, configPath: string): TestPatterns[] | 
   }
 };
 
-const parseJsConfig = (content: string, configPath: string): TestPatterns[] | undefined => {
+const parseJsConfig = (
+  content: string,
+  configPath: string,
+): TestPatterns[] | undefined => {
   const config = parseConfigObject(content);
   if (!config) return undefined;
 
@@ -111,7 +126,9 @@ const parseProjects = (projects: any[], configPath: string): TestPatterns[] => {
   return results;
 };
 
-export function getTestMatchFromJestConfig(configPath: string): TestPatterns[] | undefined {
+export function getTestMatchFromJestConfig(
+  configPath: string,
+): TestPatterns[] | undefined {
   try {
     const content = readConfigFile(configPath);
 
@@ -120,12 +137,16 @@ export function getTestMatchFromJestConfig(configPath: string): TestPatterns[] |
       : parseJsConfig(content, configPath);
 
     if (result) {
-      logDebug(`Parsed Jest config: ${configPath}. Projects found: ${result.length}`);
+      logDebug(
+        `Parsed Jest config: ${configPath}. Projects found: ${result.length}`,
+      );
     }
 
     return result;
   } catch (error) {
-    logDebug(`Error reading Jest config file or project path: ${configPath}. Error: ${error}`);
+    logDebug(
+      `Error reading Jest config file or project path: ${configPath}. Error: ${error}`,
+    );
     return undefined;
   }
 }
@@ -150,7 +171,7 @@ const resolveCoverageDirectory = (
 
 export function parseCoverageDirectory(
   configPath: string,
-  framework: TestFrameworkName
+  framework: TestFrameworkName,
 ): string | undefined {
   try {
     const content = readConfigFile(configPath);
@@ -158,17 +179,29 @@ export function parseCoverageDirectory(
 
     if (configPath.endsWith('.json')) {
       const parsed = JSON.parse(content);
-      const config = configPath.endsWith('package.json') ? parsed?.jest : parsed;
+      const config = configPath.endsWith('package.json')
+        ? parsed?.jest
+        : parsed;
 
       if (!config) return undefined;
 
       if (framework === 'vitest') {
         const testConfig = config.test ?? {};
         const coverageConfig = testConfig.coverage ?? {};
-        return resolveCoverageDirectory(coverageConfig.reportsDirectory, config.root, configDir, configPath);
+        return resolveCoverageDirectory(
+          coverageConfig.reportsDirectory,
+          config.root,
+          configDir,
+          configPath,
+        );
       }
 
-      return resolveCoverageDirectory(config.coverageDirectory, config.rootDir, configDir, configPath);
+      return resolveCoverageDirectory(
+        config.coverageDirectory,
+        config.rootDir,
+        configDir,
+        configPath,
+      );
     }
 
     const config = parseConfigObject(content);
@@ -178,13 +211,23 @@ export function parseCoverageDirectory(
       const root = config.root;
       const testConfig = config.test ?? {};
       const coverageConfig = testConfig.coverage ?? {};
-      return resolveCoverageDirectory(coverageConfig.reportsDirectory, root, configDir, configPath);
+      return resolveCoverageDirectory(
+        coverageConfig.reportsDirectory,
+        root,
+        configDir,
+        configPath,
+      );
     }
 
     const coverageDir = config.coverageDirectory;
     const rootDir = config.rootDir;
 
-    return resolveCoverageDirectory(coverageDir, rootDir, configDir, configPath);
+    return resolveCoverageDirectory(
+      coverageDir,
+      rootDir,
+      configDir,
+      configPath,
+    );
   } catch (error) {
     logError(`Could not parse ${framework} config: ${error}`);
     return undefined;

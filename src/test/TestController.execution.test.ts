@@ -21,9 +21,8 @@ describe('JestTestController - test execution', () => {
     jest.clearAllMocks();
     setup = setupTestController();
 
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     mockRun = mockTestController.createTestRun();
     mockTestItem = new TestItem(
@@ -41,9 +40,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should create a test run when executing tests', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[0][2];
 
@@ -82,9 +80,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should mark tests as started', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     mockTestController.items.add(mockTestItem);
 
@@ -114,9 +111,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle test failures', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -156,9 +152,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle test cancellation', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -183,9 +178,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should respect max buffer size configuration', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     // Need 2 tests to avoid fast mode (which doesn't have buffer limiting)
     const mockTestItem2 = new TestItem(
@@ -203,7 +197,10 @@ describe('JestTestController - test execution', () => {
     const mockProcess = createMockProcess();
     spawn.mockReturnValue(mockProcess);
 
-    const multiRequest = { include: [mockTestItem, mockTestItem2], exclude: [] } as any;
+    const multiRequest = {
+      include: [mockTestItem, mockTestItem2],
+      exclude: [],
+    } as any;
     const runPromise = runProfile(multiRequest, mockToken);
 
     const largeOutput = 'x'.repeat(51 * 1024 * 1024);
@@ -218,9 +215,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle spawn errors', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -242,9 +238,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should parse Jest JSON output correctly', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestItem.label = 'should pass';
     mockTestController.items.add(mockTestItem);
 
@@ -294,9 +289,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should match tests by location when multiple have same name', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const { VscodeRange, Position } = require('./__mocks__/vscode');
 
@@ -359,9 +353,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should pass additional args for coverage profile', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
@@ -392,9 +385,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle coverage data processing errors gracefully', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
@@ -428,9 +420,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle null coverage map gracefully', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
@@ -465,9 +456,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should add coverage data when coverage map is available', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
@@ -480,7 +470,9 @@ describe('JestTestController - test execution', () => {
     const mockCoverageMap = {
       '/workspace/test.ts': {
         path: '/workspace/test.ts',
-        statementMap: { '0': { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } } },
+        statementMap: {
+          '0': { start: { line: 1, column: 0 }, end: { line: 1, column: 10 } },
+        },
         fnMap: {},
         branchMap: {},
         s: { '0': 1 },
@@ -519,9 +511,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should pass -u flag for update snapshots profile', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const snapshotProfile = (mockTestController.createRunProfile as jest.Mock)
@@ -552,9 +543,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should end run early when cancellation is requested before test execution', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -574,9 +564,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should end run when no files to test', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const emptyTestItem = new TestItem('empty', 'Empty', undefined as any);
     const emptyRequest = { include: [emptyTestItem], exclude: [] } as any;
@@ -593,9 +582,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should fail tests when workspace folder cannot be determined', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     jest
@@ -617,9 +605,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle exception during test execution', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -642,9 +629,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle non-Error exception during test execution', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -667,9 +653,8 @@ describe('JestTestController - test execution', () => {
   });
 
   it('should handle undefined error during test execution', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
     mockTestController.items.add(mockTestItem);
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock

@@ -34,7 +34,6 @@ export function isNodeTestFile(filePath: string): boolean {
       /from\s+['"]node:test['"]/.test(content) ||
       /require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
 
-
     return isNodeTest;
   } catch (error) {
     logError(`Error checking for node:test in ${filePath}`, error);
@@ -75,14 +74,23 @@ export function isPlaywrightTestFile(filePath: string): boolean {
 function hasImport(filePath: string, moduleName: string): boolean {
   const cached = cacheManager.getFileFramework(filePath);
   if (cached !== undefined) {
-    return cached?.framework === (moduleName === 'bun:test' ? 'bun' : moduleName === '@playwright/test' ? 'playwright' : 'node-test');
+    return (
+      cached?.framework ===
+      (moduleName === 'bun:test'
+        ? 'bun'
+        : moduleName === '@playwright/test'
+          ? 'playwright'
+          : 'node-test')
+    );
   }
 
   try {
     if (!existsSync(filePath)) return false;
 
     const content = readFileSync(filePath, 'utf-8');
-    const regex = new RegExp(`from\\s+['"]${moduleName}['"]|require\\s*\\(\\s*['"]${moduleName}['"]\\s*\\)`);
+    const regex = new RegExp(
+      `from\\s+['"]${moduleName}['"]|require\\s*\\(\\s*['"]${moduleName}['"]\\s*\\)`,
+    );
     return regex.test(content);
   } catch (error) {
     logError(`Error checking for ${moduleName} in ${filePath}`, error);
@@ -190,7 +198,12 @@ export function detectTestFramework(
   const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
 
   if (jestConfigPath && vitestConfigPath && filePath) {
-    const frameworkByPattern = detectFrameworkByPatternMatch(directoryPath, filePath, jestConfigPath, vitestConfigPath);
+    const frameworkByPattern = detectFrameworkByPatternMatch(
+      directoryPath,
+      filePath,
+      jestConfigPath,
+      vitestConfigPath,
+    );
     if (frameworkByPattern) {
       return frameworkByPattern;
     }
@@ -237,10 +250,13 @@ export function detectTestFramework(
 
 const matchesTarget = (
   framework: TestFrameworkName,
-  targetFramework?: 'jest' | 'vitest'
+  targetFramework?: 'jest' | 'vitest',
 ): boolean => !targetFramework || framework === targetFramework;
 
-export const getParentDirectories = (startDir: string, rootPath: string): string[] => {
+export const getParentDirectories = (
+  startDir: string,
+  rootPath: string,
+): string[] => {
   if (!normalizePath(startDir).startsWith(normalizePath(rootPath))) return [];
   const parentDir = dirname(startDir);
   return parentDir === startDir
@@ -251,10 +267,16 @@ export const getParentDirectories = (startDir: string, rootPath: string): string
 const resolveCustomConfigs = (
   filePath: string,
   rootPath: string,
-  targetFramework?: 'jest' | 'vitest'
+  targetFramework?: 'jest' | 'vitest',
 ): FrameworkResult | undefined => {
-  const customJestConfig = resolveAndValidateCustomConfig('jestrunner.configPath', filePath);
-  const customVitestConfig = resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
+  const customJestConfig = resolveAndValidateCustomConfig(
+    'jestrunner.configPath',
+    filePath,
+  );
+  const customVitestConfig = resolveAndValidateCustomConfig(
+    'jestrunner.vitestConfigPath',
+    filePath,
+  );
 
   if (!customJestConfig && !customVitestConfig) return undefined;
 
@@ -263,7 +285,7 @@ const resolveCustomConfigs = (
       rootPath,
       filePath,
       customJestConfig,
-      customVitestConfig
+      customVitestConfig,
     );
 
     if (frameworkByPattern) {
@@ -291,7 +313,7 @@ const resolveCustomConfigs = (
 const findFrameworkInParentDirs = (
   filePath: string,
   rootPath: string,
-  targetFramework?: 'jest' | 'vitest'
+  targetFramework?: 'jest' | 'vitest',
 ): SearchOutcome => {
   const dirs = getParentDirectories(dirname(filePath), rootPath);
 
@@ -315,27 +337,43 @@ const findFrameworkInParentDirs = (
 
 const detectFrameworkByDependency = (
   rootPath: string,
-  targetFramework?: 'jest' | 'vitest'
+  targetFramework?: 'jest' | 'vitest',
 ): FrameworkResult | undefined => {
-  const checks: Array<{ framework: TestFrameworkName; isUsed: () => boolean }> = targetFramework
-    ? [{ framework: targetFramework, isUsed: () => (targetFramework === 'jest' ? isJestUsedIn : isVitestUsedIn)(rootPath) }]
-    : [
-      { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
-      { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
-      { framework: 'bun', isUsed: () => isBunUsedIn(rootPath) },
-      { framework: 'deno', isUsed: () => isDenoUsedIn(rootPath) },
-      { framework: 'playwright', isUsed: () => isPlaywrightUsedIn(rootPath) },
-    ];
+  const checks: Array<{ framework: TestFrameworkName; isUsed: () => boolean }> =
+    targetFramework
+      ? [
+          {
+            framework: targetFramework,
+            isUsed: () =>
+              (targetFramework === 'jest' ? isJestUsedIn : isVitestUsedIn)(
+                rootPath,
+              ),
+          },
+        ]
+      : [
+          { framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
+          { framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
+          { framework: 'bun', isUsed: () => isBunUsedIn(rootPath) },
+          { framework: 'deno', isUsed: () => isDenoUsedIn(rootPath) },
+          {
+            framework: 'playwright',
+            isUsed: () => isPlaywrightUsedIn(rootPath),
+          },
+        ];
 
   const found = checks.find((check) => check.isUsed());
-  return found ? { directory: rootPath, framework: found.framework } : undefined;
+  return found
+    ? { directory: rootPath, framework: found.framework }
+    : undefined;
 };
 
 export function findTestFrameworkDirectory(
   filePath: string,
-  targetFramework?: 'jest' | 'vitest'
+  targetFramework?: 'jest' | 'vitest',
 ): FrameworkResult | undefined {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+    vscode.Uri.file(filePath),
+  );
   if (!workspaceFolder) return undefined;
 
   const rootPath = workspaceFolder.uri.fsPath;
@@ -362,18 +400,31 @@ export function findTestFrameworkDirectory(
     return { directory: dirname(filePath), framework: 'playwright' };
   }
 
-  const customResult = resolveCustomConfigs(filePath, rootPath, targetFramework);
+  const customResult = resolveCustomConfigs(
+    filePath,
+    rootPath,
+    targetFramework,
+  );
   if (customResult) return customResult;
 
-  const parentDirResult = findFrameworkInParentDirs(filePath, rootPath, targetFramework);
+  const parentDirResult = findFrameworkInParentDirs(
+    filePath,
+    rootPath,
+    targetFramework,
+  );
   if (parentDirResult.status === 'found') {
-    if (parentDirResult.result.framework === 'playwright' && isPlaywrightDisabled()) return undefined;
+    if (
+      parentDirResult.result.framework === 'playwright' &&
+      isPlaywrightDisabled()
+    )
+      return undefined;
     return parentDirResult.result;
   }
   if (parentDirResult.status === 'wrong_framework') return undefined;
 
   const depResult = detectFrameworkByDependency(rootPath, targetFramework);
-  if (depResult?.framework === 'playwright' && isPlaywrightDisabled()) return undefined;
+  if (depResult?.framework === 'playwright' && isPlaywrightDisabled())
+    return undefined;
   return depResult;
 }
 

@@ -12,7 +12,6 @@ import { resolveBinaryPath } from './utils/ResolverUtils';
 import { DebugConfigurationProvider } from './debug/DebugConfigurationProvider';
 import * as Settings from './config/Settings';
 
-
 export class TestRunnerConfig {
   private configResolver = new ConfigResolver();
   private debugConfigProvider = new DebugConfigurationProvider();
@@ -144,7 +143,9 @@ export class TestRunnerConfig {
     return Settings.isESMEnabled();
   }
 
-  public getEnvironmentForRun(_filePath: string): Record<string, string> | undefined {
+  public getEnvironmentForRun(
+    _filePath: string,
+  ): Record<string, string> | undefined {
     if (this.enableESM) {
       return { NODE_OPTIONS: '--experimental-vm-modules' };
     }
@@ -226,9 +227,9 @@ export class TestRunnerConfig {
       {
         currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
         projectPathFromConfig: this.projectPathFromConfig,
-        useNearestConfig: this.useNearestConfig
+        useNearestConfig: this.useNearestConfig,
       },
-      framework
+      framework,
     );
   }
 
@@ -246,15 +247,19 @@ export class TestRunnerConfig {
       {
         currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
         projectPathFromConfig: this.projectPathFromConfig,
-        useNearestConfig: this.useNearestConfig
+        useNearestConfig: this.useNearestConfig,
       },
       targetConfigFilename,
-      framework
+      framework,
     );
   }
 
   public getVitestConfigPath(targetPath: string): string {
-    return this.getConfigPath(targetPath, 'jestrunner.vitestConfigPath', 'vitest');
+    return this.getConfigPath(
+      targetPath,
+      'jestrunner.vitestConfigPath',
+      'vitest',
+    );
   }
 
   public get runOptions(): string[] | null {
@@ -392,9 +397,14 @@ export class TestRunnerConfig {
     );
   }
 
-
-
-  public getDebugConfiguration(filePath?: string, testName?: string): vscode.DebugConfiguration {
-    return this.debugConfigProvider.getDebugConfiguration(this, filePath, testName);
+  public getDebugConfiguration(
+    filePath?: string,
+    testName?: string,
+  ): vscode.DebugConfiguration {
+    return this.debugConfigProvider.getDebugConfiguration(
+      this,
+      filePath,
+      testName,
+    );
   }
 }

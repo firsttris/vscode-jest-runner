@@ -26,7 +26,10 @@ interface RawTestNode {
   parentStart?: { line: number; column: number };
 }
 
-export function parseNodeTestFile(filePath: string, content?: string): ParseResult {
+export function parseNodeTestFile(
+  filePath: string,
+  content?: string,
+): ParseResult {
   const fileContent = content || readFileSync(filePath, 'utf-8');
 
   const ast = babelParse(fileContent, {
@@ -54,7 +57,10 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
         const loc = node.loc;
         if (!loc) return;
 
-        const parentStart = describeStack.length > 0 ? describeStack[describeStack.length - 1].start : undefined;
+        const parentStart =
+          describeStack.length > 0
+            ? describeStack[describeStack.length - 1].start
+            : undefined;
 
         const testNode: RawTestNode = {
           name,
@@ -78,8 +84,8 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
         if (testInfo?.type === 'describe') {
           describeStack.pop();
         }
-      }
-    }
+      },
+    },
   });
 
   const uniqueTests = removeDuplicates(rawTests);
@@ -92,7 +98,9 @@ export function parseNodeTestFile(filePath: string, content?: string): ParseResu
   };
 }
 
-function getTestCallInfo(callee: any): { type: 'describe' | 'test'; modifier?: string } | null {
+function getTestCallInfo(
+  callee: any,
+): { type: 'describe' | 'test'; modifier?: string } | null {
   if (callee.type === 'Identifier') {
     const name = callee.name;
     if (name === 'describe') return { type: 'describe' };
@@ -112,7 +120,8 @@ function getTestCallInfo(callee: any): { type: 'describe' | 'test'; modifier?: s
     if (!['only', 'skip', 'todo'].includes(propName)) return null;
 
     if (objName === 'describe') return { type: 'describe', modifier: propName };
-    if (objName === 'test' || objName === 'it') return { type: 'test', modifier: propName };
+    if (objName === 'test' || objName === 'it')
+      return { type: 'test', modifier: propName };
     return null;
   }
 

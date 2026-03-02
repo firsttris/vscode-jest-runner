@@ -93,7 +93,9 @@ test('example', async ({ page }) => {});`;
     it('should detect playwright directory even when disabled', () => {
       setDisablePlaywright(true);
       mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
-        return fsPath === path.join(rootPath, 'node_modules', '.bin', 'playwright');
+        return (
+          fsPath === path.join(rootPath, 'node_modules', '.bin', 'playwright')
+        );
       });
 
       expect(isPlaywrightUsedIn(rootPath)).toBe(true);

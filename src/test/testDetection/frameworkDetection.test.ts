@@ -2,7 +2,13 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { cacheManager } from '../../cache/CacheManager';
-import { detectTestFramework, findJestDirectory, findVitestDirectory, isJestUsedIn, isVitestUsedIn } from '../../testDetection/frameworkDetection';
+import {
+  detectTestFramework,
+  findJestDirectory,
+  findVitestDirectory,
+  isJestUsedIn,
+  isVitestUsedIn,
+} from '../../testDetection/frameworkDetection';
 import { isJestTestFile } from '../../testDetection/testFileDetection';
 
 jest.mock('fs');

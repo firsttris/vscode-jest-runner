@@ -126,7 +126,9 @@ function parseSource(content: string): LcovCoverageData[] {
 
       case 'FNDA': {
         const [hitCount, funcName] = value.split(',');
-        const func = item.functions.details.find((f) => f.name === funcName && f.hit === undefined);
+        const func = item.functions.details.find(
+          (f) => f.name === funcName && f.hit === undefined,
+        );
         if (func) {
           func.hit = Number(hitCount);
         }
@@ -163,8 +165,9 @@ function parseSource(content: string): LcovCoverageData[] {
   return data;
 }
 
-export async function parseLcov(filePathOrContent: string): Promise<LcovCoverageData[]> {
-
+export async function parseLcov(
+  filePathOrContent: string,
+): Promise<LcovCoverageData[]> {
   if (existsSync(filePathOrContent)) {
     const content = await fs.readFile(filePathOrContent, 'utf8');
     return parseSource(content);

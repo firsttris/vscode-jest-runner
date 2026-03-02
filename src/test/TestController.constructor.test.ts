@@ -99,7 +99,9 @@ describe('JestTestController - constructor and dispose', () => {
 
       const mockTestRun = {} as vscode.TestRun;
       const regularFileCoverage = { uri: vscode.Uri.file('/test.ts') };
-      const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+      const mockToken = {
+        isCancellationRequested: false,
+      } as vscode.CancellationToken;
 
       const result = await coverageProfile.loadDetailedCoverage(
         mockTestRun,
@@ -133,7 +135,9 @@ describe('JestTestController - constructor and dispose', () => {
           b: {},
         },
       );
-      const mockToken = { isCancellationRequested: false } as vscode.CancellationToken;
+      const mockToken = {
+        isCancellationRequested: false,
+      } as vscode.CancellationToken;
 
       const result = await coverageProfile.loadDetailedCoverage(
         mockTestRun,
@@ -251,9 +255,8 @@ describe('JestTestController - configuration watcher', () => {
   });
 
   it('should clear all test items before refreshing', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const onDidChangeConfig = (
       vscode.workspace.onDidChangeConfiguration as jest.Mock
@@ -285,11 +288,11 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should discover tests when a test file is opened', () => {
-    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock)
+      .mock.calls[0][0];
 
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const mockDocument = {
       uri: vscode.Uri.file('/workspace/test.spec.ts'),
@@ -306,22 +309,23 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should discover tests on first run request', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
       .calls[0][2];
 
-    await runProfile({ include: undefined, exclude: [] }, { isCancellationRequested: false });
+    await runProfile(
+      { include: undefined, exclude: [] },
+      { isCancellationRequested: false },
+    );
 
     expect(vscode.workspace.findFiles).toHaveBeenCalled();
   });
 
   it('should discover tests via resolveHandler when tree is expanded', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     (vscode.workspace.findFiles as jest.Mock).mockClear();
 
@@ -363,9 +367,8 @@ describe('JestTestController - test discovery', () => {
     } as any);
 
     const newController = new JestTestController(setup.mockContext);
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[1].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[1].value;
 
     expect(mockTestController.items.size).toBeGreaterThanOrEqual(0);
 
@@ -373,31 +376,33 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should create nested test items for describe blocks when document is opened', () => {
-    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock)
+      .mock.calls[0][0];
 
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     (mockTestController.createTestItem as jest.Mock).mockClear();
 
     const mockDocument = {
       uri: vscode.Uri.file('/workspace/nested.spec.ts'),
-      getText: () => 'describe("suite", () => { describe("nested", () => { it("test", () => {}) }) })',
+      getText: () =>
+        'describe("suite", () => { describe("nested", () => { it("test", () => {}) }) })',
     };
 
     onOpenCallback(mockDocument);
 
-    const createCalls = (mockTestController.createTestItem as jest.Mock).mock.calls;
+    const createCalls = (mockTestController.createTestItem as jest.Mock).mock
+      .calls;
     expect(createCalls.length).toBeGreaterThan(0);
   });
 
   it('should set correct test item tags', () => {
-    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock)
+      .mock.calls[0][0];
 
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     (mockTestController.createTestItem as jest.Mock).mockClear();
 
@@ -418,11 +423,11 @@ describe('JestTestController - test discovery', () => {
   });
 
   it('should set test ranges for navigation', () => {
-    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock).mock.calls[0][0];
+    const onOpenCallback = (vscode.workspace.onDidOpenTextDocument as jest.Mock)
+      .mock.calls[0][0];
 
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     (mockTestController.createTestItem as jest.Mock).mockClear();
 

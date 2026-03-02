@@ -17,7 +17,9 @@ ok 1 - should pass
       expect(result.numFailedTests).toBe(0);
       expect(result.success).toBe(true);
       expect(result.testResults[0].assertionResults[0].status).toBe('passed');
-      expect(result.testResults[0].assertionResults[0].title).toBe('should pass');
+      expect(result.testResults[0].assertionResults[0].title).toBe(
+        'should pass',
+      );
     });
 
     it('should parse a simple failing test', () => {
@@ -37,7 +39,9 @@ message: Expected 1 to equal 2
       expect(result.numFailedTests).toBe(1);
       expect(result.success).toBe(false);
       expect(result.testResults[0].assertionResults[0].status).toBe('failed');
-      expect(result.testResults[0].assertionResults[0].failureMessages).toBeDefined();
+      expect(
+        result.testResults[0].assertionResults[0].failureMessages,
+      ).toBeDefined();
     });
 
     it('should parse multiple tests', () => {
@@ -191,7 +195,9 @@ ok 1 - standalone test
       const result = parseTapOutput(output, filePath);
 
       expect(result.numTotalTests).toBe(1);
-      expect(result.testResults[0].assertionResults[0].title).toBe('standalone test');
+      expect(result.testResults[0].assertionResults[0].title).toBe(
+        'standalone test',
+      );
     });
 
     it('should properly set file result status based on test outcomes', () => {
@@ -248,8 +254,12 @@ ok 2 - describe B
       const result = parseTapOutput(output, filePath);
 
       expect(result.numTotalTests).toBe(2);
-      expect(result.testResults[0].assertionResults[0].ancestorTitles).toEqual(['describe A']);
-      expect(result.testResults[0].assertionResults[1].ancestorTitles).toEqual(['describe B']);
+      expect(result.testResults[0].assertionResults[0].ancestorTitles).toEqual([
+        'describe A',
+      ]);
+      expect(result.testResults[0].assertionResults[1].ancestorTitles).toEqual([
+        'describe B',
+      ]);
     });
 
     it('should preserve directive reason in skipped tests', () => {

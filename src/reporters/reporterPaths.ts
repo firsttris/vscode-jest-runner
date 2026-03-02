@@ -33,10 +33,10 @@ export function getReporterPaths(): ReporterPaths {
   writeReporterFile(vitestPath, vitestReporterSource);
   writeReporterFile(nodePath, nodeReporterSource);
 
-  cachedPaths = { 
-    jest: normalizePath(jestPath), 
-    vitest: normalizePath(vitestPath), 
-    node: normalizePath(nodePath) 
+  cachedPaths = {
+    jest: normalizePath(jestPath),
+    vitest: normalizePath(vitestPath),
+    node: normalizePath(nodePath),
   };
   return cachedPaths;
 }

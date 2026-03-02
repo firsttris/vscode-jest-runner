@@ -1,8 +1,8 @@
 import { parseJUnitXML } from '../../parsers/junitParser';
 
 describe('JUnit Parser', () => {
-    it('should parse Bun JUnit output', () => {
-        const output = `bun test v1.3.5 (1e86cebd)
+  it('should parse Bun JUnit output', () => {
+    const output = `bun test v1.3.5 (1e86cebd)
 
 bun.test.ts:
 ✓ math > check add
@@ -26,22 +26,22 @@ Ran 2 tests across 1 file. [8.00ms]
   </testsuite>
 </testsuites>`;
 
-        const results = parseJUnitXML(output);
+    const results = parseJUnitXML(output);
 
-        expect(results).toBeDefined();
-        expect(results?.success).toBe(true);
-        expect(results?.numTotalTests).toBe(3);
-        expect(results?.numPassedTests).toBe(2);
-        expect(results?.numPendingTests).toBe(1);
-        expect(results?.testResults.length).toBeDefined();
-        expect(results?.testResults[0].assertionResults.length).toBe(3);
-        expect(results?.testResults[0].assertionResults[0].title).toBe('check add');
-        expect(results?.testResults[0].assertionResults[0].status).toBe('passed');
-    });
+    expect(results).toBeDefined();
+    expect(results?.success).toBe(true);
+    expect(results?.numTotalTests).toBe(3);
+    expect(results?.numPassedTests).toBe(2);
+    expect(results?.numPendingTests).toBe(1);
+    expect(results?.testResults.length).toBeDefined();
+    expect(results?.testResults[0].assertionResults.length).toBe(3);
+    expect(results?.testResults[0].assertionResults[0].title).toBe('check add');
+    expect(results?.testResults[0].assertionResults[0].status).toBe('passed');
+  });
 
-    it('should return undefined if no XML found', () => {
-        const output = 'some random output';
-        const results = parseJUnitXML(output);
-        expect(results).toBeUndefined();
-    });
+  it('should return undefined if no XML found', () => {
+    const output = 'some random output';
+    const results = parseJUnitXML(output);
+    expect(results).toBeUndefined();
+  });
 });

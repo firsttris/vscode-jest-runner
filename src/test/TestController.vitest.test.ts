@@ -24,9 +24,8 @@ describe('JestTestController - Vitest support', () => {
   });
 
   it('should detect and use vitest command for vitest projects', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
@@ -86,9 +85,8 @@ describe('JestTestController - Vitest support', () => {
   });
 
   it('should parse Vitest JSON output correctly', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
@@ -164,9 +162,8 @@ describe('JestTestController - Vitest support', () => {
   });
 
   it('should handle Vitest coverage option', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
@@ -214,9 +211,8 @@ describe('JestTestController - Vitest support', () => {
   });
 
   it('should fallback to text parsing when JSON parsing fails for Vitest', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
@@ -261,9 +257,8 @@ describe('JestTestController - Vitest support', () => {
   });
 
   it('should include Vitest config path when running multiple files', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
@@ -331,9 +326,8 @@ describe('JestTestController - Vitest support', () => {
   });
 
   it('should include Jest config path when running multiple files', async () => {
-    const mockTestController = (
-      vscode.tests.createTestController as jest.Mock
-    ).mock.results[0].value;
+    const mockTestController = (vscode.tests.createTestController as jest.Mock)
+      .mock.results[0].value;
 
     const test1 = new TestItem(
       'test1',
