@@ -1,6 +1,6 @@
+import { spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import * as vscode from 'vscode';
-import { spawn } from 'node:child_process';
 import {
   executeTestCommand,
   executeTestCommandFast,
@@ -45,6 +45,7 @@ describe('TestProcessRunner spawn behavior', () => {
     (spawn as unknown as jest.Mock).mockReturnValue(childProcess);
 
     const run = {
+      appendOutput: jest.fn(),
       failed: jest.fn(),
       skipped: jest.fn(),
     } as unknown as vscode.TestRun;
@@ -59,7 +60,8 @@ describe('TestProcessRunner spawn behavior', () => {
       { NODE_OPTIONS: 'fromAdditionalEnv', EXTRA: '1' },
     );
 
-    childProcess.stdout.emit('data', '{"testResults":[]}');
+    childProcess.stdout.emit('data', '{"testResults":[]}\n');
+    childProcess.stderr.emit('data', 'warn\n');
     childProcess.emit('close', 0);
 
     await promise;
@@ -77,6 +79,10 @@ describe('TestProcessRunner spawn behavior', () => {
         }),
       }),
     );
+    expect((run as any).appendOutput).toHaveBeenCalledWith(
+      '{"testResults":[]}\r\n',
+    );
+    expect((run as any).appendOutput).toHaveBeenCalledWith('warn\r\n');
   });
 
   it('should parse command/env and use non-shell spawn in executeTestCommandFast', async () => {
