@@ -13,398 +13,447 @@ import { DebugConfigurationProvider } from './debug/DebugConfigurationProvider';
 import * as Settings from './config/Settings';
 
 export class TestRunnerConfig {
-	private configResolver = new ConfigResolver();
-	private debugConfigProvider = new DebugConfigurationProvider();
+  private configResolver = new ConfigResolver();
+  private debugConfigProvider = new DebugConfigurationProvider();
 
-	public get jestCommand(): string {
-		const customCommand = Settings.getJestCommand();
-		if (customCommand) {
-			return customCommand;
-		}
+  public get jestCommand(): string {
+    const customCommand = Settings.getJestCommand();
+    if (customCommand) {
+      return customCommand;
+    }
 
-		const binaryPath = resolveBinaryPath('jest', this.cwd);
-		if (binaryPath) {
-			return `node ${quote(binaryPath)}`;
-		}
+    const binaryPath = resolveBinaryPath('jest', this.cwd);
+    if (binaryPath) {
+      return `node ${quote(binaryPath)}`;
+    }
 
-		return 'npx --no-install jest';
-	}
+    return 'npx --no-install jest';
+  }
 
-	public get vitestCommand(): string {
-		const customCommand = Settings.getVitestCommand();
-		if (customCommand) {
-			return customCommand;
-		}
+  public get vitestCommand(): string {
+    const customCommand = Settings.getVitestCommand();
+    if (customCommand) {
+      return customCommand;
+    }
 
-		const binaryPath = resolveBinaryPath('vitest', this.cwd);
-		if (binaryPath) {
-			return `node ${quote(binaryPath)}`;
-		}
+    const binaryPath = resolveBinaryPath('vitest', this.cwd);
+    if (binaryPath) {
+      return `node ${quote(binaryPath)}`;
+    }
 
-		return 'npx --no-install vitest';
-	}
+    return 'npx --no-install vitest';
+  }
 
-	public get nodeTestCommand(): string {
-		return Settings.getNodeTestCommand() || 'node';
-	}
+  public get nodeTestCommand(): string {
+    return Settings.getNodeTestCommand() || 'node';
+  }
 
-	public get bunCommand(): string {
-		return 'bun';
-	}
+  public get bunCommand(): string {
+    return 'bun';
+  }
 
-	public get denoCommand(): string {
-		return 'deno';
-	}
+  public get denoCommand(): string {
+    return 'deno';
+  }
 
-	public get playwrightCommand(): string {
-		const customCommand = Settings.getPlaywrightCommand();
-		if (customCommand) {
-			return customCommand;
-		}
-		return 'npx playwright';
-	}
+  public get playwrightCommand(): string {
+    const customCommand = Settings.getPlaywrightCommand();
+    if (customCommand) {
+      return customCommand;
+    }
+    return 'npx playwright';
+  }
 
-	public getTestCommand(filePath?: string): string {
-		if (filePath) {
-			const framework = getTestFrameworkForFile(filePath);
-			if (framework === 'vitest') {
-				return this.vitestCommand;
-			}
-			if (framework === 'node-test') {
-				return this.nodeTestCommand;
-			}
-			if (framework === 'bun') {
-				return this.bunCommand;
-			}
-			if (framework === 'deno') {
-				return this.denoCommand;
-			}
-			if (framework === 'playwright') {
-				return this.playwrightCommand;
-			}
-		}
-		return this.jestCommand;
-	}
+  public get rstestCommand(): string {
+    const customCommand = Settings.getRstestCommand();
+    if (customCommand) {
+      return customCommand;
+    }
 
-	// ... (existing getters)
+    const binaryPath = resolveBinaryPath('@rstest/core', this.cwd, 'rstest');
+    if (binaryPath) {
+      return `node ${quote(binaryPath)}`;
+    }
 
-	public get playwrightRunOptions(): string[] | null {
-		return Settings.getPlaywrightRunOptions();
-	}
+    return 'npx --no-install rstest';
+  }
 
-	public get playwrightDebugOptions(): Partial<vscode.DebugConfiguration> {
-		return Settings.getPlaywrightDebugOptions();
-	}
+  public getTestCommand(filePath?: string): string {
+    if (filePath) {
+      const framework = getTestFrameworkForFile(filePath);
+      if (framework === 'vitest') {
+        return this.vitestCommand;
+      }
+      if (framework === 'node-test') {
+        return this.nodeTestCommand;
+      }
+      if (framework === 'bun') {
+        return this.bunCommand;
+      }
+      if (framework === 'deno') {
+        return this.denoCommand;
+      }
+      if (framework === 'playwright') {
+        return this.playwrightCommand;
+      }
+      if (framework === 'rstest') {
+        return this.rstestCommand;
+      }
+    }
+    return this.jestCommand;
+  }
 
-	// ...
+  // ... (existing getters)
 
-	public buildPlaywrightArgs(
-		filePath: string,
-		testName: string | undefined,
-		withQuotes: boolean,
-		options: string[] = [],
-	): string[] {
-		return getFrameworkAdapter('playwright').buildArgs(
-			filePath,
-			testName,
-			withQuotes,
-			options,
-			'',
-			Settings.getPlaywrightRunOptions(),
-		);
-	}
+  public get playwrightRunOptions(): string[] | null {
+    return Settings.getPlaywrightRunOptions();
+  }
 
-	public buildTestArgs(
-		filePath: string,
-		testName: string | undefined,
-		withQuotes: boolean,
-		options: string[] = [],
-	): string[] {
-		const framework = this.getTestFramework(filePath);
-		if (framework === 'vitest') {
-			return this.buildVitestArgs(filePath, testName, withQuotes, options);
-		}
-		if (framework === 'node-test') {
-			return this.buildNodeTestArgs(filePath, testName, withQuotes, options);
-		}
-		if (framework === 'bun') {
-			return this.buildBunArgs(filePath, testName, withQuotes, options);
-		}
-		if (framework === 'deno') {
-			return this.buildDenoArgs(filePath, testName, withQuotes, options);
-		}
-		if (framework === 'playwright') {
-			return this.buildPlaywrightArgs(filePath, testName, withQuotes, options);
-		}
-		return this.buildJestArgs(filePath, testName, withQuotes, options);
-	}
+  public get playwrightDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getPlaywrightDebugOptions();
+  }
 
-	public get enableESM(): boolean {
-		return Settings.isESMEnabled();
-	}
+  // ...
 
-	public getEnvironmentForRun(
-		_filePath: string,
-	): Record<string, string> | undefined {
-		if (this.enableESM) {
-			return { NODE_OPTIONS: '--experimental-vm-modules' };
-		}
-		return undefined;
-	}
+  public buildPlaywrightArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    return getFrameworkAdapter('playwright').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '',
+      Settings.getPlaywrightRunOptions(),
+    );
+  }
 
-	public getTestFramework(filePath?: string): TestFrameworkName | undefined {
-		if (filePath) {
-			return getTestFrameworkForFile(filePath);
-		}
-		const editor = vscode.window.activeTextEditor;
-		if (editor) {
-			return getTestFrameworkForFile(editor.document.uri.fsPath);
-		}
-		return undefined;
-	}
+  public buildTestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const framework = this.getTestFramework(filePath);
+    if (framework === 'vitest') {
+      return this.buildVitestArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'node-test') {
+      return this.buildNodeTestArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'bun') {
+      return this.buildBunArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'deno') {
+      return this.buildDenoArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'playwright') {
+      return this.buildPlaywrightArgs(filePath, testName, withQuotes, options);
+    }
+    if (framework === 'rstest') {
+      return this.buildRstestArgs(filePath, testName, withQuotes, options);
+    }
+    return this.buildJestArgs(filePath, testName, withQuotes, options);
+  }
 
-	public get changeDirectoryToWorkspaceRoot(): boolean {
-		return Settings.isChangeDirectoryToWorkspaceRoot();
-	}
+  public get enableESM(): boolean {
+    return Settings.isESMEnabled();
+  }
 
-	public get preserveEditorFocus(): boolean {
-		return Settings.isPreserveEditorFocus();
-	}
+  public getEnvironmentForRun(
+    _filePath: string,
+  ): Record<string, string> | undefined {
+    if (this.enableESM) {
+      return { NODE_OPTIONS: '--experimental-vm-modules' };
+    }
+    return undefined;
+  }
 
-	public get cwd(): string {
-		return (
-			this.projectPathFromConfig ||
-			this.currentPackagePath ||
-			this.currentWorkspaceFolderPath
-		);
-	}
+  public getTestFramework(filePath?: string): TestFrameworkName | undefined {
+    if (filePath) {
+      return getTestFrameworkForFile(filePath);
+    }
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+      return getTestFrameworkForFile(editor.document.uri.fsPath);
+    }
+    return undefined;
+  }
 
-	public get projectPathFromConfig(): string | undefined {
-		const projectPath = Settings.getProjectPath();
-		if (projectPath) {
-			return resolve(this.currentWorkspaceFolderPath, projectPath);
-		}
-	}
+  public get changeDirectoryToWorkspaceRoot(): boolean {
+    return Settings.isChangeDirectoryToWorkspaceRoot();
+  }
 
-	public get useNearestConfig(): boolean | undefined {
-		return Settings.isUseNearestConfig();
-	}
+  public get preserveEditorFocus(): boolean {
+    return Settings.isPreserveEditorFocus();
+  }
 
-	public get currentPackagePath() {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			return '';
-		}
+  public get cwd(): string {
+    return (
+      this.projectPathFromConfig ||
+      this.currentPackagePath ||
+      this.currentWorkspaceFolderPath
+    );
+  }
 
-		const result = findTestFrameworkDirectory(editor.document.uri.fsPath);
-		return result ? normalizePath(result.directory) : '';
-	}
+  public get projectPathFromConfig(): string | undefined {
+    const projectPath = Settings.getProjectPath();
+    if (projectPath) {
+      return resolve(this.currentWorkspaceFolderPath, projectPath);
+    }
+  }
 
-	public get currentWorkspaceFolderPath(): string {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-		}
+  public get useNearestConfig(): boolean | undefined {
+    return Settings.isUseNearestConfig();
+  }
 
-		const workspaceFolder = vscode.workspace.getWorkspaceFolder(
-			editor.document.uri,
-		);
-		if (!workspaceFolder) {
-			return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-		}
+  public get currentPackagePath() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return '';
+    }
 
-		return workspaceFolder.uri.fsPath;
-	}
+    const result = findTestFrameworkDirectory(editor.document.uri.fsPath);
+    return result ? normalizePath(result.directory) : '';
+  }
 
-	private getConfigPath(
-		targetPath: string,
-		configKey: string,
-		framework?: TestFrameworkName,
-	): string {
-		return this.configResolver.resolveConfigPath(
-			targetPath,
-			configKey,
-			{
-				currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
-				projectPathFromConfig: this.projectPathFromConfig,
-				useNearestConfig: this.useNearestConfig,
-			},
-			framework,
-		);
-	}
+  public get currentWorkspaceFolderPath(): string {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+      return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    }
 
-	public getJestConfigPath(targetPath: string): string {
-		return this.getConfigPath(targetPath, 'jestrunner.configPath', 'jest');
-	}
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+      editor.document.uri,
+    );
+    if (!workspaceFolder) {
+      return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
+    }
 
-	public findConfigPath(
-		targetPath?: string,
-		targetConfigFilename?: string,
-		framework?: TestFrameworkName,
-	): string | undefined {
-		return this.configResolver.findConfigPath(
-			targetPath,
-			{
-				currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
-				projectPathFromConfig: this.projectPathFromConfig,
-				useNearestConfig: this.useNearestConfig,
-			},
-			targetConfigFilename,
-			framework,
-		);
-	}
+    return workspaceFolder.uri.fsPath;
+  }
 
-	public getVitestConfigPath(targetPath: string): string {
-		return this.getConfigPath(
-			targetPath,
-			'jestrunner.vitestConfigPath',
-			'vitest',
-		);
-	}
+  private getConfigPath(
+    targetPath: string,
+    configKey: string,
+    framework?: TestFrameworkName,
+  ): string {
+    return this.configResolver.resolveConfigPath(
+      targetPath,
+      configKey,
+      {
+        currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
+        projectPathFromConfig: this.projectPathFromConfig,
+        useNearestConfig: this.useNearestConfig,
+      },
+      framework,
+    );
+  }
 
-	public get runOptions(): string[] | null {
-		return Settings.getJestRunOptions();
-	}
+  public getJestConfigPath(targetPath: string): string {
+    return this.getConfigPath(targetPath, 'jestrunner.configPath', 'jest');
+  }
 
-	public get debugOptions(): Partial<vscode.DebugConfiguration> {
-		return Settings.getJestDebugOptions();
-	}
+  public findConfigPath(
+    targetPath?: string,
+    targetConfigFilename?: string,
+    framework?: TestFrameworkName,
+  ): string | undefined {
+    return this.configResolver.findConfigPath(
+      targetPath,
+      {
+        currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
+        projectPathFromConfig: this.projectPathFromConfig,
+        useNearestConfig: this.useNearestConfig,
+      },
+      targetConfigFilename,
+      framework,
+    );
+  }
 
-	public get vitestDebugOptions(): Partial<vscode.DebugConfiguration> {
-		return Settings.getVitestDebugOptions();
-	}
+  public getVitestConfigPath(targetPath: string): string {
+    return this.getConfigPath(
+      targetPath,
+      'jestrunner.vitestConfigPath',
+      'vitest',
+    );
+  }
 
-	public get nodeTestDebugOptions(): Partial<vscode.DebugConfiguration> {
-		return Settings.getNodeTestDebugOptions();
-	}
+  public getRstestConfigPath(targetPath: string): string {
+    return this.findConfigPath(targetPath, undefined, 'rstest') || '';
+  }
 
-	public get nodeTestRunOptions(): string[] | null {
-		return Settings.getNodeTestRunOptions();
-	}
+  public get runOptions(): string[] | null {
+    return Settings.getJestRunOptions();
+  }
 
-	public get bunRunOptions(): string[] | null {
-		return Settings.getBunRunOptions();
-	}
+  public get debugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getJestDebugOptions();
+  }
 
-	public get denoRunOptions(): string[] | null {
-		return Settings.getDenoRunOptions();
-	}
+  public get vitestDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getVitestDebugOptions();
+  }
 
-	public get bunDebugOptions(): Partial<vscode.DebugConfiguration> {
-		return Settings.getBunDebugOptions();
-	}
+  public get nodeTestDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getNodeTestDebugOptions();
+  }
 
-	public get denoDebugOptions(): Partial<vscode.DebugConfiguration> {
-		return Settings.getDenoDebugOptions();
-	}
+  public get nodeTestRunOptions(): string[] | null {
+    return Settings.getNodeTestRunOptions();
+  }
 
-	public get isCodeLensEnabled(): boolean {
-		return Settings.isCodeLensEnabled();
-	}
+  public get bunRunOptions(): string[] | null {
+    return Settings.getBunRunOptions();
+  }
 
-	public get codeLensOptions(): CodeLensOption[] {
-		return Settings.getCodeLensOptions();
-	}
+  public get denoRunOptions(): string[] | null {
+    return Settings.getDenoRunOptions();
+  }
 
-	public getAllPotentialSourceFiles(): string {
-		// Return a broad pattern to catch all potential test files
-		// Actual filtering is done by isTestFile() which reads patterns
-		// from framework configs (Jest testMatch / Vitest include)
-		return '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}';
-	}
+  public get bunDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getBunDebugOptions();
+  }
 
-	public buildJestArgs(
-		filePath: string,
-		testName: string | undefined,
-		withQuotes: boolean,
-		options: string[] = [],
-	): string[] {
-		const configPath = this.getJestConfigPath(filePath);
-		return getFrameworkAdapter('jest').buildArgs(
-			filePath,
-			testName,
-			withQuotes,
-			options,
-			configPath,
-			this.runOptions,
-		);
-	}
+  public get denoDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getDenoDebugOptions();
+  }
 
-	public buildVitestArgs(
-		filePath: string,
-		testName: string | undefined,
-		withQuotes: boolean,
-		options: string[] = [],
-	): string[] {
-		const configPath = this.getVitestConfigPath(filePath);
-		const runOptions = Settings.getVitestRunOptions() ?? this.runOptions;
+  public get rstestRunOptions(): string[] | null {
+    return Settings.getRstestRunOptions();
+  }
 
-		return getFrameworkAdapter('vitest').buildArgs(
-			filePath,
-			testName,
-			withQuotes,
-			options,
-			configPath,
-			runOptions,
-		);
-	}
+  public get rstestDebugOptions(): Partial<vscode.DebugConfiguration> {
+    return Settings.getRstestDebugOptions();
+  }
 
-	public buildNodeTestArgs(
-		filePath: string,
-		testName: string | undefined,
-		withQuotes: boolean,
-		options: string[] = [],
-	): string[] {
-		return getFrameworkAdapter('node-test').buildArgs(
-			filePath,
-			testName,
-			withQuotes,
-			options,
-			'',
-			this.nodeTestRunOptions,
-		);
-	}
+  public get isCodeLensEnabled(): boolean {
+    return Settings.isCodeLensEnabled();
+  }
 
-	public buildBunArgs(
-		filePath: string,
-		testName: string | undefined,
-		withQuotes: boolean,
-		options: string[] = [],
-	): string[] {
-		return getFrameworkAdapter('bun').buildArgs(
-			filePath,
-			testName,
-			withQuotes,
-			options,
-			'',
-			Settings.getBunRunOptions(),
-		);
-	}
+  public get codeLensOptions(): CodeLensOption[] {
+    return Settings.getCodeLensOptions();
+  }
 
-	public buildDenoArgs(
-		filePath: string,
-		testName: string | undefined,
-		withQuotes: boolean,
-		options: string[] = [],
-	): string[] {
-		return getFrameworkAdapter('deno').buildArgs(
-			filePath,
-			testName,
-			withQuotes,
-			options,
-			'',
-			Settings.getDenoRunOptions(),
-		);
-	}
+  public getAllPotentialSourceFiles(): string {
+    // Return a broad pattern to catch all potential test files
+    // Actual filtering is done by isTestFile() which reads patterns
+    // from framework configs (Jest testMatch / Vitest include)
+    return '**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}';
+  }
 
-	public getDebugConfiguration(
-		filePath?: string,
-		testName?: string,
-	): vscode.DebugConfiguration {
-		return this.debugConfigProvider.getDebugConfiguration(
-			this,
-			filePath,
-			testName,
-		);
-	}
+  public buildJestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const configPath = this.getJestConfigPath(filePath);
+    return getFrameworkAdapter('jest').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      configPath,
+      this.runOptions,
+    );
+  }
+
+  public buildVitestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const configPath = this.getVitestConfigPath(filePath);
+    const runOptions = Settings.getVitestRunOptions() ?? this.runOptions;
+
+    return getFrameworkAdapter('vitest').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      configPath,
+      runOptions,
+    );
+  }
+
+  public buildNodeTestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    return getFrameworkAdapter('node-test').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '',
+      this.nodeTestRunOptions,
+    );
+  }
+
+  public buildBunArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    return getFrameworkAdapter('bun').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '',
+      Settings.getBunRunOptions(),
+    );
+  }
+
+  public buildDenoArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    return getFrameworkAdapter('deno').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      '',
+      Settings.getDenoRunOptions(),
+    );
+  }
+
+  public buildRstestArgs(
+    filePath: string,
+    testName: string | undefined,
+    withQuotes: boolean,
+    options: string[] = [],
+  ): string[] {
+    const configPath = this.getRstestConfigPath(filePath);
+    return getFrameworkAdapter('rstest').buildArgs(
+      filePath,
+      testName,
+      withQuotes,
+      options,
+      configPath,
+      Settings.getRstestRunOptions(),
+    );
+  }
+
+  public getDebugConfiguration(
+    filePath?: string,
+    testName?: string,
+  ): vscode.DebugConfiguration {
+    return this.debugConfigProvider.getDebugConfiguration(
+      this,
+      filePath,
+      testName,
+    );
+  }
 }

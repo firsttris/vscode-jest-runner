@@ -1,7 +1,7 @@
 {
   "name": "vscode-jest-runner",
   "displayName": "Jest / Vitest Runner",
-  "description": "Run and debug Jest, Vitest, Node.js, Bun, and Deno tests with ease, right from your editor.",
+  "description": "Run and debug Jest, Vitest, Node.js, Bun, Rstest and Deno tests with ease, right from your editor.",
   "version": "0.4.134",
   "publisher": "firsttris",
   "author": "Tristan Teufel",
@@ -24,6 +24,7 @@
   "keywords": [
     "jest",
     "vitest",
+    "rstest",
     "test",
     "runner",
     "debug",
@@ -187,6 +188,28 @@
             "type": "object",
             "default": {},
             "description": "Add or override VS Code debug configurations for Vitest (e.g. { \"args\": [\"--no-cache\"] }). Only applies when debugging Vitest tests.",
+            "scope": "window"
+          },
+          "jestrunner.rstestCommand": {
+            "type": "string",
+            "default": "",
+            "description": "Define an alternative Rstest command",
+            "scope": "window"
+          },
+          "jestrunner.rstestRunOptions": {
+            "type": "array",
+            "default": [],
+            "items": {
+              "type": "string",
+              "description": "CLI Option e.g. --globals"
+            },
+            "description": "Add CLI Options to the Rstest command",
+            "scope": "window"
+          },
+          "jestrunner.rstestDebugOptions": {
+            "type": "object",
+            "default": {},
+            "description": "Add or override VS Code debug configurations for Rstest. Only applies when debugging Rstest tests.",
             "scope": "window"
           },
           "jestrunner.nodeTestCommand": {
