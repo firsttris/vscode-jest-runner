@@ -385,7 +385,7 @@
     "test": "jest .src/test",
     "package": "vsce package",
     "publish": "vsce publish $VERSION -m '%s [skip ci]' && ovsx publish",
-    "lint": "biome check .",
+    "lint": "biome check src",
     "lint:fix": "biome check --write src",
     "format:fix": "biome format --write src"
   },

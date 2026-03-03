@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 export function collectTestsByFile(
 	request: vscode.TestRunRequest,
@@ -12,20 +12,20 @@ export function collectTestsByFile(
 		}
 
 		if (test.children.size > 0) {
-			test.children.forEach((child) => collectTests(child));
+			test.children.forEach(collectTests);
 		} else if (test.uri) {
 			const filePath = test.uri.fsPath;
 			if (!testsByFile.has(filePath)) {
 				testsByFile.set(filePath, []);
 			}
-			testsByFile.get(filePath)!.push(test);
+			testsByFile.get(filePath)?.push(test);
 		}
 	};
 
 	if (request.include) {
-		request.include.forEach((test) => collectTests(test));
+		request.include.forEach(collectTests);
 	} else {
-		testController.items.forEach((test) => collectTests(test));
+		testController.items.forEach(collectTests);
 	}
 
 	return testsByFile;
