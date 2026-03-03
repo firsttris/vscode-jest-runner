@@ -4,17 +4,17 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
 describe('LCOV Parser', () => {
-  const testTmpDir = join(tmpdir(), 'lcov-parser-test');
+	const testTmpDir = join(tmpdir(), 'lcov-parser-test');
 
-  beforeAll(() => {
-    if (!existsSync(testTmpDir)) {
-      mkdirSync(testTmpDir, { recursive: true });
-    }
-  });
+	beforeAll(() => {
+		if (!existsSync(testTmpDir)) {
+			mkdirSync(testTmpDir, { recursive: true });
+		}
+	});
 
-  describe('parseLcov', () => {
-    it('should parse valid LCOV data with lines coverage', async () => {
-      const lcovData = `TN:
+	describe('parseLcov', () => {
+		it('should parse valid LCOV data with lines coverage', async () => {
+			const lcovData = `TN:
 SF:/path/to/file.js
 FNF:0
 FNH:0
@@ -28,20 +28,20 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].file).toBe('/path/to/file.js');
-      expect(result[0].lines.found).toBe(3);
-      expect(result[0].lines.hit).toBe(2);
-      expect(result[0].lines.details).toHaveLength(3);
-      expect(result[0].lines.details[0]).toEqual({ line: 1, hit: 1 });
-      expect(result[0].lines.details[1]).toEqual({ line: 2, hit: 0 });
-      expect(result[0].lines.details[2]).toEqual({ line: 3, hit: 1 });
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].file).toBe('/path/to/file.js');
+			expect(result[0].lines.found).toBe(3);
+			expect(result[0].lines.hit).toBe(2);
+			expect(result[0].lines.details).toHaveLength(3);
+			expect(result[0].lines.details[0]).toEqual({ line: 1, hit: 1 });
+			expect(result[0].lines.details[1]).toEqual({ line: 2, hit: 0 });
+			expect(result[0].lines.details[2]).toEqual({ line: 3, hit: 1 });
+		});
 
-    it('should parse LCOV data with function coverage', async () => {
-      const lcovData = `TN:
+		it('should parse LCOV data with function coverage', async () => {
+			const lcovData = `TN:
 SF:/path/to/file.js
 FN:1,myFunction
 FN:5,anotherFunction
@@ -56,26 +56,26 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].functions.found).toBe(2);
-      expect(result[0].functions.hit).toBe(1);
-      expect(result[0].functions.details).toHaveLength(2);
-      expect(result[0].functions.details[0]).toEqual({
-        name: 'myFunction',
-        line: 1,
-        hit: 3
-      });
-      expect(result[0].functions.details[1]).toEqual({
-        name: 'anotherFunction',
-        line: 5,
-        hit: 0
-      });
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].functions.found).toBe(2);
+			expect(result[0].functions.hit).toBe(1);
+			expect(result[0].functions.details).toHaveLength(2);
+			expect(result[0].functions.details[0]).toEqual({
+				name: 'myFunction',
+				line: 1,
+				hit: 3,
+			});
+			expect(result[0].functions.details[1]).toEqual({
+				name: 'anotherFunction',
+				line: 5,
+				hit: 0,
+			});
+		});
 
-    it('should parse LCOV data with branch coverage', async () => {
-      const lcovData = `TN:
+		it('should parse LCOV data with branch coverage', async () => {
+			const lcovData = `TN:
 SF:/path/to/file.js
 FNF:0
 FNH:0
@@ -90,28 +90,28 @@ BRH:3
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].branches.found).toBe(4);
-      expect(result[0].branches.hit).toBe(3);
-      expect(result[0].branches.details).toHaveLength(4);
-      expect(result[0].branches.details[0]).toEqual({
-        line: 1,
-        block: 0,
-        branch: 0,
-        taken: 5
-      });
-      expect(result[0].branches.details[2]).toEqual({
-        line: 5,
-        block: 0,
-        branch: 0,
-        taken: 0 // '-' should be converted to 0
-      });
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].branches.found).toBe(4);
+			expect(result[0].branches.hit).toBe(3);
+			expect(result[0].branches.details).toHaveLength(4);
+			expect(result[0].branches.details[0]).toEqual({
+				line: 1,
+				block: 0,
+				branch: 0,
+				taken: 5,
+			});
+			expect(result[0].branches.details[2]).toEqual({
+				line: 5,
+				block: 0,
+				branch: 0,
+				taken: 0, // '-' should be converted to 0
+			});
+		});
 
-    it('should parse LCOV data with test name', async () => {
-      const lcovData = `TN:My Test Suite
+		it('should parse LCOV data with test name', async () => {
+			const lcovData = `TN:My Test Suite
 SF:/path/to/file.js
 FNF:0
 FNH:0
@@ -122,14 +122,14 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].title).toBe('My Test Suite');
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].title).toBe('My Test Suite');
+		});
 
-    it('should parse multiple records', async () => {
-      const lcovData = `TN:
+		it('should parse multiple records', async () => {
+			const lcovData = `TN:
 SF:/path/to/file1.js
 LF:2
 LH:2
@@ -154,20 +154,20 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(2);
-      expect(result[0].file).toBe('/path/to/file1.js');
-      expect(result[0].lines.found).toBe(2);
-      expect(result[0].lines.hit).toBe(2);
-      expect(result[1].file).toBe('/path/to/file2.js');
-      expect(result[1].lines.found).toBe(3);
-      expect(result[1].lines.hit).toBe(1);
-    });
+			expect(result).toHaveLength(2);
+			expect(result[0].file).toBe('/path/to/file1.js');
+			expect(result[0].lines.found).toBe(2);
+			expect(result[0].lines.hit).toBe(2);
+			expect(result[1].file).toBe('/path/to/file2.js');
+			expect(result[1].lines.found).toBe(3);
+			expect(result[1].lines.hit).toBe(1);
+		});
 
-    it('should parse LCOV file from file path', async () => {
-      const testFile = join(testTmpDir, 'coverage.lcov');
-      const lcovData = `TN:
+		it('should parse LCOV file from file path', async () => {
+			const testFile = join(testTmpDir, 'coverage.lcov');
+			const lcovData = `TN:
 SF:/path/to/file.js
 LF:1
 LH:1
@@ -179,18 +179,18 @@ BRH:0
 end_of_record
 `;
 
-      writeFileSync(testFile, lcovData, 'utf8');
+			writeFileSync(testFile, lcovData, 'utf8');
 
-      const result = await parseLcov(testFile);
+			const result = await parseLcov(testFile);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].file).toBe('/path/to/file.js');
+			expect(result).toHaveLength(1);
+			expect(result[0].file).toBe('/path/to/file.js');
 
-      unlinkSync(testFile);
-    });
+			unlinkSync(testFile);
+		});
 
-    it('should handle SF values with colons in path', async () => {
-      const lcovData = `TN:
+		it('should handle SF values with colons in path', async () => {
+			const lcovData = `TN:
 SF:C:/Users/test/file.js
 LF:1
 LH:1
@@ -202,29 +202,33 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].file).toBe('C:/Users/test/file.js');
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].file).toBe('C:/Users/test/file.js');
+		});
 
-    it('should throw error for empty data', async () => {
-      await expect(parseLcov('')).rejects.toThrow('Failed to parse LCOV data: no records found');
-    });
+		it('should throw error for empty data', async () => {
+			await expect(parseLcov('')).rejects.toThrow(
+				'Failed to parse LCOV data: no records found',
+			);
+		});
 
-    it('should throw error for data without end_of_record', async () => {
-      const lcovData = `TN:
+		it('should throw error for data without end_of_record', async () => {
+			const lcovData = `TN:
 SF:/path/to/file.js
 LF:1
 LH:1
 DA:1,1
 `;
 
-      await expect(parseLcov(lcovData)).rejects.toThrow('Failed to parse LCOV data: no records found');
-    });
+			await expect(parseLcov(lcovData)).rejects.toThrow(
+				'Failed to parse LCOV data: no records found',
+			);
+		});
 
-    it('should handle empty lines and whitespace', async () => {
-      const lcovData = `
+		it('should handle empty lines and whitespace', async () => {
+			const lcovData = `
 TN:
 SF:/path/to/file.js
 
@@ -241,14 +245,14 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].file).toBe('/path/to/file.js');
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].file).toBe('/path/to/file.js');
+		});
 
-    it('should handle complex real-world LCOV format', async () => {
-      const lcovData = `TN:
+		it('should handle complex real-world LCOV format', async () => {
+			const lcovData = `TN:
 SF:src/utils/helper.ts
 FN:1,calculateTotal
 FN:10,formatCurrency
@@ -273,27 +277,27 @@ BRH:2
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].file).toBe('src/utils/helper.ts');
-      expect(result[0].lines.found).toBe(8);
-      expect(result[0].lines.hit).toBe(8);
-      expect(result[0].functions.found).toBe(2);
-      expect(result[0].functions.hit).toBe(2);
-      expect(result[0].branches.found).toBe(2);
-      expect(result[0].branches.hit).toBe(2);
-      expect(result[0].functions.details).toContainEqual({
-        name: 'calculateTotal',
-        line: 1,
-        hit: 5
-      });
-    });
-  });
+			expect(result).toHaveLength(1);
+			expect(result[0].file).toBe('src/utils/helper.ts');
+			expect(result[0].lines.found).toBe(8);
+			expect(result[0].lines.hit).toBe(8);
+			expect(result[0].functions.found).toBe(2);
+			expect(result[0].functions.hit).toBe(2);
+			expect(result[0].branches.found).toBe(2);
+			expect(result[0].branches.hit).toBe(2);
+			expect(result[0].functions.details).toContainEqual({
+				name: 'calculateTotal',
+				line: 1,
+				hit: 5,
+			});
+		});
+	});
 
-  describe('edge cases', () => {
-    it('should handle function without hit count', async () => {
-      const lcovData = `TN:
+	describe('edge cases', () => {
+		it('should handle function without hit count', async () => {
+			const lcovData = `TN:
 SF:/path/to/file.js
 FN:1,myFunction
 FNF:1
@@ -305,18 +309,18 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].functions.details[0]).toEqual({
-        name: 'myFunction',
-        line: 1
-        // hit should be undefined
-      });
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].functions.details[0]).toEqual({
+				name: 'myFunction',
+				line: 1,
+				// hit should be undefined
+			});
+		});
 
-    it('should handle lines without colons gracefully', async () => {
-      const lcovData = `TN:
+		it('should handle lines without colons gracefully', async () => {
+			const lcovData = `TN:
 SF:/path/to/file.js
 INVALID_LINE_WITHOUT_COLON
 LF:1
@@ -329,14 +333,14 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].file).toBe('/path/to/file.js');
-    });
+			expect(result).toHaveLength(1);
+			expect(result[0].file).toBe('/path/to/file.js');
+		});
 
-    it('should initialize empty structures correctly', async () => {
-      const lcovData = `TN:
+		it('should initialize empty structures correctly', async () => {
+			const lcovData = `TN:
 SF:/path/to/file.js
 FNF:0
 FNH:0
@@ -347,14 +351,14 @@ BRH:0
 end_of_record
 `;
 
-      const result = await parseLcov(lcovData);
+			const result = await parseLcov(lcovData);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].lines.details).toEqual([]);
-      expect(result[0].functions.details).toEqual([]);
-      expect(result[0].branches.details).toEqual([]);
-      expect(result[0].lines.found).toBe(0);
-      expect(result[0].lines.hit).toBe(0);
-    });
-  });
+			expect(result).toHaveLength(1);
+			expect(result[0].lines.details).toEqual([]);
+			expect(result[0].functions.details).toEqual([]);
+			expect(result[0].branches.details).toEqual([]);
+			expect(result[0].lines.found).toBe(0);
+			expect(result[0].lines.hit).toBe(0);
+		});
+	});
 });

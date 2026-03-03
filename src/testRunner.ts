@@ -3,211 +3,226 @@ import { TestRunnerConfig } from './testRunnerConfig';
 import { parse } from './parser';
 import { existsSync } from 'node:fs';
 import { TerminalManager } from './TerminalManager';
-import { escapeRegExp, findFullTestName, quote, unquote } from './utils/TestNameUtils';
+import {
+	escapeRegExp,
+	findFullTestName,
+	quote,
+	unquote,
+} from './utils/TestNameUtils';
 import { getDirName, getFileName } from './utils/PathUtils';
 
 interface DebugCommand {
-  documentUri: vscode.Uri;
-  config: vscode.DebugConfiguration;
+	documentUri: vscode.Uri;
+	config: vscode.DebugConfiguration;
 }
 
 export class TestRunner {
-  private previousCommand: string | DebugCommand;
+	private previousCommand: string | DebugCommand;
 
-  private previousFramework: string | undefined;
+	private previousFramework: string | undefined;
 
-  private terminalManager = new TerminalManager();
+	private terminalManager = new TerminalManager();
 
-  private commands: string[] = [];
+	private commands: string[] = [];
 
-  private isExecuting: boolean = false;
+	private isExecuting: boolean = false;
 
-  constructor(private readonly config: TestRunnerConfig) { }
+	constructor(private readonly config: TestRunnerConfig) {}
 
-  public async runTestsOnPath(path: string): Promise<void> {
-    const command = this.buildCommand(path);
-    await this.executeCommand(command, path);
-  }
+	public async runTestsOnPath(path: string): Promise<void> {
+		const command = this.buildCommand(path);
+		await this.executeCommand(command, path);
+	}
 
-  public async runCurrentTest(
-    argument?: Record<string, unknown> | string,
-    options?: string[],
-    collectCoverageFromCurrentFile?: boolean,
-  ): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
+	public async runCurrentTest(
+		argument?: Record<string, unknown> | string,
+		options?: string[],
+		collectCoverageFromCurrentFile?: boolean,
+	): Promise<void> {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			return;
+		}
 
-    await editor.document.save();
+		await editor.document.save();
 
-    const filePath = editor.document.fileName;
-    const currentTestName = typeof argument === 'string' ? argument : undefined;
-    const testName = currentTestName || this.findCurrentTestName(editor);
+		const filePath = editor.document.fileName;
+		const currentTestName = typeof argument === 'string' ? argument : undefined;
+		const testName = currentTestName || this.findCurrentTestName(editor);
 
-    const finalOptions = this.getCoverageOptions(filePath, collectCoverageFromCurrentFile, options);
-    const command = this.buildCommand(filePath, testName, finalOptions);
-    await this.executeCommand(command, filePath);
-  }
+		const finalOptions = this.getCoverageOptions(
+			filePath,
+			collectCoverageFromCurrentFile,
+			options,
+		);
+		const command = this.buildCommand(filePath, testName, finalOptions);
+		await this.executeCommand(command, filePath);
+	}
 
-  public async runCurrentFile(options?: string[]): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
+	public async runCurrentFile(options?: string[]): Promise<void> {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			return;
+		}
 
-    await editor.document.save();
+		await editor.document.save();
 
-    const filePath = editor.document.fileName;
-    const command = this.buildCommand(filePath, undefined, options);
-    await this.executeCommand(command, filePath);
-  }
+		const filePath = editor.document.fileName;
+		const command = this.buildCommand(filePath, undefined, options);
+		await this.executeCommand(command, filePath);
+	}
 
-  public async runPreviousTest(): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
+	public async runPreviousTest(): Promise<void> {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			return;
+		}
 
-    await editor.document.save();
+		await editor.document.save();
 
-    if (typeof this.previousCommand === 'string') {
-      const cwd = this.config.changeDirectoryToWorkspaceRoot
-        ? this.config.cwd
-        : undefined;
-      await this.runTerminalCommand(
-        this.previousCommand,
-        this.previousFramework,
-        cwd,
-      );
-    } else {
-      await this.executeDebugCommand(this.previousCommand);
-    }
-  }
+		if (typeof this.previousCommand === 'string') {
+			const cwd = this.config.changeDirectoryToWorkspaceRoot
+				? this.config.cwd
+				: undefined;
+			await this.runTerminalCommand(
+				this.previousCommand,
+				this.previousFramework,
+				cwd,
+			);
+		} else {
+			await this.executeDebugCommand(this.previousCommand);
+		}
+	}
 
-  public async debugTestsOnPath(filePath: string): Promise<void> {
-    const debugConfig = this.config.getDebugConfiguration(filePath);
+	public async debugTestsOnPath(filePath: string): Promise<void> {
+		const debugConfig = this.config.getDebugConfiguration(filePath);
 
-    await this.executeDebugCommand({
-      config: debugConfig,
-      documentUri: vscode.Uri.file(filePath),
-    });
-  }
+		await this.executeDebugCommand({
+			config: debugConfig,
+			documentUri: vscode.Uri.file(filePath),
+		});
+	}
 
-  public async debugCurrentTest(currentTestName?: string): Promise<void> {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
+	public async debugCurrentTest(currentTestName?: string): Promise<void> {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			return;
+		}
 
-    await editor.document.save();
+		await editor.document.save();
 
-    const filePath = editor.document.fileName;
-    const testName = currentTestName || this.findCurrentTestName(editor);
-    const debugConfig = this.config.getDebugConfiguration(filePath, testName);
+		const filePath = editor.document.fileName;
+		const testName = currentTestName || this.findCurrentTestName(editor);
+		const debugConfig = this.config.getDebugConfiguration(filePath, testName);
 
-    await this.executeDebugCommand({
-      config: debugConfig,
-      documentUri: editor.document.uri,
-    });
-  }
+		await this.executeDebugCommand({
+			config: debugConfig,
+			documentUri: editor.document.uri,
+		});
+	}
 
-  private async executeDebugCommand(debugCommand: DebugCommand) {
-    if (this.isExecuting) {
-      vscode.window.showWarningMessage(
-        'Another debug session is already starting. Please wait.',
-      );
-      return;
-    }
+	private async executeDebugCommand(debugCommand: DebugCommand) {
+		if (this.isExecuting) {
+			vscode.window.showWarningMessage(
+				'Another debug session is already starting. Please wait.',
+			);
+			return;
+		}
 
-    this.isExecuting = true;
-    try {
-      for (const command of this.commands) {
-        await this.runTerminalCommand(command);
-      }
-      this.commands = [];
+		this.isExecuting = true;
+		try {
+			for (const command of this.commands) {
+				await this.runTerminalCommand(command);
+			}
+			this.commands = [];
 
-      await vscode.debug.startDebugging(undefined, debugCommand.config);
+			await vscode.debug.startDebugging(undefined, debugCommand.config);
 
-      this.previousCommand = debugCommand;
-    } finally {
-      this.isExecuting = false;
-    }
-  }
+			this.previousCommand = debugCommand;
+		} finally {
+			this.isExecuting = false;
+		}
+	}
 
-  private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
-    const { selection, document } = editor;
-    if (!selection.isEmpty) {
-      return unquote(document.getText(selection));
-    }
+	private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
+		const { selection, document } = editor;
+		if (!selection.isEmpty) {
+			return unquote(document.getText(selection));
+		}
 
-    const selectedLine = selection.active.line + 1;
-    const filePath = editor.document.fileName;
-    const testFile = parse(filePath);
+		const selectedLine = selection.active.line + 1;
+		const filePath = editor.document.fileName;
+		const testFile = parse(filePath);
 
-    const fullTestName = findFullTestName(selectedLine, testFile.root.children);
-    return fullTestName ? escapeRegExp(fullTestName) : undefined;
-  }
+		const fullTestName = findFullTestName(selectedLine, testFile.root.children);
+		return fullTestName ? escapeRegExp(fullTestName) : undefined;
+	}
 
-  private buildCommand(
-    filePath: string,
-    testName?: string,
-    options?: string[],
-  ): string {
-    const command = this.config.getTestCommand(filePath);
-    const args = this.config.buildTestArgs(filePath, testName, true, options);
-    return `${command} ${args.join(' ')}`;
-  }
+	private buildCommand(
+		filePath: string,
+		testName?: string,
+		options?: string[],
+	): string {
+		const command = this.config.getTestCommand(filePath);
+		const args = this.config.buildTestArgs(filePath, testName, true, options);
+		return `${command} ${args.join(' ')}`;
+	}
 
-  private getCoverageOptions(
-    filePath: string,
-    collectCoverageFromCurrentFile: boolean,
-    options?: string[],
-  ): string[] {
-    if (!collectCoverageFromCurrentFile) {
-      return options || [];
-    }
+	private getCoverageOptions(
+		filePath: string,
+		collectCoverageFromCurrentFile: boolean,
+		options?: string[],
+	): string[] {
+		if (!collectCoverageFromCurrentFile) {
+			return options || [];
+		}
 
-    const finalOptions = [...(options || [])];
-    const targetFileDir = getDirName(filePath);
-    const targetFileName = getFileName(filePath).replace(/\.(test|spec)\./, '.');
+		const finalOptions = [...(options || [])];
+		const targetFileDir = getDirName(filePath);
+		const targetFileName = getFileName(filePath).replace(
+			/\.(test|spec)\./,
+			'.',
+		);
 
-    const coverageTarget = existsSync(`${targetFileDir}/${targetFileName}`)
-      ? `**/${targetFileName}`
-      : `**/${getFileName(targetFileDir)}/**`;
+		const coverageTarget = existsSync(`${targetFileDir}/${targetFileName}`)
+			? `**/${targetFileName}`
+			: `**/${getFileName(targetFileDir)}/**`;
 
-    finalOptions.push('--collectCoverageFrom', quote(coverageTarget));
-    return finalOptions;
-  }
+		finalOptions.push('--collectCoverageFrom', quote(coverageTarget));
+		return finalOptions;
+	}
 
-  private async executeCommand(command: string, filePath: string): Promise<void> {
-    const framework = this.config.getTestFramework(filePath);
-    const env = this.config.getEnvironmentForRun(filePath);
-    this.previousCommand = command;
-    this.previousFramework = framework;
+	private async executeCommand(
+		command: string,
+		filePath: string,
+	): Promise<void> {
+		const framework = this.config.getTestFramework(filePath);
+		const env = this.config.getEnvironmentForRun(filePath);
+		this.previousCommand = command;
+		this.previousFramework = framework;
 
-    const cwd = this.config.changeDirectoryToWorkspaceRoot
-      ? this.config.cwd
-      : undefined;
+		const cwd = this.config.changeDirectoryToWorkspaceRoot
+			? this.config.cwd
+			: undefined;
 
-    await this.runTerminalCommand(command, framework, cwd, env);
-  }
+		await this.runTerminalCommand(command, framework, cwd, env);
+	}
 
-  private async runTerminalCommand(
-    command: string,
-    framework?: string,
-    cwd?: string,
-    env?: Record<string, string>,
-  ) {
-    await this.terminalManager.runCommand(command, {
-      framework,
-      cwd,
-      env,
-      preserveEditorFocus: this.config.preserveEditorFocus,
-    });
-  }
+	private async runTerminalCommand(
+		command: string,
+		framework?: string,
+		cwd?: string,
+		env?: Record<string, string>,
+	) {
+		await this.terminalManager.runCommand(command, {
+			framework,
+			cwd,
+			env,
+			preserveEditorFocus: this.config.preserveEditorFocus,
+		});
+	}
 
-  public dispose() {
-    this.terminalManager.dispose();
-  }
+	public dispose() {
+		this.terminalManager.dispose();
+	}
 }

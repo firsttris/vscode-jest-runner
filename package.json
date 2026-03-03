@@ -386,11 +386,11 @@
     "package": "vsce package",
     "publish": "vsce publish $VERSION -m '%s [skip ci]' && ovsx publish",
     "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "format": "biome format --write ."
+    "lint:fix": "biome check --write src",
+    "format:fix": "biome format --write src"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.4",
+    "@biomejs/biome": "^2.4.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.3.3",
     "@types/shell-quote": "^1.7.5",
@@ -398,7 +398,6 @@
     "@vscode/vsce": "^3.7.1",
     "jest": "^30.2.0",
     "ovsx": "^0.10.9",
-    "prettier": "^3.8.1",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"

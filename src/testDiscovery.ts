@@ -5,216 +5,216 @@ import { TestRunnerConfig } from './testRunnerConfig';
 import { testFileCache } from './testDetection/testFileCache';
 import { logError } from './utils/Logger';
 import {
-  escapeRegExp,
-  TestNode,
-  updateTestNameIfUsingProperties,
+	escapeRegExp,
+	TestNode,
+	updateTestNameIfUsingProperties,
 } from './utils/TestNameUtils';
 
 export async function discoverTests(
-  workspaceFolder: vscode.WorkspaceFolder,
-  testController: vscode.TestController,
-  jestConfig: TestRunnerConfig,
+	workspaceFolder: vscode.WorkspaceFolder,
+	testController: vscode.TestController,
+	jestConfig: TestRunnerConfig,
 ): Promise<void> {
-  const testFiles = await findTestFiles(workspaceFolder.uri.fsPath, jestConfig);
+	const testFiles = await findTestFiles(workspaceFolder.uri.fsPath, jestConfig);
 
-  for (const file of testFiles) {
-    const testItem = getOrCreateFileTestItem(
-      testController,
-      workspaceFolder,
-      file,
-    );
+	for (const file of testFiles) {
+		const testItem = getOrCreateFileTestItem(
+			testController,
+			workspaceFolder,
+			file,
+		);
 
-    parseTestsInFile(file, testItem, testController);
-  }
+		parseTestsInFile(file, testItem, testController);
+	}
 }
 
 export function getOrCreateFolderTestItem(
-  testController: vscode.TestController,
-  workspaceFolder: vscode.WorkspaceFolder,
-  dirPath: string,
+	testController: vscode.TestController,
+	workspaceFolder: vscode.WorkspaceFolder,
+	dirPath: string,
 ): vscode.TestItem | undefined {
-  const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
-  if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
-    return undefined;
-  }
+	const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
+	if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
+		return undefined;
+	}
 
-  const parts = relativeDir.split(sep);
-  let currentCollection = testController.items;
-  let currentItem: vscode.TestItem | undefined;
-  let currentPath = workspaceFolder.uri.fsPath;
+	const parts = relativeDir.split(sep);
+	let currentCollection = testController.items;
+	let currentItem: vscode.TestItem | undefined;
+	let currentPath = workspaceFolder.uri.fsPath;
 
-  for (const part of parts) {
-    currentPath = join(currentPath, part);
-    const id = currentPath;
-    let item = currentCollection.get(id);
-    if (!item) {
-      item = testController.createTestItem(
-        id,
-        part,
-        vscode.Uri.file(currentPath),
-      );
-      item.canResolveChildren = false;
-      currentCollection.add(item);
-    }
-    currentCollection = item.children;
-    currentItem = item;
-  }
-  return currentItem;
+	for (const part of parts) {
+		currentPath = join(currentPath, part);
+		const id = currentPath;
+		let item = currentCollection.get(id);
+		if (!item) {
+			item = testController.createTestItem(
+				id,
+				part,
+				vscode.Uri.file(currentPath),
+			);
+			item.canResolveChildren = false;
+			currentCollection.add(item);
+		}
+		currentCollection = item.children;
+		currentItem = item;
+	}
+	return currentItem;
 }
 
 export function findFolderTestItem(
-  testController: vscode.TestController,
-  workspaceFolder: vscode.WorkspaceFolder,
-  dirPath: string,
+	testController: vscode.TestController,
+	workspaceFolder: vscode.WorkspaceFolder,
+	dirPath: string,
 ): vscode.TestItem | undefined {
-  const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
-  if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
-    return undefined;
-  }
+	const relativeDir = relative(workspaceFolder.uri.fsPath, dirPath);
+	if (!relativeDir || relativeDir === '' || relativeDir.startsWith('..')) {
+		return undefined;
+	}
 
-  const parts = relativeDir.split(sep);
-  let currentCollection = testController.items;
-  let currentItem: vscode.TestItem | undefined;
-  let currentPath = workspaceFolder.uri.fsPath;
+	const parts = relativeDir.split(sep);
+	let currentCollection = testController.items;
+	let currentItem: vscode.TestItem | undefined;
+	let currentPath = workspaceFolder.uri.fsPath;
 
-  for (const part of parts) {
-    currentPath = join(currentPath, part);
-    const item = currentCollection.get(currentPath);
-    if (!item) {
-      return undefined;
-    }
-    currentCollection = item.children;
-    currentItem = item;
-  }
+	for (const part of parts) {
+		currentPath = join(currentPath, part);
+		const item = currentCollection.get(currentPath);
+		if (!item) {
+			return undefined;
+		}
+		currentCollection = item.children;
+		currentItem = item;
+	}
 
-  return currentItem;
+	return currentItem;
 }
 
 export function getOrCreateFileTestItem(
-  testController: vscode.TestController,
-  workspaceFolder: vscode.WorkspaceFolder,
-  filePath: string,
+	testController: vscode.TestController,
+	workspaceFolder: vscode.WorkspaceFolder,
+	filePath: string,
 ): vscode.TestItem {
-  const fileUri = vscode.Uri.file(filePath);
-  const label = basename(filePath);
-  const dirPath = dirname(filePath);
+	const fileUri = vscode.Uri.file(filePath);
+	const label = basename(filePath);
+	const dirPath = dirname(filePath);
 
-  const parentItem = getOrCreateFolderTestItem(
-    testController,
-    workspaceFolder,
-    dirPath,
-  );
+	const parentItem = getOrCreateFolderTestItem(
+		testController,
+		workspaceFolder,
+		dirPath,
+	);
 
-  const existingItem = parentItem
-    ? parentItem.children.get(filePath)
-    : testController.items.get(filePath);
+	const existingItem = parentItem
+		? parentItem.children.get(filePath)
+		: testController.items.get(filePath);
 
-  if (existingItem) {
-    return existingItem;
-  }
+	if (existingItem) {
+		return existingItem;
+	}
 
-  const testItem = testController.createTestItem(filePath, label, fileUri);
-  if (parentItem) {
-    parentItem.children.add(testItem);
-  } else {
-    testController.items.add(testItem);
-  }
+	const testItem = testController.createTestItem(filePath, label, fileUri);
+	if (parentItem) {
+		parentItem.children.add(testItem);
+	} else {
+		testController.items.add(testItem);
+	}
 
-  return testItem;
+	return testItem;
 }
 
 export function parseTestsInFile(
-  filePath: string,
-  parentItem: vscode.TestItem,
-  testController: vscode.TestController,
+	filePath: string,
+	parentItem: vscode.TestItem,
+	testController: vscode.TestController,
 ): void {
-  try {
-    const testFile = parseTestFile(filePath);
+	try {
+		const testFile = parseTestFile(filePath);
 
-    if (!testFile || !testFile.root || !testFile.root.children) {
-      return;
-    }
+		if (!testFile || !testFile.root || !testFile.root.children) {
+			return;
+		}
 
-    processTestNodes(
-      testFile.root.children,
-      parentItem,
-      filePath,
-      testController,
-    );
-  } catch (error) {
-    logError(`Error parsing tests in ${filePath}`, error);
-  }
+		processTestNodes(
+			testFile.root.children,
+			parentItem,
+			filePath,
+			testController,
+		);
+	} catch (error) {
+		logError(`Error parsing tests in ${filePath}`, error);
+	}
 }
 
 export function processTestNodes(
-  nodes: TestNode[],
-  parentItem: vscode.TestItem,
-  filePath: string,
-  testController: vscode.TestController,
-  namePrefix: string = '',
+	nodes: TestNode[],
+	parentItem: vscode.TestItem,
+	filePath: string,
+	testController: vscode.TestController,
+	namePrefix: string = '',
 ): void {
-  for (const node of nodes) {
-    if (!node.name) {
-      continue;
-    }
+	for (const node of nodes) {
+		if (!node.name) {
+			continue;
+		}
 
-    const fullName = namePrefix ? `${namePrefix} ${node.name}` : node.name;
+		const fullName = namePrefix ? `${namePrefix} ${node.name}` : node.name;
 
-    const cleanTestName = updateTestNameIfUsingProperties(node.name);
-    const cleanFullName = updateTestNameIfUsingProperties(fullName);
+		const cleanTestName = updateTestNameIfUsingProperties(node.name);
+		const cleanFullName = updateTestNameIfUsingProperties(fullName);
 
-    const testId = `${filePath}:${node.type}:${node.start?.line || 0}:${escapeRegExp(cleanFullName || fullName)}`;
+		const testId = `${filePath}:${node.type}:${node.start?.line || 0}:${escapeRegExp(cleanFullName || fullName)}`;
 
-    const testItem = testController.createTestItem(
-      testId,
-      cleanTestName || node.name,
-      parentItem.uri,
-    );
+		const testItem = testController.createTestItem(
+			testId,
+			cleanTestName || node.name,
+			parentItem.uri,
+		);
 
-    testItem.tags =
-      node.type === 'describe'
-        ? [new vscode.TestTag('suite')]
-        : [new vscode.TestTag('test')];
+		testItem.tags =
+			node.type === 'describe'
+				? [new vscode.TestTag('suite')]
+				: [new vscode.TestTag('test')];
 
-    if (node.start && node.start.line > 0) {
-      try {
-        testItem.range = new vscode.Range(
-          new vscode.Position(node.start.line - 1, node.start.column || 0),
-          new vscode.Position(
-            (node.end?.line || node.start.line) - 1,
-            node.end?.column || 100,
-          ),
-        );
-      } catch (error) {
-        logError(`Error setting range for ${node.name}`, error);
-      }
-    }
+		if (node.start && node.start.line > 0) {
+			try {
+				testItem.range = new vscode.Range(
+					new vscode.Position(node.start.line - 1, node.start.column || 0),
+					new vscode.Position(
+						(node.end?.line || node.start.line) - 1,
+						node.end?.column || 100,
+					),
+				);
+			} catch (error) {
+				logError(`Error setting range for ${node.name}`, error);
+			}
+		}
 
-    parentItem.children.add(testItem);
+		parentItem.children.add(testItem);
 
-    if (node.children && node.children.length > 0) {
-      processTestNodes(
-        node.children,
-        testItem,
-        filePath,
-        testController,
-        cleanFullName || fullName,
-      );
-    }
-  }
+		if (node.children && node.children.length > 0) {
+			processTestNodes(
+				node.children,
+				testItem,
+				filePath,
+				testController,
+				cleanFullName || fullName,
+			);
+		}
+	}
 }
 
 export async function findTestFiles(
-  folderPath: string,
-  jestConfig: TestRunnerConfig,
+	folderPath: string,
+	jestConfig: TestRunnerConfig,
 ): Promise<string[]> {
-  const pattern = new vscode.RelativePattern(
-    folderPath,
-    jestConfig.getAllPotentialSourceFiles(),
-  );
-  const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
+	const pattern = new vscode.RelativePattern(
+		folderPath,
+		jestConfig.getAllPotentialSourceFiles(),
+	);
+	const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
 
-  return files
-    .map((file) => file.fsPath)
-    .filter((filePath) => testFileCache.isTestFile(filePath));
+	return files
+		.map((file) => file.fsPath)
+		.filter((filePath) => testFileCache.isTestFile(filePath));
 }

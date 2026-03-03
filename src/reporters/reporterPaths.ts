@@ -8,35 +8,35 @@ import vitestReporterSource from './vitestReporterTemplate.js?raw';
 import nodeReporterSource from './nodeReporterTemplate.js?raw';
 
 interface ReporterPaths {
-  jest: string;
-  vitest: string;
-  node: string;
+	jest: string;
+	vitest: string;
+	node: string;
 }
 
 let cachedPaths: ReporterPaths | undefined;
 
 function writeReporterFile(path: string, content: string): void {
-  writeFileSync(path, content, 'utf8');
+	writeFileSync(path, content, 'utf8');
 }
 
 export function getReporterPaths(): ReporterPaths {
-  if (cachedPaths) return cachedPaths;
+	if (cachedPaths) return cachedPaths;
 
-  const dir = join(tmpdir(), 'vscode-jest-runner-reporters');
-  mkdirSync(dir, { recursive: true });
+	const dir = join(tmpdir(), 'vscode-jest-runner-reporters');
+	mkdirSync(dir, { recursive: true });
 
-  const jestPath = join(dir, 'jest-reporter.cjs');
-  const vitestPath = join(dir, 'vitest-reporter.cjs');
-  const nodePath = join(dir, 'node-reporter.mjs');
+	const jestPath = join(dir, 'jest-reporter.cjs');
+	const vitestPath = join(dir, 'vitest-reporter.cjs');
+	const nodePath = join(dir, 'node-reporter.mjs');
 
-  writeReporterFile(jestPath, jestReporterSource);
-  writeReporterFile(vitestPath, vitestReporterSource);
-  writeReporterFile(nodePath, nodeReporterSource);
+	writeReporterFile(jestPath, jestReporterSource);
+	writeReporterFile(vitestPath, vitestReporterSource);
+	writeReporterFile(nodePath, nodeReporterSource);
 
-  cachedPaths = { 
-    jest: normalizePath(jestPath), 
-    vitest: normalizePath(vitestPath), 
-    node: normalizePath(nodePath) 
-  };
-  return cachedPaths;
+	cachedPaths = {
+		jest: normalizePath(jestPath),
+		vitest: normalizePath(vitestPath),
+		node: normalizePath(nodePath),
+	};
+	return cachedPaths;
 }

@@ -1,4 +1,4 @@
 export interface CodeLocation {
-  column: number;
-  line: number;
+	column: number;
+	line: number;
 }
