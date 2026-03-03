@@ -77,10 +77,7 @@ export function parseStructuredResults(
   output: string,
   sessionId?: string,
 ): JestResults | undefined {
-  const { messages } = extractStructuredMessages<JestResults>(
-    output,
-    sessionId,
-  );
+  const { messages } = extractStructuredMessages<JestResults>(output, sessionId);
   const resultMsg = messages.find((m) => m.type === 'results');
   return resultMsg?.payload;
 }

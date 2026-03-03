@@ -26,3 +26,4 @@ export function validateCodeLensOptions(
     isCodeLensOption(value),
   ) as CodeLensOption[];
 }
+
