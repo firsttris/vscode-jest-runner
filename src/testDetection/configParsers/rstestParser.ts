@@ -5,139 +5,139 @@ import { logDebug, logError } from '../../utils/Logger';
 import { parseConfigObject, readConfigFile } from './parseUtils';
 
 const normalizeRootDir = (
-  rootDir: string | undefined,
-  configPath: string,
+	rootDir: string | undefined,
+	configPath: string,
 ): string | undefined => {
-  if (!rootDir) return undefined;
-  return rootDir === '__dirname' ? dirname(configPath) : rootDir;
+	if (!rootDir) return undefined;
+	return rootDir === '__dirname' ? dirname(configPath) : rootDir;
 };
 
 const toStringArray = (value: unknown): string[] | undefined => {
-  if (!Array.isArray(value)) {
-    return undefined;
-  }
+	if (!Array.isArray(value)) {
+		return undefined;
+	}
 
-  const sanitized = value.filter(
-    (entry): entry is string => typeof entry === 'string' && entry.length > 0,
-  );
-  return sanitized;
+	const sanitized = value.filter(
+		(entry): entry is string => typeof entry === 'string' && entry.length > 0,
+	);
+	return sanitized;
 };
 
 const parseExcludePatterns = (value: unknown): string[] | undefined => {
-  if (Array.isArray(value)) {
-    return toStringArray(value);
-  }
+	if (Array.isArray(value)) {
+		return toStringArray(value);
+	}
 
-  if (value && typeof value === 'object' && 'patterns' in value) {
-    return toStringArray((value as { patterns?: unknown }).patterns);
-  }
+	if (value && typeof value === 'object' && 'patterns' in value) {
+		return toStringArray((value as { patterns?: unknown }).patterns);
+	}
 
-  return undefined;
+	return undefined;
 };
 
 const parseRstestConfigContent = (
-  config: any,
-  configPath: string,
+	config: any,
+	configPath: string,
 ): TestPatterns | undefined => {
-  if (!config || typeof config !== 'object') return undefined;
+	if (!config || typeof config !== 'object') return undefined;
 
-  const patterns = toStringArray(config.include);
-  const excludePatterns = parseExcludePatterns(config.exclude);
-  const rootDir = normalizeRootDir(
-    typeof config.root === 'string' ? config.root : undefined,
-    configPath,
-  );
+	const patterns = toStringArray(config.include);
+	const excludePatterns = parseExcludePatterns(config.exclude);
+	const rootDir = normalizeRootDir(
+		typeof config.root === 'string' ? config.root : undefined,
+		configPath,
+	);
 
-  if (!patterns && !excludePatterns && !rootDir) return undefined;
+	if (!patterns && !excludePatterns && !rootDir) return undefined;
 
-  return {
-    patterns: patterns ?? [],
-    isRegex: false,
-    rootDir,
-    excludePatterns,
-  };
+	return {
+		patterns: patterns ?? [],
+		isRegex: false,
+		rootDir,
+		excludePatterns,
+	};
 };
 
 const parseProjects = (projects: any[], configPath: string): TestPatterns[] => {
-  const results: TestPatterns[] = [];
-  const configDir = dirname(configPath);
+	const results: TestPatterns[] = [];
+	const configDir = dirname(configPath);
 
-  for (const project of projects) {
-    if (typeof project === 'string') {
-      try {
-        const projectPath = normalizePath(resolve(configDir, project));
-        const projectResult = getRstestConfig(projectPath);
-        if (projectResult) {
-          results.push(...projectResult);
-        }
-      } catch (error) {
-        logError(`Failed to parse project ${project} in ${configPath}`, error);
-      }
-      continue;
-    }
+	for (const project of projects) {
+		if (typeof project === 'string') {
+			try {
+				const projectPath = normalizePath(resolve(configDir, project));
+				const projectResult = getRstestConfig(projectPath);
+				if (projectResult) {
+					results.push(...projectResult);
+				}
+			} catch (error) {
+				logError(`Failed to parse project ${project} in ${configPath}`, error);
+			}
+			continue;
+		}
 
-    if (typeof project === 'object') {
-      const projectResult = parseRstestConfigContent(project, configPath);
-      if (projectResult) {
-        results.push(projectResult);
-      }
-    }
-  }
+		if (typeof project === 'object') {
+			const projectResult = parseRstestConfigContent(project, configPath);
+			if (projectResult) {
+				results.push(projectResult);
+			}
+		}
+	}
 
-  return results;
+	return results;
 };
 
 const parseJsonConfig = (
-  content: string,
-  configPath: string,
+	content: string,
+	configPath: string,
 ): TestPatterns[] | undefined => {
-  try {
-    const config = JSON.parse(content);
-    if (config.projects) {
-      return parseProjects(config.projects, configPath);
-    }
+	try {
+		const config = JSON.parse(content);
+		if (config.projects) {
+			return parseProjects(config.projects, configPath);
+		}
 
-    const parsed = parseRstestConfigContent(config, configPath);
-    return parsed ? [parsed] : undefined;
-  } catch {
-    return undefined;
-  }
+		const parsed = parseRstestConfigContent(config, configPath);
+		return parsed ? [parsed] : undefined;
+	} catch {
+		return undefined;
+	}
 };
 
 const parseJsConfig = (
-  content: string,
-  configPath: string,
+	content: string,
+	configPath: string,
 ): TestPatterns[] | undefined => {
-  const config = parseConfigObject(content);
-  if (!config) return undefined;
+	const config = parseConfigObject(content);
+	if (!config) return undefined;
 
-  if (config.projects) {
-    return parseProjects(config.projects, configPath);
-  }
+	if (config.projects) {
+		return parseProjects(config.projects, configPath);
+	}
 
-  const parsed = parseRstestConfigContent(config, configPath);
-  return parsed ? [parsed] : undefined;
+	const parsed = parseRstestConfigContent(config, configPath);
+	return parsed ? [parsed] : undefined;
 };
 
 export function getRstestConfig(
-  configPath: string,
+	configPath: string,
 ): TestPatterns[] | undefined {
-  try {
-    const content = readConfigFile(configPath);
+	try {
+		const content = readConfigFile(configPath);
 
-    const result = configPath.endsWith('.json')
-      ? parseJsonConfig(content, configPath)
-      : parseJsConfig(content, configPath);
+		const result = configPath.endsWith('.json')
+			? parseJsonConfig(content, configPath)
+			: parseJsConfig(content, configPath);
 
-    if (result) {
-      logDebug(
-        `Parsed Rstest config: ${configPath}. Projects found: ${result.length}`,
-      );
-    }
+		if (result) {
+			logDebug(
+				`Parsed Rstest config: ${configPath}. Projects found: ${result.length}`,
+			);
+		}
 
-    return result;
-  } catch (error) {
-    logError(`Error reading Rstest config file: ${configPath}`, error);
-    return undefined;
-  }
+		return result;
+	} catch (error) {
+		logError(`Error reading Rstest config file: ${configPath}`, error);
+		return undefined;
+	}
 }
