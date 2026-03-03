@@ -1,16 +1,17 @@
+
 import { logError } from '../../utils/Logger';
-import { parseConfigObject, readConfigFile } from './parseUtils';
+import {
+  parseConfigObject,
+  readConfigFile,
+} from './parseUtils';
 
 const normalizeSpecPattern = (value: unknown): string[] | undefined => {
   if (typeof value === 'string') return [value];
-  if (Array.isArray(value))
-    return value.filter((v): v is string => typeof v === 'string');
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === 'string');
   return undefined;
 };
 
-export function getCypressSpecPattern(
-  configPath: string,
-): string[] | undefined {
+export function getCypressSpecPattern(configPath: string): string[] | undefined {
   try {
     const content = readConfigFile(configPath);
 

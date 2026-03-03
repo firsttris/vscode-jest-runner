@@ -1,10 +1,4 @@
-export type TestFrameworkName =
-  | 'jest'
-  | 'vitest'
-  | 'node-test'
-  | 'bun'
-  | 'deno'
-  | 'playwright';
+export type TestFrameworkName = 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright';
 
 export interface TestFramework {
   name: string;

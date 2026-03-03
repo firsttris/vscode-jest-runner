@@ -3,7 +3,10 @@ import { JestResults, JestAssertionResult } from './testResultTypes';
 import { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { parseTapOutput } from './parsers/tapParser';
 import { logWarning, logInfo } from './utils/Logger';
-import { parseJestOutput, parseVitestOutput } from './parsers/OutputParser';
+import {
+  parseJestOutput,
+  parseVitestOutput,
+} from './parsers/OutputParser';
 import {
   findPotentialMatches,
   findBestMatch,
@@ -113,9 +116,7 @@ const reportTemplateTestResult = (
   switch (status) {
     case 'failed': {
       const failedResults = results.filter((r) => r.status === 'failed');
-      const message = new vscode.TestMessage(
-        buildFailureMessage(failedResults),
-      );
+      const message = new vscode.TestMessage(buildFailureMessage(failedResults));
       const firstFailedWithLocation = failedResults.find((r) => r.location);
       if (firstFailedWithLocation?.location && test.uri) {
         message.location = new vscode.Location(
@@ -234,7 +235,9 @@ function processTestResultsFallback(
 
       if (testFailed) {
         const relevantLines = failLines
-          .filter((line) => line.includes(testName) || line.includes(shortName))
+          .filter(
+            (line) => line.includes(testName) || line.includes(shortName),
+          )
           .join('\n');
         run.failed(
           test,

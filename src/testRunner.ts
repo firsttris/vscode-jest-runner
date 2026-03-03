@@ -3,12 +3,7 @@ import { TestRunnerConfig } from './testRunnerConfig';
 import { parse } from './parser';
 import { existsSync } from 'node:fs';
 import { TerminalManager } from './TerminalManager';
-import {
-  escapeRegExp,
-  findFullTestName,
-  quote,
-  unquote,
-} from './utils/TestNameUtils';
+import { escapeRegExp, findFullTestName, quote, unquote } from './utils/TestNameUtils';
 import { getDirName, getFileName } from './utils/PathUtils';
 
 interface DebugCommand {
@@ -27,7 +22,7 @@ export class TestRunner {
 
   private isExecuting: boolean = false;
 
-  constructor(private readonly config: TestRunnerConfig) {}
+  constructor(private readonly config: TestRunnerConfig) { }
 
   public async runTestsOnPath(path: string): Promise<void> {
     const command = this.buildCommand(path);
@@ -50,11 +45,7 @@ export class TestRunner {
     const currentTestName = typeof argument === 'string' ? argument : undefined;
     const testName = currentTestName || this.findCurrentTestName(editor);
 
-    const finalOptions = this.getCoverageOptions(
-      filePath,
-      collectCoverageFromCurrentFile,
-      options,
-    );
+    const finalOptions = this.getCoverageOptions(filePath, collectCoverageFromCurrentFile, options);
     const command = this.buildCommand(filePath, testName, finalOptions);
     await this.executeCommand(command, filePath);
   }
@@ -179,10 +170,7 @@ export class TestRunner {
 
     const finalOptions = [...(options || [])];
     const targetFileDir = getDirName(filePath);
-    const targetFileName = getFileName(filePath).replace(
-      /\.(test|spec)\./,
-      '.',
-    );
+    const targetFileName = getFileName(filePath).replace(/\.(test|spec)\./, '.');
 
     const coverageTarget = existsSync(`${targetFileDir}/${targetFileName}`)
       ? `**/${targetFileName}`
@@ -192,10 +180,7 @@ export class TestRunner {
     return finalOptions;
   }
 
-  private async executeCommand(
-    command: string,
-    filePath: string,
-  ): Promise<void> {
+  private async executeCommand(command: string, filePath: string): Promise<void> {
     const framework = this.config.getTestFramework(filePath);
     const env = this.config.getEnvironmentForRun(filePath);
     this.previousCommand = command;

@@ -5,56 +5,54 @@ import { resolveAndValidateCustomConfig } from './configParsing';
 import { hasConflictingTestFramework } from './testFileDetection';
 
 class TestFileCache {
-  public isTestFile(filePath: string): boolean {
-    const cached = cacheManager.getFileFramework(filePath);
-    if (cached !== undefined) {
-      return !!cached;
+    public isTestFile(filePath: string): boolean {
+        const cached = cacheManager.getFileFramework(filePath);
+        if (cached !== undefined) {
+            return !!cached;
+        }
+
+        const result = this.computeIsTestFile(filePath);
+
+        cacheManager.setFileFramework(filePath, result);
+
+        return !!result;
     }
 
-    const result = this.computeIsTestFile(filePath);
+    private computeIsTestFile(filePath: string): { framework: string; directory: string } | null {
+        if (!matchesTestFilePattern(filePath)) {
+            return null;
+        }
 
-    cacheManager.setFileFramework(filePath, result);
+        const frameworkResult = findTestFrameworkDirectory(filePath);
+        if (!frameworkResult) {
+            return null;
+        }
 
-    return !!result;
-  }
+        if (hasConflictingTestFramework(filePath, frameworkResult.framework)) {
+            return null;
+        }
 
-  private computeIsTestFile(
-    filePath: string,
-  ): { framework: string; directory: string } | null {
-    if (!matchesTestFilePattern(filePath)) {
-      return null;
+        const hasCustomConfig =
+            !!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
+            !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
+
+        if (frameworkResult || hasCustomConfig) {
+            return frameworkResult;
+        }
+        return null;
     }
 
-    const frameworkResult = findTestFrameworkDirectory(filePath);
-    if (!frameworkResult) {
-      return null;
+    public invalidate(filePath?: string): void {
+        if (filePath) {
+            cacheManager.invalidate(filePath);
+        } else {
+            cacheManager.invalidateAll();
+        }
     }
 
-    if (hasConflictingTestFramework(filePath, frameworkResult.framework)) {
-      return null;
+    public getCacheStats(): { size: number; entries: string[] } {
+        return cacheManager.getTestFileStats();
     }
-
-    const hasCustomConfig =
-      !!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
-      !!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
-
-    if (frameworkResult || hasCustomConfig) {
-      return frameworkResult;
-    }
-    return null;
-  }
-
-  public invalidate(filePath?: string): void {
-    if (filePath) {
-      cacheManager.invalidate(filePath);
-    } else {
-      cacheManager.invalidateAll();
-    }
-  }
-
-  public getCacheStats(): { size: number; entries: string[] } {
-    return cacheManager.getTestFileStats();
-  }
 }
 
 export const testFileCache = new TestFileCache();

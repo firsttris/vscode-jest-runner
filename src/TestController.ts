@@ -33,12 +33,15 @@ export class JestTestController {
     this.testRunExecutor = new TestRunExecutor(
       this.testController,
       this.jestConfig,
-      this.coverageProvider,
+      this.coverageProvider
     );
-    this.debugHandler = new DebugHandler(this.testController, this.jestConfig);
+    this.debugHandler = new DebugHandler(
+      this.testController,
+      this.jestConfig
+    );
     this.fileWatcher = new TestFileWatcher(
       this.testController,
-      this.jestConfig,
+      this.jestConfig
     );
     this.configWatcher = new TestConfigWatcher();
 
@@ -111,11 +114,7 @@ export class JestTestController {
 
     if (vscode.workspace.workspaceFolders) {
       for (const workspaceFolder of vscode.workspace.workspaceFolders) {
-        await discoverTests(
-          workspaceFolder,
-          this.testController,
-          this.jestConfig,
-        );
+        await discoverTests(workspaceFolder, this.testController, this.jestConfig);
       }
     }
     this.didFullDiscovery = true;

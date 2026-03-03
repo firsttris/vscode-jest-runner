@@ -1,9 +1,5 @@
 import { parse as babelParser } from './babelParser';
-import {
-  parseOptions,
-  type JESParserOptions,
-  type JESParserPluginOptions,
-} from './helper';
+import { parseOptions, type JESParserOptions, type JESParserPluginOptions } from './helper';
 import type { ParseResult } from './parserNodes';
 
 export type { CodeLocation } from './types';
