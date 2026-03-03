@@ -1,108 +1,148 @@
-# Jest & Vitest Runner Extension - Development Guide
+# Jest Runner Extension - Development Guide
 
 ## Architecture Overview
 
-This VS Code extension provides dual test framework support (Jest & Vitest) through three execution modes:
+This extension is now a **multi-framework test runner** for:
 
-1. **CodeLens Mode** ([TestRunnerCodeLensProvider.ts](../src/TestRunnerCodeLensProvider.ts)) - Legacy inline test runner using `parse()` from jest-editor-support
-2. **Terminal Mode** ([testRunner.ts](../src/testRunner.ts)) - Direct terminal execution with command building
-3. **Test Explorer Mode** ([TestController.ts](../src/TestController.ts)) - Native VS Code Testing API with coverage integration
+- Jest
+- Vitest
+- Node.js native test runner (`node:test`)
+- Bun
+- Deno
+- Playwright
 
-**Key architectural decision**: The extension detects Jest vs Vitest per-file/per-package (see [testDetection.ts](../src/testDetection.ts)), enabling mixed monorepo support. Detection checks for `node_modules` binaries and config files, with caching.
+Execution is provided through three entry points:
+
+1. **CodeLens Mode** ([TestRunnerCodeLensProvider.ts](../src/TestRunnerCodeLensProvider.ts))
+   - Legacy inline actions (run/debug/watch/coverage).
+2. **Terminal Mode** ([testRunner.ts](../src/testRunner.ts))
+   - Builds framework-specific command + args and executes via [TerminalManager.ts](../src/TerminalManager.ts).
+3. **Test Explorer Mode** ([TestController.ts](../src/TestController.ts))
+   - Native VS Code Testing API with run/debug/coverage profiles and hierarchical discovery.
+
+Key architectural decision: framework selection is **file-aware** and **directory-aware**, implemented under [src/testDetection](../src/testDetection). Detection combines imports/content heuristics, config files, dependency/binary checks, and pattern matching.
 
 ## Critical Developer Workflows
 
 ### Build & Development
+
 ```bash
-npm run watch        # Vite watch mode for development
+npm run watch        # Vite watch mode for extension bundle
 npm run build        # Production build
-npm run test         # Run Jest tests (uses jest.config.js)
+npm run test         # Jest test suite (src/test)
 ```
 
-**Important**: This project uses Vite for building (not tsc) - see [vite.config.ts](../vite.config.ts). Output goes to `dist/extension.js` as CommonJS.
+Important:
+
+- Build uses Vite (see [vite.config.ts](../vite.config.ts)), not `tsc` directly.
+- Extension entry output is `dist/extension.js`.
 
 ### Testing
-- Tests use Jest (see [jest.config.js](../jest.config.js)) despite being a Jest/Vitest runner extension
-- VS Code API is mocked at [src/test/__mocks__/vscode.ts](../src/test/__mocks__/vscode.ts) 
-- All test files match `src/test/**/*.test.ts`
-- Mock setup uses Jest/Vitest's alias feature to replace `vscode` imports
 
-### Debugging Extension
-Press F5 to launch Extension Development Host. The extension activates on `onStartupFinished` (see [package.json](../package.json) contributions).
+- Test runner for this repository is Jest (see [jest.config.js](../jest.config.js)).
+- VS Code API is fully mocked in [src/test/**mocks**/vscode.ts](../src/test/__mocks__/vscode.ts).
+- Tests live under `src/test/**/*.test.ts`.
+
+### Debugging the Extension
+
+Press `F5` to launch Extension Development Host. Activation is `onStartupFinished` (see [package.json](../package.json)).
 
 ## Project-Specific Patterns
 
+### Framework Adapters (single source for CLI arg generation)
+
+Use [frameworkAdapters.ts](../src/frameworkAdapters.ts) for command argument building. It contains per-framework builders for:
+
+- `jest` (`-c`, `-t`)
+- `vitest` (`run`, `--config`, `-t`)
+- `node-test` (`--test`, `--test-name-pattern`, structured/coverage reporters)
+- `bun` (`bun test`, coverage flags)
+- `deno` (`deno test`, `--filter`, `--junit-path`, coverage)
+- `playwright` (`test`, `-g`)
+
+When adding/changing a framework, update adapters first, then config/debug wiring.
+
 ### Configuration Resolution
-Config path resolution supports **glob-based mapping** for multi-config scenarios:
-```typescript
-// From testRunnerConfig.ts - resolveConfigPathOrMapping()
-"jestrunner.configPath": {
-  "**/*.it.spec.ts": "./jest.it.config.js",
-  "**/*.spec.ts": "./jest.unit.config.js"
-}
-```
-First matching glob wins. Set `useNearestConfig: true` to search up directory tree.
 
-### Test Name Parsing & Escaping
-- `parse()` from jest-editor-support returns ParsedNode AST of test structure
-- Test names with template literals need `resolveTestNameStringInterpolation()` (util.ts)
-- Test names with properties like `test.each()` use `updateTestNameIfUsingProperties()` 
-- **Critical**: RegExp special chars must be escaped via `escapeRegExp()` for `-t` flag matching
-- Shell quoting handled by `quote()`/`unquote()` utilities (platform-aware)
+Configuration resolution is centralized in [ConfigResolver.ts](../src/ConfigResolver.ts):
 
-### Yarn 2 PnP Detection
-Auto-detected in [testRunnerConfig.ts](../src/testRunnerConfig.ts#L23-L41) via `.yarn/releases/yarn-*.cjs` presence. Commands are wrapped with detected yarn binary when PnP is active.
+- Supports string path or glob mapping for `jestrunner.configPath` and `jestrunner.vitestConfigPath`.
+- Uses first glob match.
+- Supports `jestrunner.useNearestConfig` for upward directory search.
+- Caches resolved paths via [cache/CacheManager.ts](../src/cache/CacheManager.ts).
 
-### Framework Detection Algorithm (testDetection.ts)
-1. Check cache first
-2. Search up directory tree for:
-   - Vitest: `vitest.config.*` with `test:` attribute OR vite config with test attribute
-   - Jest: `jest.config.*` files (see JEST_CONFIG_FILES in constants.ts)
-3. Binary existence check in `node_modules/.bin/`
-4. Cache result per directory
+### Test Detection & Discovery
+
+- Framework detection logic: [testDetection/frameworkDetection.ts](../src/testDetection/frameworkDetection.ts)
+- File classification and pattern resolution: [testDetection/testFileDetection.ts](../src/testDetection/testFileDetection.ts)
+- Cached file-level decisions: [testDetection/testFileCache.ts](../src/testDetection/testFileCache.ts)
+- Workspace discovery/tree creation: [testDiscovery.ts](../src/testDiscovery.ts)
+
+Mixed Jest/Vitest projects are handled with pattern-based disambiguation when both configs are present.
+
+### Parsing Strategy
+
+- Parser entry: [parser.ts](../src/parser.ts)
+- Jest/Vitest syntax parsing: [parsers/jestParser](../src/parsers/jestParser)
+- `node:test` parsing path: [parsers/nodeTestParser.ts](../src/parsers/nodeTestParser.ts)
+
+Use `parseTestFile()` when framework-aware parsing is needed.
 
 ### Coverage Integration
-- Uses VS Code's native `vscode.FileCoverage` API (1.59+)
-- Reads `coverage/coverage-final.json` (Istanbul format)
-- [CoverageProvider.ts](../src/coverageProvider.ts) converts to VS Code's TestCoverageCount
-- `loadDetailedCoverage` provides line-by-line coverage with statement/branch decorations
+
+- Provider: [coverageProvider.ts](../src/coverageProvider.ts)
+- Uses VS Code coverage API (`vscode.FileCoverage` etc.)
+- Consumes Istanbul-style JSON (`coverage-final.json`) and additional framework outputs (e.g. Node lcov, Deno JUnit)
+
+### Logging & Error Handling
+
+- Logging utilities are in [utils/Logger.ts](../src/utils/Logger.ts)
+- Output channel name: `Jest Runner`
+- Debug logs are gated by `jestrunner.enableDebugLogs`
+- Commands are wrapped via `wrapCommandHandler()` in [extension.ts](../src/extension.ts)
 
 ## Extension Configuration
 
-Key settings (see [package.json](../package.json) contributions):
-- `jestrunner.enableTestExplorer` - Toggle new Test Explorer vs CodeLens (default: false)
-- `jestrunner.configPath`/`vitestConfigPath` - Config resolution (string or glob object)
-- `jestrunner.projectPath` - Override workspace root for monorepos
-- `jestrunner.changeDirectoryToWorkspaceRoot` - CWD behavior (priority: projectPath → nearest package.json → workspace)
-- `jestrunner.runOptions`/`vitestRunOptions` - Additional CLI flags array
+Core settings are defined in [package.json](../package.json) and read via [config/Settings.ts](../src/config/Settings.ts):
 
-## Common Patterns
+- **General**
+  - `jestrunner.projectPath`
+  - `jestrunner.changeDirectoryToWorkspaceRoot`
+  - `jestrunner.preserveEditorFocus`
+  - `jestrunner.useNearestConfig`
+  - `jestrunner.defaultTestPatterns`
+  - `jestrunner.disableFrameworkConfig`
+  - `jestrunner.enableDebugLogs`
 
-### Command Registration
-All commands use `wrapCommandHandler()` (extension.ts) for consistent error handling and user-facing error messages.
+- **UI Modes**
+  - `jestrunner.enableTestExplorer`
+  - `jestrunner.enableCodeLens`
+  - `jestrunner.codeLens`
 
-### Test Detection in Files
-Sets `jestrunner.isJestFile` context for menu visibility.
-
-### Logging
-Use `logInfo()`/`logError()`/`logDebug()` from util.ts. Debug logs gated by `jestrunner.enableDebugLogs` setting. Output channel: "Jest Runner".
-
-## External Dependencies
-- `jest-editor-support` - Test AST parsing (critical for CodeLens/Test Explorer)
-- `micromatch` - Glob pattern matching for test detection and config resolution
-- `fast-glob` - Workspace file discovery for Test Explorer
+- **Framework Commands/Options**
+  - Jest: `jestrunner.jestCommand`, `jestrunner.configPath`, `jestrunner.runOptions`, `jestrunner.debugOptions`
+  - Vitest: `jestrunner.vitestCommand`, `jestrunner.vitestConfigPath`, `jestrunner.vitestRunOptions`, `jestrunner.vitestDebugOptions`
+  - Node: `jestrunner.nodeTestCommand`, `jestrunner.nodeTestRunOptions`, `jestrunner.nodeTestDebugOptions`
+  - Bun: `jestrunner.bunRunOptions`, `jestrunner.bunDebugOptions`
+  - Deno: `jestrunner.denoRunOptions`, `jestrunner.denoDebugOptions`
+  - Playwright: `jestrunner.playwrightConfigPath`, `jestrunner.playwrightCommand`, `jestrunner.playwrightRunOptions`, `jestrunner.playwrightDebugOptions`, `jestrunner.disablePlaywright`
 
 ## Code Organization
-- [extension.ts](../src/extension.ts) - Entry point, command registration, context setup
-- [testRunner.ts](../src/testRunner.ts) - Terminal-based test execution
-- [TestController.ts](../src/TestController.ts) - Test Explorer integration (~1000 LOC)
-- [testRunnerConfig.ts](../src/testRunnerConfig.ts) - Configuration reading and command building
-- [parser.ts](../src/parser.ts) - Thin wrapper around jest-editor-support
-- [testDetection.ts](../src/testDetection.ts) - Framework detection logic with caching
-- [util.ts](../src/util.ts) - Shared utilities for path handling, escaping, test name resolution
+
+- [extension.ts](../src/extension.ts) - activation, command registration, context keys
+- [testRunner.ts](../src/testRunner.ts) - terminal run/debug orchestration
+- [testRunnerConfig.ts](../src/testRunnerConfig.ts) - command/config/debug resolution
+- [frameworkAdapters.ts](../src/frameworkAdapters.ts) - framework-specific CLI argument builders
+- [TestController.ts](../src/TestController.ts) - Test Explorer integration
+- [testDiscovery.ts](../src/testDiscovery.ts) - file/folder/test hierarchy construction
+- [testDetection](../src/testDetection) - framework + file detection pipeline
+- [ConfigResolver.ts](../src/ConfigResolver.ts) - config path and mapping resolution
+- [coverageProvider.ts](../src/coverageProvider.ts) - coverage import and mapping to VS Code API
+- [debug/DebugConfigurationProvider.ts](../src/debug/DebugConfigurationProvider.ts) - per-framework debug config assembly
 
 ## Testing Conventions
-- Mock VS Code API completely (no partial mocks)
-- Use `jest.fn()` for tracking calls despite using Vitest (compatibility with examples)
-- Test file structure mirrors src/ directory
-- Focus on config resolution, command building, and framework detection edge cases
+
+- Prefer focused unit tests in `src/test` for any behavior change.
+- Mock VS Code API fully (avoid partial runtime assumptions).
+- Keep framework-specific behavior covered (especially CLI args, config resolution, detection heuristics).
+- For parser changes, cover both Jest-style AST parsing and `node:test` parser paths.
