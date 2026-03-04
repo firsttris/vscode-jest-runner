@@ -1,10 +1,10 @@
-import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { parseCommandAndEnv, stripAnsi } from '../utils/ShellUtils';
-import { logDebug, logInfo } from '../utils/Logger';
+import * as vscode from 'vscode';
 import { extractStructuredMessages } from '../reporting/structuredOutput';
 import { processTestResultsFromParsed } from '../testResultProcessor';
 import type { JestResults } from '../testResultTypes';
+import { logDebug, logInfo } from '../utils/Logger';
+import { parseCommandAndEnv, stripAnsi } from '../utils/ShellUtils';
 
 interface ResolvedSpawnCommand {
 	executable: string;
