@@ -56,31 +56,3 @@ export function parseCommandAndEnv(command: string): {
 
 	return { env, executable, args };
 }
-
-function unquoteShellArg(arg: string): string {
-	if (arg.length < 2) {
-		return arg;
-	}
-
-	const first = arg[0];
-	const last = arg[arg.length - 1];
-	if ((first !== '"' && first !== "'" && first !== '`') || first !== last) {
-		return arg;
-	}
-
-	let inner = arg.substring(1, arg.length - 1);
-
-	if (first === '"') {
-		inner = inner.replace(/""/g, '"');
-	}
-
-	if (first === "'") {
-		inner = inner.replace(/'\\''/g, "'");
-	}
-
-	return inner;
-}
-
-export function normalizeArgsForNonShellSpawn(args: string[]): string[] {
-	return args.map(unquoteShellArg);
-}
