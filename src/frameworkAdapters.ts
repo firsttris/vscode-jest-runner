@@ -233,6 +233,31 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	];
 };
 
+const buildRstestArgs: BuildArgsFn = (
+	filePath,
+	testName,
+	withQuotes,
+	options,
+	configPath,
+	runOptions,
+) => {
+	const q = withQuotes ? quote : (s: string) => s;
+	const args: string[] = [];
+
+	if (configPath) {
+		args.push('--config', q(normalizePath(configPath)));
+	}
+
+	args.push(q(normalizePath(filePath)));
+
+	const resolved = prepareTestName(testName, withQuotes);
+	if (resolved) {
+		args.push('-t', resolved);
+	}
+
+	return [...args, ...mergeOptions(options, runOptions)];
+};
+
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
 	jest: buildJestArgs,
 	vitest: buildVitestArgs,
@@ -240,6 +265,7 @@ const adapters: Record<TestFrameworkName, BuildArgsFn> = {
 	bun: buildBunArgs,
 	deno: buildDenoArgs,
 	playwright: buildPlaywrightArgs,
+	rstest: buildRstestArgs,
 };
 
 export const getFrameworkAdapter = (framework: TestFrameworkName) => ({

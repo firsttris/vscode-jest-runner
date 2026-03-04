@@ -4,7 +4,8 @@ export type TestFrameworkName =
 	| 'node-test'
 	| 'bun'
 	| 'deno'
-	| 'playwright';
+	| 'playwright'
+	| 'rstest';
 
 export interface TestFramework {
 	name: string;
@@ -102,6 +103,18 @@ export const testFrameworks: TestFramework[] = [
 			'playwright.config.cjs',
 		],
 		binaryName: 'playwright',
+	},
+	{
+		name: 'rstest',
+		configFiles: [
+			'rstest.config.mjs',
+			'rstest.config.ts',
+			'rstest.config.js',
+			'rstest.config.cjs',
+			'rstest.config.mts',
+			'rstest.config.cts',
+		],
+		binaryName: 'rstest',
 	},
 ];
 

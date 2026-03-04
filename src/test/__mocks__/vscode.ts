@@ -68,6 +68,9 @@ type JestRunnerConfigProps = {
 	'jestrunner.vitestCommand'?: string;
 	'jestrunner.vitestConfigPath'?: string | Record<string, string>;
 	'jestrunner.vitestRunOptions'?: string[];
+	'jestrunner.rstestCommand'?: string;
+	'jestrunner.rstestRunOptions'?: string[];
+	'jestrunner.rstestDebugOptions'?: any;
 	'jestrunner.nodeTestRunOptions'?: string[];
 	'jestrunner.enableCodeLens'?: boolean;
 	'jestrunner.changeDirectoryToWorkspaceRoot'?: boolean;

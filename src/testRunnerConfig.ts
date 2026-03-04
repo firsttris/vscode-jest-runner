@@ -64,6 +64,20 @@ export class TestRunnerConfig {
 		return 'npx playwright';
 	}
 
+	public get rstestCommand(): string {
+		const customCommand = Settings.getRstestCommand();
+		if (customCommand) {
+			return customCommand;
+		}
+
+		const binaryPath = resolveBinaryPath('@rstest/core', this.cwd, 'rstest');
+		if (binaryPath) {
+			return `node ${quote(binaryPath)}`;
+		}
+
+		return 'npx --no-install rstest';
+	}
+
 	public getTestCommand(filePath?: string): string {
 		if (filePath) {
 			const framework = getTestFrameworkForFile(filePath);
@@ -81,6 +95,9 @@ export class TestRunnerConfig {
 			}
 			if (framework === 'playwright') {
 				return this.playwrightCommand;
+			}
+			if (framework === 'rstest') {
+				return this.rstestCommand;
 			}
 		}
 		return this.jestCommand;
@@ -135,6 +152,9 @@ export class TestRunnerConfig {
 		}
 		if (framework === 'playwright') {
 			return this.buildPlaywrightArgs(filePath, testName, withQuotes, options);
+		}
+		if (framework === 'rstest') {
+			return this.buildRstestArgs(filePath, testName, withQuotes, options);
 		}
 		return this.buildJestArgs(filePath, testName, withQuotes, options);
 	}
@@ -262,6 +282,10 @@ export class TestRunnerConfig {
 		);
 	}
 
+	public getRstestConfigPath(targetPath: string): string {
+		return this.findConfigPath(targetPath, undefined, 'rstest') || '';
+	}
+
 	public get runOptions(): string[] | null {
 		return Settings.getJestRunOptions();
 	}
@@ -296,6 +320,14 @@ export class TestRunnerConfig {
 
 	public get denoDebugOptions(): Partial<vscode.DebugConfiguration> {
 		return Settings.getDenoDebugOptions();
+	}
+
+	public get rstestRunOptions(): string[] | null {
+		return Settings.getRstestRunOptions();
+	}
+
+	public get rstestDebugOptions(): Partial<vscode.DebugConfiguration> {
+		return Settings.getRstestDebugOptions();
 	}
 
 	public get isCodeLensEnabled(): boolean {
@@ -394,6 +426,23 @@ export class TestRunnerConfig {
 			options,
 			'',
 			Settings.getDenoRunOptions(),
+		);
+	}
+
+	public buildRstestArgs(
+		filePath: string,
+		testName: string | undefined,
+		withQuotes: boolean,
+		options: string[] = [],
+	): string[] {
+		const configPath = this.getRstestConfigPath(filePath);
+		return getFrameworkAdapter('rstest').buildArgs(
+			filePath,
+			testName,
+			withQuotes,
+			options,
+			configPath,
+			Settings.getRstestRunOptions(),
 		);
 	}
 

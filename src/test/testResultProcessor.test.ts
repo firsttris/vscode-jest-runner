@@ -1,9 +1,9 @@
-import { processTestResults } from '../testResultProcessor';
 import {
+	convertVitestToJestResults,
 	parseJestOutput,
 	parseVitestOutput,
-	convertVitestToJestResults,
 } from '../parsers/OutputParser';
+import { processTestResults } from '../testResultProcessor';
 import { TestItem, TestRun, Uri } from './__mocks__/vscode';
 
 describe('testResultProcessor', () => {
@@ -377,6 +377,27 @@ ok 1 - node test
 			);
 
 			expect(testRun.passed).toHaveBeenCalled();
+		});
+
+		it('should handle rstest JUnit output with hierarchical testcase names', () => {
+			const testItem = new TestItem(
+				'löscht einzelne Datei erfolgreich',
+				'löscht einzelne Datei erfolgreich',
+				Uri.file('/app/cloud/queues/hard-delete-files.test.ts'),
+			);
+
+			const output = `<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="rstest tests" tests="1" failures="0" errors="0" skipped="0" time="0.2" timestamp="2026-03-02T12:54:43.631Z">
+  <testsuite name="app/cloud/queues/hard-delete-files.test.ts" tests="1" failures="0" errors="0" skipped="0" time="0.2" timestamp="2026-03-02T12:54:43.631Z">
+    <testcase name="hardDeleteFilesQuery &gt; löscht einzelne Datei erfolgreich" classname="app/cloud/queues/hard-delete-files.test.ts" time="0.2"></testcase>
+  </testsuite>
+</testsuites>`;
+
+			const testRun = new TestRun();
+			processTestResults(output, [testItem] as any, testRun as any, 'rstest');
+
+			expect(testRun.passed).toHaveBeenCalledWith(testItem, 200);
+			expect(testRun.skipped).not.toHaveBeenCalled();
 		});
 
 		it('should mark tests as skipped when no assertion results found', () => {

@@ -1,16 +1,16 @@
-import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, isAbsolute, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
+import * as vscode from 'vscode';
+import { type LcovCoverageData, parseLcov } from './parsers/lcov-parser';
+import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
 import {
 	COVERAGE_FINAL_FILE,
 	DEFAULT_COVERAGE_DIR,
+	type TestFrameworkName,
 	testFrameworks,
-	TestFrameworkName,
 } from './testDetection/frameworkDefinitions';
-import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
 import { matchesTestFilePattern } from './testDetection/testFileDetection';
 import { logError, logInfo, logWarning } from './utils/Logger';
-import { parseLcov, type LcovCoverageData } from './parsers/lcov-parser';
 
 export interface CoverageMap {
 	[filePath: string]: FileCoverageData;
@@ -226,8 +226,14 @@ export class CoverageProvider {
 		framework: TestFrameworkName,
 	): void {
 		logInfo(`Coverage file not found at: ${path}`);
+		const coverageHint =
+			framework === 'vitest'
+				? '@vitest/coverage-v8 or @vitest/coverage-istanbul'
+				: framework === 'rstest'
+					? 'rstest coverage'
+					: 'jest';
 		logInfo(
-			`Make sure you have ${framework === 'vitest' ? '@vitest/coverage-v8 or @vitest/coverage-istanbul' : 'jest'} configured with JSON reporter.`,
+			`Make sure you have ${coverageHint} configured with JSON reporter.`,
 		);
 	}
 

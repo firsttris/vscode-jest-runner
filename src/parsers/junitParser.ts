@@ -1,11 +1,30 @@
-import { JestResults, JestFileResult } from '../testResultTypes';
+import type { JestFileResult, JestResults } from '../testResultTypes';
+
+function splitHierarchicalName(name: string): {
+	title: string;
+	ancestorTitles: string[];
+} {
+	const parts = name
+		.split('>')
+		.map((part) => part.trim())
+		.filter(Boolean);
+
+	if (parts.length <= 1) {
+		return { title: name, ancestorTitles: [] };
+	}
+
+	return {
+		title: parts[parts.length - 1],
+		ancestorTitles: parts.slice(0, -1),
+	};
+}
 
 export function parseJUnitXML(xml: string): JestResults | undefined {
 	if (!xml.includes('<testsuite') && !xml.includes('<testsuites')) {
 		return undefined;
 	}
 
-	let startTime = Date.now();
+	const startTime = Date.now();
 	let numTotalTests = 0;
 	let numFailedTests = 0;
 	let numPassedTests = 0;
@@ -25,7 +44,8 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 		const name = attributes['name'];
 		if (!name) continue;
 
-		const file = attributes['file'] || 'unknown';
+		const file = attributes['file'] || attributes['classname'] || 'unknown';
+		const { title, ancestorTitles } = splitHierarchicalName(name);
 
 		let fileResult = resultsByFile.get(file);
 		if (!fileResult) {
@@ -41,9 +61,9 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 			resultsByFile.set(file, fileResult);
 		}
 
-		const duration = parseFloat(attributes['time'] || '0') * 1000;
+		const duration = Number.parseFloat(attributes['time'] || '0') * 1000;
 		let status: 'passed' | 'failed' | 'skipped' | 'pending' | 'todo' = 'passed';
-		let failureMessages: string[] = [];
+		const failureMessages: string[] = [];
 
 		if (content.includes('<failure') || content.includes('<error')) {
 			status = 'failed';
@@ -62,14 +82,14 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 
 		fileResult.assertionResults.push({
 			status,
-			title: name,
+			title,
 			fullName: name,
-			ancestorTitles: [],
+			ancestorTitles,
 			duration,
 			failureMessages,
 			location: attributes['line']
 				? {
-						line: parseInt(attributes['line'], 10),
+						line: Number.parseInt(attributes['line'], 10),
 						column: 0,
 					}
 				: undefined,

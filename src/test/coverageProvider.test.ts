@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as vscode from 'vscode';
 import {
+	type CoverageMap,
 	CoverageProvider,
-	CoverageMap,
-	FileCoverageData,
 	DetailedFileCoverage,
+	type FileCoverageData,
 } from '../coverageProvider';
 import { CancellationToken, CancellationTokenSource } from './__mocks__/vscode';
 
@@ -159,6 +159,74 @@ describe('CoverageProvider', () => {
 				workspaceFolder,
 				'vitest',
 				vitestConfigPath,
+			);
+
+			expect(result).toEqual(coverageData);
+		});
+
+		it('should parse Vitest top-level coverage.reportsDirectory from config', async () => {
+			const vitestConfig = `export default { coverage: { reportsDirectory: './vitest-top-level-coverage' } };`;
+			const coverageData: CoverageMap = {
+				'/workspace/src/index.ts': createMockFileCoverageData(
+					'/workspace/src/index.ts',
+				),
+			};
+
+			const vitestConfigPath = normalizePath('/workspace/vitest.config.ts');
+
+			mockFs.existsSync.mockImplementation(
+				(p) =>
+					typeof p === 'string' &&
+					(p.includes('vitest.config') || p.includes('coverage-final.json')),
+			);
+			mockFs.readFileSync.mockImplementation((p) => {
+				if (typeof p === 'string' && p.includes('vitest.config')) {
+					return vitestConfig;
+				}
+				if (typeof p === 'string' && p.includes('coverage-final.json')) {
+					return JSON.stringify(coverageData);
+				}
+				return '';
+			});
+
+			const result = await provider.readCoverageFromFile(
+				workspaceFolder,
+				'vitest',
+				vitestConfigPath,
+			);
+
+			expect(result).toEqual(coverageData);
+		});
+
+		it('should parse Rstest coverage.reportsDirectory from config', async () => {
+			const rstestConfig = `export default { coverage: { reportsDirectory: './rstest-coverage' } };`;
+			const coverageData: CoverageMap = {
+				'/workspace/src/index.ts': createMockFileCoverageData(
+					'/workspace/src/index.ts',
+				),
+			};
+
+			const rstestConfigPath = normalizePath('/workspace/rstest.config.ts');
+
+			mockFs.existsSync.mockImplementation(
+				(p) =>
+					typeof p === 'string' &&
+					(p.includes('rstest.config') || p.includes('coverage-final.json')),
+			);
+			mockFs.readFileSync.mockImplementation((p) => {
+				if (typeof p === 'string' && p.includes('rstest.config')) {
+					return rstestConfig;
+				}
+				if (typeof p === 'string' && p.includes('coverage-final.json')) {
+					return JSON.stringify(coverageData);
+				}
+				return '';
+			});
+
+			const result = await provider.readCoverageFromFile(
+				workspaceFolder,
+				'rstest',
+				rstestConfigPath,
 			);
 
 			expect(result).toEqual(coverageData);

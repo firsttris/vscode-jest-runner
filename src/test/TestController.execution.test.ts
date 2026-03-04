@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
+import * as testDetection from '../testDetection/testFileDetection';
 import {
-	setupTestController,
-	createMockProcess,
-	TestItem,
 	CancellationToken,
 	CancellationTokenSource,
-	TestControllerSetup,
+	type TestControllerSetup,
+	TestItem,
+	createMockProcess,
+	setupTestController,
 } from './testControllerSetup';
 
 jest.mock('child_process');
@@ -382,6 +383,58 @@ describe('JestTestController - test execution', () => {
 		expect(spawn).toHaveBeenCalled();
 		const spawnArgs = spawn.mock.calls[0][1];
 		expect(spawnArgs).toContain('--coverage');
+	});
+
+	it('should use rstest config path when processing coverage for rstest', async () => {
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		mockTestController.items.add(mockTestItem);
+
+		jest
+			.spyOn(testDetection, 'getTestFrameworkForFile')
+			.mockReturnValue('rstest');
+
+		const mockConfig = (setup.controller as any).jestConfig;
+		const getRstestConfigPathSpy = jest
+			.spyOn(mockConfig, 'getRstestConfigPath')
+			.mockReturnValue('/workspace/rstest.config.ts');
+		const getJestConfigPathSpy = jest.spyOn(mockConfig, 'getJestConfigPath');
+
+		const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
+			.mock.calls[2][2];
+
+		const { spawn } = require('child_process');
+		const mockProcess = createMockProcess();
+		spawn.mockReturnValue(mockProcess);
+
+		const CoverageProvider = require('../coverageProvider').CoverageProvider;
+		const readCoverageSpy = jest
+			.spyOn(CoverageProvider.prototype, 'readCoverageFromFile')
+			.mockResolvedValue(undefined);
+
+		const runPromise = coverageProfile(mockRequest, mockToken);
+
+		setTimeout(() => {
+			mockProcess.stdout.emit(
+				'data',
+				JSON.stringify({
+					success: true,
+					testResults: [{ assertionResults: [] }],
+				}),
+			);
+			mockProcess.emit('close', 0);
+		}, 10);
+
+		await runPromise;
+
+		expect(getRstestConfigPathSpy).toHaveBeenCalledWith('/workspace/test.ts');
+		expect(getJestConfigPathSpy).not.toHaveBeenCalled();
+		expect(readCoverageSpy).toHaveBeenCalledWith(
+			'/workspace',
+			'rstest',
+			'/workspace/rstest.config.ts',
+			'/workspace/test.ts',
+		);
 	});
 
 	it('should handle coverage data processing errors gracefully', async () => {

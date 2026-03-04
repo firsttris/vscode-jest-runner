@@ -100,6 +100,19 @@ export const getPlaywrightDebugOptions =
 	(): Partial<vscode.DebugConfiguration> =>
 		getConfig('jestrunner.playwrightDebugOptions', {});
 
+// === Rstest Settings ===
+
+export const getRstestCommand = (): string | undefined =>
+	getConfig<string>('jestrunner.rstestCommand');
+
+export const getRstestRunOptions = (): string[] | null => {
+	const options = getConfig<string[]>('jestrunner.rstestRunOptions');
+	return options && Array.isArray(options) ? options : null;
+};
+
+export const getRstestDebugOptions = (): Partial<vscode.DebugConfiguration> =>
+	getConfig('jestrunner.rstestDebugOptions', {});
+
 // === General Settings ===
 
 export const getProjectPath = (): string | undefined =>
@@ -135,7 +148,14 @@ export const getDefaultTestPatterns = (): string[] | undefined =>
 // === Computed Settings ===
 
 export const getRunOptionsForFramework = (
-	framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright',
+	framework:
+		| 'jest'
+		| 'vitest'
+		| 'node-test'
+		| 'bun'
+		| 'deno'
+		| 'playwright'
+		| 'rstest',
 ): string[] | null => {
 	switch (framework) {
 		case 'vitest':
@@ -148,13 +168,22 @@ export const getRunOptionsForFramework = (
 			return getDenoRunOptions();
 		case 'playwright':
 			return getPlaywrightRunOptions();
+		case 'rstest':
+			return getRstestRunOptions();
 		default:
 			return getJestRunOptions();
 	}
 };
 
 export const getDebugOptionsForFramework = (
-	framework: 'jest' | 'vitest' | 'node-test' | 'bun' | 'deno' | 'playwright',
+	framework:
+		| 'jest'
+		| 'vitest'
+		| 'node-test'
+		| 'bun'
+		| 'deno'
+		| 'playwright'
+		| 'rstest',
 ): Partial<vscode.DebugConfiguration> => {
 	switch (framework) {
 		case 'vitest':
@@ -167,6 +196,8 @@ export const getDebugOptionsForFramework = (
 			return getDenoDebugOptions();
 		case 'playwright':
 			return getPlaywrightDebugOptions();
+		case 'rstest':
+			return getRstestDebugOptions();
 		default:
 			return getJestDebugOptions();
 	}

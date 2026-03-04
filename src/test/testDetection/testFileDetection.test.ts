@@ -694,6 +694,76 @@ describe('testFileDetection', () => {
 			expect(result).toBe(true);
 		});
 
+		it('should use include patterns from rstest config', () => {
+			const rootPath = '/workspace/project';
+			const filePath = '/workspace/project/tests/e2e/login.e2e.ts';
+			const rstestConfigPath = path.join(rootPath, 'rstest.config.ts');
+
+			(vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+				uri: { fsPath: rootPath },
+			}));
+
+			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+				return (
+					normalizePath(fsPath.toString()) === normalizePath(rstestConfigPath)
+				);
+			});
+
+			mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+				const pathStr = normalizePath(fsPath.toString());
+				if (pathStr === normalizePath(rstestConfigPath)) {
+					return `
+            export default {
+              include: ['tests/e2e/**/*.e2e.ts'],
+              exclude: ['tests/fixtures/**'],
+            };
+          `;
+				}
+				return '';
+			}) as any;
+
+			const result = isTestFile(filePath);
+
+			expect(result).toBe(true);
+			expect(mockedFs.readFileSync).toHaveBeenCalledWith(
+				rstestConfigPath,
+				'utf8',
+			);
+		});
+
+		it('should apply exclude patterns from rstest config', () => {
+			const rootPath = '/workspace/project';
+			const filePath = '/workspace/project/tests/fixtures/helper.ts';
+			const rstestConfigPath = path.join(rootPath, 'rstest.config.ts');
+
+			(vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({
+				uri: { fsPath: rootPath },
+			}));
+
+			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+				return (
+					normalizePath(fsPath.toString()) === normalizePath(rstestConfigPath)
+				);
+			});
+
+			mockedFs.readFileSync = jest.fn((fsPath: fs.PathLike) => {
+				const pathStr = normalizePath(fsPath.toString());
+				if (pathStr === normalizePath(rstestConfigPath)) {
+					return `
+            export default {
+              include: ['tests/**/*.ts'],
+              exclude: ['tests/fixtures/**'],
+            };
+          `;
+				}
+				return '';
+			}) as any;
+
+			const result = isTestFile(filePath);
+
+			expect(result).toBe(false);
+		});
+
 		it('should return false for non-test file', () => {
 			const filePath = '/workspace/project/src/component.ts';
 

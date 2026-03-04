@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-	TestFrameworkName,
+	type TestFrameworkName,
 	testFrameworks,
-	FrameworkResult,
-	SearchOutcome,
+	type FrameworkResult,
+	type SearchOutcome,
 } from './frameworkDefinitions';
 import { cacheManager } from '../cache/CacheManager';
 import {
@@ -69,6 +69,53 @@ export function isDenoTestFile(filePath: string): boolean {
 
 export function isPlaywrightTestFile(filePath: string): boolean {
 	return hasImport(filePath, '@playwright/test');
+}
+
+const rstestImportRegex =
+	/from\s+['"](?:@rstest\/core|rstest)['"]|require\s*\(\s*['"](?:@rstest\/core|rstest)['"]\s*\)/;
+
+export function isRstestTestFile(filePath: string): boolean {
+	const cached = cacheManager.getFileFramework(filePath);
+	if (cached !== undefined) {
+		return cached?.framework === 'rstest';
+	}
+
+	try {
+		if (!existsSync(filePath)) {
+			return false;
+		}
+
+		const content = readFileSync(filePath, 'utf-8');
+		return rstestImportRegex.test(content);
+	} catch (error) {
+		logError(`Error checking for rstest in ${filePath}`, error);
+		return false;
+	}
+}
+
+export const isRstestFile = isRstestTestFile;
+
+function hasFrameworkDependency(
+	packageJson: any,
+	frameworkName: TestFrameworkName,
+): boolean {
+	const sources = [
+		packageJson.dependencies,
+		packageJson.devDependencies,
+		packageJson.peerDependencies,
+	];
+
+	if (frameworkName === 'rstest') {
+		return (
+			sources.some((deps) => deps?.['@rstest/core'] || deps?.rstest) ||
+			!!packageJson.rstest
+		);
+	}
+
+	return (
+		sources.some((deps) => deps?.[frameworkName]) ||
+		!!packageJson[frameworkName]
+	);
 }
 
 function hasImport(filePath: string, moduleName: string): boolean {
@@ -141,12 +188,7 @@ function isFrameworkUsedIn(
 			try {
 				const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
 
-				if (
-					packageJson.dependencies?.[frameworkName] ||
-					packageJson.devDependencies?.[frameworkName] ||
-					packageJson.peerDependencies?.[frameworkName] ||
-					packageJson[frameworkName]
-				) {
+				if (hasFrameworkDependency(packageJson, frameworkName)) {
 					setCache(true);
 					return true;
 				}
@@ -175,6 +217,10 @@ export function isPlaywrightUsedIn(directoryPath: string): boolean {
 	return isFrameworkUsedIn(directoryPath, 'playwright');
 }
 
+export function isRstestUsedIn(directoryPath: string): boolean {
+	return isFrameworkUsedIn(directoryPath, 'rstest');
+}
+
 export function detectTestFramework(
 	directoryPath: string,
 	filePath?: string,
@@ -192,10 +238,14 @@ export function detectTestFramework(
 		if (isPlaywrightTestFile(filePath)) {
 			return 'playwright';
 		}
+		if (isRstestTestFile(filePath)) {
+			return 'rstest';
+		}
 	}
 
 	const jestConfigPath = getConfigPath(directoryPath, 'jest');
 	const vitestConfigPath = getConfigPath(directoryPath, 'vitest');
+	const rstestConfigPath = getConfigPath(directoryPath, 'rstest');
 
 	if (jestConfigPath && vitestConfigPath && filePath) {
 		const frameworkByPattern = detectFrameworkByPatternMatch(
@@ -219,6 +269,10 @@ export function detectTestFramework(
 		return 'jest';
 	}
 
+	if (rstestConfigPath) {
+		return 'rstest';
+	}
+
 	const packageJsonPath = join(directoryPath, 'package.json');
 	if (existsSync(packageJsonPath)) {
 		try {
@@ -226,10 +280,10 @@ export function detectTestFramework(
 
 			for (const framework of testFrameworks) {
 				if (
-					packageJson.dependencies?.[framework.name] ||
-					packageJson.devDependencies?.[framework.name] ||
-					packageJson.peerDependencies?.[framework.name] ||
-					packageJson[framework.name]
+					hasFrameworkDependency(
+						packageJson,
+						framework.name as TestFrameworkName,
+					)
 				) {
 					return framework.name as TestFrameworkName;
 				}
@@ -250,7 +304,7 @@ export function detectTestFramework(
 
 const matchesTarget = (
 	framework: TestFrameworkName,
-	targetFramework?: 'jest' | 'vitest',
+	targetFramework?: TestFrameworkName,
 ): boolean => !targetFramework || framework === targetFramework;
 
 export const getParentDirectories = (
@@ -267,7 +321,7 @@ export const getParentDirectories = (
 const resolveCustomConfigs = (
 	filePath: string,
 	rootPath: string,
-	targetFramework?: 'jest' | 'vitest',
+	targetFramework?: TestFrameworkName,
 ): FrameworkResult | undefined => {
 	const customJestConfig = resolveAndValidateCustomConfig(
 		'jestrunner.configPath',
@@ -313,7 +367,7 @@ const resolveCustomConfigs = (
 const findFrameworkInParentDirs = (
 	filePath: string,
 	rootPath: string,
-	targetFramework?: 'jest' | 'vitest',
+	targetFramework?: TestFrameworkName,
 ): SearchOutcome => {
 	const dirs = getParentDirectories(dirname(filePath), rootPath);
 
@@ -335,19 +389,25 @@ const findFrameworkInParentDirs = (
 	return search(dirs);
 };
 
+const findNearestFrameworkDirectory = (
+	filePath: string,
+	rootPath: string,
+	framework: TestFrameworkName,
+): string | undefined => {
+	const dirs = getParentDirectories(dirname(filePath), rootPath);
+	return dirs.find((dir) => isFrameworkUsedIn(dir, framework));
+};
+
 const detectFrameworkByDependency = (
 	rootPath: string,
-	targetFramework?: 'jest' | 'vitest',
+	targetFramework?: TestFrameworkName,
 ): FrameworkResult | undefined => {
 	const checks: Array<{ framework: TestFrameworkName; isUsed: () => boolean }> =
 		targetFramework
 			? [
 					{
 						framework: targetFramework,
-						isUsed: () =>
-							(targetFramework === 'jest' ? isJestUsedIn : isVitestUsedIn)(
-								rootPath,
-							),
+						isUsed: () => isFrameworkUsedIn(rootPath, targetFramework),
 					},
 				]
 			: [
@@ -359,6 +419,7 @@ const detectFrameworkByDependency = (
 						framework: 'playwright',
 						isUsed: () => isPlaywrightUsedIn(rootPath),
 					},
+					{ framework: 'rstest', isUsed: () => isRstestUsedIn(rootPath) },
 				];
 
 	const found = checks.find((check) => check.isUsed());
@@ -369,7 +430,7 @@ const detectFrameworkByDependency = (
 
 export function findTestFrameworkDirectory(
 	filePath: string,
-	targetFramework?: 'jest' | 'vitest',
+	targetFramework?: TestFrameworkName,
 ): FrameworkResult | undefined {
 	const workspaceFolder = vscode.workspace.getWorkspaceFolder(
 		vscode.Uri.file(filePath),
@@ -398,6 +459,24 @@ export function findTestFrameworkDirectory(
 	if (isPlaywright) {
 		if (isPlaywrightDisabled()) return undefined;
 		return { directory: dirname(filePath), framework: 'playwright' };
+	}
+
+	const isRstest = isRstestTestFile(filePath);
+	if (isRstest) {
+		if (!matchesTarget('rstest', targetFramework)) {
+			return undefined;
+		}
+
+		const nearestRstestDirectory = findNearestFrameworkDirectory(
+			filePath,
+			rootPath,
+			'rstest',
+		);
+
+		return {
+			directory: nearestRstestDirectory ?? dirname(filePath),
+			framework: 'rstest',
+		};
 	}
 
 	const customResult = resolveCustomConfigs(
@@ -452,11 +531,16 @@ export function isDenoUsedIn(directoryPath: string): boolean {
 }
 
 export function findBunDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath, 'bun' as any);
+	const result = findTestFrameworkDirectory(filePath, 'bun');
 	return result?.directory;
 }
 
 export function findDenoDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath, 'deno' as any);
+	const result = findTestFrameworkDirectory(filePath, 'deno');
+	return result?.directory;
+}
+
+export function findRstestDirectory(filePath: string): string | undefined {
+	const result = findTestFrameworkDirectory(filePath, 'rstest');
 	return result?.directory;
 }

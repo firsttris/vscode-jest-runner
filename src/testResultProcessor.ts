@@ -34,7 +34,7 @@ export function processTestResults(
 	} else if (framework === 'vitest') {
 		results = parseVitestOutput(output);
 	} else {
-		if (framework === 'bun' || framework === 'deno') {
+		if (framework === 'bun' || framework === 'deno' || framework === 'rstest') {
 			if (output.includes('<testsuites') || output.includes('<testsuite')) {
 				results = parseJUnitXML(output);
 			}

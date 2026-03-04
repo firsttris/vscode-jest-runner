@@ -26,6 +26,10 @@ export class DebugConfigurationProvider {
 			return this.getNodeTestDebugConfig(config, filePath, testName);
 		}
 
+		if (framework === 'rstest') {
+			return this.getRstestDebugConfig(config, filePath, testName);
+		}
+
 		if (framework === 'vitest') {
 			return this.getVitestDebugConfig(config, filePath, testName);
 		}
@@ -149,6 +153,55 @@ export class DebugConfigurationProvider {
 
 		debugConfig.program = filePath || '';
 		debugConfig.args = [];
+
+		return debugConfig;
+	}
+
+	private getRstestDebugConfig(
+		config: TestRunnerConfig,
+		filePath?: string,
+		testName?: string,
+	): vscode.DebugConfiguration {
+		const debugConfig: vscode.DebugConfiguration = {
+			console: 'integratedTerminal',
+			internalConsoleOptions: 'neverOpen',
+			name: 'Debug Rstest Tests',
+			request: 'launch',
+			type: 'node',
+			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
+			...config.rstestDebugOptions,
+		};
+
+		const customCommand = Settings.getRstestCommand();
+		if (customCommand && typeof customCommand === 'string') {
+			const { env, executable, args } = parseCommandAndEnv(customCommand);
+			if (executable) {
+				debugConfig.program = executable;
+				debugConfig.args = [...args];
+				if (Object.keys(env).length > 0) {
+					debugConfig.env = { ...debugConfig.env, ...env };
+				}
+				if (filePath) {
+					const testArgs = config.buildRstestArgs(filePath, testName, false);
+					debugConfig.args.push(...testArgs);
+				}
+				return debugConfig;
+			}
+		}
+
+		const testArgs = filePath
+			? config.buildRstestArgs(filePath, testName, false)
+			: [];
+		const binaryPath = resolveBinaryPath('@rstest/core', config.cwd, 'rstest');
+
+		if (binaryPath) {
+			debugConfig.program = binaryPath;
+			debugConfig.args = [...testArgs];
+		} else {
+			logWarning('Could not resolve rstest binary path, falling back to npx');
+			debugConfig.runtimeExecutable = 'npx';
+			debugConfig.args = ['--no-install', 'rstest', ...testArgs];
+		}
 
 		return debugConfig;
 	}

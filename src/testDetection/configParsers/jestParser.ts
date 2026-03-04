@@ -1,7 +1,7 @@
 import { dirname, isAbsolute, join, resolve } from 'node:path';
-import { normalizePath } from '../../utils/PathUtils';
-import { TestPatterns, TestFrameworkName } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
+import { normalizePath } from '../../utils/PathUtils';
+import type { TestFrameworkName, TestPatterns } from '../frameworkDefinitions';
 import { parseConfigObject, readConfigFile } from './parseUtils';
 
 const extractTestRegex = (config: any): string[] | undefined => {
@@ -169,6 +169,38 @@ const resolveCoverageDirectory = (
 	return isAbsolute(dir) ? dir : join(baseDir, dir);
 };
 
+const getReportsDirectory = (
+	config: any,
+	framework: TestFrameworkName,
+): string | undefined => {
+	if (framework === 'vitest') {
+		return (
+			config.test?.coverage?.reportsDirectory ??
+			config.coverage?.reportsDirectory
+		);
+	}
+
+	if (framework === 'rstest') {
+		return (
+			config.coverage?.reportsDirectory ??
+			config.test?.coverage?.reportsDirectory
+		);
+	}
+
+	return undefined;
+};
+
+const getCoverageRoot = (
+	config: any,
+	framework: TestFrameworkName,
+): string | undefined => {
+	if (framework === 'vitest' || framework === 'rstest') {
+		return config.root;
+	}
+
+	return config.rootDir;
+};
+
 export function parseCoverageDirectory(
 	configPath: string,
 	framework: TestFrameworkName,
@@ -185,12 +217,11 @@ export function parseCoverageDirectory(
 
 			if (!config) return undefined;
 
-			if (framework === 'vitest') {
-				const testConfig = config.test ?? {};
-				const coverageConfig = testConfig.coverage ?? {};
+			const reportsDirectory = getReportsDirectory(config, framework);
+			if (reportsDirectory) {
 				return resolveCoverageDirectory(
-					coverageConfig.reportsDirectory,
-					config.root,
+					reportsDirectory,
+					getCoverageRoot(config, framework),
 					configDir,
 					configPath,
 				);
@@ -198,7 +229,7 @@ export function parseCoverageDirectory(
 
 			return resolveCoverageDirectory(
 				config.coverageDirectory,
-				config.rootDir,
+				getCoverageRoot(config, framework),
 				configDir,
 				configPath,
 			);
@@ -207,24 +238,19 @@ export function parseCoverageDirectory(
 		const config = parseConfigObject(content);
 		if (!config) return undefined;
 
-		if (framework === 'vitest') {
-			const root = config.root;
-			const testConfig = config.test ?? {};
-			const coverageConfig = testConfig.coverage ?? {};
+		const reportsDirectory = getReportsDirectory(config, framework);
+		if (reportsDirectory) {
 			return resolveCoverageDirectory(
-				coverageConfig.reportsDirectory,
-				root,
+				reportsDirectory,
+				getCoverageRoot(config, framework),
 				configDir,
 				configPath,
 			);
 		}
 
-		const coverageDir = config.coverageDirectory;
-		const rootDir = config.rootDir;
-
 		return resolveCoverageDirectory(
-			coverageDir,
-			rootDir,
+			config.coverageDirectory,
+			getCoverageRoot(config, framework),
 			configDir,
 			configPath,
 		);
