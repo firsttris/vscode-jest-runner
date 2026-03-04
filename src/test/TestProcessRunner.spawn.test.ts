@@ -166,6 +166,7 @@ describe('TestProcessRunner spawn behavior', () => {
 		(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
 
 		const run = {
+			appendOutput: jest.fn(),
 			failed: jest.fn(),
 			skipped: jest.fn(),
 		} as unknown as vscode.TestRun;
