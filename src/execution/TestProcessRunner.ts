@@ -1,13 +1,17 @@
 import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { parseCommandAndEnv, stripAnsi } from '../utils/ShellUtils';
+import {
+	normalizeArgsForNonShellSpawn,
+	parseCommandAndEnv,
+	stripAnsi,
+} from '../utils/ShellUtils';
 import { logDebug, logInfo } from '../utils/Logger';
 import { extractStructuredMessages } from '../reporting/structuredOutput';
 import { processTestResultsFromParsed } from '../testResultProcessor';
 import type { JestResults } from '../testResultTypes';
 
 interface ResolvedSpawnCommand {
-	executable: string;
+	command: string;
 	args: string[];
 	env: NodeJS.ProcessEnv;
 }
@@ -25,8 +29,8 @@ function resolveSpawnCommand(
 	const commandExecutable = executable || command;
 
 	return {
-		executable: commandExecutable,
-		args: [...baseArgs, ...args],
+		command: commandExecutable,
+		args: normalizeArgsForNonShellSpawn([...baseArgs, ...args]),
 		env: {
 			...process.env,
 			FORCE_COLOR: 'true',
@@ -49,7 +53,7 @@ export function executeTestCommandFast(
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
 		const jestProcess = spawn(
-			resolvedCommand.executable,
+			resolvedCommand.command,
 			resolvedCommand.args,
 			{
 				cwd,
@@ -136,7 +140,7 @@ export function executeTestCommand(
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
 		const jestProcess = spawn(
-			resolvedCommand.executable,
+			resolvedCommand.command,
 			resolvedCommand.args,
 			{
 				cwd,

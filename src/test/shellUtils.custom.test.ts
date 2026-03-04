@@ -1,4 +1,7 @@
-import { parseCommandAndEnv } from '../utils/ShellUtils';
+import {
+	normalizeArgsForNonShellSpawn,
+	parseCommandAndEnv,
+} from '../utils/ShellUtils';
 
 describe('ShellUtils', () => {
 	describe('parseCommandAndEnv', () => {
@@ -41,6 +44,30 @@ describe('ShellUtils', () => {
 				executable: 'npm',
 				args: ['test'],
 			});
+		});
+	});
+
+	describe('normalizeArgsForNonShellSpawn', () => {
+		it('should unquote shell-quoted args', () => {
+			const result = normalizeArgsForNonShellSpawn([
+				"'/tmp/my test.vitest.js'",
+				'"name with spaces"',
+			]);
+
+			expect(result).toEqual(['/tmp/my test.vitest.js', 'name with spaces']);
+		});
+
+		it('should normalize Windows-style escaped inner double quotes', () => {
+			const result = normalizeArgsForNonShellSpawn([
+				'"xyz by ""(.*?)"""',
+			]);
+
+			expect(result).toEqual(['xyz by "(.*?)"']);
+		});
+
+		it('should keep non-quoted args unchanged', () => {
+			const result = normalizeArgsForNonShellSpawn(['run', '--config', 'vitest.config.ts']);
+			expect(result).toEqual(['run', '--config', 'vitest.config.ts']);
 		});
 	});
 });
