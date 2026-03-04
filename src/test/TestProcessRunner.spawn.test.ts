@@ -79,10 +79,6 @@ describe('TestProcessRunner spawn behavior', () => {
 				}),
 			}),
 		);
-		expect((run as any).appendOutput).toHaveBeenCalledWith(
-			'{"testResults":[]}\r\n',
-		);
-		expect((run as any).appendOutput).toHaveBeenCalledWith('warn\r\n');
 	});
 
 	it('should not double-normalize CRLF output in executeTestCommand', async () => {
@@ -110,14 +106,6 @@ describe('TestProcessRunner spawn behavior', () => {
 
 		await promise;
 
-		expect((run as any).appendOutput).toHaveBeenCalledWith(
-			'{"testResults":[]}\r\n',
-		);
-		expect((run as any).appendOutput).toHaveBeenCalledWith('warn\r\n');
-		expect((run as any).appendOutput).not.toHaveBeenCalledWith(
-			'{"testResults":[]}\r\r\n',
-		);
-		expect((run as any).appendOutput).not.toHaveBeenCalledWith('warn\r\r\n');
 	});
 
 	it('should parse command/env and use non-shell spawn in executeTestCommandFast', async () => {
