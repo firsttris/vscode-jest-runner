@@ -5,6 +5,7 @@ import {
 	executeTestCommand,
 	executeTestCommandFast,
 } from '../execution/TestProcessRunner';
+import { buildMarker } from '../reporting/structuredOutput';
 import { WorkspaceConfiguration } from './__mocks__/vscode';
 
 jest.mock('node:child_process', () => ({
@@ -159,5 +160,91 @@ describe('TestProcessRunner spawn behavior', () => {
 			}),
 		);
 		expect((run as any).passed).toHaveBeenCalled();
+	});
+
+	it('should unquote shell-style args for non-shell executeTestCommand', async () => {
+		const childProcess = createMockChildProcess();
+		(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+
+		const run = {
+			appendOutput: jest.fn(),
+			failed: jest.fn(),
+			skipped: jest.fn(),
+		} as unknown as vscode.TestRun;
+
+		const promise = executeTestCommand(
+			"node '/workspace/node_modules/vitest/vitest.mjs'",
+			[
+				'run',
+				"'/workspace/vitest/sum.vitest.js'",
+				'--config',
+				"'/workspace/vitest/vitest.config.ts'",
+				'-t',
+				"'adds 1 \\+ 2 to equal 3'",
+			],
+			createToken(),
+			[{ id: 'test-id' } as unknown as vscode.TestItem],
+			run,
+			'/workspace',
+		);
+
+		childProcess.stdout.emit('data', '{"testResults":[]}');
+		childProcess.emit('close', 0);
+
+		await promise;
+
+		expect(spawn).toHaveBeenCalledWith(
+			'node',
+			[
+				'/workspace/node_modules/vitest/vitest.mjs',
+				'run',
+				'/workspace/vitest/sum.vitest.js',
+				'--config',
+				'/workspace/vitest/vitest.config.ts',
+				'-t',
+				'adds 1 \\+ 2 to equal 3',
+			],
+			expect.objectContaining({
+				shell: false,
+			}),
+		);
+	});
+
+	it('should not append structured reporter markers to visible output', async () => {
+		const childProcess = createMockChildProcess();
+		(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+
+		const run = {
+			appendOutput: jest.fn(),
+			failed: jest.fn(),
+			skipped: jest.fn(),
+		} as unknown as vscode.TestRun;
+
+		const sessionId = 'session-123';
+		const marker = buildMarker(sessionId, 'results', {
+			testResults: [{ assertionResults: [] }],
+		} as any);
+
+		const promise = executeTestCommand(
+			'node ./node_modules/jest/bin/jest.js',
+			['--json'],
+			createToken(),
+			[{ id: 'test-id', label: 'test-id' } as unknown as vscode.TestItem],
+			run,
+			'/workspace',
+			undefined,
+			sessionId,
+		);
+
+		childProcess.stdout.emit('data', `before\n${marker}\nafter\n`);
+		childProcess.emit('close', 0);
+
+		await promise;
+
+		const outputCalls = ((run as any).appendOutput as jest.Mock).mock.calls.flat();
+		expect(outputCalls.join('')).toContain('before');
+		expect(outputCalls.join('')).toContain('after');
+		expect(outputCalls.join('')).not.toContain('@@JTR_START::');
+		expect(outputCalls.join('')).not.toContain('@@JTR_END::');
 	});
 });

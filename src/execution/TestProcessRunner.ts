@@ -1,15 +1,37 @@
-import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
-import { parseCommandAndEnv, stripAnsi } from '../utils/ShellUtils';
-import { logDebug, logInfo } from '../utils/Logger';
+import * as vscode from 'vscode';
 import { extractStructuredMessages } from '../reporting/structuredOutput';
 import { processTestResultsFromParsed } from '../testResultProcessor';
 import type { JestResults } from '../testResultTypes';
+import { logDebug, logInfo } from '../utils/Logger';
+import {
+	normalizeArgsForNonShellSpawn,
+	parseCommandAndEnv,
+	stripAnsi,
+} from '../utils/ShellUtils';
 
 interface ResolvedSpawnCommand {
-	executable: string;
+	command: string;
 	args: string[];
 	env: NodeJS.ProcessEnv;
+}
+
+const STRUCTURED_START_MARKER = '@@JTR_START::';
+const STRUCTURED_MESSAGE_REGEX =
+	/@@JTR_START::[\s\S]*?@@JTR_END::[^\r\n]*/g;
+
+function consumeVisibleOutput(buffer: string): { visible: string; remaining: string } {
+	const withoutStructured = buffer.replace(STRUCTURED_MESSAGE_REGEX, '');
+	const lastStart = withoutStructured.lastIndexOf(STRUCTURED_START_MARKER);
+
+	if (lastStart === -1) {
+		return { visible: withoutStructured, remaining: '' };
+	}
+
+	return {
+		visible: withoutStructured.slice(0, lastStart),
+		remaining: withoutStructured.slice(lastStart),
+	};
 }
 
 function resolveSpawnCommand(
@@ -25,8 +47,8 @@ function resolveSpawnCommand(
 	const commandExecutable = executable || command;
 
 	return {
-		executable: commandExecutable,
-		args: [...baseArgs, ...args],
+		command: commandExecutable,
+		args: normalizeArgsForNonShellSpawn([...baseArgs, ...args]),
 		env: {
 			...process.env,
 			FORCE_COLOR: 'true',
@@ -48,15 +70,11 @@ export function executeTestCommandFast(
 	return new Promise((resolve) => {
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
-		const jestProcess = spawn(
-			resolvedCommand.executable,
-			resolvedCommand.args,
-			{
-				cwd,
-				env: resolvedCommand.env,
-				shell: false,
-			},
-		);
+		const jestProcess = spawn(resolvedCommand.command, resolvedCommand.args, {
+			cwd,
+			env: resolvedCommand.env,
+			shell: false,
+		});
 
 		let stdout = '';
 		let stderr = '';
@@ -135,19 +153,16 @@ export function executeTestCommand(
 
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
-		const jestProcess = spawn(
-			resolvedCommand.executable,
-			resolvedCommand.args,
-			{
-				cwd,
-				env: resolvedCommand.env,
-				shell: false,
-			},
-		);
+		const jestProcess = spawn(resolvedCommand.command, resolvedCommand.args, {
+			cwd,
+			env: resolvedCommand.env,
+			shell: false,
+		});
 
 		let stdout = '';
 		let stderr = '';
 		let parseBuffer = '';
+		let visibleOutputBuffer = '';
 		let lastStructured: JestResults | undefined;
 		let killed = false;
 
@@ -179,14 +194,22 @@ export function executeTestCommand(
 				)
 			) {
 				stdout += chunk;
-				run.appendOutput(chunk.replace(/\r?\n/g, '\r\n'));
+				visibleOutputBuffer += chunk;
+				const { visible, remaining: visibleRemaining } = consumeVisibleOutput(
+					visibleOutputBuffer,
+				);
+				visibleOutputBuffer = visibleRemaining;
+				if (visible) {
+					run.appendOutput(visible.replace(/\r?\n/g, '\r\n'));
+				}
 				parseBuffer += chunk;
 
-				const { messages, remaining } = extractStructuredMessages<JestResults>(
+				const { messages, remaining: parseRemaining } =
+					extractStructuredMessages<JestResults>(
 					parseBuffer,
 					sessionId,
 				);
-				parseBuffer = remaining;
+				parseBuffer = parseRemaining;
 
 				messages.forEach((msg) => {
 					if (msg.type === 'results') {
