@@ -26,7 +26,7 @@
 
 ## 🎯 Overview
 
-A **lightweight** VS Code extension for running and debugging Jest, Vitest, Rstest, Node.js (native), Bun, Deno, and Playwright tests directly in your editor. Works **out-of-the-box** with minimal configuration.
+A **lightweight** VS Code extension for running and debugging Jest, Vitest, Rstest, Node.js (native), Bun, Deno and Playwright tests directly in your editor. Works **out-of-the-box** with minimal configuration.
 
 > ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
 
@@ -235,10 +235,11 @@ The extension **automatically reads configuration** from your framework config f
 > If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files.
 
 ### 🏗️ Projects Support
-The extension supports the `projects` configuration for both **Jest** and **Vitest**. This is essential for monorepos or multi-project workspaces.
+The extension supports the `projects` configuration for **Jest**, **Vitest**, and **Rstest**. This is essential for monorepos or multi-project workspaces.
 
 - **Jest**: Supports `projects` array defined as string paths (e.g. `['<rootDir>/packages/*']`) or configuration objects.
 - **Vitest**: Supports `projects` array in your config file or `vitest.workspace.ts` exporting an array of project configurations.
+- **Rstest**: Supports `projects` as an array of config objects or relative config paths.
 
 The extension will recursively parse these project configurations to identify test files across your entire workspace.
 
@@ -297,6 +298,54 @@ The Node.js test runner does not use a specific configuration file in the same w
 
 - By default, the extension looks for files matching: `**/*.{test,spec}.?(c|m)[jt]s?(x)` and `**/__tests__/**/*.?(c|m)[jt]s?(x)`.
 - You can customize this by modifying `jestrunner.defaultTestPatterns` in your VS Code settings.
+
+### Playwright Config Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `testDir` | `string` | Base directory for Playwright test discovery |
+| `testMatch` | `string \| string[] \| RegExp` | File matching pattern(s) for Playwright tests |
+| `testIgnore` | `string \| string[]` | Pattern(s) to exclude from discovery |
+
+**Example Playwright Config:**
+
+```typescript
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './tests',
+  testMatch: ['**/*.spec.ts'],
+  testIgnore: ['**/fixtures/**'],
+});
+```
+
+### Rstest Config Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `root` | `string` | Root directory used to resolve test paths (`__dirname` is supported) |
+| `include` | `string[]` | Glob patterns for test discovery |
+| `exclude` | `string[] \| { patterns: string[] }` | Glob patterns to exclude from discovery |
+| `projects` | `string[] \| object[]` | Multi-project setup with relative config paths or inline project configs |
+
+**Example Rstest Config:**
+
+```typescript
+// rstest.config.ts
+export default {
+  root: '__dirname',
+  include: ['src/**/*.test.ts', 'tests/**/*.spec.ts'],
+  exclude: ['**/fixtures/**', '**/node_modules/**'],
+  projects: [
+    './packages/app/rstest.config.ts',
+    {
+      include: ['packages/lib/**/*.test.ts'],
+      exclude: { patterns: ['**/legacy/**'] },
+    },
+  ],
+};
+```
 
 </details>
 
@@ -419,8 +468,8 @@ it(TestClass.prototype.myFunction.name, () => {
 1. **Clone the repository**
 2. **Install dependencies**
 3. **Start debugging**
-   - Press `F5` or go to **Run** → **Start Debugging**
-   - A new VS Code window will open with the extension loaded
+  - Press `F5` or go to **Run** → **Start Debugging**
+  - A new VS Code window will open with the extension loaded
 
 ---
 
