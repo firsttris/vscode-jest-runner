@@ -156,7 +156,7 @@ export function executeTestCommand(
 				killed = true;
 				jestProcess.kill();
 				tests.forEach((test) =>
-					run.failed(test, new vscode.TestMessage(errorMsg)),
+					void run.failed(test, new vscode.TestMessage(errorMsg)),
 				);
 				resolve(null);
 				return true;
@@ -175,7 +175,6 @@ export function executeTestCommand(
 				)
 			) {
 				stdout += chunk;
-				run.appendOutput(chunk.replace(/\r?\n/g, '\r\n'));
 				parseBuffer += chunk;
 
 				const { messages, remaining } = extractStructuredMessages<JestResults>(
@@ -187,7 +186,7 @@ export function executeTestCommand(
 				messages.forEach((msg) => {
 					if (msg.type === 'results') {
 						lastStructured = msg.payload;
-						processTestResultsFromParsed(msg.payload as any, tests, run);
+						processTestResultsFromParsed(msg.payload, tests, run);
 					}
 				});
 			}
@@ -204,13 +203,12 @@ export function executeTestCommand(
 				)
 			) {
 				stderr += chunk;
-				run.appendOutput(chunk.replace(/\r?\n/g, '\r\n'));
 			}
 		});
 
 		jestProcess.on('error', (error) => {
 			tests.forEach((test) =>
-				run.failed(
+				void run.failed(
 					test,
 					new vscode.TestMessage(
 						`Failed to execute test runner: ${error.message}`,
@@ -224,12 +222,12 @@ export function executeTestCommand(
 			cancellationListener.dispose();
 
 			if (token.isCancellationRequested) {
-				tests.forEach((test) => run.skipped(test));
+				tests.forEach((test) => void run.skipped(test));
 				resolve(null);
 				return;
 			}
 
-			const combinedOutput = stdout + (stderr ? '\n' + stderr : '');
+			const combinedOutput = `${stdout}${stderr ? `\n${stderr}` : ''}`;
 
 			if (lastStructured) {
 				logDebug('Parsed structured test results from reporters');
@@ -260,13 +258,13 @@ export function executeTestCommand(
 				} else {
 					logInfo(`Runner stderr: ${stderr}`);
 					tests.forEach((test) =>
-						run.failed(test, new vscode.TestMessage(stderr)),
+						void run.failed(test, new vscode.TestMessage(stderr)),
 					);
 					resolve(null);
 				}
 			} else {
 				tests.forEach((test) =>
-					run.failed(
+					void run.failed(
 						test,
 						new vscode.TestMessage('No output from test runner'),
 					),
@@ -277,7 +275,7 @@ export function executeTestCommand(
 
 		const cancellationListener = token.onCancellationRequested(() => {
 			jestProcess.kill();
-			tests.forEach((test) => run.skipped(test));
+			tests.forEach((test) => void run.skipped(test));
 			resolve(null);
 		});
 	});
