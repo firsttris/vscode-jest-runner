@@ -85,6 +85,41 @@ describe('TestProcessRunner spawn behavior', () => {
 		expect((run as any).appendOutput).toHaveBeenCalledWith('warn\r\n');
 	});
 
+	it('should not double-normalize CRLF output in executeTestCommand', async () => {
+		const childProcess = createMockChildProcess();
+		(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+
+		const run = {
+			appendOutput: jest.fn(),
+			failed: jest.fn(),
+			skipped: jest.fn(),
+		} as unknown as vscode.TestRun;
+
+		const promise = executeTestCommand(
+			'npx --no-install jest',
+			['--json'],
+			createToken(),
+			[{ id: 'test-id' } as unknown as vscode.TestItem],
+			run,
+			'/workspace',
+		);
+
+		childProcess.stdout.emit('data', '{"testResults":[]}\r\n');
+		childProcess.stderr.emit('data', 'warn\r\n');
+		childProcess.emit('close', 0);
+
+		await promise;
+
+		expect((run as any).appendOutput).toHaveBeenCalledWith(
+			'{"testResults":[]}\r\n',
+		);
+		expect((run as any).appendOutput).toHaveBeenCalledWith('warn\r\n');
+		expect((run as any).appendOutput).not.toHaveBeenCalledWith(
+			'{"testResults":[]}\r\r\n',
+		);
+		expect((run as any).appendOutput).not.toHaveBeenCalledWith('warn\r\r\n');
+	});
+
 	it('should parse command/env and use non-shell spawn in executeTestCommandFast', async () => {
 		const childProcess = createMockChildProcess();
 		(spawn as unknown as jest.Mock).mockReturnValue(childProcess);

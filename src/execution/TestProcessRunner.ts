@@ -179,7 +179,7 @@ export function executeTestCommand(
 				)
 			) {
 				stdout += chunk;
-				run.appendOutput(chunk.replace(/\n/g, '\r\n'));
+				run.appendOutput(chunk.replace(/\r?\n/g, '\r\n'));
 				parseBuffer += chunk;
 
 				const { messages, remaining } = extractStructuredMessages<JestResults>(
@@ -208,7 +208,7 @@ export function executeTestCommand(
 				)
 			) {
 				stderr += chunk;
-				run.appendOutput(chunk.replace(/\n/g, '\r\n'));
+				run.appendOutput(chunk.replace(/\r?\n/g, '\r\n'));
 			}
 		});
 
