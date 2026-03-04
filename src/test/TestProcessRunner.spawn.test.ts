@@ -1,6 +1,6 @@
+import { spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import * as vscode from 'vscode';
-import { spawn } from 'node:child_process';
 import {
 	executeTestCommand,
 	executeTestCommandFast,

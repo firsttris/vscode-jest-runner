@@ -58,15 +58,17 @@ describe('ShellUtils', () => {
 		});
 
 		it('should normalize Windows-style escaped inner double quotes', () => {
-			const result = normalizeArgsForNonShellSpawn([
-				'"xyz by ""(.*?)"""',
-			]);
+			const result = normalizeArgsForNonShellSpawn(['"xyz by ""(.*?)"""']);
 
 			expect(result).toEqual(['xyz by "(.*?)"']);
 		});
 
 		it('should keep non-quoted args unchanged', () => {
-			const result = normalizeArgsForNonShellSpawn(['run', '--config', 'vitest.config.ts']);
+			const result = normalizeArgsForNonShellSpawn([
+				'run',
+				'--config',
+				'vitest.config.ts',
+			]);
 			expect(result).toEqual(['run', '--config', 'vitest.config.ts']);
 		});
 	});

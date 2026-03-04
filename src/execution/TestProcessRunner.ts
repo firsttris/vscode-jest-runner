@@ -1,14 +1,14 @@
-import * as vscode from 'vscode';
 import { spawn } from 'node:child_process';
+import * as vscode from 'vscode';
+import { extractStructuredMessages } from '../reporting/structuredOutput';
+import { processTestResultsFromParsed } from '../testResultProcessor';
+import type { JestResults } from '../testResultTypes';
+import { logDebug, logInfo } from '../utils/Logger';
 import {
 	normalizeArgsForNonShellSpawn,
 	parseCommandAndEnv,
 	stripAnsi,
 } from '../utils/ShellUtils';
-import { logDebug, logInfo } from '../utils/Logger';
-import { extractStructuredMessages } from '../reporting/structuredOutput';
-import { processTestResultsFromParsed } from '../testResultProcessor';
-import type { JestResults } from '../testResultTypes';
 
 interface ResolvedSpawnCommand {
 	command: string;
@@ -52,15 +52,11 @@ export function executeTestCommandFast(
 	return new Promise((resolve) => {
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
-		const jestProcess = spawn(
-			resolvedCommand.command,
-			resolvedCommand.args,
-			{
-				cwd,
-				env: resolvedCommand.env,
-				shell: false,
-			},
-		);
+		const jestProcess = spawn(resolvedCommand.command, resolvedCommand.args, {
+			cwd,
+			env: resolvedCommand.env,
+			shell: false,
+		});
 
 		let stdout = '';
 		let stderr = '';
@@ -139,15 +135,11 @@ export function executeTestCommand(
 
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
-		const jestProcess = spawn(
-			resolvedCommand.command,
-			resolvedCommand.args,
-			{
-				cwd,
-				env: resolvedCommand.env,
-				shell: false,
-			},
-		);
+		const jestProcess = spawn(resolvedCommand.command, resolvedCommand.args, {
+			cwd,
+			env: resolvedCommand.env,
+			shell: false,
+		});
 
 		let stdout = '';
 		let stderr = '';
