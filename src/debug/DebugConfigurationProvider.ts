@@ -245,11 +245,15 @@ export class DebugConfigurationProvider {
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = ['run', ...testArgs];
+			debugConfig.args = testArgs.length > 0 ? [...testArgs] : ['run'];
 		} else {
 			logWarning('Could not resolve vitest binary path, falling back to npx');
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = ['--no-install', 'vitest', 'run', ...testArgs];
+			debugConfig.args = [
+				'--no-install',
+				'vitest',
+				...(testArgs.length > 0 ? testArgs : ['run']),
+			];
 		}
 
 		return debugConfig;
@@ -368,11 +372,15 @@ export class DebugConfigurationProvider {
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = jestArgs;
+			debugConfig.args = testArgs.length > 0 ? [...testArgs] : ['--runInBand'];
 		} else {
 			logWarning('Could not resolve jest binary path, falling back to npx');
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = ['--no-install', 'jest', ...jestArgs];
+			debugConfig.args = [
+				'--no-install',
+				'jest',
+				...(testArgs.length > 0 ? testArgs : ['--runInBand']),
+			];
 		}
 
 		return debugConfig;

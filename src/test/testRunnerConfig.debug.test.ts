@@ -334,14 +334,10 @@ describe('TestRunnerConfig', () => {
 				'my test',
 			);
 
-			const expectedConfigPath = normalizePath(
-				path.resolve('/home/user/project', 'jest.config.ts'),
-			);
-
 			expect(config.args).toEqual([
 				'/home/user/project/src/test\\.spec\\.ts',
 				'-c',
-				expectedConfigPath,
+				'/home/user/project/jest.config.ts',
 				'-t',
 				'my test',
 				'--runInBand',
@@ -382,6 +378,25 @@ describe('TestRunnerConfig', () => {
 			expect(config.name).toBe('Debug Vitest Tests');
 			expect(config.args).toContain('vitest');
 			expect(config.args).toContain('run');
+		});
+
+		it('should not duplicate vitest run subcommand for file debugging', () => {
+			jest
+				.spyOn(fs, 'existsSync')
+				.mockImplementation((filePath: fs.PathLike) => {
+					return String(filePath).includes('vitest.config');
+				});
+
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.args.filter((arg) => arg === 'run')).toHaveLength(1);
 		});
 
 		it('should return jest debug configuration for jest files', () => {
