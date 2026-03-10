@@ -1,10 +1,10 @@
-import * as vscode from 'vscode';
-import type { TestRunnerConfig } from '../testRunnerConfig';
-import { resolveBinaryPath } from '../utils/ResolverUtils';
-import { parseShellCommand, parseCommandAndEnv } from '../utils/ShellUtils';
-import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
-import { logWarning } from '../utils/Logger';
+import type * as vscode from 'vscode';
 import * as Settings from '../config/Settings';
+import type { TestRunnerConfig } from '../testRunnerConfig';
+import { logWarning } from '../utils/Logger';
+import { resolveBinaryPath } from '../utils/ResolverUtils';
+import { parseCommandAndEnv, parseShellCommand } from '../utils/ShellUtils';
+import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
 
 export class DebugConfigurationProvider {
 	public getDebugConfiguration(
@@ -362,14 +362,17 @@ export class DebugConfigurationProvider {
 			? config.buildJestArgs(filePath, testName, false)
 			: [];
 		const binaryPath = resolveBinaryPath('jest', config.cwd);
+		const jestArgs = testArgs.includes('--runInBand')
+			? testArgs
+			: ['--runInBand', ...testArgs];
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = ['--runInBand', ...testArgs];
+			debugConfig.args = jestArgs;
 		} else {
 			logWarning('Could not resolve jest binary path, falling back to npx');
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = ['--no-install', 'jest', '--runInBand', ...testArgs];
+			debugConfig.args = ['--no-install', 'jest', ...jestArgs];
 		}
 
 		return debugConfig;
