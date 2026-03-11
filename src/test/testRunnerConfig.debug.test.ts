@@ -350,6 +350,9 @@ describe('TestRunnerConfig', () => {
 					'jestrunner.configPath': 'jest.config.ts',
 				}),
 			);
+			const expectedConfigPath = normalizePath(
+				path.resolve('/home/user/project', 'jest.config.ts'),
+			);
 
 			jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
 				const pathStr = normalizePath(String(checkPath));
@@ -367,7 +370,7 @@ describe('TestRunnerConfig', () => {
 			expect(config.args).toEqual([
 				'/home/user/project/src/test\\.spec\\.ts',
 				'-c',
-				'/home/user/project/jest.config.ts',
+				expectedConfigPath,
 				'-t',
 				'my test',
 				'--runInBand',
