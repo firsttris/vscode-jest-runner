@@ -432,6 +432,55 @@ describe('TestRunnerConfig', () => {
 			expect(config.args.filter((arg) => arg === 'run')).toHaveLength(1);
 		});
 
+		it('should keep run for vitest file debug without explicit runOptions', () => {
+			const mockRequire = {
+				resolve: jest.fn().mockImplementation((pkg: string) => {
+					if (pkg === 'vitest/package.json') {
+						return '/workspace/node_modules/vitest/package.json';
+					}
+					throw new Error(`Cannot find module '${pkg}'`);
+				}),
+			};
+			jest
+				.spyOn(moduleLib, 'createRequire')
+				.mockReturnValue(mockRequire as any);
+			jest.spyOn(fs, 'readFileSync').mockImplementation((filePath: any) => {
+				if (String(filePath).endsWith('vitest/package.json')) {
+					return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
+				}
+				return '{}';
+			});
+			jest
+				.spyOn(fs, 'existsSync')
+				.mockImplementation((filePath: fs.PathLike) => {
+					const pathStr = normalizePath(String(filePath));
+					if (pathStr.includes('.yarn/releases')) {
+						return false;
+					}
+					return (
+						pathStr.includes('vitest.config') ||
+						pathStr.includes('node_modules/vitest/vitest.mjs')
+					);
+				});
+
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.args).toContain('run');
+			expect(config.args.filter((arg) => arg === 'run')).toHaveLength(1);
+			const expectedFilePath = normalizePath(
+				path.resolve('/workspace/test.spec.ts'),
+			);
+
+			expect(config.args).toEqual(['run', expectedFilePath, '-t', 'Test 1']);
+		});
+
 		it('should return jest debug configuration for jest files', () => {
 			jest
 				.spyOn(fs, 'existsSync')
