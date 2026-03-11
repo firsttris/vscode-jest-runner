@@ -313,6 +313,36 @@ describe('TestRunnerConfig', () => {
 			expect(config.args).toEqual(['./custom-jest.js']);
 		});
 
+		it('should keep --runInBand for jest file debug without explicit runOptions', () => {
+			jest
+				.spyOn(vscode.workspace, 'getConfiguration')
+				.mockReturnValue(new WorkspaceConfiguration({}));
+
+			jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+				const pathStr = normalizePath(String(checkPath));
+				if (pathStr.includes('.yarn/releases')) {
+					return false;
+				}
+				return pathStr.includes('jest/bin/jest.js');
+			});
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.args).toContain('--runInBand');
+			expect(config.args.filter((arg) => arg === '--runInBand')).toHaveLength(
+				1,
+			);
+			expect(config.args).toEqual([
+				'--runInBand',
+				'/home/user/project/src/test\\.spec\\.ts',
+				'-t',
+				'my test',
+			]);
+		});
+
 		it('should not duplicate jest run options or config args for file debugging', () => {
 			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 				new WorkspaceConfiguration({
