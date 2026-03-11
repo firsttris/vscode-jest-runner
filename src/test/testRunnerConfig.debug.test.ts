@@ -343,6 +343,30 @@ describe('TestRunnerConfig', () => {
 				'--runInBand',
 			]);
 		});
+
+		it('should include runInBand exactly once for jest file debugging when absent from runOptions', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.runOptions': ['--coverage'],
+					'jestrunner.configPath': 'jest.config.ts',
+				}),
+			);
+
+			jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+				const pathStr = normalizePath(String(checkPath));
+				if (pathStr.includes('.yarn/releases')) {
+					return false;
+				}
+				return pathStr.includes('jest/bin/jest.js');
+			});
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.args.filter((arg) => arg === '--runInBand')).toHaveLength(1);
+		});
 	});
 
 	describe('getDebugConfiguration with Vitest', () => {

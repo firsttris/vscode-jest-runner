@@ -372,15 +372,11 @@ export class DebugConfigurationProvider {
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = testArgs.length > 0 ? [...testArgs] : ['--runInBand'];
+			debugConfig.args = jestArgs;
 		} else {
 			logWarning('Could not resolve jest binary path, falling back to npx');
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = [
-				'--no-install',
-				'jest',
-				...(testArgs.length > 0 ? testArgs : ['--runInBand']),
-			];
+			debugConfig.args = ['--no-install', 'jest', ...jestArgs];
 		}
 
 		return debugConfig;
