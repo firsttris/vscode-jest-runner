@@ -241,19 +241,16 @@ export class DebugConfigurationProvider {
 		const testArgs = filePath
 			? config.buildVitestArgs(filePath, testName, false)
 			: [];
+		const vitestArgs = testArgs.length > 0 ? testArgs : ['run'];
 		const binaryPath = resolveBinaryPath('vitest', config.cwd);
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = testArgs.length > 0 ? [...testArgs] : ['run'];
+			debugConfig.args = [...vitestArgs];
 		} else {
 			logWarning('Could not resolve vitest binary path, falling back to npx');
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = [
-				'--no-install',
-				'vitest',
-				...(testArgs.length > 0 ? testArgs : ['run']),
-			];
+			debugConfig.args = ['--no-install', 'vitest', ...vitestArgs];
 		}
 
 		return debugConfig;
