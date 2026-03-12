@@ -329,6 +329,37 @@ describe('TestRunnerConfig', () => {
 			expect(args[0]).toBe('run');
 		});
 
+		it('should omit run subcommand for vitest when watch is requested', () => {
+			const args = jestRunnerConfig.buildVitestArgs(
+				'/workspace/test.spec.ts',
+				undefined,
+				true,
+				['--watch'],
+			);
+
+			expect(args[0]).not.toBe('run');
+			expect(args).toContain('--watch');
+		});
+
+		it('should ignore vitest run option in watch mode', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestRunOptions': ['run', '--reporter=verbose'],
+				}),
+			);
+
+			const args = jestRunnerConfig.buildVitestArgs(
+				'/workspace/test.spec.ts',
+				undefined,
+				true,
+				['--watch'],
+			);
+
+			expect(args[0]).not.toBe('run');
+			expect(args).toContain('--watch');
+			expect(args).not.toContain('run');
+		});
+
 		it('should include file path without regex escaping (vitest uses glob patterns)', () => {
 			const args = jestRunnerConfig.buildVitestArgs(
 				'/workspace/test.spec.ts',
@@ -429,6 +460,24 @@ describe('TestRunnerConfig', () => {
 			);
 
 			expect(args[0]).toBe('run');
+		});
+
+		it('should omit run for vitest framework when watch is requested', () => {
+			jest
+				.spyOn(fs, 'existsSync')
+				.mockImplementation((filePath: fs.PathLike) => {
+					return String(filePath).includes('vitest.config');
+				});
+
+			const args = jestRunnerConfig.buildTestArgs(
+				'/workspace/test.spec.ts',
+				'my test',
+				true,
+				['--watch'],
+			);
+
+			expect(args[0]).not.toBe('run');
+			expect(args).toContain('--watch');
 		});
 
 		it('should use buildJestArgs for jest framework', () => {

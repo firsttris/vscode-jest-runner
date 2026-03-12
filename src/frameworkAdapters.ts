@@ -40,9 +40,19 @@ const mergeOptions = (
 	runOptions: string[] | null,
 ): string[] => {
 	const set = new Set(options);
-	runOptions?.forEach((opt) => set.add(opt));
+	runOptions?.forEach((opt) => {
+		set.add(opt);
+	});
 	return [...set];
 };
+
+const isVitestWatchOption = (option: string): boolean =>
+	option === '--watch' || option === '-w' || option.startsWith('--watch=');
+
+const normalizeVitestOptions = (
+	options: string[],
+	hasWatchMode: boolean,
+): string[] => (hasWatchMode ? options.filter((option) => option !== 'run') : options);
 
 const buildJestArgs: BuildArgsFn = (
 	filePath,
@@ -76,7 +86,18 @@ const buildVitestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['run', q(normalizePath(resolve(filePath)))];
+	const hasWatchMode =
+		options.some(isVitestWatchOption) ||
+		(runOptions?.some(isVitestWatchOption) ?? false);
+	const allOptions = mergeOptions(
+		normalizeVitestOptions(options, hasWatchMode),
+		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
+	);
+	const args = [q(normalizePath(resolve(filePath)))];
+
+	if (!hasWatchMode) {
+		args.unshift('run');
+	}
 
 	if (configPath) {
 		args.push('--config', q(normalizePath(configPath)));
@@ -87,7 +108,7 @@ const buildVitestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [...args, ...mergeOptions(options, runOptions)];
+	return [...args, ...allOptions];
 };
 
 const buildNodeTestArgs: BuildArgsFn = (
