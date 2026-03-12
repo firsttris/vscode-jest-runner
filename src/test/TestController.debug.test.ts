@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
+import * as testDetection from '../testDetection/testFileDetection';
+import { WorkspaceConfiguration } from './__mocks__/vscode';
 import {
-	setupTestController,
-	TestItem,
 	CancellationToken,
 	CancellationTokenSource,
-	TestControllerSetup,
+	setupTestController,
+	type TestControllerSetup,
+	TestItem,
 } from './testControllerSetup';
-import { WorkspaceConfiguration } from './__mocks__/vscode';
-import * as testDetection from '../testDetection/testFileDetection';
 
 jest.mock('child_process');
 
@@ -118,7 +118,7 @@ describe('JestTestController - debug handler', () => {
 		expect(vscode.debug.startDebugging).not.toHaveBeenCalled();
 	});
 
-	it('should use buildTestArgs for Vitest files', async () => {
+	it('should use framework debug configuration for Vitest files', async () => {
 		const mockTestController = (vscode.tests.createTestController as jest.Mock)
 			.mock.results[0].value;
 		const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -132,27 +132,28 @@ describe('JestTestController - debug handler', () => {
 		const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
 
 		const mockConfig = (setup.controller as any).jestConfig;
-		jest.spyOn(mockConfig, 'getTestFramework').mockReturnValue('vitest');
-		jest
-			.spyOn(mockConfig, 'buildTestArgs')
-			.mockReturnValue([
+		jest.spyOn(mockConfig, 'getDebugConfiguration').mockReturnValue({
+			type: 'node',
+			request: 'launch',
+			name: 'Debug Vitest Tests',
+			args: [
 				'run',
 				'/workspace/test.spec.ts',
 				'-c',
 				'/workspace/vitest.config.ts',
-			]);
+			],
+		});
 
 		await debugProfile(vitestRequest, mockToken);
 
-		expect(mockConfig.buildTestArgs).toHaveBeenCalledWith(
+		expect(mockConfig.getDebugConfiguration).toHaveBeenCalledWith(
 			'/workspace/test.spec.ts',
 			'Test 1',
-			false,
 		);
 		expect(vscode.debug.startDebugging).toHaveBeenCalled();
 	});
 
-	it('should pass filePath to getDebugConfiguration for framework detection', async () => {
+	it('should pass filePath and testName to getDebugConfiguration', async () => {
 		const mockTestController = (vscode.tests.createTestController as jest.Mock)
 			.mock.results[0].value;
 		const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -177,10 +178,11 @@ describe('JestTestController - debug handler', () => {
 
 		expect(mockConfig.getDebugConfiguration).toHaveBeenCalledWith(
 			'/workspace/test.spec.ts',
+			'Test 1',
 		);
 	});
 
-	it('should include Vitest config in debug args', async () => {
+	it('should use debug configuration args without appending buildTestArgs again', async () => {
 		const mockTestController = (vscode.tests.createTestController as jest.Mock)
 			.mock.results[0].value;
 		const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
@@ -194,22 +196,21 @@ describe('JestTestController - debug handler', () => {
 		const vitestRequest = { include: [vitestTestItem], exclude: [] } as any;
 
 		const mockConfig = (setup.controller as any).jestConfig;
-		jest.spyOn(mockConfig, 'getTestFramework').mockReturnValue('vitest');
-		jest
-			.spyOn(mockConfig, 'buildTestArgs')
-			.mockReturnValue([
+		const buildTestArgsSpy = jest.spyOn(mockConfig, 'buildTestArgs');
+		jest.spyOn(mockConfig, 'getDebugConfiguration').mockReturnValue({
+			type: 'node',
+			request: 'launch',
+			name: 'Debug Vitest Tests',
+			args: [
+				'--no-install',
+				'vitest',
 				'run',
 				'/workspace/test.spec.ts',
 				'-c',
 				'/workspace/vitest.config.ts',
 				'-t',
 				'Test 1',
-			]);
-		jest.spyOn(mockConfig, 'getDebugConfiguration').mockReturnValue({
-			type: 'node',
-			request: 'launch',
-			name: 'Debug Vitest Tests',
-			args: ['--no-install', 'vitest'],
+			],
 		});
 
 		await debugProfile(vitestRequest, mockToken);
@@ -219,6 +220,8 @@ describe('JestTestController - debug handler', () => {
 		];
 		const config = debugCall[1];
 
+		expect(buildTestArgsSpy).not.toHaveBeenCalled();
+		expect(config.args.filter((arg: string) => arg === 'run')).toHaveLength(1);
 		expect(config.args).toContain('-c');
 		expect(config.args).toContain('/workspace/vitest.config.ts');
 	});

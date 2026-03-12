@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { TestRunnerConfig } from '../testRunnerConfig';
-import { pushMany } from '../util';
+import type { TestRunnerConfig } from '../testRunnerConfig';
 import { toTestItemNamePattern } from '../utils/TestNameUtils';
 
 export class DebugHandler {
@@ -16,9 +15,13 @@ export class DebugHandler {
 		const queue: vscode.TestItem[] = [];
 
 		if (request.include) {
-			request.include.forEach((test) => queue.push(test));
+			request.include.forEach((test) => {
+				queue.push(test);
+			});
 		} else {
-			this.testController.items.forEach((test) => queue.push(test));
+			this.testController.items.forEach((test) => {
+				queue.push(test);
+			});
 		}
 
 		for (const test of queue) {
@@ -52,13 +55,10 @@ export class DebugHandler {
 			return;
 		}
 
-		const debugConfig = this.testRunnerConfig.getDebugConfiguration(filePath);
-		const standardArgs = this.testRunnerConfig.buildTestArgs(
+		const debugConfig = this.testRunnerConfig.getDebugConfiguration(
 			filePath,
 			testName,
-			false,
 		);
-		pushMany(debugConfig.args, standardArgs);
 		return vscode.debug.startDebugging(workspaceFolder, debugConfig);
 	}
 }

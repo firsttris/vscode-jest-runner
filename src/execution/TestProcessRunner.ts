@@ -155,8 +155,8 @@ export function executeTestCommand(
 			if (buffer.length + chunk.length > maxBufferSize) {
 				killed = true;
 				jestProcess.kill();
-				tests.forEach((test) =>
-					void run.failed(test, new vscode.TestMessage(errorMsg)),
+				tests.forEach(
+					(test) => void run.failed(test, new vscode.TestMessage(errorMsg)),
 				);
 				resolve(null);
 				return true;
@@ -207,13 +207,14 @@ export function executeTestCommand(
 		});
 
 		jestProcess.on('error', (error) => {
-			tests.forEach((test) =>
-				void run.failed(
-					test,
-					new vscode.TestMessage(
-						`Failed to execute test runner: ${error.message}`,
+			tests.forEach(
+				(test) =>
+					void run.failed(
+						test,
+						new vscode.TestMessage(
+							`Failed to execute test runner: ${error.message}`,
+						),
 					),
-				),
 			);
 			resolve(null);
 		});
@@ -257,17 +258,18 @@ export function executeTestCommand(
 					});
 				} else {
 					logInfo(`Runner stderr: ${stderr}`);
-					tests.forEach((test) =>
-						void run.failed(test, new vscode.TestMessage(stderr)),
+					tests.forEach(
+						(test) => void run.failed(test, new vscode.TestMessage(stderr)),
 					);
 					resolve(null);
 				}
 			} else {
-				tests.forEach((test) =>
-					void run.failed(
-						test,
-						new vscode.TestMessage('No output from test runner'),
-					),
+				tests.forEach(
+					(test) =>
+						void run.failed(
+							test,
+							new vscode.TestMessage('No output from test runner'),
+						),
 				);
 				resolve(null);
 			}

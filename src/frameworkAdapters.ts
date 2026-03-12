@@ -1,16 +1,17 @@
-import { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { getReporterPaths } from './reporters/reporterPaths';
+import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import {
 	escapeRegExpForPath,
-	normalizePath,
 	isWindows,
+	normalizePath,
 } from './utils/PathUtils';
 import {
 	escapeSingleQuotes,
 	quote,
 	resolveTestNameStringInterpolation,
 } from './utils/TestNameUtils';
-import { getReporterPaths } from './reporters/reporterPaths';
-import { pathToFileURL } from 'node:url';
 
 type BuildArgsFn = (
 	filePath: string,
@@ -75,7 +76,7 @@ const buildVitestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['run', q(normalizePath(filePath))];
+	const args = ['run', q(normalizePath(resolve(filePath)))];
 
 	if (configPath) {
 		args.push('--config', q(normalizePath(configPath)));

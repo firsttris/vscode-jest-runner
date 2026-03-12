@@ -312,6 +312,70 @@ describe('TestRunnerConfig', () => {
 			expect(config.program).toBe('node');
 			expect(config.args).toEqual(['./custom-jest.js']);
 		});
+
+		it('should keep --runInBand for jest file debug without explicit runOptions', () => {
+			jest
+				.spyOn(vscode.workspace, 'getConfiguration')
+				.mockReturnValue(new WorkspaceConfiguration({}));
+
+			jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+				const pathStr = normalizePath(String(checkPath));
+				if (pathStr.includes('.yarn/releases')) {
+					return false;
+				}
+				return pathStr.includes('jest/bin/jest.js');
+			});
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.args).toContain('--runInBand');
+			expect(config.args.filter((arg) => arg === '--runInBand')).toHaveLength(
+				1,
+			);
+			expect(config.args).toEqual([
+				'--runInBand',
+				'/home/user/project/src/test\\.spec\\.ts',
+				'-t',
+				'my test',
+			]);
+		});
+
+		it('should not duplicate jest run options or config args for file debugging', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.runOptions': ['--runInBand'],
+					'jestrunner.configPath': 'jest.config.ts',
+				}),
+			);
+			const expectedConfigPath = normalizePath(
+				path.resolve('/home/user/project', 'jest.config.ts'),
+			);
+
+			jest.spyOn(fs, 'existsSync').mockImplementation((checkPath: any) => {
+				const pathStr = normalizePath(String(checkPath));
+				if (pathStr.includes('.yarn/releases')) {
+					return false;
+				}
+				return pathStr.includes('jest/bin/jest.js');
+			});
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.args).toEqual([
+				'/home/user/project/src/test\\.spec\\.ts',
+				'-c',
+				expectedConfigPath,
+				'-t',
+				'my test',
+				'--runInBand',
+			]);
+		});
 	});
 
 	describe('getDebugConfiguration with Vitest', () => {
@@ -347,6 +411,74 @@ describe('TestRunnerConfig', () => {
 			expect(config.name).toBe('Debug Vitest Tests');
 			expect(config.args).toContain('vitest');
 			expect(config.args).toContain('run');
+		});
+
+		it('should not duplicate vitest run subcommand for file debugging', () => {
+			jest
+				.spyOn(fs, 'existsSync')
+				.mockImplementation((filePath: fs.PathLike) => {
+					return String(filePath).includes('vitest.config');
+				});
+
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.args.filter((arg) => arg === 'run')).toHaveLength(1);
+		});
+
+		it('should keep run for vitest file debug without explicit runOptions', () => {
+			const mockRequire = {
+				resolve: jest.fn().mockImplementation((pkg: string) => {
+					if (pkg === 'vitest/package.json') {
+						return '/workspace/node_modules/vitest/package.json';
+					}
+					throw new Error(`Cannot find module '${pkg}'`);
+				}),
+			};
+			jest
+				.spyOn(moduleLib, 'createRequire')
+				.mockReturnValue(mockRequire as any);
+			jest.spyOn(fs, 'readFileSync').mockImplementation((filePath: any) => {
+				if (String(filePath).endsWith('vitest/package.json')) {
+					return JSON.stringify({ bin: { vitest: './vitest.mjs' } });
+				}
+				return '{}';
+			});
+			jest
+				.spyOn(fs, 'existsSync')
+				.mockImplementation((filePath: fs.PathLike) => {
+					const pathStr = normalizePath(String(filePath));
+					if (pathStr.includes('.yarn/releases')) {
+						return false;
+					}
+					return (
+						pathStr.includes('vitest.config') ||
+						pathStr.includes('node_modules/vitest/vitest.mjs')
+					);
+				});
+
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.args).toContain('run');
+			expect(config.args.filter((arg) => arg === 'run')).toHaveLength(1);
+			const expectedFilePath = normalizePath(
+				path.resolve('/workspace/test.spec.ts'),
+			);
+
+			expect(config.args).toEqual(['run', expectedFilePath, '-t', 'Test 1']);
 		});
 
 		it('should return jest debug configuration for jest files', () => {
