@@ -519,6 +519,9 @@ describe('TestRunnerConfig', () => {
 				undefined,
 				false,
 			);
+			const expectedConfigPath = normalizePath(
+				path.resolve('/workspace', 'vitest.config.ts'),
+			);
 
 			const configIndexes = args.reduce<number[]>((indexes, arg, index) => {
 				if (arg === '--config') {
@@ -528,7 +531,7 @@ describe('TestRunnerConfig', () => {
 			}, []);
 
 			expect(configIndexes).toHaveLength(2);
-			expect(args[configIndexes[0] + 1]).toBe('/workspace/vitest.config.ts');
+			expect(args[configIndexes[0] + 1]).toBe(expectedConfigPath);
 			expect(args[configIndexes[1] + 1]).toBe('alt-vitest.config.ts');
 		});
 
