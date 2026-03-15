@@ -4,7 +4,7 @@ import type { TestRunnerConfig } from '../testRunnerConfig';
 import { appendUniqueArgs, prependUniqueArgs } from '../utils/ArgUtils';
 import { logWarning } from '../utils/Logger';
 import { resolveBinaryPath } from '../utils/ResolverUtils';
-import { parseCommandAndEnv, parseShellCommand } from '../utils/ShellUtils';
+import { parseCommandAndEnv } from '../utils/ShellUtils';
 import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
 
 export class DebugConfigurationProvider {
