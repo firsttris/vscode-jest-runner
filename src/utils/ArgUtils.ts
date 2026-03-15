@@ -41,11 +41,11 @@ const getArgKeys = (args: string[]): Set<string> => {
 };
 
 export const appendUniqueArgs = (
-	target: string[] | null | undefined,
-	args: string[] | null | undefined,
+	...args: (string[] | null | undefined)[]
 ): string[] => {
-	const normalizedTarget = target ?? [];
-	const normalizedArgs = args ?? [];
+	const normalizedTarget: string[] = args[0] ?? [];
+	const normalizedArgs = flatten((args ?? []).slice(1));
+
 	const nextArgs = [...normalizedTarget];
 	const existing = getArgKeys(normalizedTarget);
 
@@ -70,6 +70,7 @@ export const prependUniqueArgs = (
 ): string[] => {
 	const normalizedArgs = args ?? [];
 	const normalizedPrefix = prefix ?? [];
+
 	const nextArgs = [...normalizedArgs];
 	const prefixSegments: string[][] = [];
 	const existing = getArgKeys(nextArgs);
@@ -92,3 +93,13 @@ export const prependUniqueArgs = (
 
 	return nextArgs;
 };
+
+function flatten<T>(arrays: (T[] | null | undefined)[]): T[] {
+	const result: T[] = [];
+	for (const array of arrays) {
+		if (array) {
+			result.push(...array);
+		}
+	}
+	return result;
+}

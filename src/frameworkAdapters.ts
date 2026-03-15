@@ -65,7 +65,7 @@ const buildJestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return appendUniqueArgs(args, appendUniqueArgs(options, runOptions));
+	return appendUniqueArgs(args, options, runOptions);
 };
 
 const buildVitestArgs: BuildArgsFn = (
@@ -179,7 +179,7 @@ const buildBunArgs: BuildArgsFn = (
 	}
 
 	return [
-		...appendUniqueArgs(args, appendUniqueArgs(options, runOptions)),
+		...appendUniqueArgs(args, options, runOptions),
 		q(normalizePath(filePath)),
 	];
 };
@@ -210,7 +210,7 @@ const buildDenoArgs: BuildArgsFn = (
 	}
 
 	return [
-		...appendUniqueArgs(args, appendUniqueArgs(options, runOptions)),
+		...appendUniqueArgs(args, options, runOptions),
 		q(normalizePath(filePath)),
 	];
 };
@@ -238,7 +238,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	}
 
 	return [
-		...appendUniqueArgs(args, appendUniqueArgs(options, runOptions)),
+		...appendUniqueArgs(args, options, runOptions),
 		q(normalizePath(filePath)),
 	];
 };
@@ -265,7 +265,7 @@ const buildRstestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return appendUniqueArgs(args, appendUniqueArgs(options, runOptions));
+	return appendUniqueArgs(args, options, runOptions);
 };
 
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
