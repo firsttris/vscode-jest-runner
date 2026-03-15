@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as testFileDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	Document,
@@ -7,7 +8,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as testFileDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Playwright Runner', () => {
 	let config: TestRunnerConfig;
@@ -258,6 +258,23 @@ describe('TestRunnerConfig - Playwright Runner', () => {
 			const lastArg = args[args.length - 1];
 
 			expect(lastArg).toBe('/path/to/test.spec.ts');
+		});
+
+		it('should not duplicate test subcommand from run options', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.playwrightRunOptions': ['test', '--headed'],
+				}),
+			);
+
+			const args = config.buildPlaywrightArgs(
+				'/path/to/test.spec.ts',
+				undefined,
+				false,
+			);
+
+			expect(args.filter((arg) => arg === 'test')).toHaveLength(1);
+			expect(args).toContain('--headed');
 		});
 	});
 });

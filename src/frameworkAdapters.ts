@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { appendUniqueArgs, prependUniqueArgs } from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -35,24 +36,14 @@ const prepareTestName = (
 	return withQuotes ? quote(escapeSingleQuotes(resolved)) : resolved;
 };
 
-const mergeOptions = (
-	options: string[],
-	runOptions: string[] | null,
-): string[] => {
-	const set = new Set(options);
-	runOptions?.forEach((opt) => {
-		set.add(opt);
-	});
-	return [...set];
-};
-
 const isVitestWatchOption = (option: string): boolean =>
 	option === '--watch' || option === '-w' || option.startsWith('--watch=');
 
 const normalizeVitestOptions = (
 	options: string[],
 	hasWatchMode: boolean,
-): string[] => (hasWatchMode ? options.filter((option) => option !== 'run') : options);
+): string[] =>
+	hasWatchMode ? options.filter((option) => option !== 'run') : options;
 
 const buildJestArgs: BuildArgsFn = (
 	filePath,
@@ -74,7 +65,7 @@ const buildJestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [...args, ...mergeOptions(options, runOptions)];
+	return appendUniqueArgs(args, options, runOptions);
 };
 
 const buildVitestArgs: BuildArgsFn = (
@@ -89,14 +80,14 @@ const buildVitestArgs: BuildArgsFn = (
 	const hasWatchMode =
 		options.some(isVitestWatchOption) ||
 		(runOptions?.some(isVitestWatchOption) ?? false);
-	const allOptions = mergeOptions(
+	const allOptions = appendUniqueArgs(
 		normalizeVitestOptions(options, hasWatchMode),
 		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
 	);
-	const args = [q(normalizePath(resolve(filePath)))];
+	let args = [q(normalizePath(resolve(filePath)))];
 
 	if (!hasWatchMode) {
-		args.unshift('run');
+		args = prependUniqueArgs(args, ['run']);
 	}
 
 	if (configPath) {
@@ -108,7 +99,7 @@ const buildVitestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [...args, ...allOptions];
+	return appendUniqueArgs(args, allOptions);
 };
 
 const buildNodeTestArgs: BuildArgsFn = (
@@ -145,7 +136,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 		args.push('--test-name-pattern', resolved);
 	}
 
-	const allOptions = mergeOptions(options, runOptions);
+	const allOptions = appendUniqueArgs(options, runOptions);
 
 	if (allOptions.includes('--coverage')) {
 		args.push('--experimental-test-coverage');
@@ -159,7 +150,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 		}
 	}
 
-	return [...args, ...allOptions, q(normalizePath(filePath))];
+	return [...appendUniqueArgs(args, allOptions), q(normalizePath(filePath))];
 };
 
 const buildBunArgs: BuildArgsFn = (
@@ -188,8 +179,7 @@ const buildBunArgs: BuildArgsFn = (
 	}
 
 	return [
-		...args,
-		...mergeOptions(options, runOptions),
+		...appendUniqueArgs(args, options, runOptions),
 		q(normalizePath(filePath)),
 	];
 };
@@ -220,8 +210,7 @@ const buildDenoArgs: BuildArgsFn = (
 	}
 
 	return [
-		...args,
-		...mergeOptions(options, runOptions),
+		...appendUniqueArgs(args, options, runOptions),
 		q(normalizePath(filePath)),
 	];
 };
@@ -249,8 +238,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	}
 
 	return [
-		...args,
-		...mergeOptions(options, runOptions),
+		...appendUniqueArgs(args, options, runOptions),
 		q(normalizePath(filePath)),
 	];
 };
@@ -277,7 +265,7 @@ const buildRstestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [...args, ...mergeOptions(options, runOptions)];
+	return appendUniqueArgs(args, options, runOptions);
 };
 
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
