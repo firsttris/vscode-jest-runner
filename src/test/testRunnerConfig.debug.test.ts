@@ -376,6 +376,30 @@ describe('TestRunnerConfig', () => {
 				'--runInBand',
 			]);
 		});
+
+		it('should preserve complete repeated -t pairs for custom jest commands', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand': 'node ./custom-jest.js -t smoke',
+				}),
+			);
+
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.args).toEqual([
+				'./custom-jest.js',
+				'-t',
+				'smoke',
+				'/home/user/project/src/test\\.spec\\.ts',
+				'-t',
+				'my test',
+			]);
+		});
 	});
 
 	describe('getDebugConfiguration with Vitest', () => {
@@ -479,6 +503,33 @@ describe('TestRunnerConfig', () => {
 			);
 
 			expect(config.args).toEqual(['run', expectedFilePath, '-t', 'Test 1']);
+		});
+
+		it('should preserve complete repeated --config pairs for vitest args', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestConfigPath': 'vitest.config.ts',
+					'jestrunner.vitestRunOptions': ['--config', 'alt-vitest.config.ts'],
+				}),
+			);
+			jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+			const args = jestRunnerConfig.buildVitestArgs(
+				'/workspace/test.spec.ts',
+				undefined,
+				false,
+			);
+
+			const configIndexes = args.reduce<number[]>((indexes, arg, index) => {
+				if (arg === '--config') {
+					indexes.push(index);
+				}
+				return indexes;
+			}, []);
+
+			expect(configIndexes).toHaveLength(2);
+			expect(args[configIndexes[0] + 1]).toBe('/workspace/vitest.config.ts');
+			expect(args[configIndexes[1] + 1]).toBe('alt-vitest.config.ts');
 		});
 
 		it('should return jest debug configuration for jest files', () => {

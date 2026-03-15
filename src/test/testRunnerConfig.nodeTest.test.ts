@@ -328,6 +328,43 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 			expect(debugConfig.runtimeArgs).toContain('--test-reporter=spec');
 		});
 
+		it('should preserve complete repeated --test-name-pattern pairs', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestRunOptions': [
+						'--test-name-pattern',
+						'configured test',
+					],
+				}),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('node-test');
+
+			const debugConfig = config.getDebugConfiguration(
+				'/path/to/test.test.js',
+				'current test',
+			);
+
+			const patternIndexes = (debugConfig.runtimeArgs ?? []).reduce(
+				(indexes: number[], arg, index) => {
+					if (arg === '--test-name-pattern') {
+						indexes.push(index);
+					}
+					return indexes;
+				},
+				[],
+			);
+
+			expect(patternIndexes).toHaveLength(2);
+			expect(debugConfig.runtimeArgs?.[patternIndexes[0] + 1]).toBe(
+				'current test',
+			);
+			expect(debugConfig.runtimeArgs?.[patternIndexes[1] + 1]).toBe(
+				'configured test',
+			);
+		});
+
 		it('should set program to file path', () => {
 			jest
 				.spyOn(vscode.workspace, 'getConfiguration')

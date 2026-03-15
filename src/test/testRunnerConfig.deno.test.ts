@@ -175,5 +175,39 @@ describe('TestRunnerConfig - Deno Runner', () => {
 			).toHaveLength(1);
 			expect(debugConfig.runtimeArgs).toContain('--quiet');
 		});
+
+		it('should preserve complete repeated --filter pairs', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.denoRunOptions': ['--filter', 'configured test'],
+				}),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('deno');
+
+			const debugConfig = config.getDebugConfiguration(
+				'/path/to/test.ts',
+				'current test',
+			);
+
+			const filterIndexes = (debugConfig.runtimeArgs ?? []).reduce(
+				(indexes: number[], arg, index) => {
+					if (arg === '--filter') {
+						indexes.push(index);
+					}
+					return indexes;
+				},
+				[],
+			);
+
+			expect(filterIndexes).toHaveLength(2);
+			expect(debugConfig.runtimeArgs?.[filterIndexes[0] + 1]).toBe(
+				'current test',
+			);
+			expect(debugConfig.runtimeArgs?.[filterIndexes[1] + 1]).toBe(
+				'configured test',
+			);
+		});
 	});
 });
