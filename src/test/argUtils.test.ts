@@ -23,6 +23,57 @@ describe('appendUniqueArgs', () => {
 		).toEqual(['--watch', '--coverage']);
 	});
 
+	it('appends values from multiple argument lists in order', () => {
+		expect(
+			appendUniqueArgs(
+				['--watch'],
+				['--coverage'],
+				null,
+				['--bail'],
+				undefined,
+				['--runInBand'],
+			),
+		).toEqual(['--watch', '--coverage', '--bail', '--runInBand']);
+	});
+
+	it('deduplicates across multiple argument lists after flattening', () => {
+		expect(
+			appendUniqueArgs(
+				['--watch'],
+				['--coverage', '--watch'],
+				null,
+				['--coverage', '--bail'],
+				['--bail', '--runInBand'],
+			),
+		).toEqual(['--watch', '--coverage', '--bail', '--runInBand']);
+	});
+
+	it('preserves known flag-value pairs across multiple argument lists', () => {
+		expect(
+			appendUniqueArgs(
+				['-t', 'smoke'],
+				null,
+				['--coverage'],
+				['-t', 'smoke'],
+				['-t', 'focused'],
+				undefined,
+				['--config', 'jest.config.ts'],
+				['--config', 'jest.config.ts'],
+				['--config', 'alt.config.ts'],
+			),
+		).toEqual([
+			'-t',
+			'smoke',
+			'--coverage',
+			'-t',
+			'focused',
+			'--config',
+			'jest.config.ts',
+			'--config',
+			'alt.config.ts',
+		]);
+	});
+
 	it('deduplicates standalone flags while preserving order', () => {
 		expect(
 			appendUniqueArgs(['--watch', '--coverage'], ['--watch', '--bail']),
