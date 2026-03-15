@@ -134,7 +134,7 @@ export class DebugConfigurationProvider {
 			const { env, executable, args } = parseCommandAndEnv(customCommand);
 			if (executable) {
 				debugConfig.runtimeExecutable = executable;
-				debugConfig.runtimeArgs = [...args, '--test'];
+				debugConfig.runtimeArgs = appendUniqueArgs(args, ['--test']);
 				if (Object.keys(env).length > 0) {
 					debugConfig.env = { ...debugConfig.env, ...env };
 				}
@@ -190,7 +190,7 @@ export class DebugConfigurationProvider {
 				}
 				if (filePath) {
 					const testArgs = config.buildRstestArgs(filePath, testName, false);
-					debugConfig.args.push(...testArgs);
+					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}
@@ -293,7 +293,7 @@ export class DebugConfigurationProvider {
 						testName,
 						false,
 					);
-					debugConfig.args.push(...testArgs);
+					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}

@@ -392,6 +392,24 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 
 			expect(debugConfig.runtimeExecutable).toBe('tsx');
 		});
+
+		it('should not duplicate --test from custom node test command', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestCommand': 'tsx --test --watch',
+				} as any),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('node-test');
+
+			const debugConfig = config.getDebugConfiguration('/path/to/test.test.js');
+
+			expect(
+				debugConfig.runtimeArgs?.filter((arg) => arg === '--test'),
+			).toHaveLength(1);
+			expect(debugConfig.runtimeArgs).toContain('--watch');
+		});
 	});
 
 	describe('buildNodeTestArgs', () => {

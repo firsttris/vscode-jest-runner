@@ -640,6 +640,39 @@ describe('TestRunnerConfig', () => {
 				expect.arrayContaining(['--no-install', 'rstest', rstestFilePath]),
 			);
 		});
+
+		it('should not duplicate rstest args from custom command', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.rstestCommand':
+						'/custom/rstest --config /workspace/rstest.config.ts -t smoke',
+				}),
+			);
+			jest
+				.spyOn(jestRunnerConfig, 'getRstestConfigPath')
+				.mockReturnValue('/workspace/rstest.config.ts');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				rstestFilePath,
+				'works',
+			);
+
+			expect(config.program).toBe('/custom/rstest');
+			expect(
+				config.args?.filter((arg: string) => arg === '--config'),
+			).toHaveLength(1);
+			expect(config.args?.filter((arg: string) => arg === '-t')).toHaveLength(
+				2,
+			);
+			expect(config.args).toEqual(
+				expect.arrayContaining([
+					'/workspace/rstest.config.ts',
+					'smoke',
+					'works',
+					rstestFilePath,
+				]),
+			);
+		});
 	});
 
 	describe('getDebugConfiguration with enableESM', () => {

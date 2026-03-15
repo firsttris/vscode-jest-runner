@@ -181,6 +181,26 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 		expect(debugConfig.args).toContain(mockFilePath);
 	});
 
+	it('should not duplicate test filters from custom playwright command', () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+			new WorkspaceConfiguration({
+				'jestrunner.playwrightCommand': '/custom/playwright test -g smoke',
+			}),
+		);
+
+		const debugConfig = config.getDebugConfiguration(mockFilePath, 'my test');
+
+		expect(
+			debugConfig.args?.filter((arg: string) => arg === 'test'),
+		).toHaveLength(1);
+		expect(
+			debugConfig.args?.filter((arg: string) => arg === '-g'),
+		).toHaveLength(2);
+		expect(debugConfig.args).toEqual(
+			expect.arrayContaining(['smoke', 'my test', mockFilePath]),
+		);
+	});
+
 	it('should not duplicate test subcommand from run options', () => {
 		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 			new WorkspaceConfiguration({
