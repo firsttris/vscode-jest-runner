@@ -36,17 +36,6 @@ const prepareTestName = (
 	return withQuotes ? quote(escapeSingleQuotes(resolved)) : resolved;
 };
 
-const mergeOptions = (
-	options: string[],
-	runOptions: string[] | null,
-): string[] => {
-	const set = new Set(options);
-	runOptions?.forEach((opt) => {
-		set.add(opt);
-	});
-	return [...set];
-};
-
 const isVitestWatchOption = (option: string): boolean =>
 	option === '--watch' || option === '-w' || option.startsWith('--watch=');
 
@@ -76,7 +65,7 @@ const buildJestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return appendUniqueArgs(args, mergeOptions(options, runOptions));
+	return appendUniqueArgs(args, appendUniqueArgs(options, runOptions));
 };
 
 const buildVitestArgs: BuildArgsFn = (
@@ -91,7 +80,7 @@ const buildVitestArgs: BuildArgsFn = (
 	const hasWatchMode =
 		options.some(isVitestWatchOption) ||
 		(runOptions?.some(isVitestWatchOption) ?? false);
-	const allOptions = mergeOptions(
+	const allOptions = appendUniqueArgs(
 		normalizeVitestOptions(options, hasWatchMode),
 		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
 	);
@@ -147,7 +136,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 		args.push('--test-name-pattern', resolved);
 	}
 
-	const allOptions = mergeOptions(options, runOptions);
+	const allOptions = appendUniqueArgs(options, runOptions);
 
 	if (allOptions.includes('--coverage')) {
 		args.push('--experimental-test-coverage');
@@ -190,7 +179,7 @@ const buildBunArgs: BuildArgsFn = (
 	}
 
 	return [
-		...appendUniqueArgs(args, mergeOptions(options, runOptions)),
+		...appendUniqueArgs(args, appendUniqueArgs(options, runOptions)),
 		q(normalizePath(filePath)),
 	];
 };
@@ -221,7 +210,7 @@ const buildDenoArgs: BuildArgsFn = (
 	}
 
 	return [
-		...appendUniqueArgs(args, mergeOptions(options, runOptions)),
+		...appendUniqueArgs(args, appendUniqueArgs(options, runOptions)),
 		q(normalizePath(filePath)),
 	];
 };
@@ -249,7 +238,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	}
 
 	return [
-		...appendUniqueArgs(args, mergeOptions(options, runOptions)),
+		...appendUniqueArgs(args, appendUniqueArgs(options, runOptions)),
 		q(normalizePath(filePath)),
 	];
 };
@@ -276,7 +265,7 @@ const buildRstestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return appendUniqueArgs(args, mergeOptions(options, runOptions));
+	return appendUniqueArgs(args, appendUniqueArgs(options, runOptions));
 };
 
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
