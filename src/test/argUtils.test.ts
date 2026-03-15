@@ -8,6 +8,21 @@ describe('appendUniqueArgs', () => {
 		expect(appendUniqueArgs(['--watch'], undefined)).toEqual(['--watch']);
 	});
 
+	it('ignores empty and nullish argument lists across multiple inputs', () => {
+		expect(appendUniqueArgs([], null, [], undefined, [])).toEqual([]);
+		expect(
+			appendUniqueArgs(
+				['--watch'],
+				[],
+				null,
+				[],
+				undefined,
+				['--coverage'],
+				[],
+			),
+		).toEqual(['--watch', '--coverage']);
+	});
+
 	it('deduplicates standalone flags while preserving order', () => {
 		expect(
 			appendUniqueArgs(['--watch', '--coverage'], ['--watch', '--bail']),
