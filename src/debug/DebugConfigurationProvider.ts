@@ -6,6 +6,16 @@ import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseCommandAndEnv, parseShellCommand } from '../utils/ShellUtils';
 import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
 
+const pushUniqueArgs = (target: string[], args: string[]): void => {
+	const existing = new Set(target);
+	args.forEach((arg) => {
+		if (!existing.has(arg)) {
+			target.push(arg);
+			existing.add(arg);
+		}
+	});
+};
+
 export class DebugConfigurationProvider {
 	public getDebugConfiguration(
 		config: TestRunnerConfig,
@@ -63,7 +73,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.bunRunOptions) {
-			debugConfig.runtimeArgs.push(...config.bunRunOptions);
+			pushUniqueArgs(debugConfig.runtimeArgs, config.bunRunOptions);
 		}
 
 		debugConfig.program = filePath;
@@ -85,7 +95,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.denoRunOptions) {
-			runtimeArgs.push(...config.denoRunOptions);
+			pushUniqueArgs(runtimeArgs, config.denoRunOptions);
 		}
 
 		if (filePath) {
@@ -148,7 +158,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.nodeTestRunOptions) {
-			debugConfig.runtimeArgs.push(...config.nodeTestRunOptions);
+			pushUniqueArgs(debugConfig.runtimeArgs, config.nodeTestRunOptions);
 		}
 
 		debugConfig.program = filePath || '';

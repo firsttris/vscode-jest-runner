@@ -46,13 +46,22 @@ const mergeOptions = (
 	return [...set];
 };
 
+const excludeReservedOptions = (input: {
+	options: string[];
+	reservedOptions: string[];
+}): string[] => {
+	const reserved = new Set(input.reservedOptions);
+	return input.options.filter((option) => !reserved.has(option));
+};
+
 const isVitestWatchOption = (option: string): boolean =>
 	option === '--watch' || option === '-w' || option.startsWith('--watch=');
 
 const normalizeVitestOptions = (
 	options: string[],
 	hasWatchMode: boolean,
-): string[] => (hasWatchMode ? options.filter((option) => option !== 'run') : options);
+): string[] =>
+	hasWatchMode ? options.filter((option) => option !== 'run') : options;
 
 const buildJestArgs: BuildArgsFn = (
 	filePath,
@@ -108,7 +117,13 @@ const buildVitestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [...args, ...allOptions];
+	return [
+		...args,
+		...excludeReservedOptions({
+			options: allOptions,
+			reservedOptions: ['run'],
+		}),
+	];
 };
 
 const buildNodeTestArgs: BuildArgsFn = (
@@ -145,7 +160,10 @@ const buildNodeTestArgs: BuildArgsFn = (
 		args.push('--test-name-pattern', resolved);
 	}
 
-	const allOptions = mergeOptions(options, runOptions);
+	const allOptions = excludeReservedOptions({
+		options: mergeOptions(options, runOptions),
+		reservedOptions: ['--test'],
+	});
 
 	if (allOptions.includes('--coverage')) {
 		args.push('--experimental-test-coverage');
@@ -189,7 +207,10 @@ const buildBunArgs: BuildArgsFn = (
 
 	return [
 		...args,
-		...mergeOptions(options, runOptions),
+		...excludeReservedOptions({
+			options: mergeOptions(options, runOptions),
+			reservedOptions: ['test'],
+		}),
 		q(normalizePath(filePath)),
 	];
 };
@@ -221,7 +242,10 @@ const buildDenoArgs: BuildArgsFn = (
 
 	return [
 		...args,
-		...mergeOptions(options, runOptions),
+		...excludeReservedOptions({
+			options: mergeOptions(options, runOptions),
+			reservedOptions: ['test', '--allow-all'],
+		}),
 		q(normalizePath(filePath)),
 	];
 };
@@ -250,7 +274,10 @@ const buildPlaywrightArgs: BuildArgsFn = (
 
 	return [
 		...args,
-		...mergeOptions(options, runOptions),
+		...excludeReservedOptions({
+			options: mergeOptions(options, runOptions),
+			reservedOptions: ['test'],
+		}),
 		q(normalizePath(filePath)),
 	];
 };
