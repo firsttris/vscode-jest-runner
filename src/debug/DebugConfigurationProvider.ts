@@ -6,7 +6,7 @@ import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseCommandAndEnv, parseShellCommand } from '../utils/ShellUtils';
 import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
 
-const pushUniqueArgs = (target: string[], args: string[]): void => {
+const appendUniqueArgs = (target: string[], args: string[]): string[] => {
 	const existing = new Set(target);
 	args.forEach((arg) => {
 		if (!existing.has(arg)) {
@@ -14,6 +14,18 @@ const pushUniqueArgs = (target: string[], args: string[]): void => {
 			existing.add(arg);
 		}
 	});
+	return target;
+};
+
+const prependUniqueArgs = (args: string[], prefix: string[]): string[] => {
+	const nextArgs = [...args];
+	for (let index = prefix.length - 1; index >= 0; index -= 1) {
+		const arg = prefix[index];
+		if (!nextArgs.includes(arg)) {
+			nextArgs.unshift(arg);
+		}
+	}
+	return nextArgs;
 };
 
 export class DebugConfigurationProvider {
@@ -73,7 +85,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.bunRunOptions) {
-			pushUniqueArgs(debugConfig.runtimeArgs, config.bunRunOptions);
+			appendUniqueArgs(debugConfig.runtimeArgs, config.bunRunOptions);
 		}
 
 		debugConfig.program = filePath;
@@ -95,7 +107,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.denoRunOptions) {
-			pushUniqueArgs(runtimeArgs, config.denoRunOptions);
+			appendUniqueArgs(runtimeArgs, config.denoRunOptions);
 		}
 
 		if (filePath) {
@@ -158,7 +170,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.nodeTestRunOptions) {
-			pushUniqueArgs(debugConfig.runtimeArgs, config.nodeTestRunOptions);
+			appendUniqueArgs(debugConfig.runtimeArgs, config.nodeTestRunOptions);
 		}
 
 		debugConfig.program = filePath || '';
@@ -242,7 +254,7 @@ export class DebugConfigurationProvider {
 				}
 				if (filePath) {
 					const testArgs = config.buildVitestArgs(filePath, testName, false);
-					debugConfig.args.push(...testArgs);
+					appendUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}
@@ -251,7 +263,7 @@ export class DebugConfigurationProvider {
 		const testArgs = filePath
 			? config.buildVitestArgs(filePath, testName, false)
 			: [];
-		const vitestArgs = testArgs.length > 0 ? testArgs : ['run'];
+		const vitestArgs = prependUniqueArgs(testArgs, ['run']);
 		const binaryPath = resolveBinaryPath('vitest', config.cwd);
 
 		if (binaryPath) {
@@ -363,7 +375,7 @@ export class DebugConfigurationProvider {
 				}
 				if (filePath) {
 					const testArgs = config.buildJestArgs(filePath, testName, false);
-					debugConfig.args.push(...testArgs);
+					appendUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}
@@ -373,9 +385,7 @@ export class DebugConfigurationProvider {
 			? config.buildJestArgs(filePath, testName, false)
 			: [];
 		const binaryPath = resolveBinaryPath('jest', config.cwd);
-		const jestArgs = testArgs.includes('--runInBand')
-			? testArgs
-			: ['--runInBand', ...testArgs];
+		const jestArgs = prependUniqueArgs(testArgs, ['--runInBand']);
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
