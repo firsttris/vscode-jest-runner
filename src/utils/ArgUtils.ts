@@ -40,6 +40,13 @@ const getArgKeys = (args: string[]): Set<string> => {
 	return keys;
 };
 
+/**
+ * Appends only argument segments that are not already present in the first list.
+ *
+ * The first array is treated as authoritative and keeps its order. Additional
+ * arrays are flattened in order, then known flag-value pairs and standalone
+ * flags are deduplicated against what is already in the target.
+ */
 export const appendUniqueArgs = (
 	...args: (string[] | null | undefined)[]
 ): string[] => {
@@ -64,6 +71,13 @@ export const appendUniqueArgs = (
 	return nextArgs;
 };
 
+/**
+ * Prepends only prefix segments that are not already present in the existing args.
+ *
+ * The existing args remain authoritative and keep their relative order. Missing
+ * standalone flags and known flag-value pairs from the prefix are inserted at
+ * the front while preserving the prefix order.
+ */
 export const prependUniqueArgs = (
 	args: string[] | null | undefined,
 	prefix: string[] | null | undefined,
