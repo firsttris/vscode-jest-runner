@@ -1,4 +1,6 @@
+import * as fs from 'node:fs';
 import * as vscode from 'vscode';
+import * as testFileDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	Document,
@@ -7,8 +9,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as fs from 'node:fs';
-import * as testFileDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Deno Runner', () => {
 	let config: TestRunnerConfig;
@@ -137,6 +137,43 @@ describe('TestRunnerConfig - Deno Runner', () => {
 				'--coverage=coverage',
 				'/path/to/test.ts',
 			]);
+		});
+
+		it('should not duplicate default deno args from run options', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.denoRunOptions': ['test', '--allow-all', '--quiet'],
+				}),
+			);
+
+			const args = config.buildDenoArgs('/path/to/test.ts', undefined, false);
+
+			expect(args.filter((arg) => arg === 'test')).toHaveLength(1);
+			expect(args.filter((arg) => arg === '--allow-all')).toHaveLength(1);
+			expect(args).toContain('--quiet');
+		});
+	});
+
+	describe('getDebugConfiguration for deno', () => {
+		it('should not duplicate default deno args from run options', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.denoRunOptions': ['test', '--allow-all', '--quiet'],
+				}),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('deno');
+
+			const debugConfig = config.getDebugConfiguration('/path/to/test.ts');
+
+			expect(
+				debugConfig.runtimeArgs?.filter((arg) => arg === 'test'),
+			).toHaveLength(1);
+			expect(
+				debugConfig.runtimeArgs?.filter((arg) => arg === '--allow-all'),
+			).toHaveLength(1);
+			expect(debugConfig.runtimeArgs).toContain('--quiet');
 		});
 	});
 });

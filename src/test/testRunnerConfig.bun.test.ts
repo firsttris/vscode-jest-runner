@@ -1,4 +1,6 @@
+import * as fs from 'node:fs';
 import * as vscode from 'vscode';
+import * as testFileDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	Document,
@@ -7,8 +9,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as fs from 'node:fs';
-import * as testFileDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Bun Runner', () => {
 	let config: TestRunnerConfig;
@@ -103,6 +103,39 @@ describe('TestRunnerConfig - Bun Runner', () => {
 			);
 			const args = config.buildBunArgs('/path/to/test.ts', undefined, false);
 			expect(args).toEqual(['test', '--silent', '/path/to/test.ts']);
+		});
+
+		it('should not duplicate bun test subcommand from run options', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.bunRunOptions': ['test', '--silent'],
+				}),
+			);
+
+			const args = config.buildBunArgs('/path/to/test.ts', undefined, false);
+
+			expect(args.filter((arg) => arg === 'test')).toHaveLength(1);
+			expect(args).toContain('--silent');
+		});
+	});
+
+	describe('getDebugConfiguration for bun', () => {
+		it('should not duplicate bun test subcommand from run options', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.bunRunOptions': ['test', '--silent'],
+				}),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('bun');
+
+			const debugConfig = config.getDebugConfiguration('/path/to/test.ts');
+
+			expect(
+				debugConfig.runtimeArgs?.filter((arg) => arg === 'test'),
+			).toHaveLength(1);
+			expect(debugConfig.runtimeArgs).toContain('--silent');
 		});
 	});
 });

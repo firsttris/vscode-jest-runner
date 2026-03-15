@@ -1,4 +1,6 @@
+import * as fs from 'node:fs';
 import * as vscode from 'vscode';
+import * as testFileDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	Document,
@@ -7,8 +9,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as fs from 'node:fs';
-import * as testFileDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Node Test Runner', () => {
 	let config: TestRunnerConfig;
@@ -310,6 +310,24 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 			expect(debugConfig.runtimeArgs).toContain('--experimental-test-coverage');
 		});
 
+		it('should not duplicate --test from nodeTestRunOptions', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestRunOptions': ['--test', '--test-reporter=spec'],
+				}),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('node-test');
+
+			const debugConfig = config.getDebugConfiguration('/path/to/test.test.js');
+
+			expect(
+				debugConfig.runtimeArgs?.filter((arg) => arg === '--test'),
+			).toHaveLength(1);
+			expect(debugConfig.runtimeArgs).toContain('--test-reporter=spec');
+		});
+
 		it('should set program to file path', () => {
 			jest
 				.spyOn(vscode.workspace, 'getConfiguration')
@@ -336,6 +354,25 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 			const debugConfig = config.getDebugConfiguration('/path/to/test.test.js');
 
 			expect(debugConfig.runtimeExecutable).toBe('tsx');
+		});
+	});
+
+	describe('buildNodeTestArgs', () => {
+		it('should not duplicate --test from nodeTestRunOptions', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestRunOptions': ['--test', '--test-reporter=spec'],
+				}),
+			);
+
+			const args = config.buildNodeTestArgs(
+				'/path/to/test.test.js',
+				undefined,
+				false,
+			);
+
+			expect(args.filter((arg) => arg === '--test')).toHaveLength(1);
+			expect(args).toContain('--test-reporter=spec');
 		});
 	});
 
