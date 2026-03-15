@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { appendUniqueArgs, prependUniqueArgs } from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -46,14 +47,6 @@ const mergeOptions = (
 	return [...set];
 };
 
-const excludeReservedOptions = (input: {
-	options: string[];
-	reservedOptions: string[];
-}): string[] => {
-	const reserved = new Set(input.reservedOptions);
-	return input.options.filter((option) => !reserved.has(option));
-};
-
 const isVitestWatchOption = (option: string): boolean =>
 	option === '--watch' || option === '-w' || option.startsWith('--watch=');
 
@@ -83,7 +76,7 @@ const buildJestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [...args, ...mergeOptions(options, runOptions)];
+	return appendUniqueArgs(args, mergeOptions(options, runOptions));
 };
 
 const buildVitestArgs: BuildArgsFn = (
@@ -102,10 +95,10 @@ const buildVitestArgs: BuildArgsFn = (
 		normalizeVitestOptions(options, hasWatchMode),
 		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
 	);
-	const args = [q(normalizePath(resolve(filePath)))];
+	let args = [q(normalizePath(resolve(filePath)))];
 
 	if (!hasWatchMode) {
-		args.unshift('run');
+		args = prependUniqueArgs(args, ['run']);
 	}
 
 	if (configPath) {
@@ -117,13 +110,7 @@ const buildVitestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [
-		...args,
-		...excludeReservedOptions({
-			options: allOptions,
-			reservedOptions: ['run'],
-		}),
-	];
+	return appendUniqueArgs(args, allOptions);
 };
 
 const buildNodeTestArgs: BuildArgsFn = (
@@ -160,10 +147,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 		args.push('--test-name-pattern', resolved);
 	}
 
-	const allOptions = excludeReservedOptions({
-		options: mergeOptions(options, runOptions),
-		reservedOptions: ['--test'],
-	});
+	const allOptions = mergeOptions(options, runOptions);
 
 	if (allOptions.includes('--coverage')) {
 		args.push('--experimental-test-coverage');
@@ -177,7 +161,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 		}
 	}
 
-	return [...args, ...allOptions, q(normalizePath(filePath))];
+	return [...appendUniqueArgs(args, allOptions), q(normalizePath(filePath))];
 };
 
 const buildBunArgs: BuildArgsFn = (
@@ -206,11 +190,7 @@ const buildBunArgs: BuildArgsFn = (
 	}
 
 	return [
-		...args,
-		...excludeReservedOptions({
-			options: mergeOptions(options, runOptions),
-			reservedOptions: ['test'],
-		}),
+		...appendUniqueArgs(args, mergeOptions(options, runOptions)),
 		q(normalizePath(filePath)),
 	];
 };
@@ -241,11 +221,7 @@ const buildDenoArgs: BuildArgsFn = (
 	}
 
 	return [
-		...args,
-		...excludeReservedOptions({
-			options: mergeOptions(options, runOptions),
-			reservedOptions: ['test', '--allow-all'],
-		}),
+		...appendUniqueArgs(args, mergeOptions(options, runOptions)),
 		q(normalizePath(filePath)),
 	];
 };
@@ -273,11 +249,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	}
 
 	return [
-		...args,
-		...excludeReservedOptions({
-			options: mergeOptions(options, runOptions),
-			reservedOptions: ['test'],
-		}),
+		...appendUniqueArgs(args, mergeOptions(options, runOptions)),
 		q(normalizePath(filePath)),
 	];
 };
@@ -304,7 +276,7 @@ const buildRstestArgs: BuildArgsFn = (
 		args.push('-t', resolved);
 	}
 
-	return [...args, ...mergeOptions(options, runOptions)];
+	return appendUniqueArgs(args, mergeOptions(options, runOptions));
 };
 
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
