@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 import * as Settings from '../config/Settings';
 import type { TestRunnerConfig } from '../testRunnerConfig';
-import { appendUniqueArgs, prependUniqueArgs } from '../utils/ArgUtils';
+import { mergeUniqueArgs } from '../utils/ArgUtils';
 import { logWarning } from '../utils/Logger';
 import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseCommandAndEnv } from '../utils/ShellUtils';
@@ -64,7 +64,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.bunRunOptions) {
-			debugConfig.runtimeArgs = appendUniqueArgs(
+			debugConfig.runtimeArgs = mergeUniqueArgs(
 				debugConfig.runtimeArgs,
 				config.bunRunOptions,
 			);
@@ -81,16 +81,16 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
-		let runtimeArgs = ['test', '--inspect-brk', '--allow-all'];
+		const baseRuntimeArgs = ['test', '--inspect-brk', '--allow-all'];
+		const withTestNameArgs = testName
+			? [
+					...baseRuntimeArgs,
+					'--filter',
+					resolveTestNameStringInterpolation(testName),
+				]
+			: baseRuntimeArgs;
 
-		if (testName) {
-			const resolved = resolveTestNameStringInterpolation(testName);
-			runtimeArgs.push('--filter', resolved);
-		}
-
-		if (config.denoRunOptions) {
-			runtimeArgs = appendUniqueArgs(runtimeArgs, config.denoRunOptions);
-		}
+		const runtimeArgs = mergeUniqueArgs(withTestNameArgs, config.denoRunOptions);
 
 		if (filePath) {
 			runtimeArgs.push(filePath);
@@ -134,7 +134,7 @@ export class DebugConfigurationProvider {
 			const { env, executable, args } = parseCommandAndEnv(customCommand);
 			if (executable) {
 				debugConfig.runtimeExecutable = executable;
-				debugConfig.runtimeArgs = appendUniqueArgs(args, ['--test']);
+				debugConfig.runtimeArgs = mergeUniqueArgs(args, ['--test']);
 				if (Object.keys(env).length > 0) {
 					debugConfig.env = { ...debugConfig.env, ...env };
 				}
@@ -152,7 +152,7 @@ export class DebugConfigurationProvider {
 		}
 
 		if (config.nodeTestRunOptions) {
-			debugConfig.runtimeArgs = appendUniqueArgs(
+			debugConfig.runtimeArgs = mergeUniqueArgs(
 				debugConfig.runtimeArgs,
 				config.nodeTestRunOptions,
 			);
@@ -190,7 +190,7 @@ export class DebugConfigurationProvider {
 				}
 				if (filePath) {
 					const testArgs = config.buildRstestArgs(filePath, testName, false);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
+					debugConfig.args = mergeUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}
@@ -239,7 +239,7 @@ export class DebugConfigurationProvider {
 				}
 				if (filePath) {
 					const testArgs = config.buildVitestArgs(filePath, testName, false);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
+					debugConfig.args = mergeUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}
@@ -248,7 +248,7 @@ export class DebugConfigurationProvider {
 		const testArgs = filePath
 			? config.buildVitestArgs(filePath, testName, false)
 			: [];
-		const vitestArgs = prependUniqueArgs(testArgs, ['run']);
+		const vitestArgs = mergeUniqueArgs(testArgs, ['run'], 'prepend');
 		const binaryPath = resolveBinaryPath('vitest', config.cwd);
 
 		if (binaryPath) {
@@ -293,7 +293,7 @@ export class DebugConfigurationProvider {
 						testName,
 						false,
 					);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
+					debugConfig.args = mergeUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}
@@ -360,7 +360,7 @@ export class DebugConfigurationProvider {
 				}
 				if (filePath) {
 					const testArgs = config.buildJestArgs(filePath, testName, false);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
+					debugConfig.args = mergeUniqueArgs(debugConfig.args, testArgs);
 				}
 				return debugConfig;
 			}
@@ -370,7 +370,7 @@ export class DebugConfigurationProvider {
 			? config.buildJestArgs(filePath, testName, false)
 			: [];
 		const binaryPath = resolveBinaryPath('jest', config.cwd);
-		const jestArgs = prependUniqueArgs(testArgs, ['--runInBand']);
+		const jestArgs = mergeUniqueArgs(testArgs, ['--runInBand'], 'prepend');
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
