@@ -374,6 +374,18 @@
       {
         "command": "extension.watchJest",
         "title": "Run Jest --watch"
+      },
+      {
+        "command": "jestrunner.refreshTestsInCurrentFile",
+        "title": "Jest: Register Tests in Current File"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "jestrunner.refreshTestsInCurrentFile",
+        "key": "cmd+; cmd+r",
+        "mac": "cmd+; cmd+r",
+        "when": "editorTextFocus && jestrunner.isTestFile"
       }
     ],
     "menus": {

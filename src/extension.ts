@@ -183,6 +183,33 @@ export function activate(context: vscode.ExtensionContext): void {
 			jestRunner.runCurrentTest(argument, ['--watch']),
 	);
 
+	registerCommand(
+		context,
+		'jestrunner.refreshTestsInCurrentFile',
+		async () => {
+			const editor = vscode.window.activeTextEditor;
+			if (!editor) {
+				vscode.window.showInformationMessage(
+					'Open a test file to register its tests.',
+				);
+				return;
+			}
+			if (!testController) {
+				vscode.window.showInformationMessage(
+					'Enable the Test Explorer (jestrunner.enableTestExplorer) to register tests in the current file.',
+				);
+				return;
+			}
+			if (!testFileCache.isTestFile(editor.document.uri.fsPath)) {
+				vscode.window.showInformationMessage(
+					'Current file is not detected as a test file.',
+				);
+				return;
+			}
+			testController.refreshTestsInFile(editor.document.uri);
+		},
+	);
+
 	if (config.isCodeLensEnabled) {
 		const docSelectors: vscode.DocumentFilter[] = [
 			{ pattern: config.getAllPotentialSourceFiles() },

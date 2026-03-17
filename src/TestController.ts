@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import { TestRunnerConfig } from './testRunnerConfig';
 import { CoverageProvider } from './coverageProvider';
-import { discoverTests } from './testDiscovery';
+import {
+	discoverTests,
+	getOrCreateFileTestItem,
+	parseTestsInFile,
+} from './testDiscovery';
 import { cacheManager } from './cache/CacheManager';
 import { testFileCache } from './testDetection/testFileCache';
 import { TestRunExecutor } from './testController/TestRunExecutor';
@@ -127,6 +131,28 @@ export class JestTestController {
 		}
 
 		await this.refreshAllTests();
+	}
+
+	/**
+	 * Registers or refreshes tests in a single file in the Test Explorer.
+	 * Call this when the current file is a test file to populate/update its tests.
+	 */
+	public refreshTestsInFile(uri: vscode.Uri): void {
+		const filePath = uri.fsPath;
+		if (!testFileCache.isTestFile(filePath)) {
+			return;
+		}
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+		if (!workspaceFolder) {
+			return;
+		}
+		const testItem = getOrCreateFileTestItem(
+			this.testController,
+			workspaceFolder,
+			filePath,
+		);
+		testItem.children.replace([]);
+		parseTestsInFile(filePath, testItem, this.testController);
 	}
 
 	public dispose(): void {
