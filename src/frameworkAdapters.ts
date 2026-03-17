@@ -2,7 +2,11 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import { UniqueArgument } from './utils/ArgUtils';
+import {
+	appendUniqueArgs,
+	prependUniqueArgs,
+	UniqueArgument,
+} from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
