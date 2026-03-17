@@ -181,6 +181,42 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
+		const debugArgs = new UniqueArgument();
+
+		let program: string | undefined;
+		let runtimeExecutable: string | undefined;
+		let debugEnv: Record<string, string> | undefined = {};
+
+		const customCommand = Settings.getRstestCommand();
+		if (customCommand && typeof customCommand === 'string') {
+			const { env, executable, args } = parseCommandAndEnv(customCommand);
+			if (executable) {
+				program = executable;
+				debugArgs.append(...args);
+				if (Object.keys(env).length > 0) {
+					debugEnv = { ...debugEnv, ...env };
+				}
+			}
+		}
+
+		if (filePath) {
+			debugArgs.append(...config.buildRstestArgs(filePath, testName, false));
+		}
+
+		const testArgs = filePath
+			? config.buildRstestArgs(filePath, testName, false)
+			: [];
+
+		const binaryPath = resolveBinaryPath('@rstest/core', config.cwd, 'rstest');
+		if (binaryPath) {
+			program = binaryPath;
+			debugArgs.append(...testArgs);
+		} else {
+			logWarning('Could not resolve rstest binary path, falling back to npx');
+			runtimeExecutable = 'npx';
+			debugArgs.append('--no-install', 'rstest', ...testArgs);
+		}
+
 		const debugConfig: vscode.DebugConfiguration = {
 			console: 'integratedTerminal',
 			internalConsoleOptions: 'neverOpen',
@@ -189,38 +225,11 @@ export class DebugConfigurationProvider {
 			type: 'node',
 			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
 			...config.rstestDebugOptions,
+			program,
+			runtimeExecutable,
+			args: debugArgs.toArray(),
+			env: debugEnv,
 		};
-
-		const customCommand = Settings.getRstestCommand();
-		if (customCommand && typeof customCommand === 'string') {
-			const { env, executable, args } = parseCommandAndEnv(customCommand);
-			if (executable) {
-				debugConfig.program = executable;
-				debugConfig.args = [...args];
-				if (Object.keys(env).length > 0) {
-					debugConfig.env = { ...debugConfig.env, ...env };
-				}
-				if (filePath) {
-					const testArgs = config.buildRstestArgs(filePath, testName, false);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
-				}
-				return debugConfig;
-			}
-		}
-
-		const testArgs = filePath
-			? config.buildRstestArgs(filePath, testName, false)
-			: [];
-		const binaryPath = resolveBinaryPath('@rstest/core', config.cwd, 'rstest');
-
-		if (binaryPath) {
-			debugConfig.program = binaryPath;
-			debugConfig.args = [...testArgs];
-		} else {
-			logWarning('Could not resolve rstest binary path, falling back to npx');
-			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = ['--no-install', 'rstest', ...testArgs];
-		}
 
 		return debugConfig;
 	}
