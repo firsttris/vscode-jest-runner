@@ -1,13 +1,22 @@
-const FLAGS_WITH_VALUES = new Set([
-	'-c',
-	'-g',
-	'-t',
-	'--config',
-	'--filter',
-	'--test-name-pattern',
-	'--test-reporter',
-	'--test-reporter-destination',
-]);
+export class UniqueArgument {
+	private args: string[];
+
+	public constructor(public inputArgs: string[]) {
+		this.args = appendUniqueArgs(inputArgs);
+	}
+
+	public append(...args: (string[] | null | undefined)[]) {
+		this.args = appendUniqueArgs(this.args, ...args);
+	}
+
+	public prepend(args: string[] | null | undefined) {
+		this.args = prependUniqueArgs(this.args, args);
+	}
+
+	public toArray(): string[] {
+		return this.args;
+	}
+}
 
 const getArgSegment = (
 	args: string[],
@@ -47,7 +56,7 @@ const getArgKeys = (args: string[]): Set<string> => {
  * arrays are flattened in order, then known flag-value pairs and standalone
  * flags are deduplicated against what is already in the target.
  */
-export const appendUniqueArgs = (
+const appendUniqueArgs = (
 	...args: (string[] | null | undefined)[]
 ): string[] => {
 	const normalizedTarget: string[] = args[0] ?? [];
@@ -78,7 +87,7 @@ export const appendUniqueArgs = (
  * standalone flags and known flag-value pairs from the prefix are inserted at
  * the front while preserving the prefix order.
  */
-export const prependUniqueArgs = (
+const prependUniqueArgs = (
 	args: string[] | null | undefined,
 	prefix: string[] | null | undefined,
 ): string[] => {
