@@ -123,8 +123,8 @@ export class DebugConfigurationProvider {
 	): vscode.DebugConfiguration {
 		const runtimeArgs = new UniqueArgument();
 
+		let debugEnv: Record<string, string> | undefined = {};
 		let runtimeExecutable: string | undefined;
-		let debugConfigEnv: Record<string, string> | undefined = {};
 
 		const customCommand = Settings.getNodeTestCommand();
 		if (customCommand) {
@@ -135,7 +135,7 @@ export class DebugConfigurationProvider {
 
 				runtimeExecutable = executable;
 				if (Object.keys(env).length > 0) {
-					debugConfigEnv = { ...debugConfigEnv, ...env };
+					debugEnv = { ...debugEnv, ...env };
 				}
 			}
 		} else {
@@ -153,6 +153,9 @@ export class DebugConfigurationProvider {
 		if (config.nodeTestRunOptions) {
 			runtimeArgs.append(config.nodeTestRunOptions);
 		}
+		if (config.nodeTestDebugOptions.env) {
+			debugEnv = { ...debugEnv, ...config.nodeTestDebugOptions.env };
+		}
 
 		const debugConfig: vscode.DebugConfiguration = {
 			console: 'integratedTerminal',
@@ -166,7 +169,7 @@ export class DebugConfigurationProvider {
 			program: filePath || '',
 			runtimeArgs: runtimeArgs.toArray(),
 			runtimeExecutable,
-			env: debugConfigEnv,
+			env: debugEnv,
 		};
 
 		return debugConfig;
@@ -211,6 +214,10 @@ export class DebugConfigurationProvider {
 			logWarning('Could not resolve rstest binary path, falling back to npx');
 			runtimeExecutable = 'npx';
 			debugArgs.append('--no-install', 'rstest', ...testArgs);
+		}
+
+		if (config.rstestDebugOptions.env) {
+			debugEnv = { ...debugEnv, ...config.rstestDebugOptions.env };
 		}
 
 		const debugConfig: vscode.DebugConfiguration = {
@@ -277,7 +284,11 @@ export class DebugConfigurationProvider {
 			args: debugArgs.toArray(),
 			program,
 			runtimeExecutable,
-			env: Object.values(debugEnv).length >= 1 ? debugEnv : undefined,
+			env:
+				Object.keys({ ...debugEnv, ...config.vitestDebugOptions.env }).length >=
+				1
+					? { ...debugEnv, ...config.vitestDebugOptions.env }
+					: undefined,
 		};
 
 		return debugConfig;
@@ -291,7 +302,7 @@ export class DebugConfigurationProvider {
 		const debugArgs = new UniqueArgument();
 		let program: string | undefined;
 		let runtimeExecutable: string | undefined;
-		let debugEnv: Record<string, string> | undefined = {};
+		let debugEnv: Record<string, string> = {};
 
 		const customCommand = Settings.getPlaywrightCommand();
 		if (customCommand) {
@@ -309,14 +320,13 @@ export class DebugConfigurationProvider {
 			debugArgs.append(config.buildPlaywrightArgs(filePath, testName, false));
 		}
 
+		debugArgs.append('--workers=1');
+
 		const binaryPath = resolveBinaryPath(
 			'@playwright/test',
 			config.cwd,
 			'playwright',
 		);
-
-		debugArgs.append('--workers=1');
-
 		if (binaryPath) {
 			program = binaryPath;
 		} else {
@@ -325,6 +335,10 @@ export class DebugConfigurationProvider {
 			);
 			runtimeExecutable = 'npx';
 			debugArgs.prepend(['--no-install', 'playwright']);
+		}
+
+		if (config.playwrightDebugOptions.env) {
+			debugEnv = { ...debugEnv, ...config.playwrightDebugOptions.env };
 		}
 
 		const debugConfig: vscode.DebugConfiguration = {
@@ -338,7 +352,7 @@ export class DebugConfigurationProvider {
 			program,
 			runtimeExecutable,
 			args: debugArgs.toArray(),
-			env: Object.values(debugEnv).length >= 1 ? debugEnv : undefined,
+			env: debugEnv,
 		};
 
 		return debugConfig;
