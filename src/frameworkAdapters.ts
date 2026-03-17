@@ -2,11 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import {
-	appendUniqueArgs,
-	prependUniqueArgs,
-	UniqueArgument,
-} from './utils/ArgUtils';
+import { appendUniqueArgs, UniqueArgument } from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -240,7 +236,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['test'];
+	const args = new UniqueArgument('test');
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
@@ -249,14 +245,14 @@ const buildPlaywrightArgs: BuildArgsFn = (
 				? resolveTestNameStringInterpolation(testName)
 				: testName;
 			const final = withQuotes ? quote(escapeSingleQuotes(rawName)) : rawName;
-			args.push('-g', final);
+			args.append('-g', final);
 		}
 	}
 
-	return [
-		...appendUniqueArgs(args, options, runOptions),
-		q(normalizePath(filePath)),
-	];
+	args.append(options, runOptions);
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildRstestArgs: BuildArgsFn = (
