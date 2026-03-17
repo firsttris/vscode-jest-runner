@@ -216,12 +216,13 @@ const buildDenoArgs: BuildArgsFn = (
 
 	args.append('--junit-path=.deno-report.xml');
 
-	if (options.includes('--coverage')) {
+	args.append(options, runOptions);
+
+	if (args.includes('--coverage')) {
 		args.append('--coverage=coverage');
 		args.remove('--coverage');
 	}
 
-	args.append(options, runOptions);
 	args.append(q(normalizePath(filePath)));
 
 	return args.toArray();
