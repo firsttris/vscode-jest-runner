@@ -142,10 +142,16 @@ describe('UniqueArgument.append', () => {
 		]);
 	});
 
-	it('documents current behavior for unknown flags that also take values', () => {
+	it('preserves repeated playwright project flags with different values', () => {
 		expect(
-			createArgs(['--custom-flag', 'alpha'], ['--custom-flag', 'beta']),
-		).toEqual(['--custom-flag', 'alpha', 'beta']);
+			createArgs(['--project', 'chromium'], ['--project', 'firefox']),
+		).toEqual(['--project', 'chromium', '--project', 'firefox']);
+	});
+
+	it('preserves repeated jest reporter flags with different values', () => {
+		expect(
+			createArgs(['--reporters', 'default'], ['--reporters', 'jest-junit']),
+		).toEqual(['--reporters', 'default', '--reporters', 'jest-junit']);
 	});
 
 	it('treats equals syntax as exact standalone tokens', () => {
