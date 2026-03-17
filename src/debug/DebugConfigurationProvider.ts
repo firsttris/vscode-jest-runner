@@ -1,7 +1,11 @@
 import type * as vscode from 'vscode';
 import * as Settings from '../config/Settings';
 import type { TestRunnerConfig } from '../testRunnerConfig';
-import { appendUniqueArgs, prependUniqueArgs } from '../utils/ArgUtils';
+import {
+	appendUniqueArgs,
+	prependUniqueArgs,
+	UniqueArgument,
+} from '../utils/ArgUtils';
 import { logWarning } from '../utils/Logger';
 import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseCommandAndEnv } from '../utils/ShellUtils';
@@ -245,19 +249,23 @@ export class DebugConfigurationProvider {
 			}
 		}
 
-		const testArgs = filePath
-			? config.buildVitestArgs(filePath, testName, false)
-			: [];
-		const vitestArgs = prependUniqueArgs(testArgs, ['run']);
+		const testArgs = new UniqueArgument();
+
+		if (filePath) {
+			testArgs.append(config.buildVitestArgs(filePath, testName, false));
+		}
+
+		testArgs.prepend('run');
+
 		const binaryPath = resolveBinaryPath('vitest', config.cwd);
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = [...vitestArgs];
+			debugConfig.args = testArgs.toArray();
 		} else {
 			logWarning('Could not resolve vitest binary path, falling back to npx');
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = ['--no-install', 'vitest', ...vitestArgs];
+			debugConfig.args = ['--no-install', 'vitest', ...testArgs.toArray()];
 		}
 
 		return debugConfig;
@@ -299,29 +307,29 @@ export class DebugConfigurationProvider {
 			}
 		}
 
-		const testArgs = filePath
-			? config.buildPlaywrightArgs(filePath, testName, false)
-			: [];
+		const testArgs = new UniqueArgument();
+		if (filePath) {
+			testArgs.append(config.buildPlaywrightArgs(filePath, testName, false));
+		}
+
 		const binaryPath = resolveBinaryPath(
 			'@playwright/test',
 			config.cwd,
 			'playwright',
 		);
 
+		testArgs.append('--workers=1');
+
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = [...testArgs, '--workers=1'];
+			debugConfig.args = testArgs.toArray();
 		} else {
 			logWarning(
 				'Could not resolve playwright binary path, falling back to npx',
 			);
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = [
-				'--no-install',
-				'playwright',
-				...testArgs,
-				'--workers=1',
-			];
+			testArgs.prepend(['--no-install', 'playwright']);
+			debugConfig.args = testArgs.toArray();
 		}
 
 		return debugConfig;
