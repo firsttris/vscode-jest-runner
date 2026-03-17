@@ -12,12 +12,22 @@ const FLAGS_WITH_VALUES = new Set([
 export class UniqueArgument {
 	private args: string[];
 
-	public constructor(public inputArgs: string[]) {
+	public constructor(...inputArgs: string[]) {
 		this.args = appendUniqueArgs(inputArgs);
 	}
 
-	public append(...args: (string[] | null | undefined)[]) {
-		this.args = appendUniqueArgs(this.args, ...args);
+	public append(...args: (string | string[] | null | undefined)[]) {
+		const normalizedArgs: string[] = [];
+		for (const aArg of args) {
+			if (typeof aArg === 'string') {
+				normalizedArgs.push(aArg);
+			}
+			if (Array.isArray(aArg)) {
+				normalizedArgs.push(...aArg);
+			}
+		}
+
+		this.args = appendUniqueArgs(this.args, normalizedArgs);
 	}
 
 	public prepend(args: string[] | null | undefined) {

@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import { appendUniqueArgs, prependUniqueArgs } from './utils/ArgUtils';
+import { UniqueArgument } from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -54,18 +54,24 @@ const buildJestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = [q(escapeRegExpForPath(normalizePath(filePath)))];
+
+	const args = new UniqueArgument();
+
+	const filePathArg = q(escapeRegExpForPath(normalizePath(filePath)));
+	args.append(filePathArg);
 
 	if (configPath) {
-		args.push('-c', q(normalizePath(configPath)));
+		args.append('-c', q(normalizePath(configPath)));
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('-t', resolved);
+		args.append('-t', resolved);
 	}
 
-	return appendUniqueArgs(args, options, runOptions);
+	args.append(options, runOptions);
+
+	return args.toArray();
 };
 
 const buildVitestArgs: BuildArgsFn = (
