@@ -210,26 +210,25 @@ const buildDenoArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['test', '--allow-all'];
+
+	const args = new UniqueArgument('test', '--allow-all');
+
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('--filter', resolved);
+		args.append('--filter', resolved);
 	}
 
-	args.push('--junit-path=.deno-report.xml');
+	args.append('--junit-path=.deno-report.xml');
 
 	if (options.includes('--coverage')) {
-		args.push('--coverage=coverage');
-		const coverageIndex = options.indexOf('--coverage');
-		if (coverageIndex !== -1) {
-			options.splice(coverageIndex, 1);
-		}
+		args.append('--coverage=coverage');
+		args.remove('--coverage');
 	}
 
-	return [
-		...appendUniqueArgs(args, options, runOptions),
-		q(normalizePath(filePath)),
-	];
+	args.append(options, runOptions);
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildPlaywrightArgs: BuildArgsFn = (
