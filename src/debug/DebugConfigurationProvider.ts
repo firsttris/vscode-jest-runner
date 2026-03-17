@@ -125,6 +125,39 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
+		const runtimeArgs = new UniqueArgument();
+
+		let runtimeExecutable: string | undefined;
+		let debugConfigEnv: Record<string, string> | undefined = {};
+
+		const customCommand = Settings.getNodeTestCommand();
+		if (customCommand) {
+			const { env, executable, args } = parseCommandAndEnv(customCommand);
+			if (executable) {
+				runtimeArgs.append('--test');
+				runtimeArgs.append(args);
+
+				runtimeExecutable = executable;
+				if (Object.keys(env).length > 0) {
+					debugConfigEnv = { ...debugConfigEnv, ...env };
+				}
+			}
+		} else {
+			runtimeArgs.append('--test');
+		}
+
+		if (testName) {
+			let resolvedTestName = testName;
+			if (testName.includes('%')) {
+				resolvedTestName = resolveTestNameStringInterpolation(testName);
+			}
+			runtimeArgs.append('--test-name-pattern', resolvedTestName);
+		}
+
+		if (config.nodeTestRunOptions) {
+			runtimeArgs.append(config.nodeTestRunOptions);
+		}
+
 		const debugConfig: vscode.DebugConfiguration = {
 			console: 'integratedTerminal',
 			internalConsoleOptions: 'neverOpen',
@@ -133,39 +166,12 @@ export class DebugConfigurationProvider {
 			type: 'node',
 			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
 			...config.nodeTestDebugOptions,
+			args: [],
+			program: filePath || '',
+			runtimeArgs: runtimeArgs.toArray(),
+			runtimeExecutable,
+			env: debugConfigEnv,
 		};
-
-		const customCommand = Settings.getNodeTestCommand();
-		if (customCommand) {
-			const { env, executable, args } = parseCommandAndEnv(customCommand);
-			if (executable) {
-				debugConfig.runtimeExecutable = executable;
-				debugConfig.runtimeArgs = appendUniqueArgs(args, ['--test']);
-				if (Object.keys(env).length > 0) {
-					debugConfig.env = { ...debugConfig.env, ...env };
-				}
-			}
-		} else {
-			debugConfig.runtimeArgs = ['--test'];
-		}
-
-		if (testName) {
-			let resolvedTestName = testName;
-			if (testName.includes('%')) {
-				resolvedTestName = resolveTestNameStringInterpolation(testName);
-			}
-			debugConfig.runtimeArgs.push('--test-name-pattern', resolvedTestName);
-		}
-
-		if (config.nodeTestRunOptions) {
-			debugConfig.runtimeArgs = appendUniqueArgs(
-				debugConfig.runtimeArgs,
-				config.nodeTestRunOptions,
-			);
-		}
-
-		debugConfig.program = filePath || '';
-		debugConfig.args = [];
 
 		return debugConfig;
 	}
