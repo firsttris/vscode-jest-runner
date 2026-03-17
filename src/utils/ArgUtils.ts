@@ -1,3 +1,14 @@
+const FLAGS_WITH_VALUES = new Set([
+	'-c',
+	'-g',
+	'-t',
+	'--config',
+	'--filter',
+	'--test-name-pattern',
+	'--test-reporter',
+	'--test-reporter-destination',
+]);
+
 export class UniqueArgument {
 	private args: string[];
 
