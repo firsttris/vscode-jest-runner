@@ -260,7 +260,6 @@ export class DebugConfigurationProvider {
 			}
 		}
 
-		debugArgs.append('run');
 		if (filePath) {
 			debugArgs.append(config.buildVitestArgs(filePath, testName, false));
 		}
