@@ -30,8 +30,10 @@ export class UniqueArgument {
 		this.args = appendUniqueArgs(this.args, normalizedArgs);
 	}
 
-	public prepend(args: string[] | null | undefined) {
-		this.args = prependUniqueArgs(this.args, args);
+	public prepend(args: string[] | string | null | undefined) {
+		const normalizedArgs = typeof args === 'string' ? [args] : (args ?? []);
+
+		this.args = prependUniqueArgs(this.args, normalizedArgs);
 	}
 
 	public toArray(): string[] {

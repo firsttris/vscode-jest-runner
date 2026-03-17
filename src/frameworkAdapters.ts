@@ -86,26 +86,32 @@ const buildVitestArgs: BuildArgsFn = (
 	const hasWatchMode =
 		options.some(isVitestWatchOption) ||
 		(runOptions?.some(isVitestWatchOption) ?? false);
-	const allOptions = appendUniqueArgs(
-		normalizeVitestOptions(options, hasWatchMode),
-		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
-	);
-	let args = [q(normalizePath(resolve(filePath)))];
+
+	const args = new UniqueArgument();
 
 	if (!hasWatchMode) {
-		args = prependUniqueArgs(args, ['run']);
+		args.append('run');
 	}
 
+	const filePathArg = [q(normalizePath(resolve(filePath)))];
+	args.append(filePathArg);
+
 	if (configPath) {
-		args.push('--config', q(normalizePath(configPath)));
+		args.append('--config', q(normalizePath(configPath)));
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('-t', resolved);
+		args.append('-t', resolved);
 	}
 
-	return appendUniqueArgs(args, allOptions);
+	args.append(normalizeVitestOptions(options, hasWatchMode));
+
+	if (runOptions) {
+		args.append(normalizeVitestOptions(runOptions, hasWatchMode));
+	}
+
+	return args.toArray();
 };
 
 const buildNodeTestArgs: BuildArgsFn = (
