@@ -535,6 +535,35 @@ describe('TestRunnerConfig', () => {
 			expect(args[configIndexes[1] + 1]).toBe('alt-vitest.config.ts');
 		});
 
+		it('should preserve custom vitest command args without npx fallback', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestCommand':
+						'node ./custom-vitest.mjs --config=vitest.custom.ts',
+				}),
+			);
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.program).toBe('node');
+			expect(config.runtimeExecutable).toBeUndefined();
+			expect(config.args).toEqual([
+				'./custom-vitest.mjs',
+				'--config=vitest.custom.ts',
+				'run',
+				normalizePath(path.resolve('/workspace/test.spec.ts')),
+				'-t',
+				'Test 1',
+			]);
+		});
+
 		it('should return jest debug configuration for jest files', () => {
 			jest
 				.spyOn(fs, 'existsSync')
@@ -675,6 +704,35 @@ describe('TestRunnerConfig', () => {
 					rstestFilePath,
 				]),
 			);
+		});
+
+		it('should preserve custom rstest command args without npx fallback', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.rstestCommand':
+						'node ./custom-rstest.mjs --config /workspace/rstest.config.ts',
+				}),
+			);
+			jest
+				.spyOn(jestRunnerConfig, 'getRstestConfigPath')
+				.mockReturnValue('/workspace/rstest.config.ts');
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				rstestFilePath,
+				'works',
+			);
+
+			expect(config.program).toBe('node');
+			expect(config.runtimeExecutable).toBeUndefined();
+			expect(config.args).toEqual([
+				'./custom-rstest.mjs',
+				'--config',
+				'/workspace/rstest.config.ts',
+				rstestFilePath,
+				'-t',
+				'works',
+			]);
 		});
 	});
 

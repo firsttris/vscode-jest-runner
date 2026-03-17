@@ -9,6 +9,56 @@ const FLAGS_WITH_VALUES = new Set([
 	'--test-reporter-destination',
 ]);
 
+export class UniqueArgument {
+	private args: string[];
+
+	public constructor(...inputArgs: (string | string[])[]) {
+		const normalizedArgs: string[] = [];
+		for (const aArg of inputArgs) {
+			if (typeof aArg === 'string') {
+				normalizedArgs.push(aArg);
+			}
+			if (Array.isArray(aArg)) {
+				normalizedArgs.push(...aArg);
+			}
+		}
+		this.args = appendUniqueArgs(normalizedArgs);
+	}
+
+	public append(...args: (string | string[] | null | undefined)[]) {
+		const normalizedArgs: string[] = [];
+		for (const aArg of args) {
+			if (typeof aArg === 'string') {
+				normalizedArgs.push(aArg);
+			}
+			if (Array.isArray(aArg)) {
+				normalizedArgs.push(...aArg);
+			}
+		}
+
+		this.args = appendUniqueArgs(this.args, normalizedArgs);
+	}
+
+	public prepend(args: string[] | string | null | undefined) {
+		const normalizedArgs = typeof args === 'string' ? [args] : (args ?? []);
+
+		this.args = prependUniqueArgs(this.args, normalizedArgs);
+	}
+
+	public remove(arg: string) {
+		this.args = this.args.filter((a) => a !== arg);
+	}
+
+	public includes(arg: string): boolean {
+		// a set has a O(1) lookup time, but its baseline cpu+mem usage is way higher, so for small arrays as here this is faster than a Set
+		return this.args.includes(arg);
+	}
+
+	public toArray(): string[] {
+		return this.args;
+	}
+}
+
 const getArgSegment = (
 	args: string[],
 	startIndex: number,
@@ -47,7 +97,7 @@ const getArgKeys = (args: string[]): Set<string> => {
  * arrays are flattened in order, then known flag-value pairs and standalone
  * flags are deduplicated against what is already in the target.
  */
-export const appendUniqueArgs = (
+const appendUniqueArgs = (
 	...args: (string[] | null | undefined)[]
 ): string[] => {
 	const normalizedTarget: string[] = args[0] ?? [];
@@ -78,7 +128,7 @@ export const appendUniqueArgs = (
  * standalone flags and known flag-value pairs from the prefix are inserted at
  * the front while preserving the prefix order.
  */
-export const prependUniqueArgs = (
+const prependUniqueArgs = (
 	args: string[] | null | undefined,
 	prefix: string[] | null | undefined,
 ): string[] => {
