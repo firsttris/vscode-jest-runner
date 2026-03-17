@@ -51,6 +51,17 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
+		const runtimeArgs = new UniqueArgument('test', '--inspect-wait');
+
+		if (testName) {
+			const resolved = resolveTestNameStringInterpolation(testName);
+			runtimeArgs.append('-t', resolved);
+		}
+
+		if (config.bunRunOptions) {
+			runtimeArgs.append(config.bunRunOptions);
+		}
+
 		const debugConfig: vscode.DebugConfiguration = {
 			console: 'integratedTerminal',
 			internalConsoleOptions: 'neverOpen',
@@ -59,23 +70,10 @@ export class DebugConfigurationProvider {
 			type: 'bun',
 			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
 			...config.bunDebugOptions,
-			runtimeArgs: ['test', '--inspect-wait'],
+			args: [],
+			program: filePath,
+			runtimeArgs: runtimeArgs.toArray(),
 		};
-
-		if (testName) {
-			const resolved = resolveTestNameStringInterpolation(testName);
-			debugConfig.runtimeArgs.push('-t', resolved);
-		}
-
-		if (config.bunRunOptions) {
-			debugConfig.runtimeArgs = appendUniqueArgs(
-				debugConfig.runtimeArgs,
-				config.bunRunOptions,
-			);
-		}
-
-		debugConfig.program = filePath;
-		debugConfig.args = [];
 
 		return debugConfig;
 	}
@@ -85,19 +83,23 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
-		let runtimeArgs = ['test', '--inspect-brk', '--allow-all'];
+		const runtimeArgs = new UniqueArgument(
+			'test',
+			'--inspect-brk',
+			'--allow-all',
+		);
 
 		if (testName) {
 			const resolved = resolveTestNameStringInterpolation(testName);
-			runtimeArgs.push('--filter', resolved);
+			runtimeArgs.append('--filter', resolved);
 		}
 
 		if (config.denoRunOptions) {
-			runtimeArgs = appendUniqueArgs(runtimeArgs, config.denoRunOptions);
+			runtimeArgs.append(config.denoRunOptions);
 		}
 
 		if (filePath) {
-			runtimeArgs.push(filePath);
+			runtimeArgs.append(filePath);
 		}
 
 		const debugConfig: vscode.DebugConfiguration = {
@@ -110,7 +112,7 @@ export class DebugConfigurationProvider {
 			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
 			...config.denoDebugOptions,
 			runtimeExecutable: 'deno',
-			runtimeArgs,
+			runtimeArgs: runtimeArgs.toArray(),
 			attachSimplePort: 9229,
 			args: [],
 		};
@@ -374,19 +376,23 @@ export class DebugConfigurationProvider {
 			}
 		}
 
-		const testArgs = filePath
-			? config.buildJestArgs(filePath, testName, false)
-			: [];
+		const testArgs = new UniqueArgument();
+		if (filePath) {
+			testArgs.append(config.buildJestArgs(filePath, testName, false));
+		}
+
 		const binaryPath = resolveBinaryPath('jest', config.cwd);
-		const jestArgs = prependUniqueArgs(testArgs, ['--runInBand']);
+
+		testArgs.prepend('--runInBand');
 
 		if (binaryPath) {
 			debugConfig.program = binaryPath;
-			debugConfig.args = [...jestArgs];
+			debugConfig.args = testArgs.toArray();
 		} else {
 			logWarning('Could not resolve jest binary path, falling back to npx');
 			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = ['--no-install', 'jest', ...jestArgs];
+			testArgs.prepend(['--no-install', 'jest']);
+			debugConfig.args = testArgs.toArray();
 		}
 
 		return debugConfig;

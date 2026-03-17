@@ -12,8 +12,17 @@ const FLAGS_WITH_VALUES = new Set([
 export class UniqueArgument {
 	private args: string[];
 
-	public constructor(...inputArgs: string[]) {
-		this.args = appendUniqueArgs(inputArgs);
+	public constructor(...inputArgs: (string | string[])[]) {
+		const normalizedArgs: string[] = [];
+		for (const aArg of inputArgs) {
+			if (typeof aArg === 'string') {
+				normalizedArgs.push(aArg);
+			}
+			if (Array.isArray(aArg)) {
+				normalizedArgs.push(...aArg);
+			}
+		}
+		this.args = appendUniqueArgs(normalizedArgs);
 	}
 
 	public append(...args: (string | string[] | null | undefined)[]) {
