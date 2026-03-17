@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 import * as Settings from '../config/Settings';
 import type { TestRunnerConfig } from '../testRunnerConfig';
-import { appendUniqueArgs, UniqueArgument } from '../utils/ArgUtils';
+import { UniqueArgument } from '../utils/ArgUtils';
 import { logWarning } from '../utils/Logger';
 import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseCommandAndEnv } from '../utils/ShellUtils';
@@ -363,19 +363,14 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
-		const debugConfig: vscode.DebugConfiguration = {
-			console: 'integratedTerminal',
-			internalConsoleOptions: 'neverOpen',
-			name: 'Debug Jest Tests',
-			request: 'launch',
-			type: 'node',
-			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
-			...config.debugOptions,
-		};
+		const debugArgs = new UniqueArgument();
+		let program: string | undefined;
+		let runtimeExecutable: string | undefined;
+		let debugEnv: Record<string, string> = {};
 
 		if (config.enableESM) {
-			debugConfig.env = {
-				...debugConfig.env,
+			debugEnv = {
+				...debugEnv,
 				NODE_OPTIONS: '--experimental-vm-modules',
 			};
 		}
@@ -384,37 +379,49 @@ export class DebugConfigurationProvider {
 		if (customCommand && typeof customCommand === 'string') {
 			const { env, executable, args } = parseCommandAndEnv(customCommand);
 			if (executable) {
-				debugConfig.program = executable;
-				debugConfig.args = [...args];
+				program = executable;
+				debugArgs.append(args);
 				if (Object.keys(env).length > 0) {
-					debugConfig.env = { ...debugConfig.env, ...env };
+					debugEnv = { ...debugEnv, ...env };
 				}
-				if (filePath) {
-					const testArgs = config.buildJestArgs(filePath, testName, false);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
-				}
-				return debugConfig;
 			}
 		}
 
-		const testArgs = new UniqueArgument();
 		if (filePath) {
-			testArgs.append(config.buildJestArgs(filePath, testName, false));
+			debugArgs.append(config.buildJestArgs(filePath, testName, false));
 		}
 
-		const binaryPath = resolveBinaryPath('jest', config.cwd);
+		if (!program) {
+			const binaryPath = resolveBinaryPath('jest', config.cwd);
 
-		testArgs.prepend('--runInBand');
+			debugArgs.prepend('--runInBand');
 
-		if (binaryPath) {
-			debugConfig.program = binaryPath;
-			debugConfig.args = testArgs.toArray();
-		} else {
-			logWarning('Could not resolve jest binary path, falling back to npx');
-			debugConfig.runtimeExecutable = 'npx';
-			testArgs.prepend(['--no-install', 'jest']);
-			debugConfig.args = testArgs.toArray();
+			if (binaryPath) {
+				program = binaryPath;
+			} else {
+				logWarning('Could not resolve jest binary path, falling back to npx');
+				runtimeExecutable = 'npx';
+				debugArgs.prepend(['--no-install', 'jest']);
+			}
 		}
+
+		if (config.debugOptions.env) {
+			debugEnv = { ...debugEnv, ...config.debugOptions.env };
+		}
+
+		const debugConfig: vscode.DebugConfiguration = {
+			console: 'integratedTerminal',
+			internalConsoleOptions: 'neverOpen',
+			name: 'Debug Jest Tests',
+			request: 'launch',
+			type: 'node',
+			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
+			...config.debugOptions,
+			program,
+			runtimeExecutable,
+			args: debugArgs.toArray(),
+			env: Object.values(debugEnv).length >= 1 ? debugEnv : undefined,
+		};
 
 		return debugConfig;
 	}
