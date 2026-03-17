@@ -176,26 +176,25 @@ const buildBunArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['test'];
+
+	const args = new UniqueArgument('test');
 
 	if (options.includes('--coverage')) {
-		args.push('--coverage');
-		args.push('--coverage-reporter=lcov');
-		const coverageIndex = options.indexOf('--coverage');
-		if (coverageIndex !== -1) {
-			options.splice(coverageIndex, 1);
-		}
+		args.append('--coverage');
+		args.append('--coverage-reporter=lcov');
+		args.remove('--coverage');
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('-t', resolved);
+		args.append('-t', resolved);
 	}
 
-	return [
-		...appendUniqueArgs(args, options, runOptions),
-		q(normalizePath(filePath)),
-	];
+	args.append(options, runOptions);
+
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildDenoArgs: BuildArgsFn = (
