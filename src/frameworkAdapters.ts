@@ -154,7 +154,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 		args.append('--test-name-pattern', resolved);
 	}
 
-	args.append(runOptions);
+	args.append(options, runOptions);
 
 	if (args.includes('--coverage')) {
 		args.append('--experimental-test-coverage');
