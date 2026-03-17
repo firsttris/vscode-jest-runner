@@ -1,11 +1,7 @@
 import type * as vscode from 'vscode';
 import * as Settings from '../config/Settings';
 import type { TestRunnerConfig } from '../testRunnerConfig';
-import {
-	appendUniqueArgs,
-	prependUniqueArgs,
-	UniqueArgument,
-} from '../utils/ArgUtils';
+import { appendUniqueArgs, UniqueArgument } from '../utils/ArgUtils';
 import { logWarning } from '../utils/Logger';
 import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseCommandAndEnv } from '../utils/ShellUtils';
@@ -292,40 +288,25 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
-		const debugConfig: vscode.DebugConfiguration = {
-			console: 'integratedTerminal',
-			internalConsoleOptions: 'neverOpen',
-			name: 'Debug Playwright Tests',
-			request: 'launch',
-			type: 'node',
-			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
-			...config.playwrightDebugOptions,
-		};
+		const debugArgs = new UniqueArgument();
+		let program: string | undefined;
+		let runtimeExecutable: string | undefined;
+		let debugEnv: Record<string, string> | undefined = {};
 
 		const customCommand = Settings.getPlaywrightCommand();
 		if (customCommand) {
 			const { env, executable, args } = parseCommandAndEnv(customCommand);
 			if (executable) {
-				debugConfig.program = executable;
-				debugConfig.args = [...args];
+				program = executable;
+				debugArgs.append(args);
 				if (Object.keys(env).length > 0) {
-					debugConfig.env = { ...debugConfig.env, ...env };
+					debugEnv = { ...debugEnv, ...env };
 				}
-				if (filePath) {
-					const testArgs = config.buildPlaywrightArgs(
-						filePath,
-						testName,
-						false,
-					);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
-				}
-				return debugConfig;
 			}
 		}
 
-		const testArgs = new UniqueArgument();
 		if (filePath) {
-			testArgs.append(config.buildPlaywrightArgs(filePath, testName, false));
+			debugArgs.append(config.buildPlaywrightArgs(filePath, testName, false));
 		}
 
 		const binaryPath = resolveBinaryPath(
@@ -334,19 +315,31 @@ export class DebugConfigurationProvider {
 			'playwright',
 		);
 
-		testArgs.append('--workers=1');
+		debugArgs.append('--workers=1');
 
 		if (binaryPath) {
-			debugConfig.program = binaryPath;
-			debugConfig.args = testArgs.toArray();
+			program = binaryPath;
 		} else {
 			logWarning(
 				'Could not resolve playwright binary path, falling back to npx',
 			);
-			debugConfig.runtimeExecutable = 'npx';
-			testArgs.prepend(['--no-install', 'playwright']);
-			debugConfig.args = testArgs.toArray();
+			runtimeExecutable = 'npx';
+			debugArgs.prepend(['--no-install', 'playwright']);
 		}
+
+		const debugConfig: vscode.DebugConfiguration = {
+			console: 'integratedTerminal',
+			internalConsoleOptions: 'neverOpen',
+			name: 'Debug Playwright Tests',
+			request: 'launch',
+			type: 'node',
+			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
+			...config.playwrightDebugOptions,
+			program,
+			runtimeExecutable,
+			args: debugArgs.toArray(),
+			env: Object.values(debugEnv).length >= 1 ? debugEnv : undefined,
+		};
 
 		return debugConfig;
 	}
