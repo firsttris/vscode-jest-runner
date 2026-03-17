@@ -96,10 +96,8 @@ const getArgKeys = (args: string[]): Set<string> => {
  * The first array is treated as authoritative and keeps its order. Additional
  * arrays are flattened in order, then known flag-value pairs and standalone
  * flags are deduplicated against what is already in the target.
- *
- * @deprecated use class UniqueArgument instead
  */
-export const appendUniqueArgs = (
+const appendUniqueArgs = (
 	...args: (string[] | null | undefined)[]
 ): string[] => {
 	const normalizedTarget: string[] = args[0] ?? [];
@@ -129,10 +127,8 @@ export const appendUniqueArgs = (
  * The existing args remain authoritative and keep their relative order. Missing
  * standalone flags and known flag-value pairs from the prefix are inserted at
  * the front while preserving the prefix order.
- *
- * @deprecated use class UniqueArgument instead
  */
-export const prependUniqueArgs = (
+const prependUniqueArgs = (
 	args: string[] | null | undefined,
 	prefix: string[] | null | undefined,
 ): string[] => {
