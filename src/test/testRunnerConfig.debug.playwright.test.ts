@@ -147,6 +147,30 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 		expect(debugConfig.env).toEqual(expect.objectContaining({ PWDEBUG: '1' }));
 	});
 
+	it('should preserve custom playwright command args without npx fallback', () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+			new WorkspaceConfiguration({
+				'jestrunner.playwrightCommand':
+					'node ./custom-playwright.mjs --config=playwright.custom.ts',
+			}),
+		);
+		jest.spyOn(ResolverUtils, 'resolveBinaryPath').mockReturnValue(undefined);
+
+		const debugConfig = config.getDebugConfiguration(mockFilePath, 'my test');
+
+		expect(debugConfig.program).toBe('node');
+		expect(debugConfig.runtimeExecutable).toBeUndefined();
+		expect(debugConfig.args).toEqual([
+			'./custom-playwright.mjs',
+			'--config=playwright.custom.ts',
+			'test',
+			'-g',
+			'my test',
+			mockFilePath,
+			'--workers=1',
+		]);
+	});
+
 	it('should include custom playwrightDebugOptions', () => {
 		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 			new WorkspaceConfiguration({
