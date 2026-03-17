@@ -505,6 +505,31 @@ describe('TestRunnerConfig', () => {
 			expect(config.args).toEqual(['run', expectedFilePath, '-t', 'Test 1']);
 		});
 
+		it('should omit run for vitest debug when watch mode is requested', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestRunOptions': ['--watch'],
+				}),
+			);
+			jest
+				.spyOn(fs, 'existsSync')
+				.mockImplementation((filePath: fs.PathLike) => {
+					return String(filePath).includes('vitest.config');
+				});
+
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.args).toContain('--watch');
+			expect(config.args).not.toContain('run');
+		});
+
 		it('should preserve complete repeated --config pairs for vitest args', () => {
 			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 				new WorkspaceConfiguration({
