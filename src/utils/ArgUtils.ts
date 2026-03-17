@@ -36,6 +36,15 @@ export class UniqueArgument {
 		this.args = prependUniqueArgs(this.args, normalizedArgs);
 	}
 
+	public remove(arg: string) {
+		this.args = this.args.filter((a) => a !== arg);
+	}
+
+	public includes(arg: string): boolean {
+		// a set has a O(1) lookup time, but its baseline cpu+mem usage is way higher, so for small arrays as here this is faster than a Set
+		return this.args.includes(arg);
+	}
+
 	public toArray(): string[] {
 		return this.args;
 	}

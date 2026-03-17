@@ -123,14 +123,16 @@ const buildNodeTestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['--test'];
+
+	const args = new UniqueArgument('--test');
 
 	if (options.includes('--jtr-structured') || options.includes('--coverage')) {
 		const reporters = getReporterPaths();
 		const reporterPath = isWindows()
 			? pathToFileURL(reporters.node).href
 			: reporters.node;
-		args.push(
+
+		args.append(
 			'--test-reporter',
 			quote(reporterPath),
 			'--test-reporter-destination',
@@ -145,24 +147,24 @@ const buildNodeTestArgs: BuildArgsFn = (
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('--test-name-pattern', resolved);
+		args.append('--test-name-pattern', resolved);
 	}
 
-	const allOptions = appendUniqueArgs(options, runOptions);
+	args.append(runOptions);
 
-	if (allOptions.includes('--coverage')) {
-		args.push('--experimental-test-coverage');
-		args.push('--test-reporter', 'tap');
-		args.push('--test-reporter-destination', 'stdout');
-		args.push('--test-reporter', 'lcov');
-		args.push('--test-reporter-destination', 'lcov.info');
-		const coverageIndex = allOptions.indexOf('--coverage');
-		if (coverageIndex > -1) {
-			allOptions.splice(coverageIndex, 1);
-		}
+	if (args.includes('--coverage')) {
+		args.append('--experimental-test-coverage');
+		args.append('--test-reporter', 'tap');
+		args.append('--test-reporter-destination', 'stdout');
+		args.append('--test-reporter', 'lcov');
+		args.append('--test-reporter-destination', 'lcov.info');
+
+		args.remove('--coverage');
 	}
 
-	return [...appendUniqueArgs(args, allOptions), q(normalizePath(filePath))];
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildBunArgs: BuildArgsFn = (
