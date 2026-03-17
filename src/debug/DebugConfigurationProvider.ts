@@ -202,18 +202,19 @@ export class DebugConfigurationProvider {
 			debugArgs.append(...config.buildRstestArgs(filePath, testName, false));
 		}
 
-		const testArgs = filePath
-			? config.buildRstestArgs(filePath, testName, false)
-			: [];
-
-		const binaryPath = resolveBinaryPath('@rstest/core', config.cwd, 'rstest');
-		if (binaryPath) {
-			program = binaryPath;
-			debugArgs.append(...testArgs);
-		} else {
-			logWarning('Could not resolve rstest binary path, falling back to npx');
-			runtimeExecutable = 'npx';
-			debugArgs.append('--no-install', 'rstest', ...testArgs);
+		if (!program) {
+			const binaryPath = resolveBinaryPath(
+				'@rstest/core',
+				config.cwd,
+				'rstest',
+			);
+			if (binaryPath) {
+				program = binaryPath;
+			} else {
+				logWarning('Could not resolve rstest binary path, falling back to npx');
+				runtimeExecutable = 'npx';
+				debugArgs.prepend(['--no-install', 'rstest']);
+			}
 		}
 
 		if (config.rstestDebugOptions.env) {
@@ -264,13 +265,15 @@ export class DebugConfigurationProvider {
 			debugArgs.append(config.buildVitestArgs(filePath, testName, false));
 		}
 
-		const binaryPath = resolveBinaryPath('vitest', config.cwd);
-		if (binaryPath) {
-			program = binaryPath;
-		} else {
-			logWarning('Could not resolve vitest binary path, falling back to npx');
-			runtimeExecutable = 'npx';
-			debugArgs.prepend(['--no-install', 'vitest']);
+		if (!program) {
+			const binaryPath = resolveBinaryPath('vitest', config.cwd);
+			if (binaryPath) {
+				program = binaryPath;
+			} else {
+				logWarning('Could not resolve vitest binary path, falling back to npx');
+				runtimeExecutable = 'npx';
+				debugArgs.prepend(['--no-install', 'vitest']);
+			}
 		}
 
 		const debugConfig: vscode.DebugConfiguration = {
@@ -322,19 +325,21 @@ export class DebugConfigurationProvider {
 
 		debugArgs.append('--workers=1');
 
-		const binaryPath = resolveBinaryPath(
-			'@playwright/test',
-			config.cwd,
-			'playwright',
-		);
-		if (binaryPath) {
-			program = binaryPath;
-		} else {
-			logWarning(
-				'Could not resolve playwright binary path, falling back to npx',
+		if (!program) {
+			const binaryPath = resolveBinaryPath(
+				'@playwright/test',
+				config.cwd,
+				'playwright',
 			);
-			runtimeExecutable = 'npx';
-			debugArgs.prepend(['--no-install', 'playwright']);
+			if (binaryPath) {
+				program = binaryPath;
+			} else {
+				logWarning(
+					'Could not resolve playwright binary path, falling back to npx',
+				);
+				runtimeExecutable = 'npx';
+				debugArgs.prepend(['--no-install', 'playwright']);
+			}
 		}
 
 		if (config.playwrightDebugOptions.env) {
