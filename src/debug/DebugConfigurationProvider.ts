@@ -239,6 +239,37 @@ export class DebugConfigurationProvider {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
+		const debugArgs = new UniqueArgument();
+		let program: string | undefined;
+		let runtimeExecutable: string | undefined;
+		let debugEnv: Record<string, string> | undefined = {};
+
+		const customCommand = Settings.getVitestCommand();
+		if (customCommand && typeof customCommand === 'string') {
+			const { env, executable, args } = parseCommandAndEnv(customCommand);
+			if (executable) {
+				program = executable;
+				debugArgs.append(...args);
+				if (Object.keys(env).length > 0) {
+					debugEnv = { ...debugEnv, ...env };
+				}
+			}
+		}
+
+		debugArgs.append('run');
+		if (filePath) {
+			debugArgs.append(config.buildVitestArgs(filePath, testName, false));
+		}
+
+		const binaryPath = resolveBinaryPath('vitest', config.cwd);
+		if (binaryPath) {
+			program = binaryPath;
+		} else {
+			logWarning('Could not resolve vitest binary path, falling back to npx');
+			runtimeExecutable = 'npx';
+			debugArgs.prepend(['--no-install', 'vitest']);
+		}
+
 		const debugConfig: vscode.DebugConfiguration = {
 			console: 'integratedTerminal',
 			internalConsoleOptions: 'neverOpen',
@@ -247,43 +278,11 @@ export class DebugConfigurationProvider {
 			type: 'node',
 			cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
 			...config.vitestDebugOptions,
+			args: debugArgs.toArray(),
+			program,
+			runtimeExecutable,
+			env: Object.values(debugEnv).length >= 1 ? debugEnv : undefined,
 		};
-
-		const customCommand = Settings.getVitestCommand();
-		if (customCommand && typeof customCommand === 'string') {
-			const { env, executable, args } = parseCommandAndEnv(customCommand);
-			if (executable) {
-				debugConfig.program = executable;
-				debugConfig.args = [...args];
-				if (Object.keys(env).length > 0) {
-					debugConfig.env = { ...debugConfig.env, ...env };
-				}
-				if (filePath) {
-					const testArgs = config.buildVitestArgs(filePath, testName, false);
-					debugConfig.args = appendUniqueArgs(debugConfig.args, testArgs);
-				}
-				return debugConfig;
-			}
-		}
-
-		const testArgs = new UniqueArgument();
-
-		if (filePath) {
-			testArgs.append(config.buildVitestArgs(filePath, testName, false));
-		}
-
-		testArgs.prepend('run');
-
-		const binaryPath = resolveBinaryPath('vitest', config.cwd);
-
-		if (binaryPath) {
-			debugConfig.program = binaryPath;
-			debugConfig.args = testArgs.toArray();
-		} else {
-			logWarning('Could not resolve vitest binary path, falling back to npx');
-			debugConfig.runtimeExecutable = 'npx';
-			debugConfig.args = ['--no-install', 'vitest', ...testArgs.toArray()];
-		}
 
 		return debugConfig;
 	}
