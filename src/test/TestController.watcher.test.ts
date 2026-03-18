@@ -45,6 +45,27 @@ describe('JestTestController - file watcher', () => {
 		expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
 	});
 
+	it('should reparse file on save', () => {
+		const saveCallback = (vscode.workspace.onDidSaveTextDocument as jest.Mock)
+			.mock.calls[0][0];
+
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		const testFilePath = '/workspace/test.ts';
+		const testItem = new TestItem(
+			testFilePath,
+			'test.ts',
+			vscode.Uri.file(testFilePath),
+		);
+		mockTestController.items.add(testItem);
+
+		(parser.parseTestFile as jest.Mock).mockClear();
+
+		saveCallback({ uri: vscode.Uri.file(testFilePath) });
+
+		expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
+	});
+
 	it('should add new test file on create', () => {
 		const mockWatcher = (vscode.workspace.createFileSystemWatcher as jest.Mock)
 			.mock.results[0].value;

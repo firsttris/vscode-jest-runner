@@ -19,6 +19,7 @@ export class TestFileWatcher {
 	) {
 		this.setupFileWatcher();
 		this.setupDocumentOpenHandler();
+		this.setupDocumentSaveHandler();
 	}
 
 	private setupFileWatcher(): void {
@@ -123,6 +124,41 @@ export class TestFileWatcher {
 				}
 			}
 		});
+	}
+
+	private setupDocumentSaveHandler(): void {
+		const saveHandler = vscode.workspace.onDidSaveTextDocument((document) => {
+			const filePath = document.uri.fsPath;
+
+			if (!testFileCache.isTestFile(filePath)) {
+				return;
+			}
+
+			invalidateNodeTestCache(filePath);
+
+			let testItem = this.testController.items.get(filePath);
+
+			if (!testItem) {
+				const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+					document.uri,
+				);
+
+				if (!workspaceFolder) {
+					return;
+				}
+
+				testItem = getOrCreateFileTestItem(
+					this.testController,
+					workspaceFolder,
+					filePath,
+				);
+			}
+
+			testItem.children.replace([]);
+			parseTestsInFile(filePath, testItem, this.testController);
+		});
+
+		this.disposables.push(saveHandler);
 	}
 
 	public dispose(): void {

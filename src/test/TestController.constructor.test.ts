@@ -150,6 +150,7 @@ describe('JestTestController - constructor and dispose', () => {
 
 		it('should setup document open handler without running discovery at startup', () => {
 			expect(vscode.workspace.onDidOpenTextDocument).toHaveBeenCalled();
+			expect(vscode.workspace.onDidSaveTextDocument).toHaveBeenCalled();
 			expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
 		});
 
