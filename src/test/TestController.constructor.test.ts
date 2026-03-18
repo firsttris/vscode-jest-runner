@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { JestTestController } from '../TestController';
-import * as parser from '../parser';
 import { DetailedFileCoverage } from '../coverageProvider';
+import * as parser from '../parser';
+import { JestTestController } from '../TestController';
 import {
 	setupTestController,
-	TestControllerSetup,
+	type TestControllerSetup,
 } from './testControllerSetup';
 
 jest.mock('child_process');

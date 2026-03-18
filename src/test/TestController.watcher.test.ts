@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as parser from '../parser';
+import { testFileCache } from '../testDetection/testFileCache';
 import {
 	setupTestController,
+	type TestControllerSetup,
 	TestItem,
-	TestControllerSetup,
 } from './testControllerSetup';
-import { testFileCache } from '../testDetection/testFileCache';
 
 jest.mock('child_process');
 

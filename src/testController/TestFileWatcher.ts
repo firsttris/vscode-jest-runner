@@ -1,14 +1,14 @@
-import * as vscode from 'vscode';
 import { dirname } from 'node:path';
-import { TestRunnerConfig } from '../testRunnerConfig';
-import { testFileCache } from '../testDetection/testFileCache';
+import * as vscode from 'vscode';
+import { cacheManager } from '../cache/CacheManager';
 import { invalidateNodeTestCache } from '../testDetection/frameworkDetection';
+import { testFileCache } from '../testDetection/testFileCache';
 import {
 	findFolderTestItem,
 	getOrCreateFileTestItem,
 	parseTestsInFile,
 } from '../testDiscovery';
-import { cacheManager } from '../cache/CacheManager';
+import type { TestRunnerConfig } from '../testRunnerConfig';
 
 export class TestFileWatcher {
 	private disposables: vscode.Disposable[] = [];
