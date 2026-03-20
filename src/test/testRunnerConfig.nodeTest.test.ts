@@ -1,4 +1,6 @@
+import * as fs from 'node:fs';
 import * as vscode from 'vscode';
+import * as testFileDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	Document,
@@ -7,8 +9,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as fs from 'node:fs';
-import * as testFileDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Node Test Runner', () => {
 	let config: TestRunnerConfig;
@@ -310,6 +310,61 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 			expect(debugConfig.runtimeArgs).toContain('--experimental-test-coverage');
 		});
 
+		it('should not duplicate --test from nodeTestRunOptions', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestRunOptions': ['--test', '--test-reporter=spec'],
+				}),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('node-test');
+
+			const debugConfig = config.getDebugConfiguration('/path/to/test.test.js');
+
+			expect(
+				debugConfig.runtimeArgs?.filter((arg) => arg === '--test'),
+			).toHaveLength(1);
+			expect(debugConfig.runtimeArgs).toContain('--test-reporter=spec');
+		});
+
+		it('should preserve complete repeated --test-name-pattern pairs', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestRunOptions': [
+						'--test-name-pattern',
+						'configured test',
+					],
+				}),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('node-test');
+
+			const debugConfig = config.getDebugConfiguration(
+				'/path/to/test.test.js',
+				'current test',
+			);
+
+			const patternIndexes = (debugConfig.runtimeArgs ?? []).reduce(
+				(indexes: number[], arg, index) => {
+					if (arg === '--test-name-pattern') {
+						indexes.push(index);
+					}
+					return indexes;
+				},
+				[],
+			);
+
+			expect(patternIndexes).toHaveLength(2);
+			expect(debugConfig.runtimeArgs?.[patternIndexes[0] + 1]).toBe(
+				'current test',
+			);
+			expect(debugConfig.runtimeArgs?.[patternIndexes[1] + 1]).toBe(
+				'configured test',
+			);
+		});
+
 		it('should set program to file path', () => {
 			jest
 				.spyOn(vscode.workspace, 'getConfiguration')
@@ -336,6 +391,43 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 			const debugConfig = config.getDebugConfiguration('/path/to/test.test.js');
 
 			expect(debugConfig.runtimeExecutable).toBe('tsx');
+		});
+
+		it('should not duplicate --test from custom node test command', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestCommand': 'tsx --test --watch',
+				} as any),
+			);
+			jest
+				.spyOn(testFileDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('node-test');
+
+			const debugConfig = config.getDebugConfiguration('/path/to/test.test.js');
+
+			expect(
+				debugConfig.runtimeArgs?.filter((arg) => arg === '--test'),
+			).toHaveLength(1);
+			expect(debugConfig.runtimeArgs).toContain('--watch');
+		});
+	});
+
+	describe('buildNodeTestArgs', () => {
+		it('should not duplicate --test from nodeTestRunOptions', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.nodeTestRunOptions': ['--test', '--test-reporter=spec'],
+				}),
+			);
+
+			const args = config.buildNodeTestArgs(
+				'/path/to/test.test.js',
+				undefined,
+				false,
+			);
+
+			expect(args.filter((arg) => arg === '--test')).toHaveLength(1);
+			expect(args).toContain('--test-reporter=spec');
 		});
 	});
 

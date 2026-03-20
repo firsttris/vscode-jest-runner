@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { UniqueArgument } from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -35,24 +36,14 @@ const prepareTestName = (
 	return withQuotes ? quote(escapeSingleQuotes(resolved)) : resolved;
 };
 
-const mergeOptions = (
-	options: string[],
-	runOptions: string[] | null,
-): string[] => {
-	const set = new Set(options);
-	runOptions?.forEach((opt) => {
-		set.add(opt);
-	});
-	return [...set];
-};
-
 const isVitestWatchOption = (option: string): boolean =>
 	option === '--watch' || option === '-w' || option.startsWith('--watch=');
 
 const normalizeVitestOptions = (
 	options: string[],
 	hasWatchMode: boolean,
-): string[] => (hasWatchMode ? options.filter((option) => option !== 'run') : options);
+): string[] =>
+	hasWatchMode ? options.filter((option) => option !== 'run') : options;
 
 const buildJestArgs: BuildArgsFn = (
 	filePath,
@@ -63,18 +54,24 @@ const buildJestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = [q(escapeRegExpForPath(normalizePath(filePath)))];
+
+	const args = new UniqueArgument();
+
+	const filePathArg = q(escapeRegExpForPath(normalizePath(filePath)));
+	args.append(filePathArg);
 
 	if (configPath) {
-		args.push('-c', q(normalizePath(configPath)));
+		args.append('-c', q(normalizePath(configPath)));
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('-t', resolved);
+		args.append('-t', resolved);
 	}
 
-	return [...args, ...mergeOptions(options, runOptions)];
+	args.append(options, runOptions);
+
+	return args.toArray();
 };
 
 const buildVitestArgs: BuildArgsFn = (
@@ -89,26 +86,32 @@ const buildVitestArgs: BuildArgsFn = (
 	const hasWatchMode =
 		options.some(isVitestWatchOption) ||
 		(runOptions?.some(isVitestWatchOption) ?? false);
-	const allOptions = mergeOptions(
-		normalizeVitestOptions(options, hasWatchMode),
-		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
-	);
-	const args = [q(normalizePath(resolve(filePath)))];
+
+	const args = new UniqueArgument();
 
 	if (!hasWatchMode) {
-		args.unshift('run');
+		args.append('run');
 	}
 
+	const filePathArg = [q(normalizePath(resolve(filePath)))];
+	args.append(filePathArg);
+
 	if (configPath) {
-		args.push('--config', q(normalizePath(configPath)));
+		args.append('--config', q(normalizePath(configPath)));
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('-t', resolved);
+		args.append('-t', resolved);
 	}
 
-	return [...args, ...allOptions];
+	args.append(normalizeVitestOptions(options, hasWatchMode));
+
+	if (runOptions) {
+		args.append(normalizeVitestOptions(runOptions, hasWatchMode));
+	}
+
+	return args.toArray();
 };
 
 const buildNodeTestArgs: BuildArgsFn = (
@@ -120,14 +123,16 @@ const buildNodeTestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['--test'];
+
+	const args = new UniqueArgument('--test');
 
 	if (options.includes('--jtr-structured') || options.includes('--coverage')) {
 		const reporters = getReporterPaths();
 		const reporterPath = isWindows()
 			? pathToFileURL(reporters.node).href
 			: reporters.node;
-		args.push(
+
+		args.append(
 			'--test-reporter',
 			quote(reporterPath),
 			'--test-reporter-destination',
@@ -142,24 +147,24 @@ const buildNodeTestArgs: BuildArgsFn = (
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('--test-name-pattern', resolved);
+		args.append('--test-name-pattern', resolved);
 	}
 
-	const allOptions = mergeOptions(options, runOptions);
+	args.append(options, runOptions);
 
-	if (allOptions.includes('--coverage')) {
-		args.push('--experimental-test-coverage');
-		args.push('--test-reporter', 'tap');
-		args.push('--test-reporter-destination', 'stdout');
-		args.push('--test-reporter', 'lcov');
-		args.push('--test-reporter-destination', 'lcov.info');
-		const coverageIndex = allOptions.indexOf('--coverage');
-		if (coverageIndex > -1) {
-			allOptions.splice(coverageIndex, 1);
-		}
+	if (args.includes('--coverage')) {
+		args.append('--experimental-test-coverage');
+		args.append('--test-reporter', 'tap');
+		args.append('--test-reporter-destination', 'stdout');
+		args.append('--test-reporter', 'lcov');
+		args.append('--test-reporter-destination', 'lcov.info');
+
+		args.remove('--coverage');
 	}
 
-	return [...args, ...allOptions, q(normalizePath(filePath))];
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildBunArgs: BuildArgsFn = (
@@ -171,27 +176,25 @@ const buildBunArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['test'];
+
+	const args = new UniqueArgument('test');
 
 	if (options.includes('--coverage')) {
-		args.push('--coverage');
-		args.push('--coverage-reporter=lcov');
-		const coverageIndex = options.indexOf('--coverage');
-		if (coverageIndex !== -1) {
-			options.splice(coverageIndex, 1);
-		}
+		args.append('--coverage');
+		args.append('--coverage-reporter=lcov');
+		args.remove('--coverage');
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('-t', resolved);
+		args.append('-t', resolved);
 	}
 
-	return [
-		...args,
-		...mergeOptions(options, runOptions),
-		q(normalizePath(filePath)),
-	];
+	args.append(options, runOptions);
+
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildDenoArgs: BuildArgsFn = (
@@ -203,27 +206,26 @@ const buildDenoArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['test', '--allow-all'];
+
+	const args = new UniqueArgument('test', '--allow-all');
+
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('--filter', resolved);
+		args.append('--filter', resolved);
 	}
 
-	args.push('--junit-path=.deno-report.xml');
+	args.append('--junit-path=.deno-report.xml');
 
-	if (options.includes('--coverage')) {
-		args.push('--coverage=coverage');
-		const coverageIndex = options.indexOf('--coverage');
-		if (coverageIndex !== -1) {
-			options.splice(coverageIndex, 1);
-		}
+	args.append(options, runOptions);
+
+	if (args.includes('--coverage')) {
+		args.append('--coverage=coverage');
+		args.remove('--coverage');
 	}
 
-	return [
-		...args,
-		...mergeOptions(options, runOptions),
-		q(normalizePath(filePath)),
-	];
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildPlaywrightArgs: BuildArgsFn = (
@@ -235,7 +237,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = ['test'];
+	const args = new UniqueArgument('test');
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
@@ -244,15 +246,14 @@ const buildPlaywrightArgs: BuildArgsFn = (
 				? resolveTestNameStringInterpolation(testName)
 				: testName;
 			const final = withQuotes ? quote(escapeSingleQuotes(rawName)) : rawName;
-			args.push('-g', final);
+			args.append('-g', final);
 		}
 	}
 
-	return [
-		...args,
-		...mergeOptions(options, runOptions),
-		q(normalizePath(filePath)),
-	];
+	args.append(options, runOptions);
+	args.append(q(normalizePath(filePath)));
+
+	return args.toArray();
 };
 
 const buildRstestArgs: BuildArgsFn = (
@@ -264,20 +265,22 @@ const buildRstestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args: string[] = [];
+	const args = new UniqueArgument();
 
 	if (configPath) {
-		args.push('--config', q(normalizePath(configPath)));
+		args.append('--config', q(normalizePath(configPath)));
 	}
 
-	args.push(q(normalizePath(filePath)));
+	args.append(q(normalizePath(filePath)));
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.push('-t', resolved);
+		args.append('-t', resolved);
 	}
 
-	return [...args, ...mergeOptions(options, runOptions)];
+	args.append(options, runOptions);
+
+	return args.toArray();
 };
 
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {

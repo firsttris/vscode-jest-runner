@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as testFileDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	Document,
@@ -7,7 +8,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as testFileDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Rstest Runner', () => {
 	let config: TestRunnerConfig;
@@ -153,6 +153,25 @@ describe('TestRunnerConfig - Rstest Runner', () => {
 			);
 
 			expect(args).toEqual(['/path/to/example.test.ts', '--globals']);
+		});
+
+		it('should not duplicate overlapping additional and configured options', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.rstestRunOptions': ['--globals', '--threads=1'],
+				}),
+			);
+
+			const args = config.buildRstestArgs(
+				'/path/to/example.test.ts',
+				undefined,
+				false,
+				['--globals', '--watch'],
+			);
+
+			expect(args.filter((arg) => arg === '--globals')).toHaveLength(1);
+			expect(args).toContain('--threads=1');
+			expect(args).toContain('--watch');
 		});
 	});
 });

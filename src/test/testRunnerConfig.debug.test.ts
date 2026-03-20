@@ -376,6 +376,30 @@ describe('TestRunnerConfig', () => {
 				'--runInBand',
 			]);
 		});
+
+		it('should preserve complete repeated -t pairs for custom jest commands', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand': 'node ./custom-jest.js -t smoke',
+				}),
+			);
+
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.args).toEqual([
+				'./custom-jest.js',
+				'-t',
+				'smoke',
+				'/home/user/project/src/test\\.spec\\.ts',
+				'-t',
+				'my test',
+			]);
+		});
 	});
 
 	describe('getDebugConfiguration with Vitest', () => {
@@ -479,6 +503,90 @@ describe('TestRunnerConfig', () => {
 			);
 
 			expect(config.args).toEqual(['run', expectedFilePath, '-t', 'Test 1']);
+		});
+
+		it('should omit run for vitest debug when watch mode is requested', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestRunOptions': ['--watch'],
+				}),
+			);
+			jest
+				.spyOn(fs, 'existsSync')
+				.mockImplementation((filePath: fs.PathLike) => {
+					return String(filePath).includes('vitest.config');
+				});
+
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.args).toContain('--watch');
+			expect(config.args).not.toContain('run');
+		});
+
+		it('should preserve complete repeated --config pairs for vitest args', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestConfigPath': 'vitest.config.ts',
+					'jestrunner.vitestRunOptions': ['--config', 'alt-vitest.config.ts'],
+				}),
+			);
+			jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+			const args = jestRunnerConfig.buildVitestArgs(
+				'/workspace/test.spec.ts',
+				undefined,
+				false,
+			);
+			const expectedConfigPath = normalizePath(
+				path.resolve('/workspace', 'vitest.config.ts'),
+			);
+
+			const configIndexes = args.reduce<number[]>((indexes, arg, index) => {
+				if (arg === '--config') {
+					indexes.push(index);
+				}
+				return indexes;
+			}, []);
+
+			expect(configIndexes).toHaveLength(2);
+			expect(args[configIndexes[0] + 1]).toBe(expectedConfigPath);
+			expect(args[configIndexes[1] + 1]).toBe('alt-vitest.config.ts');
+		});
+
+		it('should preserve custom vitest command args without npx fallback', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestCommand':
+						'node ./custom-vitest.mjs --config=vitest.custom.ts',
+				}),
+			);
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				'/workspace/test.spec.ts',
+				'Test 1',
+			);
+
+			expect(config.program).toBe('node');
+			expect(config.runtimeExecutable).toBeUndefined();
+			expect(config.args).toEqual([
+				'./custom-vitest.mjs',
+				'--config=vitest.custom.ts',
+				'run',
+				normalizePath(path.resolve('/workspace/test.spec.ts')),
+				'-t',
+				'Test 1',
+			]);
 		});
 
 		it('should return jest debug configuration for jest files', () => {
@@ -588,6 +696,68 @@ describe('TestRunnerConfig', () => {
 			expect(config.args).toEqual(
 				expect.arrayContaining(['--no-install', 'rstest', rstestFilePath]),
 			);
+		});
+
+		it('should not duplicate rstest args from custom command', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.rstestCommand':
+						'/custom/rstest --config /workspace/rstest.config.ts -t smoke',
+				}),
+			);
+			jest
+				.spyOn(jestRunnerConfig, 'getRstestConfigPath')
+				.mockReturnValue('/workspace/rstest.config.ts');
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				rstestFilePath,
+				'works',
+			);
+
+			expect(config.program).toBe('/custom/rstest');
+			expect(
+				config.args?.filter((arg: string) => arg === '--config'),
+			).toHaveLength(1);
+			expect(config.args?.filter((arg: string) => arg === '-t')).toHaveLength(
+				2,
+			);
+			expect(config.args).toEqual(
+				expect.arrayContaining([
+					'/workspace/rstest.config.ts',
+					'smoke',
+					'works',
+					rstestFilePath,
+				]),
+			);
+		});
+
+		it('should preserve custom rstest command args without npx fallback', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.rstestCommand':
+						'node ./custom-rstest.mjs --config /workspace/rstest.config.ts',
+				}),
+			);
+			jest
+				.spyOn(jestRunnerConfig, 'getRstestConfigPath')
+				.mockReturnValue('/workspace/rstest.config.ts');
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				rstestFilePath,
+				'works',
+			);
+
+			expect(config.program).toBe('node');
+			expect(config.runtimeExecutable).toBeUndefined();
+			expect(config.args).toEqual([
+				'./custom-rstest.mjs',
+				'--config',
+				'/workspace/rstest.config.ts',
+				rstestFilePath,
+				'-t',
+				'works',
+			]);
 		});
 	});
 

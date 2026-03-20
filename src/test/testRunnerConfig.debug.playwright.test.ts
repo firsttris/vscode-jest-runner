@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
+import * as testDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
+import * as ResolverUtils from '../utils/ResolverUtils';
 import {
 	Document,
 	TextEditor,
@@ -7,8 +9,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as testDetection from '../testDetection/testFileDetection';
-import * as ResolverUtils from '../utils/ResolverUtils';
 
 describe('TestRunnerConfig - Playwright Debug', () => {
 	let config: TestRunnerConfig;
@@ -147,6 +147,30 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 		expect(debugConfig.env).toEqual(expect.objectContaining({ PWDEBUG: '1' }));
 	});
 
+	it('should preserve custom playwright command args without npx fallback', () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+			new WorkspaceConfiguration({
+				'jestrunner.playwrightCommand':
+					'node ./custom-playwright.mjs --config=playwright.custom.ts',
+			}),
+		);
+		jest.spyOn(ResolverUtils, 'resolveBinaryPath').mockReturnValue(undefined);
+
+		const debugConfig = config.getDebugConfiguration(mockFilePath, 'my test');
+
+		expect(debugConfig.program).toBe('node');
+		expect(debugConfig.runtimeExecutable).toBeUndefined();
+		expect(debugConfig.args).toEqual([
+			'./custom-playwright.mjs',
+			'--config=playwright.custom.ts',
+			'test',
+			'-g',
+			'my test',
+			mockFilePath,
+			'--workers=1',
+		]);
+	});
+
 	it('should include custom playwrightDebugOptions', () => {
 		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 			new WorkspaceConfiguration({
@@ -179,5 +203,43 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 			true,
 		);
 		expect(debugConfig.args).toContain(mockFilePath);
+	});
+
+	it('should not duplicate test filters from custom playwright command', () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+			new WorkspaceConfiguration({
+				'jestrunner.playwrightCommand': '/custom/playwright test -g smoke',
+			}),
+		);
+
+		const debugConfig = config.getDebugConfiguration(mockFilePath, 'my test');
+
+		expect(
+			debugConfig.args?.filter((arg: string) => arg === 'test'),
+		).toHaveLength(1);
+		expect(
+			debugConfig.args?.filter((arg: string) => arg === '-g'),
+		).toHaveLength(2);
+		expect(debugConfig.args).toEqual(
+			expect.arrayContaining(['smoke', 'my test', mockFilePath]),
+		);
+	});
+
+	it('should not duplicate test subcommand from run options', () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+			new WorkspaceConfiguration({
+				'jestrunner.playwrightRunOptions': ['test', '--headed'],
+			}),
+		);
+		jest
+			.spyOn(ResolverUtils, 'resolveBinaryPath')
+			.mockReturnValue('/home/user/project/node_modules/.bin/playwright');
+
+		const debugConfig = config.getDebugConfiguration(mockFilePath);
+
+		expect(
+			debugConfig.args?.filter((arg: string) => arg === 'test'),
+		).toHaveLength(1);
+		expect(debugConfig.args).toContain('--headed');
 	});
 });
