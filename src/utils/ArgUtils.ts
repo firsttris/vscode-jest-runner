@@ -24,7 +24,7 @@ const toSegments = (args: readonly string[], index = 0): string[][] =>
 			? [[args[index], args[index + 1]], ...toSegments(args, index + 2)]
 			: [[args[index]], ...toSegments(args, index + 1)];
 
-const mergeUniqueArgs = (
+const mergeUniqueArgSegments = (
 	base: string[] | null | undefined,
 	extra: string[] | null | undefined,
 	position: Position = 'append',
@@ -53,7 +53,7 @@ export const appendUniqueArgs = (
 	...extras: (string[] | null | undefined)[]
 ): string[] =>
 	extras.reduce(
-		(merged, extra) => mergeUniqueArgs(merged, extra, 'append'),
+		(merged, extra) => mergeUniqueArgSegments(merged, extra, 'append'),
 		base ?? [],
 	);
 
@@ -62,6 +62,6 @@ export const prependUniqueArgs = (
 	...prefixes: (string[] | null | undefined)[]
 ): string[] =>
 	prefixes.reduce(
-		(merged, prefix) => mergeUniqueArgs(merged, prefix, 'prepend'),
+		(merged, prefix) => mergeUniqueArgSegments(merged, prefix, 'prepend'),
 		base ?? [],
 	);
