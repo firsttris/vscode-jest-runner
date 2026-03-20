@@ -1,20 +1,19 @@
+import { resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { ConfigResolver } from './ConfigResolver';
-import { CodeLensOption } from './util';
-import { getTestFrameworkForFile } from './testDetection/testFileDetection';
-import { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
-import { resolve } from 'node:path';
-import { getFrameworkAdapter } from './frameworkAdapters';
-import { normalizePath } from './utils/PathUtils';
-import { quote } from './utils/TestNameUtils';
-import { resolveBinaryPath } from './utils/ResolverUtils';
-import { DebugConfigurationProvider } from './debug/DebugConfigurationProvider';
 import * as Settings from './config/Settings';
+import { getDebugConfiguration } from './debug/DebugConfigurationProvider';
+import { getFrameworkAdapter } from './frameworkAdapters';
+import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
+import { getTestFrameworkForFile } from './testDetection/testFileDetection';
+import type { CodeLensOption } from './util';
+import { normalizePath } from './utils/PathUtils';
+import { resolveBinaryPath } from './utils/ResolverUtils';
+import { quote } from './utils/TestNameUtils';
 
 export class TestRunnerConfig {
 	private configResolver = new ConfigResolver();
-	private debugConfigProvider = new DebugConfigurationProvider();
 
 	public get jestCommand(): string {
 		const customCommand = Settings.getJestCommand();
@@ -450,10 +449,6 @@ export class TestRunnerConfig {
 		filePath?: string,
 		testName?: string,
 	): vscode.DebugConfiguration {
-		return this.debugConfigProvider.getDebugConfiguration(
-			this,
-			filePath,
-			testName,
-		);
+		return getDebugConfiguration(this, filePath, testName);
 	}
 }
