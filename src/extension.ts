@@ -1,10 +1,9 @@
-'use strict';
 import * as vscode from 'vscode';
-import { TestRunner } from './testRunner';
-import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
-import { TestRunnerConfig } from './testRunnerConfig';
 import { JestTestController } from './TestController';
+import { TestRunnerCodeLensProvider } from './TestRunnerCodeLensProvider';
 import { testFileCache } from './testDetection/testFileCache';
+import { TestRunner } from './testRunner';
+import { TestRunnerConfig } from './testRunnerConfig';
 import { logError } from './utils/Logger';
 
 function wrapCommandHandler<T extends unknown[]>(

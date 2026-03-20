@@ -2,7 +2,10 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import { UniqueArgument } from './utils/ArgUtils';
+import {
+	appendUniqueArgs,
+	prependUniqueArgs,
+} from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -54,24 +57,18 @@ const buildJestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-
-	const args = new UniqueArgument();
-
-	const filePathArg = q(escapeRegExpForPath(normalizePath(filePath)));
-	args.append(filePathArg);
+	const args = [q(escapeRegExpForPath(normalizePath(filePath)))];
 
 	if (configPath) {
-		args.append('-c', q(normalizePath(configPath)));
+		args.push('-c', q(normalizePath(configPath)));
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.append('-t', resolved);
+		args.push('-t', resolved);
 	}
 
-	args.append(options, runOptions);
-
-	return args.toArray();
+	return appendUniqueArgs(args, options, runOptions);
 };
 
 const buildVitestArgs: BuildArgsFn = (
@@ -86,32 +83,25 @@ const buildVitestArgs: BuildArgsFn = (
 	const hasWatchMode =
 		options.some(isVitestWatchOption) ||
 		(runOptions?.some(isVitestWatchOption) ?? false);
-
-	const args = new UniqueArgument();
-
-	if (!hasWatchMode) {
-		args.append('run');
-	}
-
-	const filePathArg = [q(normalizePath(resolve(filePath)))];
-	args.append(filePathArg);
+	const allOptions = appendUniqueArgs(
+		normalizeVitestOptions(options, hasWatchMode),
+		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
+	);
+	const args = [q(normalizePath(resolve(filePath)))];
+	const maybeRunArgs = hasWatchMode
+		? args
+		: prependUniqueArgs(args, ['run']);
 
 	if (configPath) {
-		args.append('--config', q(normalizePath(configPath)));
+		maybeRunArgs.push('--config', q(normalizePath(configPath)));
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.append('-t', resolved);
+		maybeRunArgs.push('-t', resolved);
 	}
 
-	args.append(normalizeVitestOptions(options, hasWatchMode));
-
-	if (runOptions) {
-		args.append(normalizeVitestOptions(runOptions, hasWatchMode));
-	}
-
-	return args.toArray();
+	return appendUniqueArgs(maybeRunArgs, allOptions);
 };
 
 const buildNodeTestArgs: BuildArgsFn = (
@@ -123,48 +113,51 @@ const buildNodeTestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
+	const args = ['--test'];
+	const withStructuredOutput =
+		options.includes('--jtr-structured') || options.includes('--coverage');
 
-	const args = new UniqueArgument('--test');
-
-	if (options.includes('--jtr-structured') || options.includes('--coverage')) {
+	if (withStructuredOutput) {
 		const reporters = getReporterPaths();
 		const reporterPath = isWindows()
 			? pathToFileURL(reporters.node).href
 			: reporters.node;
 
-		args.append(
+		args.push(
 			'--test-reporter',
 			quote(reporterPath),
 			'--test-reporter-destination',
 			'stdout',
 		);
-
-		const jtrIndex = options.indexOf('--jtr-structured');
-		if (jtrIndex !== -1) {
-			options.splice(jtrIndex, 1);
-		}
 	}
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.append('--test-name-pattern', resolved);
+		args.push('--test-name-pattern', resolved);
 	}
 
-	args.append(options, runOptions);
+	const allOptions = appendUniqueArgs(
+		options.filter((option) => option !== '--jtr-structured'),
+		runOptions,
+	);
+	const hasCoverage = allOptions.includes('--coverage');
+	const withoutCoverage = allOptions.filter((option) => option !== '--coverage');
+	const withOptions = appendUniqueArgs(args, withoutCoverage);
+	const withCoverage = hasCoverage
+		? appendUniqueArgs(withOptions, [
+				'--experimental-test-coverage',
+				'--test-reporter',
+				'tap',
+				'--test-reporter-destination',
+				'stdout',
+				'--test-reporter',
+				'lcov',
+				'--test-reporter-destination',
+				'lcov.info',
+			])
+		: withOptions;
 
-	if (args.includes('--coverage')) {
-		args.append('--experimental-test-coverage');
-		args.append('--test-reporter', 'tap');
-		args.append('--test-reporter-destination', 'stdout');
-		args.append('--test-reporter', 'lcov');
-		args.append('--test-reporter-destination', 'lcov.info');
-
-		args.remove('--coverage');
-	}
-
-	args.append(q(normalizePath(filePath)));
-
-	return args.toArray();
+	return [...withCoverage, q(normalizePath(filePath))];
 };
 
 const buildBunArgs: BuildArgsFn = (
@@ -176,25 +169,24 @@ const buildBunArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-
-	const args = new UniqueArgument('test');
-
-	if (options.includes('--coverage')) {
-		args.append('--coverage');
-		args.append('--coverage-reporter=lcov');
-		args.remove('--coverage');
-	}
+	const args = ['test'];
+	const hasCoverage = options.includes('--coverage');
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.append('-t', resolved);
+		args.push('-t', resolved);
 	}
 
-	args.append(options, runOptions);
+	const withCoverage = hasCoverage
+		? appendUniqueArgs(args, ['--coverage', '--coverage-reporter=lcov'])
+		: args;
+	const merged = appendUniqueArgs(
+		withCoverage,
+		options.filter((option) => option !== '--coverage'),
+		runOptions,
+	);
 
-	args.append(q(normalizePath(filePath)));
-
-	return args.toArray();
+	return [...merged, q(normalizePath(filePath))];
 };
 
 const buildDenoArgs: BuildArgsFn = (
@@ -206,26 +198,26 @@ const buildDenoArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-
-	const args = new UniqueArgument('test', '--allow-all');
+	const args = ['test', '--allow-all'];
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.append('--filter', resolved);
+		args.push('--filter', resolved);
 	}
+	const base = appendUniqueArgs(args, ['--junit-path=.deno-report.xml']);
+	const merged = appendUniqueArgs(
+		base,
+		options.filter((option) => option !== '--coverage'),
+		runOptions,
+	);
+	const finalArgs = appendUniqueArgs(
+		merged,
+		options.includes('--coverage') || (runOptions?.includes('--coverage') ?? false)
+			? ['--coverage=coverage']
+			: null,
+	);
 
-	args.append('--junit-path=.deno-report.xml');
-
-	args.append(options, runOptions);
-
-	if (args.includes('--coverage')) {
-		args.append('--coverage=coverage');
-		args.remove('--coverage');
-	}
-
-	args.append(q(normalizePath(filePath)));
-
-	return args.toArray();
+	return [...finalArgs, q(normalizePath(filePath))];
 };
 
 const buildPlaywrightArgs: BuildArgsFn = (
@@ -237,7 +229,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = new UniqueArgument('test');
+	const args = ['test'];
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
@@ -246,14 +238,14 @@ const buildPlaywrightArgs: BuildArgsFn = (
 				? resolveTestNameStringInterpolation(testName)
 				: testName;
 			const final = withQuotes ? quote(escapeSingleQuotes(rawName)) : rawName;
-			args.append('-g', final);
+			args.push('-g', final);
 		}
 	}
 
-	args.append(options, runOptions);
-	args.append(q(normalizePath(filePath)));
-
-	return args.toArray();
+	return [
+		...appendUniqueArgs(args, options, runOptions),
+		q(normalizePath(filePath)),
+	];
 };
 
 const buildRstestArgs: BuildArgsFn = (
@@ -265,22 +257,20 @@ const buildRstestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = new UniqueArgument();
+	const args: string[] = [];
 
 	if (configPath) {
-		args.append('--config', q(normalizePath(configPath)));
+		args.push('--config', q(normalizePath(configPath)));
 	}
 
-	args.append(q(normalizePath(filePath)));
+	args.push(q(normalizePath(filePath)));
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		args.append('-t', resolved);
+		args.push('-t', resolved);
 	}
 
-	args.append(options, runOptions);
-
-	return args.toArray();
+	return appendUniqueArgs(args, options, runOptions);
 };
 
 const adapters: Record<TestFrameworkName, BuildArgsFn> = {
