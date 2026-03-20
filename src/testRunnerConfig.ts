@@ -1,6 +1,9 @@
 import { resolve } from 'node:path';
 import * as vscode from 'vscode';
-import { ConfigResolver } from './ConfigResolver';
+import {
+	findConfigPath,
+	resolveConfigPath,
+} from './ConfigResolver';
 import * as Settings from './config/Settings';
 import { getDebugConfiguration } from './debug/DebugConfigurationProvider';
 import { getFrameworkAdapter } from './frameworkAdapters';
@@ -13,8 +16,6 @@ import { resolveBinaryPath } from './utils/ResolverUtils';
 import { quote } from './utils/TestNameUtils';
 
 export class TestRunnerConfig {
-	private configResolver = new ConfigResolver();
-
 	public get jestCommand(): string {
 		const customCommand = Settings.getJestCommand();
 		if (customCommand) {
@@ -203,6 +204,7 @@ export class TestRunnerConfig {
 		if (projectPath) {
 			return resolve(this.currentWorkspaceFolderPath, projectPath);
 		}
+		return undefined;
 	}
 
 	public get useNearestConfig(): boolean | undefined {
@@ -240,7 +242,7 @@ export class TestRunnerConfig {
 		configKey: string,
 		framework?: TestFrameworkName,
 	): string {
-		return this.configResolver.resolveConfigPath(
+		return resolveConfigPath(
 			targetPath,
 			configKey,
 			{
@@ -261,7 +263,7 @@ export class TestRunnerConfig {
 		targetConfigFilename?: string,
 		framework?: TestFrameworkName,
 	): string | undefined {
-		return this.configResolver.findConfigPath(
+		return findConfigPath(
 			targetPath,
 			{
 				currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
