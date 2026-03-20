@@ -29,14 +29,16 @@ type BuildArgsFn = (
 const prepareTestName = (
 	testName: string | undefined,
 	withQuotes: boolean,
+	exact = false,
 ): string | undefined => {
 	if (!testName) return undefined;
 
 	const resolved = testName.includes('%')
 		? resolveTestNameStringInterpolation(testName)
 		: testName;
+	const pattern = exact ? `^${resolved}$` : resolved;
 
-	return withQuotes ? quote(escapeSingleQuotes(resolved)) : resolved;
+	return withQuotes ? quote(escapeSingleQuotes(pattern)) : pattern;
 };
 
 const isVitestWatchOption = (option: string): boolean =>
@@ -63,7 +65,7 @@ const buildJestArgs: BuildArgsFn = (
 		args.push('-c', q(normalizePath(configPath)));
 	}
 
-	const resolved = prepareTestName(testName, withQuotes);
+	const resolved = prepareTestName(testName, withQuotes, true);
 	if (resolved) {
 		args.push('-t', resolved);
 	}
@@ -96,7 +98,7 @@ const buildVitestArgs: BuildArgsFn = (
 		maybeRunArgs.push('--config', q(normalizePath(configPath)));
 	}
 
-	const resolved = prepareTestName(testName, withQuotes);
+	const resolved = prepareTestName(testName, withQuotes, true);
 	if (resolved) {
 		maybeRunArgs.push('-t', resolved);
 	}
@@ -131,7 +133,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 		);
 	}
 
-	const resolved = prepareTestName(testName, withQuotes);
+	const resolved = prepareTestName(testName, withQuotes, true);
 	if (resolved) {
 		args.push('--test-name-pattern', resolved);
 	}
@@ -172,7 +174,7 @@ const buildBunArgs: BuildArgsFn = (
 	const args = ['test'];
 	const hasCoverage = options.includes('--coverage');
 
-	const resolved = prepareTestName(testName, withQuotes);
+	const resolved = prepareTestName(testName, withQuotes, true);
 	if (resolved) {
 		args.push('-t', resolved);
 	}
@@ -200,7 +202,7 @@ const buildDenoArgs: BuildArgsFn = (
 	const q = withQuotes ? quote : (s: string) => s;
 	const args = ['test', '--allow-all'];
 
-	const resolved = prepareTestName(testName, withQuotes);
+	const resolved = prepareTestName(testName, withQuotes, true);
 	if (resolved) {
 		args.push('--filter', resolved);
 	}
@@ -233,13 +235,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 
 	const resolved = prepareTestName(testName, withQuotes);
 	if (resolved) {
-		if (testName) {
-			const rawName = testName.includes('%')
-				? resolveTestNameStringInterpolation(testName)
-				: testName;
-			const final = withQuotes ? quote(escapeSingleQuotes(rawName)) : rawName;
-			args.push('-g', final);
-		}
+		args.push('-g', resolved);
 	}
 
 	return [
@@ -265,7 +261,7 @@ const buildRstestArgs: BuildArgsFn = (
 
 	args.push(q(normalizePath(filePath)));
 
-	const resolved = prepareTestName(testName, withQuotes);
+	const resolved = prepareTestName(testName, withQuotes, true);
 	if (resolved) {
 		args.push('-t', resolved);
 	}

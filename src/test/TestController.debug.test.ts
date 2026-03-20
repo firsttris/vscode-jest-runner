@@ -294,7 +294,7 @@ describe('JestTestController - debug handler', () => {
 		const debugCall = (vscode.debug.startDebugging as jest.Mock).mock
 			.calls[0][1];
 		expect(debugCall.args).toContain('-t');
-		expect(debugCall.args).toContain('Test with \\+ and \\* chars');
+		expect(debugCall.args).toContain('^Test with \\+ and \\* chars$');
 	});
 
 	it('should resolve string interpolation placeholders in debug test names', async () => {
@@ -318,7 +318,7 @@ describe('JestTestController - debug handler', () => {
 		const debugCall = (vscode.debug.startDebugging as jest.Mock).mock
 			.calls[0][1];
 		expect(debugCall.args).toContain('-t');
-		expect(debugCall.args).toContain('xyz by (.*?)');
+		expect(debugCall.args).toContain('^xyz by (.*?)$');
 		expect(debugCall.args).not.toContain('xyz by \\$title');
 	});
 

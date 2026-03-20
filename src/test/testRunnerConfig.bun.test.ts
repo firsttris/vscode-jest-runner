@@ -92,7 +92,7 @@ describe('TestRunnerConfig - Bun Runner', () => {
 				.spyOn(vscode.workspace, 'getConfiguration')
 				.mockReturnValue(new WorkspaceConfiguration({}));
 			const args = config.buildBunArgs('/path/to/test.ts', 'my test', false);
-			expect(args).toEqual(['test', '-t', 'my test', '/path/to/test.ts']);
+			expect(args).toEqual(['test', '-t', '^my test$', '/path/to/test.ts']);
 		});
 
 		it('should include run options', () => {

@@ -339,7 +339,7 @@ describe('TestRunnerConfig', () => {
 				'--runInBand',
 				'/home/user/project/src/test\\.spec\\.ts',
 				'-t',
-				'my test',
+				'^my test$',
 			]);
 		});
 
@@ -372,7 +372,7 @@ describe('TestRunnerConfig', () => {
 				'-c',
 				expectedConfigPath,
 				'-t',
-				'my test',
+				'^my test$',
 				'--runInBand',
 			]);
 		});
@@ -397,7 +397,7 @@ describe('TestRunnerConfig', () => {
 				'smoke',
 				'/home/user/project/src/test\\.spec\\.ts',
 				'-t',
-				'my test',
+				'^my test$',
 			]);
 		});
 	});
@@ -502,7 +502,12 @@ describe('TestRunnerConfig', () => {
 				path.resolve('/workspace/test.spec.ts'),
 			);
 
-			expect(config.args).toEqual(['run', expectedFilePath, '-t', 'Test 1']);
+			expect(config.args).toEqual([
+				'run',
+				expectedFilePath,
+				'-t',
+				'^Test 1$',
+			]);
 		});
 
 		it('should omit run for vitest debug when watch mode is requested', () => {
@@ -585,7 +590,7 @@ describe('TestRunnerConfig', () => {
 				'run',
 				normalizePath(path.resolve('/workspace/test.spec.ts')),
 				'-t',
-				'Test 1',
+				'^Test 1$',
 			]);
 		});
 
@@ -682,7 +687,7 @@ describe('TestRunnerConfig', () => {
 				'/workspace/rstest.config.ts',
 				rstestFilePath,
 				'-t',
-				'works',
+				'^works$',
 			]);
 		});
 
@@ -725,7 +730,7 @@ describe('TestRunnerConfig', () => {
 				expect.arrayContaining([
 					'/workspace/rstest.config.ts',
 					'smoke',
-					'works',
+					'^works$',
 					rstestFilePath,
 				]),
 			);
@@ -756,7 +761,7 @@ describe('TestRunnerConfig', () => {
 				'/workspace/rstest.config.ts',
 				rstestFilePath,
 				'-t',
-				'works',
+				'^works$',
 			]);
 		});
 	});

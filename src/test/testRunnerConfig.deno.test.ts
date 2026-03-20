@@ -101,7 +101,7 @@ describe('TestRunnerConfig - Deno Runner', () => {
 				'test',
 				'--allow-all',
 				'--filter',
-				'my test',
+				'^my test$',
 				'--junit-path=.deno-report.xml',
 				'/path/to/test.ts',
 			]);

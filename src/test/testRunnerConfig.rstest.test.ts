@@ -115,7 +115,7 @@ describe('TestRunnerConfig - Rstest Runner', () => {
 				false,
 			);
 
-			expect(args).toEqual(['/path/to/example.test.ts', '-t', 'works']);
+			expect(args).toEqual(['/path/to/example.test.ts', '-t', '^works$']);
 		});
 
 		it('should pass rstest config path when available', () => {

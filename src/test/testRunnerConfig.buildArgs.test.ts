@@ -64,7 +64,7 @@ describe('TestRunnerConfig', () => {
 
 			expect(args[0]).toBe('/home/user/project/src/test\\.spec\\.ts');
 			expect(args).toContain('-t');
-			expect(args).toContain('my test name');
+			expect(args).toContain('^my test name$');
 		});
 
 		it('should escape special regex characters in file paths', () => {
@@ -167,9 +167,9 @@ describe('TestRunnerConfig', () => {
 
 			const testNameIndex = args.indexOf('-t') + 1;
 			if (isWindows()) {
-				expect(args[testNameIndex]).toBe('"xyz by ""(.*?)"""');
+				expect(args[testNameIndex]).toBe('"^xyz by ""(.*?)""$"');
 			} else {
-				expect(args[testNameIndex]).toBe('\'xyz by "(.*?)"\'');
+				expect(args[testNameIndex]).toBe('\'^xyz by "(.*?)"$\'');
 			}
 		});
 
@@ -381,8 +381,29 @@ describe('TestRunnerConfig', () => {
 			);
 
 			expect(args).toContain('-t');
-			const expectedTestName = isWindows() ? '"my test"' : "'my test'";
+			const expectedTestName = isWindows()
+				? '"^my test$"'
+				: "'^my test$'";
 			expect(args).toContain(expectedTestName);
+		});
+
+		it('should match exact nested vitest test name and not prefix collisions', () => {
+			const nestedTestName = 'math suite adds 1 \\+ 2 to equal 3';
+			const args = jestRunnerConfig.buildVitestArgs(
+				'/workspace/test.spec.ts',
+				nestedTestName,
+				false,
+			);
+
+			const filterIndex = args.indexOf('-t');
+			expect(filterIndex).toBeGreaterThan(-1);
+
+			const filterPattern = args[filterIndex + 1];
+			expect(filterPattern).toBe('^math suite adds 1 \\+ 2 to equal 3$');
+
+			const filterRegex = new RegExp(filterPattern);
+			expect(filterRegex.test('math suite adds 1 + 2 to equal 3')).toBe(true);
+			expect(filterRegex.test('math suite adds 1 + 2 to equal 3466')).toBe(false);
 		});
 
 		it('should include vitest config path when set', () => {

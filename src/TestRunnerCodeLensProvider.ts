@@ -178,6 +178,14 @@ const buildGroupKey = (
 	return `${node.start?.line}-${parent?.name || 'root'}`;
 };
 
+const withDescribeChildrenSuffix = (
+	node: TestNode,
+	pattern: string | undefined,
+): string | undefined =>
+	node.type === 'describe' && (node.children?.length ?? 0) > 0 && pattern
+		? `${pattern}(\\s.*)?`
+		: pattern;
+
 const buildAllPatternName = (
 	node: TestNode,
 	parent: TestNode | undefined,
@@ -193,7 +201,8 @@ const buildAllPatternName = (
 		const fullTemplateName = [parentTemplateOrName, template]
 			.filter(Boolean)
 			.join(' ');
-		return toTestNamePattern(fullTemplateName);
+		const pattern = toTestNamePattern(fullTemplateName);
+		return withDescribeChildrenSuffix(node, pattern);
 	}
 
 	const line = node.start?.line;
@@ -201,7 +210,8 @@ const buildAllPatternName = (
 		return undefined;
 	}
 
-	return toTestNamePattern(findFullTestName(line, parseResults));
+	const pattern = toTestNamePattern(findFullTestName(line, parseResults));
+	return withDescribeChildrenSuffix(node, pattern);
 };
 
 const getIndexedTitle = (option: CodeLensOption, index?: number): string => {
@@ -241,8 +251,10 @@ function getTestsBlocks(
 
 	const range = getNodeRange(parsedNode);
 
-	const fullTestName =
+	const testNamePattern =
 		toTestNamePattern(buildFullTestName(parsedNode, parseResults)) || '';
+	const fullTestName =
+		withDescribeChildrenSuffix(parsedNode, testNamePattern) || '';
 
 	let testIndex: number | undefined;
 	const isExpandedEachNode = hasEachTemplate(parsedNode);
