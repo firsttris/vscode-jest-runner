@@ -1,17 +1,17 @@
 import { parseTestFile } from './parser';
 import {
 	CodeLens,
-	CodeLensProvider,
+	type CodeLensProvider,
 	Range,
-	TextDocument,
+	type TextDocument,
 	workspace,
 } from 'vscode';
 import { testFileCache } from './testDetection/testFileCache';
-import { CodeLensOption } from './util';
+import type { CodeLensOption } from './util';
 import {
 	findFullTestName,
 	toTestNamePattern,
-	TestNode,
+	type TestNode,
 } from './utils/TestNameUtils';
 import { logError } from './utils/Logger';
 

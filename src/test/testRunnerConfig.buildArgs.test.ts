@@ -146,7 +146,7 @@ describe('TestRunnerConfig', () => {
 
 			const testNameIndex = args.indexOf('-t') + 1;
 			if (isWindows()) {
-				expect(args[testNameIndex]).toBe('"test\'s name"');
+				expect(args[testNameIndex]).toBe('"^test\'s name$"');
 			} else {
 				expect(args[testNameIndex]).toContain("'\\''");
 			}
