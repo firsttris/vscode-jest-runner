@@ -413,20 +413,20 @@
     "format:fix": "biome format --write src"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.5",
+    "@biomejs/biome": "^2.4.8",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.3.3",
     "@types/shell-quote": "^1.7.5",
     "@types/vscode": "^1.100.0",
     "@vscode/vsce": "^3.7.1",
-    "jest": "^30.2.0",
+    "jest": "^30.3.0",
     "ovsx": "^0.10.9",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^8.0.1"
   },
   "dependencies": {
-    "@babel/parser": "^7.29.0",
+    "@babel/parser": "^7.29.2",
     "@babel/traverse": "^7.29.0",
     "fast-glob": "^3.3.3",
     "micromatch": "^4.0.8",

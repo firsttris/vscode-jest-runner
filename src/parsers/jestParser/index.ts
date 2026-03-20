@@ -10,13 +10,13 @@ export type { CodeLocation } from './types';
 export {
 	DescribeBlock,
 	Expect,
-	IParseResults,
 	ItBlock,
 	NamedBlock,
 	ParseResult,
 	ParsedNode,
 	ParsedNodeType,
 	ParsedRange,
+	type IParseResults,
 } from './parserNodes';
 export type { JESParserOptions, JESParserPluginOptions };
 export { getASTfor } from './babelParser';
