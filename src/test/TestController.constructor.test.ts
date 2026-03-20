@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
-import { JestTestController } from '../TestController';
-import * as parser from '../parser';
 import { DetailedFileCoverage } from '../coverageProvider';
+import * as parser from '../parser';
+import { JestTestController } from '../TestController';
 import {
 	setupTestController,
-	TestControllerSetup,
+	type TestControllerSetup,
 } from './testControllerSetup';
 
 jest.mock('child_process');
@@ -150,6 +150,7 @@ describe('JestTestController - constructor and dispose', () => {
 
 		it('should setup document open handler without running discovery at startup', () => {
 			expect(vscode.workspace.onDidOpenTextDocument).toHaveBeenCalled();
+			expect(vscode.workspace.onDidSaveTextDocument).toHaveBeenCalled();
 			expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
 		});
 

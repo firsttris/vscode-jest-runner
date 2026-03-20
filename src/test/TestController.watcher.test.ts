@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as parser from '../parser';
+import { testFileCache } from '../testDetection/testFileCache';
 import {
 	setupTestController,
+	type TestControllerSetup,
 	TestItem,
-	TestControllerSetup,
 } from './testControllerSetup';
-import { testFileCache } from '../testDetection/testFileCache';
 
 jest.mock('child_process');
 
@@ -41,6 +41,27 @@ describe('JestTestController - file watcher', () => {
 		(parser.parseTestFile as jest.Mock).mockClear();
 
 		changeCallback({ fsPath: testFilePath });
+
+		expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
+	});
+
+	it('should reparse file on save', () => {
+		const saveCallback = (vscode.workspace.onDidSaveTextDocument as jest.Mock)
+			.mock.calls[0][0];
+
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		const testFilePath = '/workspace/test.ts';
+		const testItem = new TestItem(
+			testFilePath,
+			'test.ts',
+			vscode.Uri.file(testFilePath),
+		);
+		mockTestController.items.add(testItem);
+
+		(parser.parseTestFile as jest.Mock).mockClear();
+
+		saveCallback({ uri: vscode.Uri.file(testFilePath) });
 
 		expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
 	});
