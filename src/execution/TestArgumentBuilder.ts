@@ -3,7 +3,11 @@ import type * as vscode from 'vscode';
 import { getReporterPaths } from '../reporters/reporterPaths';
 import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import type { TestRunnerConfig } from '../testRunnerConfig';
-import { isWindows, normalizePath } from '../utils/PathUtils';
+import {
+	escapeRegExpForPath,
+	isWindows,
+	normalizePath,
+} from '../utils/PathUtils';
 import {
 	escapeSingleQuotes,
 	quote,
@@ -322,10 +326,12 @@ class JestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 		}
 
 		const configPath = this.jestConfig.getJestConfigPath(allFiles[0]);
-		const normalizedFiles = this.getNormalizedFiles(allFiles);
+		const jestPathPatterns = this.getNormalizedFiles(allFiles).map((f) =>
+			escapeRegExpForPath(f),
+		);
 
 		const args = [
-			...normalizedFiles,
+			...jestPathPatterns,
 			'--json',
 			'--reporters',
 			'default',
