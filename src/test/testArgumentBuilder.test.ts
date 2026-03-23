@@ -574,7 +574,7 @@ describe('TestArgumentBuilder', () => {
 				mockController,
 			);
 
-			expect(args).toContain('/path/to/test.ts');
+			expect(args).toContain('/path/to/test\\.ts');
 			expect(args).toContain('--json');
 			expect(args).toContain('-c');
 			expect(args).toContain('/path/to/jest.config.ts');
@@ -710,6 +710,25 @@ describe('TestArgumentBuilder', () => {
 				true,
 				expect.any(Array),
 			);
+		});
+
+		it('should escape regex metacharacters in file paths for full-file jest runs', () => {
+			const files = ['/path/to/[segment]/test.spec.ts'];
+			const testsByFile = new Map();
+			testsByFile.set(files[0], [{ label: 'test1' }]);
+			(mockConfig.getJestConfigPath as jest.Mock).mockReturnValue(undefined);
+
+			const args = buildTestArgs(
+				files,
+				testsByFile,
+				'jest',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			expect(args[0]).toBe('/path/to/\\[segment\\]/test\\.spec\\.ts');
 		});
 	});
 });
