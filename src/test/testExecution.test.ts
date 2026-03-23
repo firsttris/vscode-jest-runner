@@ -19,6 +19,8 @@ import {
 jest.mock('../utils/PathUtils', () => ({
 	normalizePath: (path: string) => path.replace(/\\/g, '/'),
 	isWindows: () => false,
+	escapeRegExpForPath: (s: string) =>
+		s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 }));
 
 jest.mock('../util', () => {
@@ -79,8 +81,8 @@ describe('testExecution', () => {
 					mockTestController,
 				);
 
-				expect(args).toContain('C:/Projects/app/src/test.spec.ts');
-				expect(args.join(' ')).not.toContain('\\');
+					expect(args).toContain('C:/Projects/app/src/test\\.spec\\.ts');
+					expect(args.join(' ')).not.toContain('C:\\Projects\\app\\src\\');
 			});
 
 			it('should normalize Windows backslashes to forward slashes for Vitest', () => {
@@ -118,8 +120,8 @@ describe('testExecution', () => {
 					mockTestController,
 				);
 
-				expect(args).toContain('C:/Projects/app/src/test1.spec.ts');
-				expect(args).toContain('C:/Projects/app/src/test2.spec.ts');
+					expect(args).toContain('C:/Projects/app/src/test1\\.spec\\.ts');
+					expect(args).toContain('C:/Projects/app/src/test2\\.spec\\.ts');
 			});
 
 			it('should not modify Unix paths', () => {
@@ -136,7 +138,7 @@ describe('testExecution', () => {
 					mockTestController,
 				);
 
-				expect(args).toContain('/home/user/project/src/test.spec.ts');
+					expect(args).toContain('/home/user/project/src/test\\.spec\\.ts');
 			});
 		});
 
