@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TestRunnerConfig } from './testRunnerConfig';
+import type { TestRunnerConfig } from './testRunnerConfig';
 import { parse } from './parser';
 import { existsSync } from 'node:fs';
 import { TerminalManager } from './TerminalManager';
@@ -7,6 +7,7 @@ import {
 	escapeRegExp,
 	findFullTestName,
 	quote,
+	type TestNode,
 	unquote,
 } from './utils/TestNameUtils';
 import { getDirName, getFileName } from './utils/PathUtils';
@@ -144,6 +145,31 @@ export class TestRunner {
 		}
 	}
 
+	private isDescribeBlockLine(
+		selectedLine: number,
+		nodes: TestNode[] | undefined,
+	): boolean {
+		if (!nodes) {
+			return false;
+		}
+
+		for (const node of nodes) {
+			if (
+				node.type === 'describe' &&
+				node.start?.line === selectedLine &&
+				(node.children?.length ?? 0) > 0
+			) {
+				return true;
+			}
+
+			if (this.isDescribeBlockLine(selectedLine, node.children)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private findCurrentTestName(editor: vscode.TextEditor): string | undefined {
 		const { selection, document } = editor;
 		if (!selection.isEmpty) {
@@ -153,9 +179,17 @@ export class TestRunner {
 		const selectedLine = selection.active.line + 1;
 		const filePath = editor.document.fileName;
 		const testFile = parse(filePath);
+		const children = testFile.root.children as TestNode[] | undefined;
 
-		const fullTestName = findFullTestName(selectedLine, testFile.root.children);
-		return fullTestName ? escapeRegExp(fullTestName) : undefined;
+		const fullTestName = findFullTestName(selectedLine, children || []);
+		if (!fullTestName) {
+			return undefined;
+		}
+
+		const escapedName = escapeRegExp(fullTestName);
+		return this.isDescribeBlockLine(selectedLine, children)
+			? `${escapedName}(\\s.*)?`
+			: escapedName;
 	}
 
 	private buildCommand(

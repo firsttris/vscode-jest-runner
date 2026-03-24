@@ -209,6 +209,40 @@ describe('TestRunner', () => {
 			const command = calls[calls.length - 1][0];
 			expect(command).toContain('--collectCoverageFrom');
 		});
+
+		it('should include describe children pattern when cursor is on describe line', async () => {
+			jest.spyOn(parser, 'parse').mockReturnValueOnce({
+				root: {
+					children: [
+						{
+							type: 'describe',
+							name: 'Utils.ts',
+							start: { line: 6, column: 0 },
+							end: { line: 12, column: 1 },
+							children: [
+								{
+									type: 'it',
+									name: 'works',
+									start: { line: 7, column: 2 },
+									end: { line: 8, column: 3 },
+								},
+							],
+						},
+					],
+				},
+			} as any);
+
+			mockEditor.selection = {
+				isEmpty: true,
+				active: { line: 5 },
+			} as any;
+
+			await jestRunner.runCurrentTest();
+
+			const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
+			const command = calls[calls.length - 1][0];
+			expect(command).toContain('-t Utils\\.ts(\\s.*)?');
+		});
 	});
 
 	describe('runCurrentFile', () => {
