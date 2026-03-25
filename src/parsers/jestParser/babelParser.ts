@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { format } from 'node:util';
 import { parse as babelParse, type ParserOptions } from '@babel/parser';
 import * as t from '@babel/types';
 import {
@@ -12,7 +11,7 @@ import {
 import {
 	NamedBlock,
 	ParseResult,
-	ParsedNode,
+	type ParsedNode,
 	ParsedNodeType,
 	ParsedRange,
 } from './parserNodes';
@@ -54,16 +53,47 @@ const isDescribe = (name?: string) => name === 'describe';
 const isTestBlock = (name?: string) =>
 	name === 'it' || name === 'fit' || name === 'test';
 
-const formatTitle = (title: string, args: any, index: number): string => {
-	let formatted = title;
-
-	if (/%[sdifjoOc]/.test(title)) {
-		if (Array.isArray(args)) {
-			formatted = format(formatted, ...args);
-		} else {
-			formatted = format(formatted, args);
-		}
+const stringifyPlaceholderValue = (
+	value: unknown,
+	specifier: string,
+): string => {
+	if (value === undefined) {
+		return '';
 	}
+
+	switch (specifier) {
+		case 'd':
+		case 'i':
+			return Number.parseInt(String(value), 10).toString();
+		case 'f':
+			return Number(value).toString();
+		case 'j':
+			try {
+				return JSON.stringify(value);
+			} catch {
+				return String(value);
+			}
+		default:
+			return String(value);
+	}
+};
+
+const applyPrintfPlaceholders = (title: string, args: unknown): string => {
+	if (!/%[sdifjoOcp]/.test(title)) {
+		return title;
+	}
+
+	const values = Array.isArray(args) ? args : [args];
+	let argIndex = 0;
+
+	return title.replace(/%([sdifjoOcp])/g, (_match, specifier: string) => {
+		const value = values[argIndex++];
+		return stringifyPlaceholderValue(value, specifier);
+	});
+};
+
+const formatTitle = (title: string, args: any, index: number): string => {
+	let formatted = applyPrintfPlaceholders(title, args);
 
 	if (typeof args === 'object' && args !== null) {
 		formatted = formatted.replace(/\$(\w+)/g, (match, key) => {

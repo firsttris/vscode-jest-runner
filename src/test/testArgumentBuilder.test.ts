@@ -3,6 +3,7 @@ import {
 	buildTestArgs,
 	buildTestArgsFast,
 } from '../execution/TestArgumentBuilder';
+import { getFrameworkAdapter } from '../frameworkAdapters';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 
 // Mock vscode
@@ -709,6 +710,176 @@ describe('TestArgumentBuilder', () => {
 				'nested a b',
 				true,
 				expect.any(Array),
+			);
+		});
+
+		it('should build final jest -t pattern from test item id for test.each names', () => {
+			const files = ['/path/to/issue500.test.ts'];
+			const testsByFile = new Map();
+			testsByFile.set('/path/to/issue500.test.ts', [
+				{
+					label: 'Repro 0',
+					id: '/path/to/issue500.test.ts:it:14:Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick (default)',
+				},
+			]);
+
+			(mockController.items.get as jest.Mock).mockReturnValue({
+				children: { size: 6 },
+			});
+
+			(mockConfig.buildJestArgs as jest.Mock).mockImplementation(
+				(
+					filePath: string,
+					testName: string | undefined,
+					withQuotes: boolean,
+					options: string[],
+				) =>
+					getFrameworkAdapter('jest').buildArgs(
+						filePath,
+						testName,
+						withQuotes,
+						options,
+						'/path/to/jest.config.js',
+						null,
+					),
+			);
+
+			const args = buildTestArgs(
+				files,
+				testsByFile,
+				'jest',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			expect(mockConfig.buildJestArgs).toHaveBeenCalledWith(
+				'/path/to/issue500.test.ts',
+				'Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick (default)',
+				true,
+				expect.any(Array),
+			);
+
+			const patternIndex = args.indexOf('-t') + 1;
+			expect(args[patternIndex]).toBe(
+				"'^Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick (default)$'",
+			);
+		});
+
+		it('should build final jest -t pattern with braces and apostrophes in test name', () => {
+			const files = ['/path/to/issue500.test.ts'];
+			const testsByFile = new Map();
+			const fullTestName =
+				"Issue #500 manual repro Repro 1: Device 1 { avStatic: '2.0.0.0' } Restarting v2a";
+
+			testsByFile.set('/path/to/issue500.test.ts', [
+				{
+					label: 'Repro 1',
+					id: `/path/to/issue500.test.ts:it:15:${fullTestName}`,
+				},
+			]);
+
+			(mockController.items.get as jest.Mock).mockReturnValue({
+				children: { size: 6 },
+			});
+
+			(mockConfig.buildJestArgs as jest.Mock).mockImplementation(
+				(
+					filePath: string,
+					testName: string | undefined,
+					withQuotes: boolean,
+					options: string[],
+				) =>
+					getFrameworkAdapter('jest').buildArgs(
+						filePath,
+						testName,
+						withQuotes,
+						options,
+						'/path/to/jest.config.js',
+						null,
+					),
+			);
+
+			const args = buildTestArgs(
+				files,
+				testsByFile,
+				'jest',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			expect(mockConfig.buildJestArgs).toHaveBeenCalledWith(
+				'/path/to/issue500.test.ts',
+				fullTestName,
+				true,
+				expect.any(Array),
+			);
+
+			const patternIndex = args.indexOf('-t') + 1;
+			expect(args[patternIndex]).toContain(
+				"^Issue #500 manual repro Repro 1: Device 1 { avStatic: ",
+			);
+			expect(args[patternIndex]).toContain("\\''2.0.0.0'\\''");
+			expect(args[patternIndex]).toContain(" } Restarting v2a$");
+		});
+
+		it('should build final jest -t pattern with regex metacharacters and backslashes', () => {
+			const files = ['/path/to/issue500.test.ts'];
+			const testsByFile = new Map();
+			const fullTestName =
+				'Suite [A] (group) {x} path\\to\\file + .* ? ^ $ |';
+
+			testsByFile.set('/path/to/issue500.test.ts', [
+				{
+					label: 'meta',
+					id: `/path/to/issue500.test.ts:it:16:${fullTestName}`,
+				},
+			]);
+
+			(mockController.items.get as jest.Mock).mockReturnValue({
+				children: { size: 6 },
+			});
+
+			(mockConfig.buildJestArgs as jest.Mock).mockImplementation(
+				(
+					filePath: string,
+					testName: string | undefined,
+					withQuotes: boolean,
+					options: string[],
+				) =>
+					getFrameworkAdapter('jest').buildArgs(
+						filePath,
+						testName,
+						withQuotes,
+						options,
+						'/path/to/jest.config.js',
+						null,
+					),
+			);
+
+			const args = buildTestArgs(
+				files,
+				testsByFile,
+				'jest',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			expect(mockConfig.buildJestArgs).toHaveBeenCalledWith(
+				'/path/to/issue500.test.ts',
+				fullTestName,
+				true,
+				expect.any(Array),
+			);
+
+			const patternIndex = args.indexOf('-t') + 1;
+			expect(args[patternIndex]).toBe(
+				"'^Suite [A] (group) {x} path\\to\\file + .* ? ^ $ |$'",
 			);
 		});
 

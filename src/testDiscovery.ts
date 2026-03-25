@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 import { relative, dirname, basename, sep, join } from 'node:path';
 import { parseTestFile } from './parser';
-import { TestRunnerConfig } from './testRunnerConfig';
+import type { TestRunnerConfig } from './testRunnerConfig';
 import { testFileCache } from './testDetection/testFileCache';
 import { logError } from './utils/Logger';
 import {
-	escapeRegExp,
-	TestNode,
+	type TestNode,
 	updateTestNameIfUsingProperties,
 } from './utils/TestNameUtils';
 
@@ -163,7 +162,7 @@ export function processTestNodes(
 		const cleanTestName = updateTestNameIfUsingProperties(node.name);
 		const cleanFullName = updateTestNameIfUsingProperties(fullName);
 
-		const testId = `${filePath}:${node.type}:${node.start?.line || 0}:${escapeRegExp(cleanFullName || fullName)}`;
+		const testId = `${filePath}:${node.type}:${node.start?.line || 0}:${cleanFullName || fullName}`;
 
 		const testItem = testController.createTestItem(
 			testId,

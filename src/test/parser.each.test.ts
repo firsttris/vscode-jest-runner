@@ -61,6 +61,88 @@ describe('parser - it.each expansion', () => {
 		expect((children![1] as any).name).toBe('test 1: b');
 	});
 
+	it('should not append extra row values when title uses fewer printf placeholders', () => {
+		const code = `
+            it.each([
+                ['Device 0', 'amazon firetv_stick (default)', true],
+                ['Device 1', 'google chromecast (default)', false],
+            ])('Repro %#: %s, %s', (_deviceIndex, deviceName, expected) => {
+                expect(deviceName).toBeDefined();
+                expect(expected).toBeDefined();
+            });
+        `;
+		const result = parse('test.ts', code);
+		const children = result.root.children;
+		expect(children!.length).toBe(2);
+		expect((children![0] as any).name).toBe(
+			'Repro 0: Device 0, amazon firetv_stick (default)',
+		);
+		expect((children![1] as any).name).toBe(
+			'Repro 1: Device 1, google chromecast (default)',
+		);
+	});
+
+	it('should format %d and %i placeholders as integers', () => {
+		const code = `
+            it.each([['08', '12.9']])('ints %d %i', (a, b) => {
+                expect(a).toBeDefined();
+                expect(b).toBeDefined();
+            });
+        `;
+		const result = parse('test.ts', code);
+		const children = result.root.children;
+		expect(children!.length).toBe(1);
+		expect((children![0] as any).name).toBe('ints 8 12');
+	});
+
+	it('should format %f placeholders as numbers', () => {
+		const code = `
+            it.each([['3.50']])('float %f', (value) => {
+                expect(value).toBeDefined();
+            });
+        `;
+		const result = parse('test.ts', code);
+		const children = result.root.children;
+		expect(children!.length).toBe(1);
+		expect((children![0] as any).name).toBe('float 3.5');
+	});
+
+	it('should format %j placeholders with JSON serialization', () => {
+		const code = `
+            it.each([{ a: 1, b: 'x' }])('json %j', (obj) => {
+                expect(obj).toBeDefined();
+            });
+        `;
+		const result = parse('test.ts', code);
+		const children = result.root.children;
+		expect(children!.length).toBe(1);
+		expect((children![0] as any).name).toBe('json {"a":1,"b":"x"}');
+	});
+
+	it('should leave unsupported placeholders unchanged', () => {
+		const code = `
+            it.each([['abc']])('unknown %x and %s', (value) => {
+                expect(value).toBeDefined();
+            });
+        `;
+		const result = parse('test.ts', code);
+		const children = result.root.children;
+		expect(children!.length).toBe(1);
+		expect((children![0] as any).name).toBe('unknown %x and abc');
+	});
+
+	it('should replace missing placeholder values with empty strings', () => {
+		const code = `
+            it.each([['only-one']])('missing %s %s', (value) => {
+                expect(value).toBeDefined();
+            });
+        `;
+		const result = parse('test.ts', code);
+		const children = result.root.children;
+		expect(children!.length).toBe(1);
+		expect((children![0] as any).name).toBe('missing only-one ');
+	});
+
 	it('should expand it.each when table identifier is statically resolvable', () => {
 		const code = `
             const cases = [1, 2, 3];
