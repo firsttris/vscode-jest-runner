@@ -5,6 +5,7 @@ import {
 } from '../execution/TestArgumentBuilder';
 import { getFrameworkAdapter } from '../frameworkAdapters';
 import type { TestRunnerConfig } from '../testRunnerConfig';
+import { escapeSingleQuotes, unquote } from '../utils/TestNameUtils';
 
 // Mock vscode
 jest.mock('vscode', () => ({
@@ -762,8 +763,8 @@ describe('TestArgumentBuilder', () => {
 			);
 
 			const patternIndex = args.indexOf('-t') + 1;
-			expect(args[patternIndex]).toBe(
-				"'^Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick (default)$'",
+			expect(unquote(args[patternIndex])).toBe(
+				'^Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick (default)$',
 			);
 		});
 
@@ -819,11 +820,11 @@ describe('TestArgumentBuilder', () => {
 			);
 
 			const patternIndex = args.indexOf('-t') + 1;
-			expect(args[patternIndex]).toContain(
-				"^Issue #500 manual repro Repro 1: Device 1 { avStatic: ",
+			expect(unquote(args[patternIndex])).toBe(
+				escapeSingleQuotes(
+					"^Issue #500 manual repro Repro 1: Device 1 { avStatic: '2.0.0.0' } Restarting v2a$",
+				),
 			);
-			expect(args[patternIndex]).toContain("\\''2.0.0.0'\\''");
-			expect(args[patternIndex]).toContain(" } Restarting v2a$");
 		});
 
 		it('should build final jest -t pattern with regex metacharacters and backslashes', () => {
@@ -878,8 +879,8 @@ describe('TestArgumentBuilder', () => {
 			);
 
 			const patternIndex = args.indexOf('-t') + 1;
-			expect(args[patternIndex]).toBe(
-				"'^Suite [A] (group) {x} path\\to\\file + .* ? ^ $ |$'",
+			expect(unquote(args[patternIndex])).toBe(
+				'^Suite [A] (group) {x} path\\to\\file + .* ? ^ $ |$',
 			);
 		});
 
