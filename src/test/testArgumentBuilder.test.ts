@@ -5,7 +5,11 @@ import {
 } from '../execution/TestArgumentBuilder';
 import { getFrameworkAdapter } from '../frameworkAdapters';
 import type { TestRunnerConfig } from '../testRunnerConfig';
-import { escapeSingleQuotes, unquote } from '../utils/TestNameUtils';
+import {
+	escapeSingleQuotes,
+	toTestNamePattern,
+	unquote,
+} from '../utils/TestNameUtils';
 
 // Mock vscode
 jest.mock('vscode', () => ({
@@ -757,14 +761,14 @@ describe('TestArgumentBuilder', () => {
 
 			expect(mockConfig.buildJestArgs).toHaveBeenCalledWith(
 				'/path/to/issue500.test.ts',
-				'Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick (default)',
+				'Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick \\(default\\)',
 				true,
 				expect.any(Array),
 			);
 
 			const patternIndex = args.indexOf('-t') + 1;
 			expect(unquote(args[patternIndex])).toBe(
-				'^Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick (default)$',
+				'^Issue #500 manual repro Repro 0: Device 0, amazon firetv_stick \\(default\\)$',
 			);
 		});
 
@@ -814,7 +818,7 @@ describe('TestArgumentBuilder', () => {
 
 			expect(mockConfig.buildJestArgs).toHaveBeenCalledWith(
 				'/path/to/issue500.test.ts',
-				fullTestName,
+				toTestNamePattern(fullTestName),
 				true,
 				expect.any(Array),
 			);
@@ -822,7 +826,7 @@ describe('TestArgumentBuilder', () => {
 			const patternIndex = args.indexOf('-t') + 1;
 			expect(unquote(args[patternIndex])).toBe(
 				escapeSingleQuotes(
-					"^Issue #500 manual repro Repro 1: Device 1 { avStatic: '2.0.0.0' } Restarting v2a$",
+					"^Issue #500 manual repro Repro 1: Device 1 \\{ avStatic: '2\\.0\\.0\\.0' \\} Restarting v2a$",
 				),
 			);
 		});
@@ -873,14 +877,14 @@ describe('TestArgumentBuilder', () => {
 
 			expect(mockConfig.buildJestArgs).toHaveBeenCalledWith(
 				'/path/to/issue500.test.ts',
-				fullTestName,
+				toTestNamePattern(fullTestName),
 				true,
 				expect.any(Array),
 			);
 
 			const patternIndex = args.indexOf('-t') + 1;
 			expect(unquote(args[patternIndex])).toBe(
-				'^Suite [A] (group) {x} path\\to\\file + .* ? ^ $ |$',
+				'^Suite \\[A\\] \\(group\\) \\{x\\} path\\\\to\\\\file \\+ \\.\\* \\? \\^ \\$ \\|$',
 			);
 		});
 
