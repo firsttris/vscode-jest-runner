@@ -791,5 +791,71 @@ describe('TestRunnerCodeLensProvider', () => {
 				debugLenses.some((lens) => lens.command?.title === '[3] Debug'),
 			).toBe(true);
 		});
+
+		it('should include all nested describe ancestors in Run All pattern for it.each', async () => {
+			codeLensProvider = new TestRunnerCodeLensProvider(['run', 'debug']);
+			mockDocument.getText = jest.fn().mockReturnValue(`
+        describe('Level one', () => {
+          describe('Level two', () => {
+            it.each([[1], [2]])('My test %#', (value) => {
+              expect(value).toBeGreaterThan(0);
+            });
+          });
+        });
+      `);
+
+			jest.spyOn(parser, 'parse').mockReturnValue({
+				root: {
+					children: [
+						{
+							type: 'describe',
+							name: 'Level one',
+							start: { line: 2, column: 8 },
+							end: { line: 8, column: 10 },
+							file: '/workspace/test.spec.ts',
+							children: [
+								{
+									type: 'describe',
+									name: 'Level two',
+									start: { line: 3, column: 10 },
+									end: { line: 7, column: 12 },
+									file: '/workspace/test.spec.ts',
+									children: [
+										{
+											type: 'it',
+											name: 'My test 0',
+											start: { line: 4, column: 12 },
+											end: { line: 6, column: 14 },
+											file: '/workspace/test.spec.ts',
+											children: [],
+											eachTemplate: 'My test %#',
+										},
+										{
+											type: 'it',
+											name: 'My test 1',
+											start: { line: 4, column: 18 },
+											end: { line: 6, column: 14 },
+											file: '/workspace/test.spec.ts',
+											children: [],
+											eachTemplate: 'My test %#',
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			} as any);
+
+			const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
+
+			const runAllLens = codeLenses.find(
+				(lens) => lens.command?.title === 'Run All',
+			);
+			expect(runAllLens).toBeDefined();
+			expect(runAllLens?.command?.arguments?.[0]).toContain('Level one');
+			expect(runAllLens?.command?.arguments?.[0]).toContain('Level two');
+			expect(runAllLens?.command?.arguments?.[0]).toContain('My test (.*?)');
+		});
 	});
 });

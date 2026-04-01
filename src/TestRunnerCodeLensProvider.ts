@@ -103,12 +103,21 @@ const findParentPath = (
 	return null;
 };
 
-function buildFullTestName(node: TestNode, parseResults: TestNode[]): string {
+function findAncestorPath(node: TestNode, parseResults: TestNode[]): string[] {
 	for (const root of parseResults) {
 		const parentPath = findParentPath(root, node);
 		if (parentPath) {
-			return [...parentPath, node.name || ''].filter(Boolean).join(' ');
+			return parentPath;
 		}
+	}
+
+	return [];
+}
+
+function buildFullTestName(node: TestNode, parseResults: TestNode[]): string {
+	const parentPath = findAncestorPath(node, parseResults);
+	if (parentPath.length > 0) {
+		return [...parentPath, node.name || ''].filter(Boolean).join(' ');
 	}
 
 	return node.name || '';
@@ -194,13 +203,15 @@ const buildAllPatternName = (
 ): string | undefined => {
 	const template = getEachTemplate(node);
 	if (template) {
-		const parentTemplateOrName = nestedInDescribeEach
-			? getEachTemplate(parent) || parent?.name
-			: parent?.name;
+		const parentPath = findAncestorPath(node, parseResults);
+		if (nestedInDescribeEach && parentPath.length > 0) {
+			const parentTemplate = getEachTemplate(parent);
+			if (parentTemplate) {
+				parentPath[parentPath.length - 1] = parentTemplate;
+			}
+		}
 
-		const fullTemplateName = [parentTemplateOrName, template]
-			.filter(Boolean)
-			.join(' ');
+		const fullTemplateName = [...parentPath, template].filter(Boolean).join(' ');
 		const pattern = toTestNamePattern(fullTemplateName);
 		return withDescribeChildrenSuffix(node, pattern);
 	}
