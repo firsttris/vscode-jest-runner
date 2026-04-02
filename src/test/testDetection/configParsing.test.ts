@@ -646,15 +646,15 @@ module.exports = {
 			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
 				const normalizedPath = normalizePath(fsPath.toString());
 				return (
-					normalizedPath === '/test/jest.preset.js' ||
-					normalizedPath === '/test/jest.config.ts'
+					normalizedPath.endsWith('/test/jest.preset.js') ||
+					normalizedPath.endsWith('/test/jest.config.ts')
 				);
 			});
 
 			mockedFs.readFileSync = jest.fn().mockImplementation((fsPath: fs.PathLike) => {
 				const normalizedPath = normalizePath(fsPath.toString());
 
-				if (normalizedPath === '/test/jest.preset.js') {
+				if (normalizedPath.endsWith('/test/jest.preset.js')) {
 					return `
 const IGNORE_PATTERNS = ['<rootDir>/apps/e2e/', '<rootDir>/apps/integration/'];
 module.exports = {};
@@ -662,7 +662,7 @@ module.exports.IGNORE_PATTERNS = IGNORE_PATTERNS;
 `;
 				}
 
-				if (normalizedPath === '/test/jest.config.ts') {
+				if (normalizedPath.endsWith('/test/jest.config.ts')) {
 					return `
 const { IGNORE_PATTERNS } = require('./jest.preset');
 
