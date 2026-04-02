@@ -92,7 +92,7 @@ const parseJsConfig = (
 	content: string,
 	configPath: string,
 ): TestPatterns[] | undefined => {
-	const config = parseConfigObject(content);
+	const config = parseConfigObject(content, configPath);
 	if (!config) return undefined;
 
 	if (config.projects) {
@@ -235,7 +235,7 @@ export function parseCoverageDirectory(
 			);
 		}
 
-		const config = parseConfigObject(content);
+		const config = parseConfigObject(content, configPath);
 		if (!config) return undefined;
 
 		const reportsDirectory = getReportsDirectory(config, framework);

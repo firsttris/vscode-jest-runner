@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import {
 	parse,
 	type ParserPlugin,
@@ -18,6 +19,42 @@ const parserPlugins: (ParserPlugin | ParserPluginWithOptions)[] = [
 	'importMeta',
 	'topLevelAwait',
 ];
+
+const isRequireCall = (node: t.Node | undefined): node is t.CallExpression => {
+	if (!node || !t.isCallExpression(node)) return false;
+	if (!t.isIdentifier(node.callee, { name: 'require' })) return false;
+	if (node.arguments.length !== 1) return false;
+	return t.isStringLiteral(node.arguments[0]);
+};
+
+const resolveRequireFilePath = (
+	requiredPath: string,
+	configPath: string,
+): string | undefined => {
+	if (!requiredPath.startsWith('.')) return undefined;
+
+	const basePath = resolve(dirname(configPath), requiredPath);
+	const candidates = [
+		basePath,
+		`${basePath}.js`,
+		`${basePath}.ts`,
+		`${basePath}.cjs`,
+		`${basePath}.mjs`,
+		resolve(basePath, 'index.js'),
+		resolve(basePath, 'index.ts'),
+		resolve(basePath, 'index.cjs'),
+		resolve(basePath, 'index.mjs'),
+	];
+
+	return candidates.find((candidate) => existsSync(candidate));
+};
+
+const getExportName = (node: t.MemberExpression): string | undefined => {
+	if (node.computed) {
+		return t.isStringLiteral(node.property) ? node.property.value : undefined;
+	}
+	return t.isIdentifier(node.property) ? node.property.name : undefined;
+};
 
 const isModuleExports = (node: t.MemberExpression): boolean => {
 	return (
@@ -68,7 +105,127 @@ const getReturnedObject = (
 	return undefined;
 };
 
-const collectBindings = (ast: t.File): Record<string, any> => {
+const getCommonJsExportsFromContent = (
+	content: string,
+	configPath: string,
+	visited: Set<string>,
+): Record<string, any> | undefined => {
+	let ast: t.File;
+	try {
+		ast = parse(content, {
+			sourceType: 'unambiguous',
+			plugins: parserPlugins,
+		});
+	} catch {
+		return undefined;
+	}
+
+	const bindings = collectBindings(ast, configPath, visited);
+	const exportsObject: Record<string, any> = {};
+	let hasExport = false;
+
+	for (const statement of ast.program.body) {
+		if (
+			t.isExpressionStatement(statement) &&
+			t.isAssignmentExpression(statement.expression)
+		) {
+			const { left, right } = statement.expression;
+			if (!t.isMemberExpression(left)) continue;
+
+			const value = astToValue(unwrapExpression(right), bindings);
+
+			if (isModuleExports(left)) {
+				if (value && typeof value === 'object') {
+					Object.assign(exportsObject, value);
+					hasExport = true;
+				}
+				continue;
+			}
+
+			if (
+				t.isIdentifier(left.object, { name: 'exports' }) ||
+				(t.isMemberExpression(left.object) && isModuleExports(left.object))
+			) {
+				const exportName = getExportName(left);
+				if (exportName && value !== undefined) {
+					exportsObject[exportName] = value;
+					hasExport = true;
+				}
+			}
+		}
+	}
+
+	return hasExport ? exportsObject : undefined;
+};
+
+const resolveRequireValue = (
+	node: t.Node | undefined,
+	configPath: string,
+	visited: Set<string>,
+): any => {
+	if (!isRequireCall(node)) return undefined;
+
+	const requiredArg = node.arguments[0];
+	if (!t.isStringLiteral(requiredArg)) return undefined;
+
+	const requiredPath = requiredArg.value;
+	const resolvedPath = resolveRequireFilePath(requiredPath, configPath);
+	if (!resolvedPath || visited.has(resolvedPath)) return undefined;
+
+	try {
+		const content = readConfigFile(resolvedPath);
+		const nestedVisited = new Set(visited);
+		nestedVisited.add(resolvedPath);
+		return getCommonJsExportsFromContent(content, resolvedPath, nestedVisited);
+	} catch {
+		return undefined;
+	}
+};
+
+const addObjectPatternBindings = (
+	pattern: t.ObjectPattern,
+	value: Record<string, any>,
+	bindings: Record<string, any>,
+): void => {
+	for (const property of pattern.properties) {
+		if (t.isRestElement(property)) {
+			continue;
+		}
+		if (!t.isObjectProperty(property)) {
+			continue;
+		}
+
+		const key = t.isIdentifier(property.key)
+			? property.key.name
+			: t.isStringLiteral(property.key)
+				? property.key.value
+				: undefined;
+		if (!key) {
+			continue;
+		}
+
+		if (t.isIdentifier(property.value)) {
+			bindings[property.value.name] = value[key];
+			continue;
+		}
+
+		if (
+			t.isAssignmentPattern(property.value) &&
+			t.isIdentifier(property.value.left)
+		) {
+			bindings[property.value.left.name] =
+				value[key] !== undefined
+					? value[key]
+					: astToValue(property.value.right, bindings);
+		}
+	}
+};
+
+const collectBindings = (
+	ast: t.File,
+	configPath: string,
+	visited: Set<string>,
+): Record<string, any> => {
 	const bindings: Record<string, any> = {
 		__dirname: '__dirname',
 		__filename: '__filename',
@@ -78,7 +235,31 @@ const collectBindings = (ast: t.File): Record<string, any> => {
 		if (t.isVariableDeclaration(statement)) {
 			for (const declarator of statement.declarations) {
 				if (t.isIdentifier(declarator.id) && declarator.init) {
-					bindings[declarator.id.name] = astToValue(declarator.init, bindings);
+					const requiredValue = resolveRequireValue(
+						declarator.init,
+						configPath,
+						visited,
+					);
+					bindings[declarator.id.name] =
+						requiredValue !== undefined
+							? requiredValue
+							: astToValue(declarator.init, bindings);
+				}
+
+				if (t.isObjectPattern(declarator.id) && declarator.init) {
+					const requiredValue = resolveRequireValue(
+						declarator.init,
+						configPath,
+						visited,
+					);
+					const initValue =
+						requiredValue !== undefined
+							? requiredValue
+							: astToValue(declarator.init, bindings);
+
+					if (initValue && typeof initValue === 'object') {
+						addObjectPatternBindings(declarator.id, initValue, bindings);
+					}
 				}
 			}
 		}
@@ -89,7 +270,31 @@ const collectBindings = (ast: t.File): Record<string, any> => {
 		) {
 			for (const declarator of statement.declaration.declarations) {
 				if (t.isIdentifier(declarator.id) && declarator.init) {
-					bindings[declarator.id.name] = astToValue(declarator.init, bindings);
+					const requiredValue = resolveRequireValue(
+						declarator.init,
+						configPath,
+						visited,
+					);
+					bindings[declarator.id.name] =
+						requiredValue !== undefined
+							? requiredValue
+							: astToValue(declarator.init, bindings);
+				}
+
+				if (t.isObjectPattern(declarator.id) && declarator.init) {
+					const requiredValue = resolveRequireValue(
+						declarator.init,
+						configPath,
+						visited,
+					);
+					const initValue =
+						requiredValue !== undefined
+							? requiredValue
+							: astToValue(declarator.init, bindings);
+
+					if (initValue && typeof initValue === 'object') {
+						addObjectPatternBindings(declarator.id, initValue, bindings);
+					}
 				}
 			}
 		}
@@ -138,7 +343,10 @@ const resolveConfigNode = (
 	return undefined;
 };
 
-export const parseConfigObject = (content: string): any | undefined => {
+export const parseConfigObject = (
+	content: string,
+	configPath: string = '__inline__',
+): any | undefined => {
 	let ast: t.File;
 	try {
 		ast = parse(content, {
@@ -149,7 +357,12 @@ export const parseConfigObject = (content: string): any | undefined => {
 		return undefined;
 	}
 
-	const bindings = collectBindings(ast);
+	const visited = new Set<string>();
+	if (configPath !== '__inline__') {
+		visited.add(configPath);
+	}
+
+	const bindings = collectBindings(ast, configPath, visited);
 
 	for (const statement of ast.program.body) {
 		if (t.isExportDefaultDeclaration(statement)) {

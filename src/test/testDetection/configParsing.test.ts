@@ -642,6 +642,53 @@ module.exports = {
 			]);
 		});
 
+		it('should resolve testPathIgnorePatterns from destructured require binding', () => {
+			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+				const normalizedPath = normalizePath(fsPath.toString());
+				return (
+					normalizedPath === '/test/jest.preset.js' ||
+					normalizedPath === '/test/jest.config.ts'
+				);
+			});
+
+			mockedFs.readFileSync = jest.fn().mockImplementation((fsPath: fs.PathLike) => {
+				const normalizedPath = normalizePath(fsPath.toString());
+
+				if (normalizedPath === '/test/jest.preset.js') {
+					return `
+const IGNORE_PATTERNS = ['<rootDir>/apps/e2e/', '<rootDir>/apps/integration/'];
+module.exports = {};
+module.exports.IGNORE_PATTERNS = IGNORE_PATTERNS;
+`;
+				}
+
+				if (normalizedPath === '/test/jest.config.ts') {
+					return `
+const { IGNORE_PATTERNS } = require('./jest.preset');
+
+module.exports = async () => {
+  return {
+    testMatch: ['**/*.spec.ts'],
+    testPathIgnorePatterns: IGNORE_PATTERNS
+  };
+};
+`;
+				}
+
+				return '';
+			});
+
+			const result = getTestMatchFromJestConfig('/test/jest.config.ts');
+
+			expect(result).toEqual([
+				{
+					patterns: ['**/*.spec.ts'],
+					isRegex: false,
+					ignorePatterns: ['<rootDir>/apps/e2e/', '<rootDir>/apps/integration/'],
+				},
+			]);
+		});
+
 		it('should extract all config options together', () => {
 			mockedFs.readFileSync = jest.fn().mockReturnValue(`{
   "rootDir": ".",
