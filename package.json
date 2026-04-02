@@ -413,17 +413,17 @@
     "format:fix": "biome format --write src"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.8",
+    "@biomejs/biome": "^2.4.10",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.5.0",
     "@types/shell-quote": "^1.7.5",
     "@types/vscode": "^1.100.0",
     "@vscode/vsce": "^3.7.1",
     "jest": "^30.3.0",
-    "ovsx": "^0.10.9",
-    "ts-jest": "^29.4.6",
+    "ovsx": "^0.10.10",
+    "ts-jest": "^29.4.9",
     "typescript": "^5.9.3",
-    "vite": "^8.0.1"
+    "vite": "^8.0.3"
   },
   "dependencies": {
     "@babel/parser": "^7.29.2",
