@@ -2,8 +2,7 @@ import { relative, resolve } from 'node:path';
 import { isMatch } from 'micromatch';
 import { getTestMatchFromJestConfig } from './configParsers/jestParser';
 import { getVitestConfig } from './configParsers/vitestParser';
-import { getDefaultTestPatterns } from './configParsing';
-import { TestPatterns } from './frameworkDefinitions';
+import type { TestPatterns } from './frameworkDefinitions';
 
 function matchesExcludePatterns(
 	filePath: string,
@@ -118,41 +117,6 @@ export function fileMatchesPatternsExplicit(
 	}
 
 	return false;
-}
-
-export function fileMatchesPatterns(
-	filePath: string,
-	configDir: string,
-	patterns: string[] | undefined,
-	isRegex: boolean,
-	rootDir: string | undefined,
-	ignorePatterns?: string[],
-	excludePatterns?: string[],
-	roots?: string[],
-): boolean {
-	if (!patterns || patterns.length === 0) {
-		return fileMatchesPatternsExplicit(
-			filePath,
-			configDir,
-			getDefaultTestPatterns(),
-			false,
-			rootDir,
-			ignorePatterns,
-			excludePatterns,
-			roots,
-		);
-	}
-
-	return fileMatchesPatternsExplicit(
-		filePath,
-		configDir,
-		patterns,
-		isRegex,
-		rootDir,
-		ignorePatterns,
-		excludePatterns,
-		roots,
-	);
 }
 
 function checkConfigMatches(

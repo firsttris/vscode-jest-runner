@@ -3,11 +3,11 @@ import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { isMatch } from 'micromatch';
 import {
-	TestFrameworkName,
-	TestPatternResult,
+	type TestFrameworkName,
+	type TestPatternResult,
 	testFrameworks,
 	allTestFrameworks,
-	TestPatterns,
+	type TestPatterns,
 } from './frameworkDefinitions';
 import {
 	getConfigPath,
@@ -24,7 +24,7 @@ import {
 } from './configParsers/playwrightParser';
 import { getCypressSpecPattern } from './configParsers/cypressParser';
 import {
-	fileMatchesPatterns,
+	fileMatchesPatternsExplicit,
 	detectFrameworkByPatternMatch,
 } from './patternMatching';
 import {
@@ -426,7 +426,7 @@ export function matchesTestFilePattern(filePath: string): boolean {
 
 	if (results.length === 0) {
 		const defaultRes = createDefaultResult(dirname(filePath));
-		const filePatternMatches = fileMatchesPatterns(
+		const filePatternMatches = fileMatchesPatternsExplicit(
 			filePath,
 			defaultRes.configDir,
 			defaultRes.patterns,
@@ -443,7 +443,7 @@ export function matchesTestFilePattern(filePath: string): boolean {
 	}
 
 	return results.some((res) => {
-		const matches = fileMatchesPatterns(
+		const matches = fileMatchesPatternsExplicit(
 			filePath,
 			res.configDir,
 			res.patterns,

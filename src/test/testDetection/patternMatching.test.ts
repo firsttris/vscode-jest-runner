@@ -3,7 +3,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {
 	fileMatchesPatternsExplicit,
-	fileMatchesPatterns,
 	detectFrameworkByPatternMatch,
 } from '../../testDetection/patternMatching';
 import { cacheManager } from '../../cache/CacheManager';
@@ -288,53 +287,6 @@ describe('patternMatching', () => {
 
 				expect(result).toBe(true);
 			});
-		});
-	});
-
-	describe('fileMatchesPatterns', () => {
-		it('should use default patterns when no patterns provided', () => {
-			const filePath = '/project/src/utils.test.ts';
-			const configDir = '/project';
-
-			const result = fileMatchesPatterns(
-				filePath,
-				configDir,
-				undefined, // no patterns
-				false,
-				undefined,
-			);
-
-			expect(result).toBe(true); // Matches default pattern **/*.test.*
-		});
-
-		it('should use default patterns for empty array', () => {
-			const filePath = '/project/src/__tests__/utils.ts';
-			const configDir = '/project';
-
-			const result = fileMatchesPatterns(
-				filePath,
-				configDir,
-				[], // empty patterns
-				false,
-				undefined,
-			);
-
-			expect(result).toBe(true); // Matches default pattern **/__tests__/**/*
-		});
-
-		it('should use provided patterns when available', () => {
-			const filePath = '/project/src/utils.integration.ts';
-			const configDir = '/project';
-
-			const result = fileMatchesPatterns(
-				filePath,
-				configDir,
-				['**/*.integration.ts'],
-				false,
-				undefined,
-			);
-
-			expect(result).toBe(true);
 		});
 	});
 

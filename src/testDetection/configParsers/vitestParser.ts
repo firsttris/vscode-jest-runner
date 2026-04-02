@@ -1,6 +1,6 @@
 import { dirname, resolve } from 'node:path';
 import { normalizePath } from '../../utils/PathUtils';
-import { TestPatterns } from '../frameworkDefinitions';
+import type { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
 import { parseConfigObject, readConfigFile } from './parseUtils';
 

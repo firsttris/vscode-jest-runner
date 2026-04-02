@@ -1,6 +1,9 @@
 import { logError } from '../../utils/Logger';
 import { parseConfigObject, readConfigFile } from './parseUtils';
-import { TestPatterns, DEFAULT_TEST_PATTERNS } from '../frameworkDefinitions';
+import {
+	type TestPatterns,
+	DEFAULT_TEST_PATTERNS,
+} from '../frameworkDefinitions';
 
 export function getPlaywrightConfig(
 	configPath: string,
