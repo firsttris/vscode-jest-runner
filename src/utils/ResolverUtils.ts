@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 import { dirname, join } from 'node:path';
 import { existsSync, readFileSync } from 'node:fs';
-import { normalizePath, normalizeDriveLetter } from './PathUtils';
+import { normalizePath } from './PathUtils';
 import { logDebug, logWarning } from './Logger';
 
 export function resolveBinaryPath(

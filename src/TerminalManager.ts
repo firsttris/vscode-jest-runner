@@ -67,7 +67,7 @@ export class TerminalManager {
 	}
 
 	public dispose() {
-		this.disposables.forEach((d) => d.dispose());
+		this.disposables.forEach((d) => void d.dispose());
 		this.disposables = [];
 		if (this.terminal) {
 			this.terminal.dispose();

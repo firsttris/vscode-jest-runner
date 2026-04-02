@@ -4,11 +4,8 @@ import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
 import {
 	detectTestFramework,
-	findJestDirectory,
 	findTestFrameworkDirectory,
-	findVitestDirectory,
-	isJestUsedIn,
-	isVitestUsedIn,
+	isFrameworkUsedIn,
 } from '../../testDetection/frameworkDetection';
 import { isJestTestFile } from '../../testDetection/testFileDetection';
 
@@ -36,7 +33,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'node_modules', '.bin', 'jest');
 			});
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -48,7 +45,7 @@ describe('frameworkDetection', () => {
 				);
 			});
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -58,7 +55,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'jest.config.js');
 			});
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -68,7 +65,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'jest.config.ts');
 			});
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -78,7 +75,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'jest.config.json');
 			});
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -95,7 +92,7 @@ describe('frameworkDetection', () => {
 				}),
 			);
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 			expect(mockedFs.readFileSync).toHaveBeenCalledWith(
@@ -116,7 +113,7 @@ describe('frameworkDetection', () => {
 				}),
 			);
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -133,7 +130,7 @@ describe('frameworkDetection', () => {
 				}),
 			);
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -150,7 +147,7 @@ describe('frameworkDetection', () => {
 				}),
 			);
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(true);
 		});
@@ -158,7 +155,7 @@ describe('frameworkDetection', () => {
 		it('should return false when no Jest indicators are found', () => {
 			mockedFs.existsSync = jest.fn().mockReturnValue(false);
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(false);
 		});
@@ -175,7 +172,7 @@ describe('frameworkDetection', () => {
 				}),
 			);
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(false);
 		});
@@ -185,11 +182,11 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'jest.config.js');
 			});
 
-			const result1 = isJestUsedIn(testDir);
+			const result1 = isFrameworkUsedIn(testDir, 'jest');
 			expect(result1).toBe(true);
 			const firstCallCount = mockedFs.existsSync.mock.calls.length;
 
-			const result2 = isJestUsedIn(testDir);
+			const result2 = isFrameworkUsedIn(testDir, 'jest');
 			expect(result2).toBe(true);
 			expect(mockedFs.existsSync).toHaveBeenCalledTimes(firstCallCount);
 		});
@@ -199,7 +196,7 @@ describe('frameworkDetection', () => {
 				throw new Error('File system error');
 			});
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(false);
 		});
@@ -210,7 +207,7 @@ describe('frameworkDetection', () => {
 			});
 			mockedFs.readFileSync = jest.fn().mockReturnValue('invalid json');
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(false);
 		});
@@ -236,7 +233,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'jest.config.js');
 			});
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(testDir);
 		});
@@ -247,7 +244,8 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(jestDir, 'jest.config.js');
 			});
 
-			const result = findJestDirectory(filePath);
+			const result =
+				findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(jestDir);
 		});
@@ -257,7 +255,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(rootPath, 'jest.config.js');
 			});
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(rootPath);
 		});
@@ -265,7 +263,7 @@ describe('frameworkDetection', () => {
 		it('should return undefined when no Jest is found', () => {
 			mockedFs.existsSync = jest.fn().mockReturnValue(false);
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -275,7 +273,7 @@ describe('frameworkDetection', () => {
 				() => undefined,
 			);
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -294,7 +292,7 @@ describe('frameworkDetection', () => {
 				return false;
 			});
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -312,7 +310,7 @@ describe('frameworkDetection', () => {
 				}),
 			);
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(jestDir);
 		});
@@ -323,7 +321,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(jestDir, 'node_modules', '.bin', 'jest');
 			});
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(jestDir);
 		});
@@ -340,7 +338,7 @@ describe('frameworkDetection', () => {
 				return filePath === '/different/jest.config.js';
 			});
 
-			const result = findJestDirectory(outsidePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -361,7 +359,7 @@ describe('frameworkDetection', () => {
 				);
 			});
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(true);
 		});
@@ -371,7 +369,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'vitest.config.ts');
 			});
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(true);
 		});
@@ -381,7 +379,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'vitest.config.js');
 			});
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(true);
 		});
@@ -391,7 +389,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'vitest.config.mjs');
 			});
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(true);
 		});
@@ -408,7 +406,7 @@ describe('frameworkDetection', () => {
 				}),
 			);
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(true);
 		});
@@ -416,7 +414,7 @@ describe('frameworkDetection', () => {
 		it('should return false when Vitest is not found', () => {
 			mockedFs.existsSync = jest.fn().mockReturnValue(false);
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(false);
 		});
@@ -426,12 +424,12 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(testDir, 'vitest.config.ts');
 			});
 
-			isVitestUsedIn(testDir);
-			isVitestUsedIn(testDir);
+			isFrameworkUsedIn(testDir, 'vitest');
+			isFrameworkUsedIn(testDir, 'vitest');
 
 			const callCountAfterFirst = (mockedFs.existsSync as jest.Mock).mock.calls
 				.length;
-			isVitestUsedIn(testDir);
+			isFrameworkUsedIn(testDir, 'vitest');
 			expect(mockedFs.existsSync).toHaveBeenCalledTimes(callCountAfterFirst);
 		});
 
@@ -447,7 +445,7 @@ describe('frameworkDetection', () => {
         });
       `);
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(true);
 		});
@@ -462,7 +460,7 @@ describe('frameworkDetection', () => {
         });
       `);
 
-			const result = isVitestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'vitest');
 
 			expect(result).toBe(false);
 		});
@@ -486,7 +484,7 @@ describe('frameworkDetection', () => {
 				return fsPath === path.join(rootPath, 'vitest.config.ts');
 			});
 
-			const result = findVitestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'vitest')?.directory;
 
 			expect(result).toBe(rootPath);
 		});
@@ -501,7 +499,7 @@ describe('frameworkDetection', () => {
 
 			mockedFs.existsSync = jest.fn().mockReturnValue(false);
 
-			const result = findVitestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'vitest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -518,7 +516,7 @@ describe('frameworkDetection', () => {
 				return fsPath === path.join(rootPath, 'jest.config.js');
 			});
 
-			const result = findVitestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'vitest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -614,7 +612,7 @@ describe('frameworkDetection', () => {
 				return false;
 			});
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -624,7 +622,7 @@ describe('frameworkDetection', () => {
 				return fsPath === path.join(rootPath, 'jest.config.js');
 			});
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(rootPath);
 		});
@@ -648,7 +646,7 @@ describe('frameworkDetection', () => {
 				return '{}';
 			}) as any;
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -662,7 +660,7 @@ describe('frameworkDetection', () => {
 				);
 			});
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(srcDir);
 		});
@@ -682,7 +680,7 @@ describe('frameworkDetection', () => {
 
 			mockedFs.existsSync = jest.fn().mockReturnValue(false);
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -693,7 +691,7 @@ describe('frameworkDetection', () => {
 				uri: { fsPath: '/' },
 			}));
 
-			const result = findJestDirectory(filePath);
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBeUndefined();
 		});
@@ -707,7 +705,7 @@ describe('frameworkDetection', () => {
 				throw new Error('Read error');
 			}) as any;
 
-			const result = isJestUsedIn(testDir);
+			const result = isFrameworkUsedIn(testDir, 'jest');
 
 			expect(result).toBe(false);
 		});

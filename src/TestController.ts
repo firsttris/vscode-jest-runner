@@ -130,7 +130,7 @@ export class JestTestController {
 	}
 
 	public dispose(): void {
-		this.disposables.forEach((d) => d.dispose());
+		this.disposables.forEach((d) => void d.dispose());
 		this.testController.dispose();
 	}
 }

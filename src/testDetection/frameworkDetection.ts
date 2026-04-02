@@ -153,7 +153,7 @@ export function invalidateNodeTestCache(filePath: string): void {
 	cacheManager.invalidate(filePath);
 }
 
-function isFrameworkUsedIn(
+export function isFrameworkUsedIn(
 	directoryPath: string,
 	frameworkName: TestFrameworkName,
 ): boolean {
@@ -203,22 +203,6 @@ function isFrameworkUsedIn(
 		logError(`Error checking for ${frameworkName}`, error);
 		return false;
 	}
-}
-
-export function isJestUsedIn(directoryPath: string): boolean {
-	return isFrameworkUsedIn(directoryPath, 'jest');
-}
-
-export function isVitestUsedIn(directoryPath: string): boolean {
-	return isFrameworkUsedIn(directoryPath, 'vitest');
-}
-
-export function isPlaywrightUsedIn(directoryPath: string): boolean {
-	return isFrameworkUsedIn(directoryPath, 'playwright');
-}
-
-export function isRstestUsedIn(directoryPath: string): boolean {
-	return isFrameworkUsedIn(directoryPath, 'rstest');
 }
 
 export function detectTestFramework(
@@ -411,15 +395,30 @@ const detectFrameworkByDependency = (
 					},
 				]
 			: [
-					{ framework: 'vitest', isUsed: () => isVitestUsedIn(rootPath) },
-					{ framework: 'jest', isUsed: () => isJestUsedIn(rootPath) },
-					{ framework: 'bun', isUsed: () => isBunUsedIn(rootPath) },
-					{ framework: 'deno', isUsed: () => isDenoUsedIn(rootPath) },
+					{
+						framework: 'vitest',
+						isUsed: () => isFrameworkUsedIn(rootPath, 'vitest'),
+					},
+					{
+						framework: 'jest',
+						isUsed: () => isFrameworkUsedIn(rootPath, 'jest'),
+					},
+					{
+						framework: 'bun',
+						isUsed: () => isFrameworkUsedIn(rootPath, 'bun'),
+					},
+					{
+						framework: 'deno',
+						isUsed: () => isFrameworkUsedIn(rootPath, 'deno'),
+					},
 					{
 						framework: 'playwright',
-						isUsed: () => isPlaywrightUsedIn(rootPath),
+						isUsed: () => isFrameworkUsedIn(rootPath, 'playwright'),
 					},
-					{ framework: 'rstest', isUsed: () => isRstestUsedIn(rootPath) },
+					{
+						framework: 'rstest',
+						isUsed: () => isFrameworkUsedIn(rootPath, 'rstest'),
+					},
 				];
 
 	const found = checks.find((check) => check.isUsed());
@@ -507,40 +506,3 @@ export function findTestFrameworkDirectory(
 	return depResult;
 }
 
-export function findJestDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath, 'jest');
-	return result?.directory;
-}
-
-export function findVitestDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath, 'vitest');
-	return result?.directory;
-}
-
-export function findPlaywrightDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath);
-	return result?.framework === 'playwright' ? result.directory : undefined;
-}
-
-export function isBunUsedIn(directoryPath: string): boolean {
-	return isFrameworkUsedIn(directoryPath, 'bun');
-}
-
-export function isDenoUsedIn(directoryPath: string): boolean {
-	return isFrameworkUsedIn(directoryPath, 'deno');
-}
-
-export function findBunDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath, 'bun');
-	return result?.directory;
-}
-
-export function findDenoDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath, 'deno');
-	return result?.directory;
-}
-
-export function findRstestDirectory(filePath: string): string | undefined {
-	const result = findTestFrameworkDirectory(filePath, 'rstest');
-	return result?.directory;
-}

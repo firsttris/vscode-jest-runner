@@ -5,7 +5,7 @@ import { cacheManager } from '../../cache/CacheManager';
 import {
 	findTestFrameworkDirectory,
 	isPlaywrightTestFile,
-	isPlaywrightUsedIn,
+	isFrameworkUsedIn,
 } from '../../testDetection/frameworkDetection';
 import { WorkspaceConfiguration } from '../__mocks__/vscode';
 
@@ -89,7 +89,7 @@ test('example', async ({ page }) => {});`;
 		});
 	});
 
-	describe('isPlaywrightUsedIn', () => {
+	describe('isFrameworkUsedIn(playwright)', () => {
 		it('should detect playwright directory even when disabled', () => {
 			setDisablePlaywright(true);
 			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
@@ -98,7 +98,7 @@ test('example', async ({ page }) => {});`;
 				);
 			});
 
-			expect(isPlaywrightUsedIn(rootPath)).toBe(true);
+			expect(isFrameworkUsedIn(rootPath, 'playwright')).toBe(true);
 		});
 	});
 

@@ -30,8 +30,6 @@ import {
 import {
 	detectTestFramework,
 	findTestFrameworkDirectory,
-	findJestDirectory,
-	findVitestDirectory,
 	getParentDirectories,
 } from './frameworkDetection';
 import { logDebug } from '../utils/Logger';
@@ -463,7 +461,7 @@ export function isJestTestFile(filePath: string): boolean {
 		return false;
 	}
 
-	const hasJestDir = !!findJestDirectory(filePath);
+	const hasJestDir = !!findTestFrameworkDirectory(filePath, 'jest')?.directory;
 	const hasCustomConfig = !!resolveAndValidateCustomConfig(
 		'jestrunner.configPath',
 		filePath,
@@ -477,7 +475,8 @@ export function isVitestTestFile(filePath: string): boolean {
 		return false;
 	}
 
-	const hasVitestDir = !!findVitestDirectory(filePath);
+	const hasVitestDir =
+		!!findTestFrameworkDirectory(filePath, 'vitest')?.directory;
 	const hasCustomConfig = !!resolveAndValidateCustomConfig(
 		'jestrunner.vitestConfigPath',
 		filePath,

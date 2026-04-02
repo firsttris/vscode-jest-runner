@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
-import { JestResults, JestAssertionResult } from './testResultTypes';
-import { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import type { JestResults, JestAssertionResult } from './testResultTypes';
+import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import { parseTapOutput } from './parsers/tapParser';
-import { logWarning, logInfo } from './utils/Logger';
+import { logWarning } from './utils/Logger';
 import { parseJestOutput, parseVitestOutput } from './parsers/OutputParser';
 import {
 	findPotentialMatches,
 	findBestMatch,
 	hasTemplateVariable,
-	IndexedResult,
+	type IndexedResult,
 } from './matchers/TestMatcher';
 import { parseStructuredResults } from './reporting/structuredOutput';
 import { parseJUnitXML } from './parsers/junitParser';
@@ -148,7 +148,7 @@ export function processTestResultsFromParsed(
 
 	if (!assertionResults) {
 		logWarning('No assertion results found in test output');
-		tests.forEach((test) => run.skipped(test));
+		tests.forEach((test) => void run.skipped(test));
 		return;
 	}
 
@@ -165,7 +165,7 @@ export function processTestResultsFromParsed(
 
 		if (isTemplateWithMultiple) {
 			reportTemplateTestResult(run, test, matches);
-			matches.forEach((m) => usedIndices.add(m.index));
+			matches.forEach((m) => void usedIndices.add(m.index));
 			return usedIndices;
 		}
 
@@ -213,7 +213,7 @@ function processTestResultsFallback(
 		output.includes(indicator),
 	);
 	if (hasPassIndicator && !hasFailIndicator) {
-		tests.forEach((test) => run.passed(test));
+		tests.forEach((test) => void run.passed(test));
 		return;
 	}
 
@@ -256,7 +256,7 @@ function processTestResultsFallback(
 		`No pass/fail indicators found in output. Output preview: ${output.slice(0, 500)}`,
 	);
 	tests.forEach((test) =>
-		run.errored(
+		void run.errored(
 			test,
 			new vscode.TestMessage(
 				'Could not parse test results. Run tests from terminal to see full output.',

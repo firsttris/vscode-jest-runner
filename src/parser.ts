@@ -5,7 +5,7 @@ import {
 } from './parsers/nodeTestParser';
 import { isNodeTestFile } from './testDetection/frameworkDetection';
 
-export { parse, ParsedNode };
+export { parse, type ParsedNode };
 
 export function parseTestFile(
 	filePath: string,
