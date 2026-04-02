@@ -1,4 +1,4 @@
-import { JestResults } from '../testResultTypes';
+import type { JestResults } from '../testResultTypes';
 
 const START = '@@JTR_START::';
 const END = '@@JTR_END::';

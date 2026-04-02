@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
-import { JestAssertionResult } from '../testResultTypes';
+import type * as vscode from 'vscode';
+import type { JestAssertionResult } from '../testResultTypes';
 
 export type IndexedResult = { result: JestAssertionResult; index: number };
 

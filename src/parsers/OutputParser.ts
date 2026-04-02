@@ -1,4 +1,4 @@
-import { JestResults } from '../testResultTypes';
+import type { JestResults } from '../testResultTypes';
 import { logError, logWarning } from '../utils/Logger';
 
 function isJestResults(obj: unknown): obj is JestResults {

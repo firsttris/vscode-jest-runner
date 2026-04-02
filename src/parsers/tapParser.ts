@@ -1,6 +1,5 @@
 import type {
 	JestAssertionResult,
-	JestFileResult,
 	JestResults,
 } from '../testResultTypes';
 

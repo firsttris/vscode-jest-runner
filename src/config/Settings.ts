@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CodeLensOption, validateCodeLensOptions } from '../util';
+import { type CodeLensOption, validateCodeLensOptions } from '../util';
 
 const getConfig = <T>(key: string, defaultValue?: T): T | undefined =>
 	vscode.workspace.getConfiguration().get(key, defaultValue);

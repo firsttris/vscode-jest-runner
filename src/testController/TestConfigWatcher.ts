@@ -46,7 +46,7 @@ export class TestConfigWatcher {
 	}
 
 	private refreshCustomConfigWatchers(): void {
-		this.customConfigWatchers.forEach((w) => w.dispose());
+		this.customConfigWatchers.forEach((w) => void w.dispose());
 		this.customConfigWatchers = [];
 
 		const customPaths = new Set<string>();
@@ -58,7 +58,7 @@ export class TestConfigWatcher {
 			if (typeof config === 'string') {
 				customPaths.add(config);
 			} else if (config && typeof config === 'object') {
-				Object.values(config).forEach((path) => customPaths.add(path));
+				Object.values(config).forEach((path) => void customPaths.add(path));
 			}
 		};
 
@@ -85,8 +85,8 @@ export class TestConfigWatcher {
 	}
 
 	public dispose(): void {
-		this.disposables.forEach((d) => d.dispose());
-		this.customConfigWatchers.forEach((w) => w.dispose());
+		this.disposables.forEach((d) => void d.dispose());
+		this.customConfigWatchers.forEach((w) => void w.dispose());
 		this._onDidChange.dispose();
 	}
 }
