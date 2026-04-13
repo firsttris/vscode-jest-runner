@@ -131,7 +131,8 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 
 		const debugConfig = config.getDebugConfiguration(mockFilePath);
 
-		expect(debugConfig.program).toBe('/custom/path/playwright');
+		expect(debugConfig.program).toBeUndefined();
+		expect(debugConfig.runtimeExecutable).toBe('/custom/path/playwright');
 	});
 
 	it('should use custom command with env vars', () => {
@@ -143,7 +144,8 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 
 		const debugConfig = config.getDebugConfiguration(mockFilePath);
 
-		expect(debugConfig.program).toBe('/custom/path/playwright');
+		expect(debugConfig.program).toBeUndefined();
+		expect(debugConfig.runtimeExecutable).toBe('/custom/path/playwright');
 		expect(debugConfig.env).toEqual(expect.objectContaining({ PWDEBUG: '1' }));
 	});
 
@@ -197,12 +199,15 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 
 		const debugConfig = config.getDebugConfiguration(mockFilePath, 'my test');
 
-		expect(debugConfig.args).toContain('test');
-		expect(debugConfig.args).toContain('-g');
-		expect(debugConfig.args.some((a: string) => a.includes('my test'))).toBe(
+		expect(debugConfig.runtimeExecutable).toBe('/custom/playwright');
+		expect(debugConfig.runtimeArgs).toContain('test');
+		expect(debugConfig.runtimeArgs).toContain('-g');
+		expect(
+			debugConfig.runtimeArgs?.some((a: string) => a.includes('my test')),
+		).toBe(
 			true,
 		);
-		expect(debugConfig.args).toContain(mockFilePath);
+		expect(debugConfig.runtimeArgs).toContain(mockFilePath);
 	});
 
 	it('should not duplicate test filters from custom playwright command', () => {
@@ -215,12 +220,12 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 		const debugConfig = config.getDebugConfiguration(mockFilePath, 'my test');
 
 		expect(
-			debugConfig.args?.filter((arg: string) => arg === 'test'),
+			debugConfig.runtimeArgs?.filter((arg: string) => arg === 'test'),
 		).toHaveLength(1);
 		expect(
-			debugConfig.args?.filter((arg: string) => arg === '-g'),
+			debugConfig.runtimeArgs?.filter((arg: string) => arg === '-g'),
 		).toHaveLength(2);
-		expect(debugConfig.args).toEqual(
+		expect(debugConfig.runtimeArgs).toEqual(
 			expect.arrayContaining(['smoke', 'my test', mockFilePath]),
 		);
 	});

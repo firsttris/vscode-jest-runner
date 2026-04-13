@@ -249,6 +249,31 @@ describe('TestRunnerConfig', () => {
 			]);
 		});
 
+		it('should use runtimeExecutable for package manager based jest commands', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand': 'pnpm --workspace-root exec jest',
+				}),
+			);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.program).toBeUndefined();
+			expect(config.runtimeExecutable).toBe('pnpm');
+			expect(config.runtimeArgs).toEqual([
+				'--workspace-root',
+				'exec',
+				'jest',
+				'/home/user/project/src/test\\.spec\\.ts',
+				'-t',
+				'^my test$',
+			]);
+			expect(config.args).toEqual([]);
+		});
+
 		it('should merge custom debugOptions', () => {
 			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 				new WorkspaceConfiguration({
@@ -719,14 +744,17 @@ describe('TestRunnerConfig', () => {
 				'works',
 			);
 
-			expect(config.program).toBe('/custom/rstest');
+			expect(config.program).toBeUndefined();
+			expect(config.runtimeExecutable).toBe('/custom/rstest');
 			expect(
-				config.args?.filter((arg: string) => arg === '--config'),
+				config.runtimeArgs?.filter((arg: string) => arg === '--config'),
 			).toHaveLength(1);
-			expect(config.args?.filter((arg: string) => arg === '-t')).toHaveLength(
+			expect(
+				config.runtimeArgs?.filter((arg: string) => arg === '-t'),
+			).toHaveLength(
 				2,
 			);
-			expect(config.args).toEqual(
+			expect(config.runtimeArgs).toEqual(
 				expect.arrayContaining([
 					'/workspace/rstest.config.ts',
 					'smoke',

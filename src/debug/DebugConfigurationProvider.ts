@@ -261,11 +261,7 @@ const getJestDebugConfig = (
 		(path) => config.buildJestArgs(path, testName, false),
 	);
 	const executableState = commandState.program
-		? {
-				program: commandState.program,
-				runtimeExecutable: undefined,
-				args: debugArgsWithFile,
-			}
+		? resolveCommandExecution(commandState.program, debugArgsWithFile)
 		: resolveProgramOrNpx(
 				undefined,
 				resolveBinaryPath('jest', config.cwd),
@@ -363,14 +359,11 @@ const resolveProgramOrNpx = (
 ): {
 	program: string | undefined;
 	runtimeExecutable: string | undefined;
+	runtimeArgs?: string[];
 	args: string[];
 } => {
 	if (preferredProgram) {
-		return {
-			program: preferredProgram,
-			runtimeExecutable: undefined,
-			args,
-		};
+		return resolveCommandExecution(preferredProgram, args);
 	}
 
 	if (resolvedProgram) {
@@ -387,6 +380,37 @@ const resolveProgramOrNpx = (
 		runtimeExecutable: 'npx',
 		args: prependUniqueArgs(args, ['--no-install', npxCommand]),
 	};
+};
+
+const resolveCommandExecution = (
+	executable: string,
+	args: string[],
+): {
+	program: string | undefined;
+	runtimeExecutable: string | undefined;
+	runtimeArgs?: string[];
+	args: string[];
+} => {
+	if (isNodeRuntimeExecutable(executable)) {
+		return {
+			program: executable,
+			runtimeExecutable: undefined,
+			args,
+		};
+	}
+
+	return {
+		program: undefined,
+		runtimeExecutable: executable,
+		runtimeArgs: args,
+		args: [],
+	};
+};
+
+const isNodeRuntimeExecutable = (executable: string): boolean => {
+	const fileName = executable.split(/[/\\]/).pop() ?? executable;
+	const normalized = fileName.replace(/\.(cmd|exe)$/i, '').toLowerCase();
+	return normalized === 'node' || normalized === 'iojs';
 };
 
 const mergeEnv = (
