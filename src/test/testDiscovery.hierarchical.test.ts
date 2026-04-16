@@ -1,5 +1,5 @@
+import { resolve } from 'node:path';
 import * as vscode from 'vscode';
-import { testFileCache } from '../testDetection/testFileCache';
 import { discoverTests } from '../testDiscovery';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 
@@ -118,7 +118,7 @@ describe('discoverTests - hierarchical', () => {
 
 		expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
 			expect.objectContaining({
-				base: '/root/packages/pkgA',
+				base: resolve(mockWorkspaceFolder.uri.fsPath, 'packages/pkgA'),
 				pattern: '**/*.test.ts',
 			}),
 			'**/node_modules/**',
@@ -145,7 +145,7 @@ describe('discoverTests - hierarchical', () => {
 
 		expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
 			expect.objectContaining({
-				base: '/external/repo',
+				base: resolve(mockWorkspaceFolder.uri.fsPath, '/external/repo'),
 				pattern: '**/*.test.ts',
 			}),
 			'**/node_modules/**',
@@ -172,7 +172,10 @@ describe('discoverTests - hierarchical', () => {
 
 		expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
 			expect.objectContaining({
-				base: '/root/packages/does-not-exist',
+				base: resolve(
+					mockWorkspaceFolder.uri.fsPath,
+					'packages/does-not-exist',
+				),
 				pattern: '**/*.test.ts',
 			}),
 			'**/node_modules/**',
