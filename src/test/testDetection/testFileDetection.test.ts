@@ -1,7 +1,8 @@
-import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
+import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
 import {
 	getTestFrameworkForFile,
 	hasConflictingTestFramework,
@@ -9,7 +10,6 @@ import {
 	isTestFile,
 	isVitestTestFile,
 } from '../../testDetection/testFileDetection';
-import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
 import { normalizePath } from '../../utils/PathUtils';
 
 jest.mock('fs');
@@ -1358,6 +1358,37 @@ export default defineConfig({
 			expect(result).toBe(true);
 		});
 
+		it('should use Playwright default tests dir for factory-exported config wrappers', () => {
+			const filePath =
+				'/workspace/project/apps/app-another-integration/tests/login.spec.ts';
+			const playwrightConfigPath = path.join(
+				rootPath,
+				'apps/app-another-integration/playwright.config.ts',
+			);
+
+			mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
+				return fsPath === playwrightConfigPath;
+			});
+
+			mockedFs.readFileSync.mockImplementation((fsPath: fs.PathLike) => {
+				if (fsPath === playwrightConfigPath) {
+					return `
+import { PlaywrightTestConfig } from '@playwright/test';
+import { createPlaywrightConfig } from '../../playwright.preset';
+
+const config: PlaywrightTestConfig = createPlaywrightConfig(__dirname, 4300);
+
+export default config;
+`;
+				}
+				return '';
+			});
+
+			const result = hasConflictingTestFramework(filePath, 'jest');
+
+			expect(result).toBe(true);
+		});
+
 		it('should detect Cypress specPattern when config uses nx preset spread', () => {
 			const filePath = '/workspace/project/apps/shop-e2e/src/example.cy.ts';
 			const cypressConfigPath = path.join(
@@ -1407,7 +1438,7 @@ export default defineConfig({
 			expect(result).toBe(false);
 		});
 
-		it('should return FALSE when Playwright config has NO testDir (default fallback)', () => {
+		it('should return true when Playwright config has no testDir and file is in default tests dir', () => {
 			const filePath = '/workspace/project/tests/example.spec.ts';
 			const playwrightConfigPath = path.join(rootPath, 'playwright.config.ts');
 
@@ -1424,7 +1455,7 @@ export default defineConfig({
 
 			const result = hasConflictingTestFramework(filePath, 'jest');
 
-			expect(result).toBe(false);
+			expect(result).toBe(true);
 		});
 
 		it('should return true when Cypress config is found and file matches specPattern', () => {
@@ -1547,7 +1578,7 @@ export default defineConfig({
 			expect(result).toBe(false);
 		});
 
-		it('should return FALSE when Playwright config has NO testDir with various file paths', () => {
+		it('should apply Playwright default testDir when config has no testDir', () => {
 			const playwrightConfigPath = path.join(rootPath, 'playwright.config.ts');
 
 			mockedFs.existsSync.mockImplementation((fsPath: fs.PathLike) => {
@@ -1567,10 +1598,11 @@ export default defineConfig({
 				'/workspace/project/e2e/login.test.ts',
 			];
 
-			testPaths.forEach((filePath) => {
-				const result = hasConflictingTestFramework(filePath, 'jest');
-				expect(result).toBe(false);
-			});
+			const results = testPaths.map((filePath) =>
+				hasConflictingTestFramework(filePath, 'jest'),
+			);
+
+			expect(results).toEqual([true, false, false]);
 		});
 	});
 });

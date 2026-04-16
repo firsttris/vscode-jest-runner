@@ -689,6 +689,56 @@ module.exports = async () => {
 			]);
 		});
 
+		it('should resolve ignore patterns from async implicit return config with awaited projects', () => {
+			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+				const normalizedPath = normalizePath(fsPath.toString());
+				return (
+					normalizedPath.endsWith('/test/jest.preset.js') ||
+					normalizedPath.endsWith('/test/jest.config.ts')
+				);
+			});
+
+			mockedFs.readFileSync = jest.fn().mockImplementation((fsPath: fs.PathLike) => {
+				const normalizedPath = normalizePath(fsPath.toString());
+
+				if (normalizedPath.endsWith('/test/jest.preset.js')) {
+					return `
+const IGNORE_PATTERNS = ['<rootDir>/apps/domain-integration/', '<rootDir>/apps/domain-e2e/'];
+module.exports = {};
+module.exports.IGNORE_PATTERNS = IGNORE_PATTERNS;
+`;
+				}
+
+				if (normalizedPath.endsWith('/test/jest.config.ts')) {
+					return `
+const { getJestProjectsAsync } = require('@nx/jest');
+const { IGNORE_PATTERNS } = require('./jest.preset');
+
+module.exports = async () => ({
+  projects: await getJestProjectsAsync(),
+  testMatch: ['**/*.spec.ts'],
+  testPathIgnorePatterns: IGNORE_PATTERNS
+});
+`;
+				}
+
+				return '';
+			});
+
+			const result = getTestMatchFromJestConfig('/test/jest.config.ts');
+
+			expect(result).toEqual([
+				{
+					patterns: ['**/*.spec.ts'],
+					isRegex: false,
+					ignorePatterns: [
+						'<rootDir>/apps/domain-integration/',
+						'<rootDir>/apps/domain-e2e/',
+					],
+				},
+			]);
+		});
+
 		it('should extract all config options together', () => {
 			mockedFs.readFileSync = jest.fn().mockReturnValue(`{
   "rootDir": ".",
@@ -1103,7 +1153,7 @@ export default defineConfig({
 
 			const result = getPlaywrightTestDir('/test/playwright.config.ts');
 
-			expect(result).toBeUndefined();
+			expect(result).toBe('tests');
 		});
 
 		it('should return undefined on file read error', () => {

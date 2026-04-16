@@ -1,9 +1,11 @@
 import { logError } from '../../utils/Logger';
-import { parseConfigObject, readConfigFile } from './parseUtils';
 import {
-	type TestPatterns,
 	DEFAULT_TEST_PATTERNS,
+	type TestPatterns,
 } from '../frameworkDefinitions';
+import { parseConfigObject, readConfigFile } from './parseUtils';
+
+const DEFAULT_PLAYWRIGHT_TEST_DIR = 'tests';
 
 export function getPlaywrightConfig(
 	configPath: string,
@@ -33,7 +35,10 @@ export function getPlaywrightConfig(
 			{
 				patterns,
 				isRegex,
-				dir: testDir,
+				dir:
+					typeof testDir === 'string' && testDir.length > 0
+						? testDir
+						: DEFAULT_PLAYWRIGHT_TEST_DIR,
 				ignorePatterns: Array.isArray(testIgnore)
 					? testIgnore
 					: typeof testIgnore === 'string'
@@ -50,7 +55,11 @@ export function getPlaywrightConfig(
 export function getPlaywrightTestDir(configPath: string): string | undefined {
 	try {
 		const configs = getPlaywrightConfig(configPath);
-		return configs?.[0]?.dir;
+		if (!configs || configs.length === 0) {
+			return undefined;
+		}
+
+		return configs[0]?.dir ?? DEFAULT_PLAYWRIGHT_TEST_DIR;
 	} catch {
 		return undefined;
 	}

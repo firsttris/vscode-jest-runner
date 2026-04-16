@@ -1,38 +1,38 @@
-import * as vscode from 'vscode';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { isMatch } from 'micromatch';
+import * as vscode from 'vscode';
+import { logDebug } from '../utils/Logger';
+import { getCypressSpecPattern } from './configParsers/cypressParser';
+import { getDenoConfig } from './configParsers/denoParser';
+import { getTestMatchFromJestConfig } from './configParsers/jestParser';
 import {
-	type TestFrameworkName,
-	type TestPatternResult,
-	testFrameworks,
-	allTestFrameworks,
-	type TestPatterns,
-} from './frameworkDefinitions';
+	getPlaywrightConfig,
+	getPlaywrightTestDir,
+} from './configParsers/playwrightParser';
+import { getRstestConfig } from './configParsers/rstestParser';
+import { getVitestConfig } from './configParsers/vitestParser';
 import {
 	getConfigPath,
-	resolveAndValidateCustomConfig,
 	getDefaultTestPatterns,
+	resolveAndValidateCustomConfig,
 } from './configParsing';
-import { getTestMatchFromJestConfig } from './configParsers/jestParser';
-import { getVitestConfig } from './configParsers/vitestParser';
-import { getDenoConfig } from './configParsers/denoParser';
-import { getRstestConfig } from './configParsers/rstestParser';
 import {
-	getPlaywrightTestDir,
-	getPlaywrightConfig,
-} from './configParsers/playwrightParser';
-import { getCypressSpecPattern } from './configParsers/cypressParser';
-import {
-	fileMatchesPatternsExplicit,
-	detectFrameworkByPatternMatch,
-} from './patternMatching';
+	allTestFrameworks,
+	type TestFrameworkName,
+	type TestPatternResult,
+	type TestPatterns,
+	testFrameworks,
+} from './frameworkDefinitions';
 import {
 	detectTestFramework,
 	findTestFrameworkDirectory,
 	getParentDirectories,
 } from './frameworkDetection';
-import { logDebug } from '../utils/Logger';
+import {
+	detectFrameworkByPatternMatch,
+	fileMatchesPatternsExplicit,
+} from './patternMatching';
 
 const createDefaultResult = (configDir: string): TestPatternResult => ({
 	patterns: getDefaultTestPatterns(),
@@ -62,7 +62,10 @@ export function hasConflictingTestFramework(
 			if (!configPath) continue;
 
 			if (framework.name === 'playwright') {
-				const testDir = getPlaywrightTestDir(configPath);
+				// If a Playwright config exists but cannot be statically parsed
+				// (for example config factory wrappers), fall back to Playwright's
+				// default test directory to avoid classifying those files as Jest.
+				const testDir = getPlaywrightTestDir(configPath) ?? 'tests';
 				if (testDir) {
 					const testDirPath = resolve(dir, testDir);
 					const relativePath = relative(testDirPath, filePath).replace(
@@ -475,8 +478,8 @@ export function isVitestTestFile(filePath: string): boolean {
 		return false;
 	}
 
-	const hasVitestDir =
-		!!findTestFrameworkDirectory(filePath, 'vitest')?.directory;
+	const hasVitestDir = !!findTestFrameworkDirectory(filePath, 'vitest')
+		?.directory;
 	const hasCustomConfig = !!resolveAndValidateCustomConfig(
 		'jestrunner.vitestConfigPath',
 		filePath,
