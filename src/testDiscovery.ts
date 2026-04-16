@@ -1,9 +1,10 @@
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import * as vscode from 'vscode';
-import { relative, dirname, basename, sep, join } from 'node:path';
+import { getProjectPath } from './config/Settings';
 import { parseTestFile } from './parser';
-import type { TestRunnerConfig } from './testRunnerConfig';
 import { testFileCache } from './testDetection/testFileCache';
-import { logError } from './utils/Logger';
+import type { TestRunnerConfig } from './testRunnerConfig';
+import { logDebug, logError } from './utils/Logger';
 import {
 	type TestNode,
 	updateTestNameIfUsingProperties,
@@ -207,8 +208,19 @@ export async function findTestFiles(
 	folderPath: string,
 	jestConfig: TestRunnerConfig,
 ): Promise<string[]> {
+	const configuredProjectPath = getProjectPath();
+	const discoveryRootPath = configuredProjectPath
+		? resolve(folderPath, configuredProjectPath)
+		: folderPath;
+
+	if (configuredProjectPath) {
+		logDebug(
+			`Using jestrunner.projectPath for discovery root: ${discoveryRootPath}`,
+		);
+	}
+
 	const pattern = new vscode.RelativePattern(
-		folderPath,
+		discoveryRootPath,
 		jestConfig.getAllPotentialSourceFiles(),
 	);
 	const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');

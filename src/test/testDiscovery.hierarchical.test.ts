@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { discoverTests } from '../testDiscovery';
-import { TestRunnerConfig } from '../testRunnerConfig';
 import { testFileCache } from '../testDetection/testFileCache';
+import { discoverTests } from '../testDiscovery';
+import type { TestRunnerConfig } from '../testRunnerConfig';
 
 // Mock vscode
 const mockCreateTestItem = jest.fn();
@@ -96,5 +96,87 @@ describe('discoverTests - hierarchical', () => {
 			'button.test.ts',
 			expect.anything(),
 		);
+	});
+
+	it('should use projectPath as discovery root when configured', async () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue({
+			get: jest.fn((key: string, defaultValue?: unknown) => {
+				if (key === 'jestrunner.projectPath') {
+					return 'packages/pkgA';
+				}
+				return defaultValue;
+			}),
+		} as any);
+
+		vscode.workspace.findFiles = jest.fn().mockResolvedValue([]);
+
+		await discoverTests(
+			mockWorkspaceFolder,
+			mockTestController,
+			mockJestConfig,
+		);
+
+		expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
+			expect.objectContaining({
+				base: '/root/packages/pkgA',
+				pattern: '**/*.test.ts',
+			}),
+			'**/node_modules/**',
+		);
+	});
+
+	it('should use absolute projectPath as-is for discovery root', async () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue({
+			get: jest.fn((key: string, defaultValue?: unknown) => {
+				if (key === 'jestrunner.projectPath') {
+					return '/external/repo';
+				}
+				return defaultValue;
+			}),
+		} as any);
+
+		vscode.workspace.findFiles = jest.fn().mockResolvedValue([]);
+
+		await discoverTests(
+			mockWorkspaceFolder,
+			mockTestController,
+			mockJestConfig,
+		);
+
+		expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
+			expect.objectContaining({
+				base: '/external/repo',
+				pattern: '**/*.test.ts',
+			}),
+			'**/node_modules/**',
+		);
+	});
+
+	it('should not create test items when configured projectPath has no matches', async () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue({
+			get: jest.fn((key: string, defaultValue?: unknown) => {
+				if (key === 'jestrunner.projectPath') {
+					return 'packages/does-not-exist';
+				}
+				return defaultValue;
+			}),
+		} as any);
+
+		vscode.workspace.findFiles = jest.fn().mockResolvedValue([]);
+
+		await discoverTests(
+			mockWorkspaceFolder,
+			mockTestController,
+			mockJestConfig,
+		);
+
+		expect(vscode.workspace.findFiles).toHaveBeenCalledWith(
+			expect.objectContaining({
+				base: '/root/packages/does-not-exist',
+				pattern: '**/*.test.ts',
+			}),
+			'**/node_modules/**',
+		);
+		expect(mockCreateTestItem).not.toHaveBeenCalled();
 	});
 });
