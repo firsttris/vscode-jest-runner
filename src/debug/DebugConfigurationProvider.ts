@@ -255,6 +255,39 @@ const getJestDebugConfig = (
 		? { NODE_OPTIONS: '--experimental-vm-modules' }
 		: {};
 	const commandState = getProgramCommandState(Settings.getJestCommand());
+	const debugOptionsRuntimeExecutable = config.debugOptions.runtimeExecutable;
+	const hasCustomRuntimeExecutable =
+		typeof debugOptionsRuntimeExecutable === 'string' &&
+		debugOptionsRuntimeExecutable.length > 0;
+
+	if (hasCustomRuntimeExecutable) {
+		const runtimeArgs = appendUniqueArgs(
+			Array.isArray(config.debugOptions.runtimeArgs)
+				? config.debugOptions.runtimeArgs
+				: [],
+			filePath ? config.buildJestArgs(filePath, testName, false) : [],
+		);
+		const debugEnv = mergeEnv(
+			baseDebugEnv,
+			commandState.env,
+			config.debugOptions.env,
+		);
+
+		return {
+			...createDebugConfigBase(
+				config,
+				'Debug Jest Tests',
+				'node',
+				config.debugOptions,
+			),
+			program: undefined,
+			args: [],
+			runtimeExecutable: debugOptionsRuntimeExecutable,
+			runtimeArgs,
+			env: optionalEnv(debugEnv),
+		};
+	}
+
 	const debugArgsWithFile = withFileArgs(
 		commandState.args,
 		filePath,

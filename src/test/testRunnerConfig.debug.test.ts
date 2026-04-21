@@ -291,6 +291,45 @@ describe('TestRunnerConfig', () => {
 			expect(config.name).toBe('Debug Jest Tests'); // Original properties preserved
 		});
 
+		it('should respect debugOptions.runtimeExecutable for Jest debug', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand':
+						'$(git rev-parse --show-toplevel)/app/docker-test/docker-test.sh npm run test --',
+					'jestrunner.debugOptions': {
+						runtimeExecutable:
+							'/home/user/project/app/docker-test/docker-test.sh',
+						runtimeArgs: ['npm', 'run', 'test:debug', '--'],
+					},
+				}),
+			);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.runtimeExecutable).toBe(
+				'/home/user/project/app/docker-test/docker-test.sh',
+			);
+			expect(config.program).toBeUndefined();
+			expect(config.args).toEqual([]);
+			expect(config.runtimeArgs?.slice(0, 4)).toEqual([
+				'npm',
+				'run',
+				'test:debug',
+				'--',
+			]);
+			expect(config.runtimeArgs).toEqual(
+				expect.arrayContaining([
+					'/home/user/project/src/test\\.spec\\.ts',
+					'-t',
+					'^my test$',
+				]),
+			);
+			expect(config.runtimeArgs).not.toContain('$(git');
+		});
+
 		it('should use projectPath as cwd when configured', () => {
 			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 				new WorkspaceConfiguration({
