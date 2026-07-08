@@ -36,6 +36,11 @@ function registerCommand(
 	context.subscriptions.push(disposable);
 }
 
+interface CodeLensMenuItem extends vscode.QuickPickItem {
+	command: string;
+	arguments: unknown[];
+}
+
 export function activate(context: vscode.ExtensionContext): void {
 	const config = new TestRunnerConfig();
 	const jestRunner = new TestRunner(config);
@@ -180,6 +185,22 @@ export function activate(context: vscode.ExtensionContext): void {
 		'extension.watchJest',
 		async (argument: Record<string, unknown> | string) =>
 			jestRunner.runCurrentTest(argument, ['--watch']),
+	);
+
+	registerCommand(
+		context,
+		'extension.showCodeLensMenu',
+		async (items: CodeLensMenuItem[]) => {
+			const selected = await vscode.window.showQuickPick(items, {
+				placeHolder: 'Select action to perform',
+			});
+			if (selected) {
+				await vscode.commands.executeCommand(
+					selected.command,
+					...selected.arguments,
+				);
+			}
+		},
 	);
 
 	if (config.isCodeLensEnabled) {

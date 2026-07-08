@@ -531,58 +531,36 @@ describe('TestRunnerCodeLensProvider', () => {
 
 			const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
 
-			// Should have 2 lenses per test (run, debug) + 2 "Run All" lenses (run all, debug all)
-			// = 3 tests * 2 + 2 = 8 lenses
-			expect(codeLenses.length).toBe(8);
+			expect(codeLenses).toHaveLength(2);
 
-			// Check individual test lenses have index prefix
-			const lens1Run = codeLenses.find(
-				(lens) => lens.command?.title === '[1] Run',
+			const runMenu = codeLenses.find(
+				(lens) => lens.command?.title === 'Run...',
 			);
-			expect(lens1Run).toBeDefined();
-			expect(lens1Run?.command?.arguments?.[0]).toBe('test 1');
+			expect(runMenu?.command?.command).toBe('extension.showCodeLensMenu');
+			const runItems = runMenu?.command?.arguments?.[0] as any[];
+			expect(runItems).toHaveLength(4);
+			expect(runItems[0]).toMatchObject({
+				label: 'Run All',
+				command: 'extension.runJest',
+			});
+			expect(runItems[0].arguments[0]).toContain('test (.*?)');
+			expect(runItems.map((item) => item.label)).toEqual([
+				'Run All',
+				'Run test 1',
+				'Run test 2',
+				'Run test 3',
+			]);
 
-			const lens2Run = codeLenses.find(
-				(lens) => lens.command?.title === '[2] Run',
+			const debugMenu = codeLenses.find(
+				(lens) => lens.command?.title === 'Debug...',
 			);
-			expect(lens2Run).toBeDefined();
-			expect(lens2Run?.command?.arguments?.[0]).toBe('test 2');
-
-			const lens3Run = codeLenses.find(
-				(lens) => lens.command?.title === '[3] Run',
-			);
-			expect(lens3Run).toBeDefined();
-			expect(lens3Run?.command?.arguments?.[0]).toBe('test 3');
-
-			const lens1Debug = codeLenses.find(
-				(lens) => lens.command?.title === '[1] Debug',
-			);
-			expect(lens1Debug).toBeDefined();
-
-			const lens2Debug = codeLenses.find(
-				(lens) => lens.command?.title === '[2] Debug',
-			);
-			expect(lens2Debug).toBeDefined();
-
-			const lens3Debug = codeLenses.find(
-				(lens) => lens.command?.title === '[3] Debug',
-			);
-			expect(lens3Debug).toBeDefined();
-
-			// Check "Run All" and "Debug All" lenses exist
-			const runAllLens = codeLenses.find(
-				(lens) => lens.command?.title === 'Run All',
-			);
-			expect(runAllLens).toBeDefined();
-			expect(runAllLens?.command?.command).toBe('extension.runJest');
-			expect(runAllLens?.command?.arguments?.[0]).toContain('test (.*?)');
-
-			const debugAllLens = codeLenses.find(
-				(lens) => lens.command?.title === 'Debug All',
-			);
-			expect(debugAllLens).toBeDefined();
-			expect(debugAllLens?.command?.command).toBe('extension.debugJest');
-			expect(debugAllLens?.command?.arguments?.[0]).toContain('test (.*?)');
+			expect(debugMenu?.command?.command).toBe('extension.showCodeLensMenu');
+			const debugItems = debugMenu?.command?.arguments?.[0] as any[];
+			expect(debugItems[0]).toMatchObject({
+				label: 'Debug All',
+				command: 'extension.debugJest',
+			});
+			expect(debugItems[0].arguments[0]).toContain('test (.*?)');
 		});
 
 		it('should provide individual lenses and "Run All" for describe.each expanded suites', async () => {
@@ -619,29 +597,29 @@ describe('TestRunnerCodeLensProvider', () => {
 
 			const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
 
-			const lens1Run = codeLenses.find(
-				(lens) => lens.command?.title === '[1] Run',
-			);
-			expect(lens1Run).toBeDefined();
-			expect(lens1Run?.command?.arguments?.[0]).toBe('group A');
+			expect(codeLenses).toHaveLength(2);
 
-			const lens2Run = codeLenses.find(
-				(lens) => lens.command?.title === '[2] Run',
+			const runMenu = codeLenses.find(
+				(lens) => lens.command?.title === 'Run...',
 			);
-			expect(lens2Run).toBeDefined();
-			expect(lens2Run?.command?.arguments?.[0]).toBe('group B');
+			const runItems = runMenu?.command?.arguments?.[0] as any[];
+			expect(runItems.map((item) => item.label)).toEqual([
+				'Run All',
+				'Run group A',
+				'Run group B',
+			]);
+			expect(runItems[0].arguments[0]).toContain('group');
+			expect(runItems[0].arguments[0]).not.toContain('$title');
 
-			const runAllLens = codeLenses.find(
-				(lens) => lens.command?.title === 'Run All',
+			const debugMenu = codeLenses.find(
+				(lens) => lens.command?.title === 'Debug...',
 			);
-			expect(runAllLens).toBeDefined();
-			expect(runAllLens?.command?.arguments?.[0]).toContain('group');
-			expect(runAllLens?.command?.arguments?.[0]).not.toContain('$title');
-
-			const debugAllLens = codeLenses.find(
-				(lens) => lens.command?.title === 'Debug All',
-			);
-			expect(debugAllLens).toBeDefined();
+			const debugItems = debugMenu?.command?.arguments?.[0] as any[];
+			expect(debugItems.map((item) => item.label)).toEqual([
+				'Debug All',
+				'Debug group A',
+				'Debug group B',
+			]);
 		});
 
 		it('should provide Run All and indexed lenses for nested it inside describe.each', async () => {
@@ -706,29 +684,30 @@ describe('TestRunnerCodeLensProvider', () => {
 
 			const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
 
-			const runAllLens = codeLenses.find(
-				(lens) => lens.command?.title === 'Run All',
+			const runMenus = codeLenses.filter(
+				(lens) => lens.command?.title === 'Run...',
 			);
-			expect(runAllLens).toBeDefined();
-			expect(runAllLens?.command?.arguments?.[0]).toContain('xyz group by');
-			expect(runAllLens?.command?.arguments?.[0]).not.toContain('$title');
+			const runItems = runMenus
+				.map((lens) => lens.command?.arguments?.[0] as any[])
+				.find((items) => items?.some((item) => item.label.includes('id 42')));
 
-			const debugAllLens = codeLenses.find(
-				(lens) => lens.command?.title === 'Debug All',
-			);
-			expect(debugAllLens).toBeDefined();
+			expect(runItems).toBeDefined();
+			expect(runItems?.[0].label).toBe('Run All');
+			expect(runItems?.[0].arguments[0]).toContain('xyz group by');
+			expect(runItems?.[0].arguments[0]).not.toContain('$title');
+			expect(runItems?.map((item) => item.label)).toEqual([
+				'Run All',
+				'Run xyz group by test 1 should run correctly for id 42',
+				'Run xyz group by test 2 should run correctly for id 99',
+			]);
 
-			const lens1Run = codeLenses.find(
-				(lens) => lens.command?.title === '[1] Run',
+			const debugMenus = codeLenses.filter(
+				(lens) => lens.command?.title === 'Debug...',
 			);
-			expect(lens1Run).toBeDefined();
-			expect(lens1Run?.command?.arguments?.[0]).toContain('id 42');
-
-			const lens2Run = codeLenses.find(
-				(lens) => lens.command?.title === '[2] Run',
-			);
-			expect(lens2Run).toBeDefined();
-			expect(lens2Run?.command?.arguments?.[0]).toContain('id 99');
+			const debugItems = debugMenus
+				.map((lens) => lens.command?.arguments?.[0] as any[])
+				.find((items) => items?.some((item) => item.label.includes('id 42')));
+			expect(debugItems?.[0].label).toBe('Debug All');
 		});
 
 		it('should provide indexed Run/Debug lenses for real it.each(cases) parser output', async () => {
@@ -765,31 +744,27 @@ describe('TestRunnerCodeLensProvider', () => {
 
 			const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
 
-			const runLenses = codeLenses.filter(
-				(lens) => lens.command?.command === 'extension.runJest',
+			const runMenu = codeLenses.find(
+				(lens) => lens.command?.title === 'Run...',
 			);
-			const debugLenses = codeLenses.filter(
-				(lens) => lens.command?.command === 'extension.debugJest',
-			);
+			const runItems = runMenu?.command?.arguments?.[0] as any[];
+			expect(runItems.map((item) => item.label)).toEqual([
+				'Run All',
+				'Run computeTierFromScore resolves tier for score 0 -> primary 0, secondary 0',
+				'Run computeTierFromScore resolves tier for score 12.25 -> primary 0, secondary 0',
+				'Run computeTierFromScore resolves tier for score 12.5 -> primary 1, secondary 2',
+			]);
 
-			expect(runLenses.some((lens) => lens.command?.title === '[1] Run')).toBe(
-				true,
+			const debugMenu = codeLenses.find(
+				(lens) => lens.command?.title === 'Debug...',
 			);
-			expect(runLenses.some((lens) => lens.command?.title === '[2] Run')).toBe(
-				true,
-			);
-			expect(runLenses.some((lens) => lens.command?.title === '[3] Run')).toBe(
-				true,
-			);
-			expect(
-				debugLenses.some((lens) => lens.command?.title === '[1] Debug'),
-			).toBe(true);
-			expect(
-				debugLenses.some((lens) => lens.command?.title === '[2] Debug'),
-			).toBe(true);
-			expect(
-				debugLenses.some((lens) => lens.command?.title === '[3] Debug'),
-			).toBe(true);
+			const debugItems = debugMenu?.command?.arguments?.[0] as any[];
+			expect(debugItems.map((item) => item.label)).toEqual([
+				'Debug All',
+				'Debug computeTierFromScore resolves tier for score 0 -> primary 0, secondary 0',
+				'Debug computeTierFromScore resolves tier for score 12.25 -> primary 0, secondary 0',
+				'Debug computeTierFromScore resolves tier for score 12.5 -> primary 1, secondary 2',
+			]);
 		});
 
 		it('should include all nested describe ancestors in Run All pattern for it.each', async () => {
@@ -849,13 +824,14 @@ describe('TestRunnerCodeLensProvider', () => {
 
 			const codeLenses = await codeLensProvider.provideCodeLenses(mockDocument);
 
-			const runAllLens = codeLenses.find(
-				(lens) => lens.command?.title === 'Run All',
+			const runMenu = codeLenses.find(
+				(lens) => lens.command?.title === 'Run...',
 			);
-			expect(runAllLens).toBeDefined();
-			expect(runAllLens?.command?.arguments?.[0]).toContain('Level one');
-			expect(runAllLens?.command?.arguments?.[0]).toContain('Level two');
-			expect(runAllLens?.command?.arguments?.[0]).toContain('My test (.*?)');
+			const runItems = runMenu?.command?.arguments?.[0] as any[];
+			expect(runItems[0].label).toBe('Run All');
+			expect(runItems[0].arguments[0]).toContain('Level one');
+			expect(runItems[0].arguments[0]).toContain('Level two');
+			expect(runItems[0].arguments[0]).toContain('My test (.*?)');
 		});
 	});
 });
