@@ -17,6 +17,12 @@ import { logError } from './utils/Logger';
 
 type LensNode = TestNode & { eachTemplate?: string; children?: LensNode[] };
 
+interface CodeLensMenuItem {
+	label: string;
+	command: string;
+	arguments: unknown[];
+}
+
 const CODE_LENS_CONFIG: Record<
 	CodeLensOption,
 	{ title: string; command: string }
@@ -42,6 +48,19 @@ function getCodeLensForOption(
 		arguments: [fullTestName],
 		title: customTitle || config.title,
 		command: config.command,
+	});
+}
+
+function getCodeLensMenuForOption(
+	range: Range,
+	codeLensOption: CodeLensOption,
+	menuItems: CodeLensMenuItem[],
+): CodeLens {
+	const config = CODE_LENS_CONFIG[codeLensOption];
+	return new CodeLens(range, {
+		arguments: [menuItems],
+		title: `${config.title}...`,
+		command: 'extension.showCodeLensMenu',
 	});
 }
 
@@ -195,6 +214,15 @@ const withDescribeChildrenSuffix = (
 		? `${pattern}(\\s.*)?`
 		: pattern;
 
+const buildPatternForNode = (
+	node: TestNode,
+	parseResults: TestNode[],
+): string => {
+	const testNamePattern =
+		toTestNamePattern(buildFullTestName(node, parseResults)) || '';
+	return withDescribeChildrenSuffix(node, testNamePattern) || '';
+};
+
 const buildAllPatternName = (
 	node: TestNode,
 	parent: TestNode | undefined,
@@ -211,7 +239,9 @@ const buildAllPatternName = (
 			}
 		}
 
-		const fullTemplateName = [...parentPath, template].filter(Boolean).join(' ');
+		const fullTemplateName = [...parentPath, template]
+			.filter(Boolean)
+			.join(' ');
 		const pattern = toTestNamePattern(fullTemplateName);
 		return withDescribeChildrenSuffix(node, pattern);
 	}
@@ -225,9 +255,31 @@ const buildAllPatternName = (
 	return withDescribeChildrenSuffix(node, pattern);
 };
 
-const getIndexedTitle = (option: CodeLensOption, index?: number): string => {
-	const baseTitle = CODE_LENS_CONFIG[option].title;
-	return index !== undefined ? `[${index}] ${baseTitle}` : baseTitle;
+const getMenuItemsForEachGroup = (
+	option: CodeLensOption,
+	nodes: TestNode[],
+	allPatternName: string,
+	parseResults: TestNode[],
+): CodeLensMenuItem[] => {
+	const config = CODE_LENS_CONFIG[option];
+	const items: CodeLensMenuItem[] = [
+		{
+			label: `${config.title} All`,
+			command: config.command,
+			arguments: [allPatternName],
+		},
+	];
+
+	nodes.forEach((node) => {
+		const fullTestName = buildFullTestName(node, parseResults);
+		items.push({
+			label: `${config.title} ${fullTestName}`,
+			command: config.command,
+			arguments: [buildPatternForNode(node, parseResults)],
+		});
+	});
+
+	return items;
 };
 
 function getTestsBlocks(
@@ -262,12 +314,7 @@ function getTestsBlocks(
 
 	const range = getNodeRange(parsedNode);
 
-	const testNamePattern =
-		toTestNamePattern(buildFullTestName(parsedNode, parseResults)) || '';
-	const fullTestName =
-		withDescribeChildrenSuffix(parsedNode, testNamePattern) || '';
-
-	let testIndex: number | undefined;
+	const fullTestName = buildPatternForNode(parsedNode, parseResults);
 	const isExpandedEachNode = hasEachTemplate(parsedNode);
 	const supportsEachGrouping =
 		parsedNode.start &&
@@ -284,9 +331,6 @@ function getTestsBlocks(
 		if (sameLineTests.length > 1) {
 			const groupKey = buildGroupKey(parsedNode, parent, nestedInDescribeEach);
 
-			const sortedTests = sortByStartColumn(sameLineTests);
-			testIndex = sortedTests.indexOf(parsedNode) + 1;
-
 			if (!groupsSet.has(groupKey)) {
 				groupsSet.add(groupKey);
 
@@ -298,20 +342,32 @@ function getTestsBlocks(
 				);
 
 				if (patternName) {
+					const sortedTests = sortByStartColumn(sameLineTests);
 					codeLens.push(
-						getCodeLensForOption(range, 'run', patternName, 'Run All'),
-						getCodeLensForOption(range, 'debug', patternName, 'Debug All'),
+						...codeLensOptions.map((option) =>
+							getCodeLensMenuForOption(
+								range,
+								option,
+								getMenuItemsForEachGroup(
+									option,
+									sortedTests,
+									patternName,
+									parseResults,
+								),
+							),
+						),
 					);
 				}
 			}
+
+			return codeLens;
 		}
 	}
 
 	codeLens.push(
-		...codeLensOptions.map((option) => {
-			const title = getIndexedTitle(option, testIndex);
-			return getCodeLensForOption(range, option, fullTestName, title);
-		}),
+		...codeLensOptions.map((option) =>
+			getCodeLensForOption(range, option, fullTestName),
+		),
 	);
 
 	return codeLens;
