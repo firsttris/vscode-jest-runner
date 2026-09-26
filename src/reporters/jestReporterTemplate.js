@@ -6,7 +6,8 @@ const sessionId = process.env.JSTR_SESSION_ID || 'unknown';
 function emit(type, payload) {
 	try {
 		const json = JSON.stringify(payload);
-		const len = Buffer.byteLength(json, 'utf8');
+		// String length (UTF-16 code units) — the parser slices decoded strings, not bytes.
+		const len = json.length;
 		const message =
 			START +
 			sessionId +

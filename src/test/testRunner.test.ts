@@ -332,6 +332,29 @@ describe('TestRunner', () => {
 			await jestRunner.runPreviousTest();
 			expect(mockTerminal.sendText).not.toHaveBeenCalled();
 		});
+
+		it('should do nothing when no test has run yet', async () => {
+			await expect(jestRunner.runPreviousTest()).resolves.toBeUndefined();
+
+			expect(mockTerminal.sendText).not.toHaveBeenCalled();
+			expect(vscode.debug.startDebugging).not.toHaveBeenCalled();
+		});
+
+		it('should reuse the environment of the previous run', async () => {
+			const env = { NODE_OPTIONS: '--experimental-vm-modules' };
+			(mockConfig.getEnvironmentForRun as jest.Mock).mockReturnValue(env);
+			await jestRunner.runTestsOnPath('/workspace/test.ts');
+			const createTerminal = vscode.window.createTerminal as jest.Mock;
+			createTerminal.mockClear();
+
+			await jestRunner.runPreviousTest();
+
+			// Same env as before, so the existing terminal is reused as-is
+			// instead of being recreated without the environment.
+			expect(createTerminal).not.toHaveBeenCalled();
+			expect(mockTerminal.dispose).not.toHaveBeenCalled();
+			expect(mockTerminal.sendText).toHaveBeenCalledTimes(2);
+		});
 	});
 
 	describe('debugTestsOnPath', () => {

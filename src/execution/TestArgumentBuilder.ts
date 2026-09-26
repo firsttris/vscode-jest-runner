@@ -153,12 +153,39 @@ abstract class JestLikeStrategy extends BaseStrategy {
 	): boolean {
 		if (allFiles.length !== 1) return false;
 
-		const fileItem = this.testController.items.get(allFiles[0]);
-		const totalTestsInFile = fileItem?.children.size ?? 0;
-		const tests = testsByFile.get(allFiles[0]);
+		const filePath = allFiles[0];
+		const tests = testsByFile.get(filePath);
+		if (!tests || tests.length === 0) return false;
 
-		return !!tests && tests.length < totalTestsInFile;
+		const fileItem = this.findFileItem(filePath, tests[0]);
+		if (!fileItem) return false;
+
+		// testsByFile holds leaf tests, so compare against the file's leaves,
+		// not its top-level children (which may be describe blocks).
+		return tests.length < countLeafTests(fileItem);
 	}
+
+	private findFileItem(
+		filePath: string,
+		test: vscode.TestItem,
+	): vscode.TestItem | undefined {
+		// File items are nested under folder items, so walk up from the test
+		// instead of looking them up at the controller root.
+		for (let item = test.parent; item; item = item.parent) {
+			if (item.id === filePath) return item;
+		}
+		return this.testController.items.get(filePath);
+	}
+}
+
+function countLeafTests(item: vscode.TestItem): number {
+	if (item.children.size === 0) return 1;
+
+	let count = 0;
+	item.children.forEach((child) => {
+		count += countLeafTests(child);
+	});
+	return count;
 }
 
 class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {

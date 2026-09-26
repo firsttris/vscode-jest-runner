@@ -18,9 +18,11 @@ interface DebugCommand {
 }
 
 export class TestRunner {
-	private previousCommand: string | DebugCommand;
+	private previousCommand: string | DebugCommand | undefined;
 
 	private previousFramework: string | undefined;
+
+	private previousEnv: Record<string, string> | undefined;
 
 	private terminalManager = new TerminalManager();
 
@@ -79,6 +81,10 @@ export class TestRunner {
 			return;
 		}
 
+		if (!this.previousCommand) {
+			return;
+		}
+
 		await editor.document.save();
 
 		if (typeof this.previousCommand === 'string') {
@@ -89,6 +95,7 @@ export class TestRunner {
 				this.previousCommand,
 				this.previousFramework,
 				cwd,
+				this.previousEnv,
 			);
 		} else {
 			await this.executeDebugCommand(this.previousCommand);
@@ -234,6 +241,7 @@ export class TestRunner {
 		const env = this.config.getEnvironmentForRun(filePath);
 		this.previousCommand = command;
 		this.previousFramework = framework;
+		this.previousEnv = env;
 
 		const cwd = this.config.changeDirectoryToWorkspaceRoot
 			? this.config.cwd

@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { type ChildProcess, spawn } from 'node:child_process';
 import * as vscode from 'vscode';
 import { extractStructuredMessages } from '../reporting/structuredOutput';
 import { processTestResultsFromParsed } from '../testResultProcessor';
@@ -40,6 +40,22 @@ function resolveSpawnCommand(
 	};
 }
 
+function spawnTestProcess(
+	resolvedCommand: ResolvedSpawnCommand,
+	cwd: string,
+): ChildProcess {
+	const child = spawn(resolvedCommand.command, resolvedCommand.args, {
+		cwd,
+		env: resolvedCommand.env,
+		shell: false,
+	});
+	// Decode as a stream so multi-byte UTF-8 characters split across
+	// chunk boundaries are not garbled.
+	child.stdout?.setEncoding('utf8');
+	child.stderr?.setEncoding('utf8');
+	return child;
+}
+
 export function executeTestCommandFast(
 	command: string,
 	args: string[],
@@ -52,23 +68,17 @@ export function executeTestCommandFast(
 	return new Promise((resolve) => {
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
-		const jestProcess = spawn(resolvedCommand.command, resolvedCommand.args, {
-			cwd,
-			env: resolvedCommand.env,
-			shell: false,
-		});
+		const jestProcess = spawnTestProcess(resolvedCommand, cwd);
 
 		let stdout = '';
 		let stderr = '';
 
-		jestProcess.stdout?.on('data', (data) => {
-			const chunk = data.toString();
+		jestProcess.stdout?.on('data', (chunk: string) => {
 			stdout += chunk;
 			run.appendOutput(chunk.replace(/\n/g, '\r\n'));
 		});
 
-		jestProcess.stderr?.on('data', (data) => {
-			const chunk = data.toString();
+		jestProcess.stderr?.on('data', (chunk: string) => {
 			stderr += chunk;
 			run.appendOutput(chunk.replace(/\n/g, '\r\n'));
 		});
@@ -135,11 +145,7 @@ export function executeTestCommand(
 
 		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
 
-		const jestProcess = spawn(resolvedCommand.command, resolvedCommand.args, {
-			cwd,
-			env: resolvedCommand.env,
-			shell: false,
-		});
+		const jestProcess = spawnTestProcess(resolvedCommand, cwd);
 
 		let stdout = '';
 		let stderr = '';
@@ -164,9 +170,8 @@ export function executeTestCommand(
 			return false;
 		};
 
-		jestProcess.stdout?.on('data', (data) => {
+		jestProcess.stdout?.on('data', (chunk: string) => {
 			if (killed) return;
-			const chunk = data.toString();
 			if (
 				!checkBufferSize(
 					stdout,
@@ -192,9 +197,8 @@ export function executeTestCommand(
 			}
 		});
 
-		jestProcess.stderr?.on('data', (data) => {
+		jestProcess.stderr?.on('data', (chunk: string) => {
 			if (killed) return;
-			const chunk = data.toString();
 			if (
 				!checkBufferSize(
 					stderr,

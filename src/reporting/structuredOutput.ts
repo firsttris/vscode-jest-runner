@@ -16,7 +16,7 @@ export function buildMarker(
 	payload: unknown,
 ): string {
 	const json = JSON.stringify(payload);
-	const len = Buffer.byteLength(json, 'utf8');
+	const len = json.length;
 	return `${START}${sessionId}::${type}::${len}::${json}${END}${sessionId}::${type}`;
 }
 

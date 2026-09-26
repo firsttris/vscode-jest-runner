@@ -18,6 +18,40 @@ jest.mock('vscode', () => ({
 	TestController: jest.fn(),
 }));
 
+const leafChildren = (count: number) => ({
+	size: count,
+	forEach: (callback: (item: unknown) => void) => {
+		for (let i = 0; i < count; i++) {
+			callback({ children: { size: 0 } });
+		}
+	},
+});
+
+interface FakeTestItem {
+	id: string;
+	label: string;
+	parent?: FakeTestItem;
+	children: {
+		size: number;
+		forEach: (callback: (item: FakeTestItem) => void) => void;
+	};
+}
+
+const makeItem = (id: string, children: FakeTestItem[] = []): FakeTestItem => {
+	const item: FakeTestItem = {
+		id,
+		label: id,
+		children: {
+			size: children.length,
+			forEach: (callback) => children.forEach(callback),
+		},
+	};
+	children.forEach((child) => {
+		child.parent = item;
+	});
+	return item;
+};
+
 describe('TestArgumentBuilder', () => {
 	let mockConfig: TestRunnerConfig;
 	let mockController: vscode.TestController;
@@ -104,7 +138,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock file with 2 tests (partial run)
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			const args = buildTestArgs(
@@ -130,7 +164,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock file with 2 tests (partial run)
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			const args = buildTestArgs(
@@ -161,7 +195,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock file with 2 tests (running all tests)
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			const args = buildTestArgs(
@@ -186,7 +220,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock file with 2 tests (partial run)
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			const args = buildTestArgs(
@@ -301,7 +335,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock controller to return a file item with more children, implying partial run
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 5 },
+				children: leafChildren(5),
 			});
 
 			// Mock implementation of buildVitestArgs to verify it's called
@@ -332,7 +366,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock file with more tests than selected (partial run)
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 3 },
+				children: leafChildren(3),
 			});
 
 			// Mock buildPlaywrightArgs for partial run path
@@ -369,7 +403,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock file with same number of tests (full run)
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			(mockConfig as any).buildPlaywrightArgs = jest
@@ -430,7 +464,7 @@ describe('TestArgumentBuilder', () => {
 			testsByFile.set('/path/to/test.spec.ts', [{ label: 'test1' }]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			(mockConfig as any).buildPlaywrightArgs = jest
@@ -463,7 +497,7 @@ describe('TestArgumentBuilder', () => {
 			testsByFile.set('/path/to/prognose.test.ts', [{ label: 'test1' }]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 1 },
+				children: leafChildren(1),
 			});
 			(mockConfig.getRstestConfigPath as jest.Mock).mockReturnValue(
 				'/path/to/rstest.config.ts',
@@ -491,7 +525,7 @@ describe('TestArgumentBuilder', () => {
 			testsByFile.set('/path/to/prognose.test.ts', [{ label: 'test1' }]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 3 },
+				children: leafChildren(3),
 			});
 			(mockConfig.buildRstestArgs as jest.Mock).mockReturnValue(['--partial']);
 
@@ -515,7 +549,7 @@ describe('TestArgumentBuilder', () => {
 			testsByFile.set('/path/to/prognose.test.ts', [{ label: 'test1' }]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 3 },
+				children: leafChildren(3),
 			});
 			(mockConfig.buildRstestArgs as jest.Mock).mockReturnValue(['--partial']);
 
@@ -596,7 +630,7 @@ describe('TestArgumentBuilder', () => {
 
 			// Mock controller to return a file item with more children, implying partial run
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 5 },
+				children: leafChildren(5),
 			});
 
 			// Mock implementation of buildJestArgs to verify it's called
@@ -618,13 +652,95 @@ describe('TestArgumentBuilder', () => {
 			expect(args).toContain('--mocked-jest-args');
 		});
 
+		it('should detect partial runs for files nested under folder items', () => {
+			const filePath = '/ws/src/math.test.ts';
+			const [first, second, third] = ['adds', 'subtracts', 'divides'].map(
+				(name) => makeItem(`${filePath}:it:1:${name}`),
+			);
+			const fileItem = makeItem(filePath, [
+				makeItem(`${filePath}:describe:1:math`, [first, second, third]),
+			]);
+			makeItem('/ws/src', [fileItem]);
+			// Only the folder item lives at the controller root.
+			(mockController.items.get as jest.Mock).mockReturnValue(undefined);
+			(mockConfig.buildJestArgs as jest.Mock).mockReturnValue([
+				'--mocked-jest-args',
+			]);
+
+			const args = buildTestArgs(
+				[filePath],
+				new Map([[filePath, [first, second] as any]]),
+				'jest',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			expect(mockConfig.buildJestArgs).toHaveBeenCalledWith(
+				filePath,
+				'(adds|subtracts)',
+				true,
+				expect.any(Array),
+			);
+			expect(args).toEqual(['--mocked-jest-args']);
+		});
+
+		it('should compare selected tests against leaf tests, not top-level describes', () => {
+			const filePath = '/ws/math.test.ts';
+			const [first, second, third] = ['adds', 'subtracts', 'divides'].map(
+				(name) => makeItem(`${filePath}:it:1:${name}`),
+			);
+			const fileItem = makeItem(filePath, [
+				makeItem(`${filePath}:describe:1:math`, [first, second, third]),
+			]);
+			(mockController.items.get as jest.Mock).mockReturnValue(fileItem);
+			(mockConfig.buildJestArgs as jest.Mock).mockReturnValue([
+				'--mocked-jest-args',
+			]);
+
+			buildTestArgs(
+				[filePath],
+				new Map([[filePath, [first, second] as any]]),
+				'jest',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			expect(mockConfig.buildJestArgs).toHaveBeenCalled();
+		});
+
+		it('should not treat selecting every leaf test as a partial run', () => {
+			const filePath = '/ws/src/math.test.ts';
+			const leaves = ['adds', 'subtracts'].map((name) =>
+				makeItem(`${filePath}:it:1:${name}`),
+			);
+			makeItem('/ws/src', [
+				makeItem(filePath, [makeItem(`${filePath}:describe:1:math`, leaves)]),
+			]);
+
+			buildTestArgs(
+				[filePath],
+				new Map([[filePath, leaves as any]]),
+				'jest',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			expect(mockConfig.buildJestArgs).not.toHaveBeenCalled();
+		});
+
 		it('should resolve string interpolation placeholders for partial jest runs', () => {
 			const files = ['/path/to/test.ts'];
 			const testsByFile = new Map();
 			testsByFile.set('/path/to/test.ts', [{ label: 'xyz by $title' }]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			(mockConfig.buildJestArgs as jest.Mock).mockReturnValue([
@@ -657,7 +773,7 @@ describe('TestArgumentBuilder', () => {
 			]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 2 },
+				children: leafChildren(2),
 			});
 
 			(mockConfig.buildJestArgs as jest.Mock).mockReturnValue([
@@ -693,7 +809,7 @@ describe('TestArgumentBuilder', () => {
 			]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 3 },
+				children: leafChildren(3),
 			});
 
 			(mockConfig.buildJestArgs as jest.Mock).mockReturnValue([
@@ -729,7 +845,7 @@ describe('TestArgumentBuilder', () => {
 			]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 6 },
+				children: leafChildren(6),
 			});
 
 			(mockConfig.buildJestArgs as jest.Mock).mockImplementation(
@@ -786,7 +902,7 @@ describe('TestArgumentBuilder', () => {
 			]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 6 },
+				children: leafChildren(6),
 			});
 
 			(mockConfig.buildJestArgs as jest.Mock).mockImplementation(
@@ -834,8 +950,7 @@ describe('TestArgumentBuilder', () => {
 		it('should build final jest -t pattern with regex metacharacters and backslashes', () => {
 			const files = ['/path/to/issue500.test.ts'];
 			const testsByFile = new Map();
-			const fullTestName =
-				'Suite [A] (group) {x} path\\to\\file + .* ? ^ $ |';
+			const fullTestName = 'Suite [A] (group) {x} path\\to\\file + .* ? ^ $ |';
 
 			testsByFile.set('/path/to/issue500.test.ts', [
 				{
@@ -845,7 +960,7 @@ describe('TestArgumentBuilder', () => {
 			]);
 
 			(mockController.items.get as jest.Mock).mockReturnValue({
-				children: { size: 6 },
+				children: leafChildren(6),
 			});
 
 			(mockConfig.buildJestArgs as jest.Mock).mockImplementation(

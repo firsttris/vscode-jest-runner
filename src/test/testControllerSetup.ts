@@ -11,11 +11,12 @@ import * as parser from '../parser';
 import * as util from '../util';
 import * as TestNameUtils from '../utils/TestNameUtils';
 import { EventEmitter } from 'events';
+import { PassThrough } from 'node:stream';
 import { testFileCache } from '../testDetection/testFileCache';
 
 export interface MockProcess extends EventEmitter {
-	stdout: EventEmitter;
-	stderr: EventEmitter;
+	stdout: PassThrough;
+	stderr: PassThrough;
 	kill: jest.Mock;
 }
 
@@ -166,8 +167,8 @@ export function setupTestControllerMocks(
 
 export function createMockProcess(): MockProcess {
 	const mockProcess: MockProcess = new EventEmitter() as any;
-	mockProcess.stdout = new EventEmitter();
-	mockProcess.stderr = new EventEmitter();
+	mockProcess.stdout = new PassThrough();
+	mockProcess.stderr = new PassThrough();
 	mockProcess.kill = jest.fn();
 	return mockProcess;
 }
