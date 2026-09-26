@@ -35,6 +35,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': tsTransform,
     'Template\\.js$': '<rootDir>/src/test/__mocks__/rawTransform.js',
-    '/node_modules/.+\\.m?js$': esmDepsTransform,
+    // transform keys are matched against native paths (backslashes on Windows)
+    '[/\\\\]node_modules[/\\\\].+\\.m?js$': esmDepsTransform,
   },
 };
