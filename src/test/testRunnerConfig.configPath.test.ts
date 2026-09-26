@@ -124,35 +124,36 @@ describe('TestRunnerConfig', () => {
 					'C:/workspace/jest.config.js',
 				],
 			];
-			describe.each(
-				scenarios,
-			)('%s: %s', (_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, expectedPath, useNearestConfig = undefined) => {
-				let jestRunnerConfig: TestRunnerConfig;
+			describe.each(scenarios)(
+				'%s: %s',
+				(_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, expectedPath, useNearestConfig = undefined) => {
+					let jestRunnerConfig: TestRunnerConfig;
 
-				beforeEach(() => {
-					cacheManager.invalidateAll();
-					jestRunnerConfig = new TestRunnerConfig();
-					jest
-						.spyOn(vscode.workspace, 'getWorkspaceFolder')
-						.mockReturnValue(
-							new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+					beforeEach(() => {
+						cacheManager.invalidateAll();
+						jestRunnerConfig = new TestRunnerConfig();
+						jest
+							.spyOn(vscode.workspace, 'getWorkspaceFolder')
+							.mockReturnValue(
+								new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+							);
+					});
+
+					its[_os](behavior, async () => {
+						jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+							new WorkspaceConfiguration({
+								'jestrunner.projectPath': projectPath,
+								'jestrunner.configPath': configPath,
+								'jestrunner.useNearestConfig': useNearestConfig,
+							}),
 						);
-				});
 
-				its[_os](behavior, async () => {
-					jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-						new WorkspaceConfiguration({
-							'jestrunner.projectPath': projectPath,
-							'jestrunner.configPath': configPath,
-							'jestrunner.useNearestConfig': useNearestConfig,
-						}),
-					);
-
-					expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
-						expectedPath,
-					);
-				});
-			});
+						expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
+							expectedPath,
+						);
+					});
+				},
+			);
 		});
 		describe('configPath is a glob map', () => {
 			describe('there is a matching glob', () => {
@@ -410,51 +411,52 @@ describe('TestRunnerConfig', () => {
 						true,
 					],
 				];
-				describe.each(
-					scenarios,
-				)('%s: %s', (_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, expectedPath, useNearestConfig = undefined) => {
-					let jestRunnerConfig: TestRunnerConfig;
+				describe.each(scenarios)(
+					'%s: %s',
+					(_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, expectedPath, useNearestConfig = undefined) => {
+						let jestRunnerConfig: TestRunnerConfig;
 
-					beforeEach(() => {
-						cacheManager.invalidateAll();
-						jestRunnerConfig = new TestRunnerConfig();
-						jest
-							.spyOn(vscode.workspace, 'getWorkspaceFolder')
-							.mockReturnValue(
-								new WorkspaceFolder(new Uri(workspacePath) as any) as any,
-							);
-						jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
-							if (
-								p === targetPath ||
-								normalizePath(p as string) === normalizePath(targetPath)
-							) {
-								return { isFile: () => true, isDirectory: () => false };
-							}
-							return { isFile: () => false, isDirectory: () => true };
+						beforeEach(() => {
+							cacheManager.invalidateAll();
+							jestRunnerConfig = new TestRunnerConfig();
+							jest
+								.spyOn(vscode.workspace, 'getWorkspaceFolder')
+								.mockReturnValue(
+									new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+								);
+							jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
+								if (
+									p === targetPath ||
+									normalizePath(p as string) === normalizePath(targetPath)
+								) {
+									return { isFile: () => true, isDirectory: () => false };
+								}
+								return { isFile: () => false, isDirectory: () => true };
+							});
+							jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+								return (
+									filePath === expectedPath ||
+									normalizePath(filePath as string) ===
+										normalizePath(expectedPath)
+								);
+							});
 						});
-						jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
-							return (
-								filePath === expectedPath ||
-								normalizePath(filePath as string) ===
-									normalizePath(expectedPath)
+
+						its[_os](behavior, async () => {
+							jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+								new WorkspaceConfiguration({
+									'jestrunner.projectPath': projectPath,
+									'jestrunner.configPath': configPath,
+									'jestrunner.useNearestConfig': useNearestConfig,
+								}),
+							);
+
+							expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
+								normalizePath(expectedPath),
 							);
 						});
-					});
-
-					its[_os](behavior, async () => {
-						jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-							new WorkspaceConfiguration({
-								'jestrunner.projectPath': projectPath,
-								'jestrunner.configPath': configPath,
-								'jestrunner.useNearestConfig': useNearestConfig,
-							}),
-						);
-
-						expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
-							normalizePath(expectedPath),
-						);
-					});
-				});
+					},
+				);
 			});
 
 			describe('no matching glob', () => {
@@ -524,46 +526,47 @@ describe('TestRunnerConfig', () => {
 						'C:/workspace/jest.config.mjs',
 					],
 				];
-				describe.each(
-					scenarios,
-				)('%s: %s', (_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, foundPath, expectedPath) => {
-					let jestRunnerConfig: TestRunnerConfig;
+				describe.each(scenarios)(
+					'%s: %s',
+					(_os, _name, behavior, workspacePath, projectPath, configPath, targetPath, foundPath, expectedPath) => {
+						let jestRunnerConfig: TestRunnerConfig;
 
-					beforeEach(() => {
-						cacheManager.invalidateAll();
-						jestRunnerConfig = new TestRunnerConfig();
-						jest
-							.spyOn(vscode.workspace, 'getWorkspaceFolder')
-							.mockReturnValue(
-								new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+						beforeEach(() => {
+							cacheManager.invalidateAll();
+							jestRunnerConfig = new TestRunnerConfig();
+							jest
+								.spyOn(vscode.workspace, 'getWorkspaceFolder')
+								.mockReturnValue(
+									new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+								);
+							jest
+								.spyOn(vscode.window, 'showWarningMessage')
+								.mockReturnValue(undefined);
+							jest
+								.spyOn(fs, 'statSync')
+								.mockImplementation((path: string): any => ({
+									isDirectory: () => /\.[a-z]{2,4}$/.test(path),
+								}));
+						});
+
+						its[_os](behavior, async () => {
+							jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+								new WorkspaceConfiguration({
+									'jestrunner.projectPath': projectPath,
+									'jestrunner.configPath': configPath,
+									'jestrunner.useNearestConfig': true,
+								}),
 							);
-						jest
-							.spyOn(vscode.window, 'showWarningMessage')
-							.mockReturnValue(undefined);
-						jest
-							.spyOn(fs, 'statSync')
-							.mockImplementation((path: string): any => ({
-								isDirectory: () => /\.[a-z]{2,4}$/.test(path),
-							}));
-					});
+							jest
+								.spyOn(fs, 'existsSync')
+								.mockImplementation((filePath) => filePath === foundPath);
 
-					its[_os](behavior, async () => {
-						jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-							new WorkspaceConfiguration({
-								'jestrunner.projectPath': projectPath,
-								'jestrunner.configPath': configPath,
-								'jestrunner.useNearestConfig': true,
-							}),
-						);
-						jest
-							.spyOn(fs, 'existsSync')
-							.mockImplementation((filePath) => filePath === foundPath);
-
-						expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
-							expectedPath,
-						);
-					});
-				});
+							expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
+								expectedPath,
+							);
+						});
+					},
+				);
 			});
 		});
 		describe('configPath is not set', () => {
@@ -651,51 +654,53 @@ describe('TestRunnerConfig', () => {
 					'',
 				],
 			];
-			describe.each(
-				scenarios,
-			)('%s: %s', (_os, _name, behavior, workspacePath, projectPath, targetPath, expectedPath) => {
-				let jestRunnerConfig: TestRunnerConfig;
+			describe.each(scenarios)(
+				'%s: %s',
+				(_os, _name, behavior, workspacePath, projectPath, targetPath, expectedPath) => {
+					let jestRunnerConfig: TestRunnerConfig;
 
-				beforeEach(() => {
-					cacheManager.invalidateAll();
-					jestRunnerConfig = new TestRunnerConfig();
-					jest
-						.spyOn(vscode.workspace, 'getWorkspaceFolder')
-						.mockReturnValue(
-							new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+					beforeEach(() => {
+						cacheManager.invalidateAll();
+						jestRunnerConfig = new TestRunnerConfig();
+						jest
+							.spyOn(vscode.workspace, 'getWorkspaceFolder')
+							.mockReturnValue(
+								new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+							);
+
+						jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
+							if (
+								p === targetPath ||
+								normalizePath(p as string) === normalizePath(targetPath)
+							) {
+								return { isFile: () => true, isDirectory: () => false };
+							}
+							return { isFile: () => false, isDirectory: () => true };
+						});
+						jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
+							return (
+								filePath === expectedPath ||
+								normalizePath(filePath as string) ===
+									normalizePath(expectedPath)
+							);
+						});
+					});
+
+					its[_os](behavior, async () => {
+						jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+							new WorkspaceConfiguration({
+								'jestrunner.projectPath': projectPath,
+								'jestrunner.configPath': undefined,
+								'jestrunner.useNearestConfig': true,
+							}),
 						);
 
-					jest.spyOn(fs, 'statSync').mockImplementation((p): any => {
-						if (
-							p === targetPath ||
-							normalizePath(p as string) === normalizePath(targetPath)
-						) {
-							return { isFile: () => true, isDirectory: () => false };
-						}
-						return { isFile: () => false, isDirectory: () => true };
-					});
-					jest.spyOn(fs, 'existsSync').mockImplementation((filePath) => {
-						return (
-							filePath === expectedPath ||
-							normalizePath(filePath as string) === normalizePath(expectedPath)
+						expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
+							expectedPath,
 						);
 					});
-				});
-
-				its[_os](behavior, async () => {
-					jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
-						new WorkspaceConfiguration({
-							'jestrunner.projectPath': projectPath,
-							'jestrunner.configPath': undefined,
-							'jestrunner.useNearestConfig': true,
-						}),
-					);
-
-					expect(jestRunnerConfig.getJestConfigPath(targetPath)).toBe(
-						expectedPath,
-					);
-				});
-			});
+				},
+			);
 		});
 
 		describe('custom config fallback to standard config', () => {
@@ -891,89 +896,91 @@ describe('TestRunnerConfig', () => {
 		];
 
 		describe('targetPath is not provided', () => {
-			describe.each(
-				scenarios,
-			)('%s: %s', (_os, _name, behavior, workspacePath, openedFilePath, configPath, configFilename) => {
-				let jestRunnerConfig: TestRunnerConfig;
-				let configFilePath: string;
-				let activeTextEditorSpy: jest.SpyInstance;
+			describe.each(scenarios)(
+				'%s: %s',
+				(_os, _name, behavior, workspacePath, openedFilePath, configPath, configFilename) => {
+					let jestRunnerConfig: TestRunnerConfig;
+					let configFilePath: string;
+					let activeTextEditorSpy: jest.SpyInstance;
 
-				beforeEach(() => {
-					cacheManager.invalidateAll();
-					jestRunnerConfig = new TestRunnerConfig();
-					configFilePath =
-						configPath && configFilename
-							? path.resolve(configPath, configFilename)
-							: '';
-					jest
-						.spyOn(vscode.workspace, 'getWorkspaceFolder')
-						.mockReturnValue(
-							new WorkspaceFolder(new Uri(workspacePath) as any) as any,
-						);
-					activeTextEditorSpy = jest
-						.spyOn(vscode.window, 'activeTextEditor', 'get')
-						.mockReturnValue(
-							new TextEditor(new Document(new Uri(openedFilePath))) as any,
-						);
-					jest
-						.spyOn(fs, 'existsSync')
-						.mockImplementation((filePath) => filePath === configFilePath);
-					jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
-						isDirectory: () => !openedFilePath.endsWith('.ts'),
-					}));
-				});
+					beforeEach(() => {
+						cacheManager.invalidateAll();
+						jestRunnerConfig = new TestRunnerConfig();
+						configFilePath =
+							configPath && configFilename
+								? path.resolve(configPath, configFilename)
+								: '';
+						jest
+							.spyOn(vscode.workspace, 'getWorkspaceFolder')
+							.mockReturnValue(
+								new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+							);
+						activeTextEditorSpy = jest
+							.spyOn(vscode.window, 'activeTextEditor', 'get')
+							.mockReturnValue(
+								new TextEditor(new Document(new Uri(openedFilePath))) as any,
+							);
+						jest
+							.spyOn(fs, 'existsSync')
+							.mockImplementation((filePath) => filePath === configFilePath);
+						jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
+							isDirectory: () => !openedFilePath.endsWith('.ts'),
+						}));
+					});
 
-				its[_os](behavior, async () => {
-					if (configPath) {
-						expect(jestRunnerConfig.findConfigPath()).toBe(
-							normalizePath(configFilePath),
-						);
-					} else {
-						expect(jestRunnerConfig.findConfigPath()).toBeUndefined();
-					}
-					expect(activeTextEditorSpy).toHaveBeenCalled();
-				});
-			});
+					its[_os](behavior, async () => {
+						if (configPath) {
+							expect(jestRunnerConfig.findConfigPath()).toBe(
+								normalizePath(configFilePath),
+							);
+						} else {
+							expect(jestRunnerConfig.findConfigPath()).toBeUndefined();
+						}
+						expect(activeTextEditorSpy).toHaveBeenCalled();
+					});
+				},
+			);
 		});
 		describe('targetPath is provided', () => {
-			describe.each(
-				scenarios,
-			)('%s: %s', (_os, _name, behavior, workspacePath, openedFilePath, configPath, configFilename) => {
-				let jestRunnerConfig: TestRunnerConfig;
-				let configFilePath: string;
+			describe.each(scenarios)(
+				'%s: %s',
+				(_os, _name, behavior, workspacePath, openedFilePath, configPath, configFilename) => {
+					let jestRunnerConfig: TestRunnerConfig;
+					let configFilePath: string;
 
-				beforeEach(() => {
-					jestRunnerConfig = new TestRunnerConfig();
-					configFilePath =
-						configPath && configFilename
-							? path.resolve(configPath, configFilename)
-							: '';
-					jest.spyOn(vscode.window, 'activeTextEditor', 'get');
-					jest
-						.spyOn(vscode.workspace, 'getWorkspaceFolder')
-						.mockReturnValue(
-							new WorkspaceFolder(new Uri(workspacePath) as any) as any,
-						);
-					jest
-						.spyOn(fs, 'existsSync')
-						.mockImplementation((filePath) => filePath === configFilePath);
-					jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
-						isDirectory: () => !openedFilePath.endsWith('.ts'),
-					}));
-				});
+					beforeEach(() => {
+						jestRunnerConfig = new TestRunnerConfig();
+						configFilePath =
+							configPath && configFilename
+								? path.resolve(configPath, configFilename)
+								: '';
+						jest.spyOn(vscode.window, 'activeTextEditor', 'get');
+						jest
+							.spyOn(vscode.workspace, 'getWorkspaceFolder')
+							.mockReturnValue(
+								new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+							);
+						jest
+							.spyOn(fs, 'existsSync')
+							.mockImplementation((filePath) => filePath === configFilePath);
+						jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
+							isDirectory: () => !openedFilePath.endsWith('.ts'),
+						}));
+					});
 
-				its[_os](behavior, async () => {
-					if (configPath) {
-						expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBe(
-							normalizePath(configFilePath),
-						);
-					} else {
-						expect(
-							jestRunnerConfig.findConfigPath(openedFilePath),
-						).toBeUndefined();
-					}
-				});
-			});
+					its[_os](behavior, async () => {
+						if (configPath) {
+							expect(jestRunnerConfig.findConfigPath(openedFilePath)).toBe(
+								normalizePath(configFilePath),
+							);
+						} else {
+							expect(
+								jestRunnerConfig.findConfigPath(openedFilePath),
+							).toBeUndefined();
+						}
+					});
+				},
+			);
 		});
 	});
 

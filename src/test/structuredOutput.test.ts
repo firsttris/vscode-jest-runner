@@ -69,14 +69,17 @@ describe('structuredOutput', () => {
 		['jest', jestReporterSource],
 		['vitest', vitestReporterSource],
 		['node', nodeReporterSource],
-	])('should parse non-ASCII output emitted by the %s reporter template', (_name, source) => {
-		const { emit, output } = loadTemplateEmit(source, 's1');
+	])(
+		'should parse non-ASCII output emitted by the %s reporter template',
+		(_name, source) => {
+			const { emit, output } = loadTemplateEmit(source, 's1');
 
-		emit('results', nonAsciiPayload);
-		const { messages } = extractStructuredMessages(output(), 's1');
+			emit('results', nonAsciiPayload);
+			const { messages } = extractStructuredMessages(output(), 's1');
 
-		expect(messages.map((m) => m.payload)).toEqual([nonAsciiPayload]);
-	});
+			expect(messages.map((m) => m.payload)).toEqual([nonAsciiPayload]);
+		},
+	);
 
 	describe('streaming', () => {
 		// Feeds `output` chunk by chunk, carrying `remaining` like
@@ -95,15 +98,16 @@ describe('structuredOutput', () => {
 			return { payloads, buffer, maxRemaining };
 		};
 
-		it.each([
-			1, 3, 7, 50,
-		])('should parse each message exactly once with chunk size %i', (chunkSize) => {
-			const output = `log line\n${buildMarker('s1', 'results', nonAsciiPayload)}more output\n${buildMarker('s1', 'results', { title: 'zweiter' })}done\n`;
+		it.each([1, 3, 7, 50])(
+			'should parse each message exactly once with chunk size %i',
+			(chunkSize) => {
+				const output = `log line\n${buildMarker('s1', 'results', nonAsciiPayload)}more output\n${buildMarker('s1', 'results', { title: 'zweiter' })}done\n`;
 
-			const { payloads } = parseInChunks(output, chunkSize);
+				const { payloads } = parseInChunks(output, chunkSize);
 
-			expect(payloads).toEqual([nonAsciiPayload, { title: 'zweiter' }]);
-		});
+				expect(payloads).toEqual([nonAsciiPayload, { title: 'zweiter' }]);
+			},
+		);
 
 		it('should not accumulate plain output without markers', () => {
 			const output = 'PASS src/foo.test.ts\n'.repeat(1000);

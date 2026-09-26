@@ -147,15 +147,18 @@ describe('configParsing', () => {
 			mockedFs.existsSync = jest.fn().mockReturnValue(false);
 		});
 
-		it.each(
-			rstestConfigFiles,
-		)('detects %s as a valid rstest config file', (configFile) => {
-			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
-				return fsPath === join(testDir, configFile);
-			});
+		it.each(rstestConfigFiles)(
+			'detects %s as a valid rstest config file',
+			(configFile) => {
+				mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {
+					return fsPath === join(testDir, configFile);
+				});
 
-			expect(getConfigPath(testDir, 'rstest')).toBe(join(testDir, configFile));
-		});
+				expect(getConfigPath(testDir, 'rstest')).toBe(
+					join(testDir, configFile),
+				);
+			},
+		);
 
 		it('resolves rstest config files in documented priority order', () => {
 			mockedFs.existsSync = jest.fn((fsPath: fs.PathLike) => {

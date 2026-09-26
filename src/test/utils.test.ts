@@ -170,11 +170,12 @@ describe('quote', () => {
 		},
 	);
 
-	it.each(
-		trickyValues,
-	)('should survive normalization for non-shell spawn: %s', (value) => {
-		expect(normalizeArgsForNonShellSpawn([quote(value)])).toEqual([value]);
-	});
+	it.each(trickyValues)(
+		'should survive normalization for non-shell spawn: %s',
+		(value) => {
+			expect(normalizeArgsForNonShellSpawn([quote(value)])).toEqual([value]);
+		},
+	);
 });
 
 describe('unquote', () => {
@@ -401,9 +402,12 @@ describe('validateCodeLensOptions', () =>
 			['coverage', 'current-test-coverage', 'run'],
 			['coverage', 'current-test-coverage', 'run'],
 		],
-	])('should turn "jestrunner.codeLens" options  into something valid', (input, expected) => {
-		expect(validateCodeLensOptions(input)).toEqual(expected);
-	}));
+	])(
+		'should turn "jestrunner.codeLens" options  into something valid',
+		(input, expected) => {
+			expect(validateCodeLensOptions(input)).toEqual(expected);
+		},
+	));
 
 import { parseShellCommand } from '../utils/ShellUtils';
 

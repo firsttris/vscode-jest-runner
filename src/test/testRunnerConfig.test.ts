@@ -171,47 +171,48 @@ describe('TestRunnerConfig', () => {
 			],
 		];
 
-		describe.each(
-			scenarios,
-		)('%s: %s', (_os, _name, behavior, workspacePath, openedFilePath, installedPath) => {
-			let jestRunnerConfig: TestRunnerConfig;
+		describe.each(scenarios)(
+			'%s: %s',
+			(_os, _name, behavior, workspacePath, openedFilePath, installedPath) => {
+				let jestRunnerConfig: TestRunnerConfig;
 
-			beforeEach(() => {
-				jestRunnerConfig = new TestRunnerConfig();
-				jest
-					.spyOn(vscode.workspace, 'getWorkspaceFolder')
-					.mockReturnValue(
-						new WorkspaceFolder(new Uri(workspacePath) as any) as any,
-					);
-				jest
-					.spyOn(vscode.window, 'activeTextEditor', 'get')
-					.mockReturnValue(
-						new TextEditor(new Document(new Uri(openedFilePath))) as any,
-					);
-				jest.spyOn(fs, 'statSync').mockImplementation((): any => ({
-					isDirectory: () => !openedFilePath.endsWith('.ts'),
-				}));
+				beforeEach(() => {
+					jestRunnerConfig = new TestRunnerConfig();
+					jest
+						.spyOn(vscode.workspace, 'getWorkspaceFolder')
+						.mockReturnValue(
+							new WorkspaceFolder(new Uri(workspacePath) as any) as any,
+						);
+					jest
+						.spyOn(vscode.window, 'activeTextEditor', 'get')
+						.mockReturnValue(
+							new TextEditor(new Document(new Uri(openedFilePath))) as any,
+						);
+					jest.spyOn(fs, 'statSync').mockImplementation((): any => ({
+						isDirectory: () => !openedFilePath.endsWith('.ts'),
+					}));
 
-				// Mock findTestFrameworkDirectory to return the installed path
-				jest
-					.spyOn(frameworkDetection, 'findTestFrameworkDirectory')
-					.mockReturnValue(
-						installedPath
-							? { directory: installedPath, framework: 'jest' as const }
-							: undefined,
-					);
-			});
+					// Mock findTestFrameworkDirectory to return the installed path
+					jest
+						.spyOn(frameworkDetection, 'findTestFrameworkDirectory')
+						.mockReturnValue(
+							installedPath
+								? { directory: installedPath, framework: 'jest' as const }
+								: undefined,
+						);
+				});
 
-			its[_os](behavior, async () => {
-				if (installedPath) {
-					expect(jestRunnerConfig.currentPackagePath).toBe(
-						normalizePath(installedPath),
-					);
-				} else {
-					expect(jestRunnerConfig.currentPackagePath).toBe('');
-				}
-			});
-		});
+				its[_os](behavior, async () => {
+					if (installedPath) {
+						expect(jestRunnerConfig.currentPackagePath).toBe(
+							normalizePath(installedPath),
+						);
+					} else {
+						expect(jestRunnerConfig.currentPackagePath).toBe('');
+					}
+				});
+			},
+		);
 	});
 
 	describe('isCodeLensEnabled - backwards compatibility', () => {

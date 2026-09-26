@@ -1133,15 +1133,14 @@ describe('TestArgumentBuilder', () => {
 			);
 		});
 
-		it.each([
-			'jest',
-			'vitest',
-			'rstest',
-		] as const)('should not filter %s when every test of every file is selected', (framework) => {
-			const args = build(framework, fullSelection());
+		it.each(['jest', 'vitest', 'rstest'] as const)(
+			'should not filter %s when every test of every file is selected',
+			(framework) => {
+				const args = build(framework, fullSelection());
 
-			expect(args).not.toContain('-t');
-		});
+				expect(args).not.toContain('-t');
+			},
+		);
 
 		it('should not filter deno when every test of every file is selected', () => {
 			const args = build('deno', fullSelection());
