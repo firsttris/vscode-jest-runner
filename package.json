@@ -414,22 +414,26 @@
     "format:fix": "biome format --write src"
   },
   "devDependencies": {
+    "@babel/core": "^8.0.6",
+    "@babel/plugin-transform-modules-commonjs": "^8.0.1",
+    "@babel/preset-typescript": "^8.0.1",
     "@biomejs/biome": "^2.5.14",
     "@types/jest": "^30.0.0",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^25.9.8",
+    "@types/node": "^26.6.3",
     "@types/shell-quote": "^1.7.5",
     "@types/vscode": "^1.100.0",
-    "@vscode/vsce": "^3.9.2",
+    "@vscode/vsce": "^4.0.0",
+    "babel-jest": "^30.5.2",
     "jest": "^30.5.2",
-    "ovsx": "^0.10.12",
-    "ts-jest": "^29.4.14",
-    "typescript": "^5.9.3",
+    "ovsx": "^1.2.0",
+    "typescript": "^7.0.2",
     "vite": "^8.3.1"
   },
   "dependencies": {
-    "@babel/parser": "^7.29.9",
-    "@babel/traverse": "^7.29.8",
+    "@babel/parser": "^8.0.6",
+    "@babel/traverse": "^8.0.6",
+    "@babel/types": "^8.0.6",
     "fast-glob": "^3.3.3",
     "micromatch": "^4.0.8",
     "shell-quote": "^1.10.0"

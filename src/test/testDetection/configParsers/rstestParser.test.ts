@@ -7,7 +7,7 @@ const mockedFs = fs as jest.Mocked<typeof fs>;
 
 jest.mock('../../../testDetection/configParsers/parseUtils', () => ({
 	...jest.requireActual('../../../testDetection/configParsers/parseUtils'),
-	readConfigFile: (path: string) => fs.readFileSync(path, 'utf-8'),
+	readConfigFile: (path: string) => mockedFs.readFileSync(path, 'utf-8'),
 }));
 
 describe('rstestParser', () => {

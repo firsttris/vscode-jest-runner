@@ -1,24 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import {
-	type ParserPlugin,
-	type ParserPluginWithOptions,
-	parse,
-} from '@babel/parser';
+import { type ParserPlugin, parse } from '@babel/parser';
 import * as t from '@babel/types';
 import { astToValue } from '../../utils/AstUtils';
 
 export const readConfigFile = (configPath: string): string =>
 	readFileSync(configPath, 'utf8');
 
-const parserPlugins: (ParserPlugin | ParserPluginWithOptions)[] = [
-	'typescript',
-	'jsx',
-	'classProperties',
-	'dynamicImport',
-	'importMeta',
-	'topLevelAwait',
-];
+const parserPlugins: ParserPlugin[] = ['typescript', 'jsx'];
 
 const isRequireCall = (node: t.Node | undefined): node is t.CallExpression => {
 	if (!node || !t.isCallExpression(node)) return false;

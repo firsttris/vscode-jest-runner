@@ -8,7 +8,8 @@
     "rootDir": "src",
     "allowSyntheticDefaultImports": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node", "vscode"]
   },
   "include": ["src"],
   "exclude": ["src/test"]

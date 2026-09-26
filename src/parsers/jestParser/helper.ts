@@ -1,54 +1,22 @@
-import type {
-	DecoratorsPluginOptions,
-	ParserOptions,
-	ParserPlugin,
-	ParserPluginWithOptions,
-} from '@babel/parser';
+import type { ParserOptions, ParserPlugin } from '@babel/parser';
 import * as t from '@babel/types';
 
 const commonPlugins: ParserPlugin[] = [
 	'asyncDoExpressions',
-	'asyncGenerators',
-	'bigInt',
-	'classPrivateMethods',
-	'classPrivateProperties',
-	'classStaticBlock',
-	'decimal',
 	'decoratorAutoAccessors',
 	'destructuringPrivate',
 	'doExpressions',
-	'dynamicImport',
-	'explicitResourceManagement',
 	'exportDefaultFrom',
-	'exportNamespaceFrom',
 	'flowComments',
 	'functionBind',
 	'functionSent',
-	'importMeta',
-	'logicalAssignment',
-	'importAssertions',
-	'importReflection',
 	'moduleBlocks',
-	'moduleStringNames',
-	'nullishCoalescingOperator',
-	'numericSeparator',
-	'objectRestSpread',
-	'optionalCatchBinding',
-	'optionalChaining',
-	'partialApplication',
-	'privateIn',
-	'regexpUnicodeSets',
+	['partialApplication', { version: '2018-07' }],
 	'throwExpressions',
-	'topLevelAwait',
 	'v8intrinsic',
-	['pipelineOperator', { proposal: 'smart' }],
-	'recordAndTuple',
+	['pipelineOperator', { proposal: 'fsharp' }],
 ];
 
-export const DefaultDecoratorPlugin: ParserPluginWithOptions = [
-	'decorators',
-	{ decoratorsBeforeExport: true },
-];
 export const jsPlugins: ParserPlugin[] = [...commonPlugins, 'flow', 'jsx'];
 export const tsPlugins: ParserPlugin[] = [...commonPlugins, 'typescript'];
 export const tsxPlugins: ParserPlugin[] = [
@@ -58,7 +26,7 @@ export const tsxPlugins: ParserPlugin[] = [
 ];
 
 export interface JESParserPluginOptions {
-	decorators?: 'legacy' | DecoratorsPluginOptions;
+	decorators?: 'legacy';
 }
 
 export interface JESParserOptions {
@@ -67,14 +35,10 @@ export interface JESParserOptions {
 }
 
 const decoratorPlugins = (options?: JESParserOptions): ParserPlugin[] => {
-	const decorators = options?.plugins?.decorators;
-	if (!decorators) {
-		return [DefaultDecoratorPlugin];
-	}
-	if (decorators === 'legacy') {
+	if (options?.plugins?.decorators === 'legacy') {
 		return ['decorators-legacy'];
 	}
-	return [['decorators', decorators]];
+	return ['decorators'];
 };
 
 export const parseOptions = (

@@ -1,7 +1,8 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "strict": false
+    "strict": false,
+    "types": ["node", "vscode", "jest"]
   },
   "include": ["src"],
   "exclude": []
