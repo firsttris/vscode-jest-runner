@@ -382,8 +382,8 @@ describe('TestRunnerConfig', () => {
 
 			expect(args).toContain('-t');
 			const expectedTestName = isWindows()
-				? '"^my test$"'
-				: "'^my test$'";
+				? '"^my (?:> )?test$"'
+				: "'^my (?:> )?test$'";
 			expect(args).toContain(expectedTestName);
 		});
 
@@ -398,12 +398,26 @@ describe('TestRunnerConfig', () => {
 			const filterIndex = args.indexOf('-t');
 			expect(filterIndex).toBeGreaterThan(-1);
 
-			const filterPattern = args[filterIndex + 1];
-			expect(filterPattern).toBe('^math suite adds 1 \\+ 2 to equal 3$');
-
-			const filterRegex = new RegExp(filterPattern);
+			const filterRegex = new RegExp(args[filterIndex + 1]);
 			expect(filterRegex.test('math suite adds 1 + 2 to equal 3')).toBe(true);
-			expect(filterRegex.test('math suite adds 1 + 2 to equal 3466')).toBe(false);
+			expect(filterRegex.test('math suite adds 1 + 2 to equal 3466')).toBe(
+				false,
+			);
+		});
+
+		it('should match nested names joined with " " (vitest <=4) and " > " (vitest >=5)', () => {
+			const args = jestRunnerConfig.buildVitestArgs(
+				'/workspace/test.spec.ts',
+				'my suite does (.*?) thing(\\s.*)?',
+				false,
+			);
+
+			const filterRegex = new RegExp(args[args.indexOf('-t') + 1]);
+			expect(filterRegex.test('my suite does the thing')).toBe(true);
+			expect(filterRegex.test('my suite > does the thing')).toBe(true);
+			expect(filterRegex.test('my > suite > does > the thing')).toBe(true);
+			expect(filterRegex.test('my suite > does the thing > nested')).toBe(true);
+			expect(filterRegex.test('other suite > does the thing')).toBe(false);
 		});
 
 		it('should include vitest config path when set', () => {

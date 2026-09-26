@@ -570,7 +570,7 @@ describe('TestRunnerConfig', () => {
 				'run',
 				expectedFilePath,
 				'-t',
-				'^Test 1$',
+				'^Test (?:> )?1$',
 			]);
 		});
 
@@ -654,7 +654,7 @@ describe('TestRunnerConfig', () => {
 				'run',
 				normalizePath(path.resolve('/workspace/test.spec.ts')),
 				'-t',
-				'^Test 1$',
+				'^Test (?:> )?1$',
 			]);
 		});
 
@@ -790,9 +790,7 @@ describe('TestRunnerConfig', () => {
 			).toHaveLength(1);
 			expect(
 				config.runtimeArgs?.filter((arg: string) => arg === '-t'),
-			).toHaveLength(
-				2,
-			);
+			).toHaveLength(2);
 			expect(config.runtimeArgs).toEqual(
 				expect.arrayContaining([
 					'/workspace/rstest.config.ts',

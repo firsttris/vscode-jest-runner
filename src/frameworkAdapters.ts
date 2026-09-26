@@ -2,10 +2,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { getReporterPaths } from './reporters/reporterPaths';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import {
-	appendUniqueArgs,
-	prependUniqueArgs,
-} from './utils/ArgUtils';
+import { appendUniqueArgs, prependUniqueArgs } from './utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -40,6 +37,10 @@ const prepareTestName = (
 
 	return withQuotes ? quote(escapeSingleQuotes(pattern)) : pattern;
 };
+
+// Vitest <=4 joins suite and test names with " ", Vitest >=5 with " > ".
+const toVitestNamePattern = (testName: string | undefined) =>
+	testName?.replace(/ /g, ' (?:> )?');
 
 const isVitestWatchOption = (option: string): boolean =>
 	option === '--watch' || option === '-w' || option.startsWith('--watch=');
@@ -90,15 +91,17 @@ const buildVitestArgs: BuildArgsFn = (
 		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
 	);
 	const args = [q(normalizePath(resolve(filePath)))];
-	const maybeRunArgs = hasWatchMode
-		? args
-		: prependUniqueArgs(args, ['run']);
+	const maybeRunArgs = hasWatchMode ? args : prependUniqueArgs(args, ['run']);
 
 	if (configPath) {
 		maybeRunArgs.push('--config', q(normalizePath(configPath)));
 	}
 
-	const resolved = prepareTestName(testName, withQuotes, true);
+	const resolved = prepareTestName(
+		toVitestNamePattern(testName),
+		withQuotes,
+		true,
+	);
 	if (resolved) {
 		maybeRunArgs.push('-t', resolved);
 	}
@@ -143,7 +146,9 @@ const buildNodeTestArgs: BuildArgsFn = (
 		runOptions,
 	);
 	const hasCoverage = allOptions.includes('--coverage');
-	const withoutCoverage = allOptions.filter((option) => option !== '--coverage');
+	const withoutCoverage = allOptions.filter(
+		(option) => option !== '--coverage',
+	);
 	const withOptions = appendUniqueArgs(args, withoutCoverage);
 	const withCoverage = hasCoverage
 		? appendUniqueArgs(withOptions, [
@@ -214,7 +219,8 @@ const buildDenoArgs: BuildArgsFn = (
 	);
 	const finalArgs = appendUniqueArgs(
 		merged,
-		options.includes('--coverage') || (runOptions?.includes('--coverage') ?? false)
+		options.includes('--coverage') ||
+			(runOptions?.includes('--coverage') ?? false)
 			? ['--coverage=coverage']
 			: null,
 	);
