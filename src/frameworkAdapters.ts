@@ -9,7 +9,6 @@ import {
 	normalizePath,
 } from './utils/PathUtils';
 import {
-	escapeSingleQuotes,
 	quote,
 	resolveTestNameStringInterpolation,
 } from './utils/TestNameUtils';
@@ -35,12 +34,30 @@ const prepareTestName = (
 		: testName;
 	const pattern = exact ? `^${resolved}$` : resolved;
 
-	return withQuotes ? quote(escapeSingleQuotes(pattern)) : pattern;
+	return withQuotes ? quote(pattern) : pattern;
 };
 
 // Vitest <=4 joins suite and test names with " ", Vitest >=5 with " > ".
 const toVitestNamePattern = (testName: string | undefined) =>
 	testName?.replace(/ /g, ' (?:> )?');
+
+/**
+ * Unquoted test name filter as the framework's adapter would pass it, for
+ * callers that assemble their own argv (e.g. batched multi-file runs).
+ */
+export const buildTestNameFilter = (
+	framework: TestFrameworkName,
+	testName: string | undefined,
+): string | undefined => {
+	switch (framework) {
+		case 'vitest':
+			return prepareTestName(toVitestNamePattern(testName), false, true);
+		case 'playwright':
+			return prepareTestName(testName, false);
+		default:
+			return prepareTestName(testName, false, true);
+	}
+};
 
 const isVitestWatchOption = (option: string): boolean =>
 	option === '--watch' || option === '-w' || option.startsWith('--watch=');

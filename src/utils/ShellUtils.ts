@@ -1,6 +1,7 @@
 import { parse } from 'shell-quote';
 
 export function stripAnsi(str: string): string {
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: matching the ESC character is the point
 	return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
 }
 

@@ -1,7 +1,7 @@
 import { dirname, resolve } from 'node:path';
+import { logDebug, logError } from '../../utils/Logger';
 import { normalizePath } from '../../utils/PathUtils';
 import type { TestPatterns } from '../frameworkDefinitions';
-import { logDebug, logError } from '../../utils/Logger';
 import { parseConfigObject, readConfigFile } from './parseUtils';
 
 const normalizeRootDir = (

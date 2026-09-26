@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 import {
-	findPotentialMatches,
 	findBestMatch,
+	findPotentialMatches,
 	hasTemplateVariable,
-	IndexedResult,
+	type IndexedResult,
 } from '../../matchers/TestMatcher';
-import { JestAssertionResult } from '../../testResultTypes';
+import type { JestAssertionResult } from '../../testResultTypes';
 
 jest.mock('vscode');
 

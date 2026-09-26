@@ -1,5 +1,5 @@
-import { parse } from '../parser';
 import * as path from 'path';
+import { parse } from '../parser';
 
 describe('parser', () => {
 	describe('parse', () => {

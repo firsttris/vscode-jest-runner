@@ -1,5 +1,9 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { cacheManager } from '../cache/CacheManager';
 import { TestRunnerConfig } from '../testRunnerConfig';
+import { normalizePath } from '../utils/PathUtils';
 import {
 	Document,
 	TextEditor,
@@ -7,10 +11,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import { normalizePath } from '../utils/PathUtils';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { cacheManager } from '../cache/CacheManager';
 
 jest.mock('../cache/CacheManager', () => ({
 	cacheManager: {

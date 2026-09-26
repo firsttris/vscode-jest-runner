@@ -266,4 +266,173 @@ describe('TestProcessRunner spawn behavior', () => {
 			);
 		});
 	});
+
+	describe('reporting each outcome only once', () => {
+		const createCancellableToken = () => {
+			let listener: (() => void) | undefined;
+			const token = {
+				isCancellationRequested: false,
+				onCancellationRequested: jest.fn((callback: () => void) => {
+					listener = callback;
+					return { dispose: jest.fn() };
+				}),
+			};
+			const cancel = () => {
+				token.isCancellationRequested = true;
+				listener?.();
+			};
+			return { token: token as unknown as vscode.CancellationToken, cancel };
+		};
+
+		const createRun = () =>
+			({
+				appendOutput: jest.fn(),
+				failed: jest.fn(),
+				skipped: jest.fn(),
+				passed: jest.fn(),
+			}) as unknown as vscode.TestRun;
+
+		const testItem = { id: 'test-id' } as unknown as vscode.TestItem;
+
+		it('should report skipped once when a batched run is cancelled', async () => {
+			const childProcess = createMockChildProcess();
+			(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+			const run = createRun();
+			const { token, cancel } = createCancellableToken();
+
+			const promise = executeTestCommand(
+				'npx jest',
+				[],
+				token,
+				[testItem],
+				run,
+				'/workspace',
+			);
+			cancel();
+			childProcess.emit('close', null);
+
+			await expect(promise).resolves.toBeNull();
+			expect(childProcess.kill).toHaveBeenCalledTimes(1);
+			expect(run.skipped).toHaveBeenCalledTimes(1);
+			expect(run.failed).not.toHaveBeenCalled();
+		});
+
+		it('should report failed once when a batched run fails to spawn', async () => {
+			const childProcess = createMockChildProcess();
+			(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+			const run = createRun();
+
+			const promise = executeTestCommand(
+				'missing-binary',
+				[],
+				createToken(),
+				[testItem],
+				run,
+				'/workspace',
+			);
+			childProcess.emit('error', new Error('spawn missing-binary ENOENT'));
+			childProcess.emit('close', -2);
+
+			await expect(promise).resolves.toBeNull();
+			expect(run.failed).toHaveBeenCalledTimes(1);
+			expect((run.failed as jest.Mock).mock.calls[0][1].message).toContain(
+				'ENOENT',
+			);
+		});
+
+		it('should ignore output after the buffer limit was exceeded', async () => {
+			jest
+				.spyOn(vscode.workspace, 'getConfiguration')
+				.mockReturnValue(
+					new WorkspaceConfiguration({ maxBufferSize: 0 } as any) as any,
+				);
+			const childProcess = createMockChildProcess();
+			(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+			const run = createRun();
+
+			const promise = executeTestCommand(
+				'npx jest',
+				[],
+				createToken(),
+				[testItem],
+				run,
+				'/workspace',
+			);
+			childProcess.stdout.emit('data', 'too much');
+			childProcess.stderr.emit('data', 'too much');
+			childProcess.emit('close', 1);
+
+			await expect(promise).resolves.toBeNull();
+			expect(childProcess.kill).toHaveBeenCalledTimes(1);
+			expect(run.failed).toHaveBeenCalledTimes(1);
+		});
+
+		it('should still return JSON results that only appear on stderr', async () => {
+			const childProcess = createMockChildProcess();
+			(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+			const run = createRun();
+
+			const promise = executeTestCommand(
+				'npx jest',
+				[],
+				createToken(),
+				[testItem],
+				run,
+				'/workspace',
+			);
+			childProcess.stderr.emit('data', '{"testResults":[]}');
+			childProcess.emit('close', 0);
+
+			await expect(promise).resolves.toEqual({
+				output: '\n{"testResults":[]}',
+				structuredResultsProcessed: false,
+			});
+			expect(run.failed).not.toHaveBeenCalled();
+		});
+
+		it('should report skipped once when a fast run is cancelled', async () => {
+			const childProcess = createMockChildProcess();
+			(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+			const run = createRun();
+			const { token, cancel } = createCancellableToken();
+
+			const promise = executeTestCommandFast(
+				'npx jest',
+				[],
+				token,
+				testItem,
+				run,
+				'/workspace',
+			);
+			cancel();
+			childProcess.emit('close', null);
+			await promise;
+
+			expect(run.skipped).toHaveBeenCalledTimes(1);
+			expect(run.failed).not.toHaveBeenCalled();
+		});
+
+		it('should report failed once when a fast run fails to spawn', async () => {
+			const childProcess = createMockChildProcess();
+			(spawn as unknown as jest.Mock).mockReturnValue(childProcess);
+			const run = createRun();
+
+			const promise = executeTestCommandFast(
+				'missing-binary',
+				[],
+				createToken(),
+				testItem,
+				run,
+				'/workspace',
+			);
+			childProcess.emit('error', new Error('spawn missing-binary ENOENT'));
+			childProcess.emit('close', -2);
+			await promise;
+
+			expect(run.failed).toHaveBeenCalledTimes(1);
+			expect((run.failed as jest.Mock).mock.calls[0][1].message).toContain(
+				'ENOENT',
+			);
+		});
+	});
 });

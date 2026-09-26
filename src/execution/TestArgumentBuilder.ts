@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import type * as vscode from 'vscode';
+import { buildTestNameFilter } from '../frameworkAdapters';
 import { getReporterPaths } from '../reporters/reporterPaths';
 import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import type { TestRunnerConfig } from '../testRunnerConfig';
@@ -8,11 +9,7 @@ import {
 	isWindows,
 	normalizePath,
 } from '../utils/PathUtils';
-import {
-	escapeSingleQuotes,
-	quote,
-	toTestItemNamePattern,
-} from '../utils/TestNameUtils';
+import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 
 interface TestArgumentStrategy {
 	build(
@@ -95,7 +92,7 @@ class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
 		}
 
 		if (testName) {
-			args.push('--test-name-pattern', quote(escapeSingleQuotes(testName)));
+			args.push('--test-name-pattern', quote(testName));
 		}
 
 		const filteredArgs = additionalArgs.filter((arg) => arg !== '--coverage');
@@ -151,10 +148,43 @@ abstract class JestLikeStrategy extends BaseStrategy {
 		allFiles: string[],
 		testsByFile: Map<string, vscode.TestItem[]>,
 	): boolean {
-		if (allFiles.length !== 1) return false;
+		return (
+			allFiles.length === 1 &&
+			this.isPartiallySelected(allFiles[0], testsByFile.get(allFiles[0]))
+		);
+	}
 
-		const filePath = allFiles[0];
-		const tests = testsByFile.get(filePath);
+	/**
+	 * Name filter for a batched run, needed as soon as any file is only
+	 * partially selected. Fully selected files still match, since all of
+	 * their tests are part of the pattern.
+	 */
+	protected getBatchTestNameFilter(
+		framework: TestFrameworkName,
+		allFiles: string[],
+		testsByFile: Map<string, vscode.TestItem[]>,
+	): string | undefined {
+		if (!this.hasPartialSelection(allFiles, testsByFile)) return undefined;
+
+		return buildTestNameFilter(
+			framework,
+			this.getTestNamePattern(this.getTests(testsByFile)),
+		);
+	}
+
+	protected hasPartialSelection(
+		allFiles: string[],
+		testsByFile: Map<string, vscode.TestItem[]>,
+	): boolean {
+		return allFiles.some((file) =>
+			this.isPartiallySelected(file, testsByFile.get(file)),
+		);
+	}
+
+	private isPartiallySelected(
+		filePath: string,
+		tests: vscode.TestItem[] | undefined,
+	): boolean {
 		if (!tests || tests.length === 0) return false;
 
 		const fileItem = this.findFileItem(filePath, tests[0]);
@@ -222,6 +252,15 @@ class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 			args.push('--config', configPath);
 		}
 
+		const nameFilter = this.getBatchTestNameFilter(
+			'rstest',
+			allFiles,
+			testsByFile,
+		);
+		if (nameFilter) {
+			args.push('-t', nameFilter);
+		}
+
 		return args;
 	}
 }
@@ -240,9 +279,9 @@ class DenoTestStrategy
 		const tests = this.getTests(testsByFile);
 		const testName = this.getTestNamePattern(tests);
 
-		// Only add filter for partial runs (specific tests selected)
-		if (testName && this.isPartialRun(allFiles, testsByFile)) {
-			args.push('--filter', quote(escapeSingleQuotes(testName)));
+		// Only filter when some file is not fully selected
+		if (testName && this.hasPartialSelection(allFiles, testsByFile)) {
+			args.push('--filter', quote(testName));
 		}
 
 		args.push('--junit-path=.deno-report.xml');
@@ -308,6 +347,15 @@ class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 			args.push('--config', configPath);
 		}
 
+		const nameFilter = this.getBatchTestNameFilter(
+			'vitest',
+			allFiles,
+			testsByFile,
+		);
+		if (nameFilter) {
+			args.push('-t', nameFilter);
+		}
+
 		args.push(...additionalArgs);
 
 		if (collectCoverage) {
@@ -368,6 +416,15 @@ class JestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 
 		if (configPath) {
 			args.push('-c', configPath);
+		}
+
+		const nameFilter = this.getBatchTestNameFilter(
+			'jest',
+			allFiles,
+			testsByFile,
+		);
+		if (nameFilter) {
+			args.push('-t', nameFilter);
 		}
 
 		args.push(...additionalArgs);

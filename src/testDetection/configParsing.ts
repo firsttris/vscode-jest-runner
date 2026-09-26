@@ -1,15 +1,14 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import * as vscode from 'vscode';
+import * as Settings from '../config/Settings';
+import { logError } from '../utils/Logger';
+import { resolveConfigPathOrMapping } from '../utils/PathUtils';
+import { viteConfigHasTestAttribute } from './configParsers/vitestParser';
 import {
 	allTestFrameworks,
 	DEFAULT_TEST_PATTERNS,
 } from './frameworkDefinitions';
-import { logError } from '../utils/Logger';
-import { resolveConfigPathOrMapping } from '../utils/PathUtils';
-import * as Settings from '../config/Settings';
-
-import { viteConfigHasTestAttribute } from './configParsers/vitestParser';
 
 export function packageJsonHasJestConfig(configPath: string): boolean {
 	try {

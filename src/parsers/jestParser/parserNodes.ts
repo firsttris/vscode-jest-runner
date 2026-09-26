@@ -74,7 +74,9 @@ export class ParsedNode {
 			}
 
 			if (node.children) {
-				node.children.forEach((child) => deepFilter(child, true));
+				for (const child of node.children) {
+					deepFilter(child, true);
+				}
 			}
 		};
 

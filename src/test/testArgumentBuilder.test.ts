@@ -6,6 +6,10 @@ import {
 import { getFrameworkAdapter } from '../frameworkAdapters';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 import {
+	normalizeArgsForNonShellSpawn,
+	parseShellCommand,
+} from '../utils/ShellUtils';
+import {
 	escapeSingleQuotes,
 	toTestNamePattern,
 	unquote,
@@ -237,6 +241,31 @@ describe('TestArgumentBuilder', () => {
 		});
 	});
 	describe('bun', () => {
+		it('should pass test names containing single quotes intact', () => {
+			const testsByFile = new Map([
+				['/path/to/test.ts', [{ label: "doesn't crash" }]],
+			]);
+
+			const args = buildTestArgs(
+				['/path/to/test.ts'],
+				testsByFile as any,
+				'bun',
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+			const pattern = args[args.indexOf('-t') + 1];
+			expect(normalizeArgsForNonShellSpawn([pattern])).toEqual([
+				"doesn't crash",
+			]);
+			expect(parseShellCommand(`bun ${pattern}`)).toEqual([
+				'bun',
+				"doesn't crash",
+			]);
+		});
+
 		it('should generate correct args for bun with coverage', () => {
 			const files = ['/path/to/test.ts'];
 			const testsByFile = new Map();
@@ -1020,6 +1049,104 @@ describe('TestArgumentBuilder', () => {
 			);
 
 			expect(args[0]).toBe('/path/to/\\[segment\\]/test\\.spec\\.ts');
+		});
+	});
+
+	describe('multi-file runs with a partial selection', () => {
+		const fileA = '/ws/src/a.test.ts';
+		const fileB = '/ws/src/b.test.ts';
+		let adds: FakeTestItem;
+		let subtracts: FakeTestItem;
+		let multiplies: FakeTestItem;
+
+		beforeEach(() => {
+			[adds, subtracts] = ['adds', 'subtracts'].map((name) =>
+				makeItem(`${fileA}:it:1:${name}`),
+			);
+			multiplies = makeItem(`${fileB}:it:1:multiplies`);
+			makeItem('/ws/src', [
+				makeItem(fileA, [
+					makeItem(`${fileA}:describe:1:math`, [adds, subtracts]),
+				]),
+				makeItem(fileB, [multiplies]),
+			]);
+		});
+
+		const build = (
+			framework: 'jest' | 'vitest' | 'rstest' | 'deno',
+			selection: Map<string, FakeTestItem[]>,
+		) =>
+			buildTestArgs(
+				[...selection.keys()],
+				selection as any,
+				framework,
+				[],
+				false,
+				mockConfig,
+				mockController,
+			);
+
+		const partialSelection = () =>
+			new Map([
+				[fileA, [adds]],
+				[fileB, [multiplies]],
+			]);
+
+		const fullSelection = () =>
+			new Map([
+				[fileA, [adds, subtracts]],
+				[fileB, [multiplies]],
+			]);
+
+		const argAfter = (args: string[], flag: string) => {
+			const index = args.indexOf(flag);
+			return index === -1 ? undefined : args[index + 1];
+		};
+
+		it('should filter jest by the selected tests', () => {
+			const args = build('jest', partialSelection());
+
+			expect(argAfter(args, '-t')).toBe('^(adds|multiplies)$');
+			expect(args).toContain('/ws/src/a\\.test\\.ts');
+			expect(args).toContain('/ws/src/b\\.test\\.ts');
+		});
+
+		it('should filter vitest by the selected tests', () => {
+			const args = build('vitest', partialSelection());
+
+			expect(argAfter(args, '-t')).toBe('^(adds|multiplies)$');
+			expect(args).toEqual(expect.arrayContaining([fileA, fileB]));
+		});
+
+		it('should filter rstest by the selected tests', () => {
+			const args = build('rstest', partialSelection());
+
+			expect(argAfter(args, '-t')).toBe('^(adds|multiplies)$');
+			expect(mockConfig.buildRstestArgs).not.toHaveBeenCalled();
+		});
+
+		it('should filter deno by the selected tests', () => {
+			const args = build('deno', partialSelection());
+
+			expect(unquote(argAfter(args, '--filter') ?? '')).toBe(
+				'(adds|multiplies)',
+			);
+		});
+
+		it.each([
+			'jest',
+			'vitest',
+			'rstest',
+		] as const)('should not filter %s when every test of every file is selected', (framework) => {
+			const args = build(framework, fullSelection());
+
+			expect(args).not.toContain('-t');
+		});
+
+		it('should not filter deno when every test of every file is selected', () => {
+			const args = build('deno', fullSelection());
+
+			expect(args).not.toContain('--filter');
 		});
 	});
 });

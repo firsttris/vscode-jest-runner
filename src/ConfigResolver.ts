@@ -27,10 +27,18 @@ export function resolveConfigPath(
 		.getConfiguration()
 		.get<string | Record<string, string>>(configKey);
 
-	const configPath = resolveConfigPathOrMapping(configPathOrMapping, targetPath);
+	const configPath = resolveConfigPathOrMapping(
+		configPathOrMapping,
+		targetPath,
+	);
 
 	if (context.useNearestConfig) {
-		const foundPath = findConfigPath(targetPath, context, configPath, framework);
+		const foundPath = findConfigPath(
+			targetPath,
+			context,
+			configPath,
+			framework,
+		);
 		if (foundPath) {
 			logDebug(`Found config path using findConfigPath: ${foundPath}`);
 			return foundPath;
@@ -52,7 +60,9 @@ export function resolveConfigPath(
 
 		const foundPath = findConfigPath(targetPath, context, undefined, framework);
 		if (foundPath) {
-			logDebug(`Found config path (fallback) using findConfigPath: ${foundPath}`);
+			logDebug(
+				`Found config path (fallback) using findConfigPath: ${foundPath}`,
+			);
 			return foundPath;
 		}
 
@@ -81,7 +91,8 @@ export function findConfigPath(
 
 	const currentWorkspaceFolderPath = context.currentWorkspaceFolderPath;
 	const startPath =
-		targetPath || dirname(vscode.window.activeTextEditor?.document.uri.fsPath || '');
+		targetPath ||
+		dirname(vscode.window.activeTextEditor?.document.uri.fsPath || '');
 
 	if (!startPath) {
 		return undefined;

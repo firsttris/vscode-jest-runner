@@ -651,19 +651,21 @@ module.exports = {
 				);
 			});
 
-			mockedFs.readFileSync = jest.fn().mockImplementation((fsPath: fs.PathLike) => {
-				const normalizedPath = normalizePath(fsPath.toString());
+			mockedFs.readFileSync = jest
+				.fn()
+				.mockImplementation((fsPath: fs.PathLike) => {
+					const normalizedPath = normalizePath(fsPath.toString());
 
-				if (normalizedPath.endsWith('/test/jest.preset.js')) {
-					return `
+					if (normalizedPath.endsWith('/test/jest.preset.js')) {
+						return `
 const IGNORE_PATTERNS = ['<rootDir>/apps/e2e/', '<rootDir>/apps/integration/'];
 module.exports = {};
 module.exports.IGNORE_PATTERNS = IGNORE_PATTERNS;
 `;
-				}
+					}
 
-				if (normalizedPath.endsWith('/test/jest.config.ts')) {
-					return `
+					if (normalizedPath.endsWith('/test/jest.config.ts')) {
+						return `
 const { IGNORE_PATTERNS } = require('./jest.preset');
 
 module.exports = async () => {
@@ -673,10 +675,10 @@ module.exports = async () => {
   };
 };
 `;
-				}
+					}
 
-				return '';
-			});
+					return '';
+				});
 
 			const result = getTestMatchFromJestConfig('/test/jest.config.ts');
 
@@ -684,7 +686,10 @@ module.exports = async () => {
 				{
 					patterns: ['**/*.spec.ts'],
 					isRegex: false,
-					ignorePatterns: ['<rootDir>/apps/e2e/', '<rootDir>/apps/integration/'],
+					ignorePatterns: [
+						'<rootDir>/apps/e2e/',
+						'<rootDir>/apps/integration/',
+					],
 				},
 			]);
 		});
@@ -698,19 +703,21 @@ module.exports = async () => {
 				);
 			});
 
-			mockedFs.readFileSync = jest.fn().mockImplementation((fsPath: fs.PathLike) => {
-				const normalizedPath = normalizePath(fsPath.toString());
+			mockedFs.readFileSync = jest
+				.fn()
+				.mockImplementation((fsPath: fs.PathLike) => {
+					const normalizedPath = normalizePath(fsPath.toString());
 
-				if (normalizedPath.endsWith('/test/jest.preset.js')) {
-					return `
+					if (normalizedPath.endsWith('/test/jest.preset.js')) {
+						return `
 const IGNORE_PATTERNS = ['<rootDir>/apps/domain-integration/', '<rootDir>/apps/domain-e2e/'];
 module.exports = {};
 module.exports.IGNORE_PATTERNS = IGNORE_PATTERNS;
 `;
-				}
+					}
 
-				if (normalizedPath.endsWith('/test/jest.config.ts')) {
-					return `
+					if (normalizedPath.endsWith('/test/jest.config.ts')) {
+						return `
 const { getJestProjectsAsync } = require('@nx/jest');
 const { IGNORE_PATTERNS } = require('./jest.preset');
 
@@ -720,10 +727,10 @@ module.exports = async () => ({
   testPathIgnorePatterns: IGNORE_PATTERNS
 });
 `;
-				}
+					}
 
-				return '';
-			});
+					return '';
+				});
 
 			const result = getTestMatchFromJestConfig('/test/jest.config.ts');
 

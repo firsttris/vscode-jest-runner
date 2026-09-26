@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
 import {
 	findTestFrameworkDirectory,
-	isPlaywrightTestFile,
 	isFrameworkUsedIn,
+	isPlaywrightTestFile,
 } from '../../testDetection/frameworkDetection';
 import { WorkspaceConfiguration } from '../__mocks__/vscode';
 

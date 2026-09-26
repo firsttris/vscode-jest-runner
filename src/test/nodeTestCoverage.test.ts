@@ -1,7 +1,7 @@
-import { TestRunnerConfig } from '../testRunnerConfig';
-import { CoverageProvider } from '../coverageProvider';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+import { CoverageProvider } from '../coverageProvider';
+import { TestRunnerConfig } from '../testRunnerConfig';
 
 // Mock dependencies
 jest.mock('fs');

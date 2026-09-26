@@ -20,57 +20,78 @@ export function buildMarker(
 	return `${START}${sessionId}::${type}::${len}::${json}${END}${sessionId}::${type}`;
 }
 
+// Upper bound for "<sessionId>::<type>::<length>::". A START marker without a
+// complete header within this many characters is treated as noise.
+const MAX_HEADER_LENGTH = 256;
+
+const escapeRegExp = (s: string): string =>
+	s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const isHeaderIncomplete = (buffer: string, headerStart: number): boolean => {
+	const rest = buffer.slice(headerStart, headerStart + MAX_HEADER_LENGTH);
+	return rest.length < MAX_HEADER_LENGTH && rest.split('::').length < 4;
+};
+
+/**
+ * Extracts complete structured messages from `buffer`.
+ *
+ * `remaining` is the unconsumed tail to prepend to the next chunk: it starts
+ * at the first incomplete message, or, when there is none, holds only enough
+ * characters to complete a START marker split across chunks.
+ */
 export function extractStructuredMessages<T = unknown>(
 	buffer: string,
 	sessionId?: string,
 ): { messages: StructuredMessage<T>[]; remaining: string } {
 	const messages: StructuredMessage<T>[] = [];
-	let cursor = 0;
+	const sessionPattern = sessionId ? escapeRegExp(sessionId) : '[^:]+';
+	const headerRegex = new RegExp(`(${sessionPattern})::([^:]+)::(\\d+)::`, 'y');
+	let searchFrom = 0;
+	let keepFrom = Math.max(0, buffer.length - (START.length - 1));
 
 	while (true) {
-		const startIdx = buffer.indexOf(START, cursor);
+		const startIdx = buffer.indexOf(START, searchFrom);
 		if (startIdx === -1) break;
 
 		const headerStart = startIdx + START.length;
-		const sessionPart = sessionId ? sessionId : '[^:]+';
-		const headerRegex = new RegExp(`^${sessionPart}::([^:]+)::(\\d+)::`);
-		const headerSlice = buffer.slice(headerStart);
-		const match = headerRegex.exec(headerSlice);
+		headerRegex.lastIndex = headerStart;
+		const match = headerRegex.exec(buffer);
 		if (!match) {
-			break;
-		}
-
-		const [, type, lenStr] = match;
-		const length = Number.parseInt(lenStr, 10);
-		if (Number.isNaN(length) || length < 0) {
-			cursor = startIdx + 1;
+			if (isHeaderIncomplete(buffer, headerStart)) {
+				keepFrom = startIdx;
+				break;
+			}
+			searchFrom = startIdx + 1;
 			continue;
 		}
 
-		const payloadStart = headerStart + match[0].length;
-		const payloadEnd = payloadStart + length;
-		if (payloadEnd > buffer.length) {
+		const [header, session, type, lenStr] = match;
+		const payloadStart = headerStart + header.length;
+		const payloadEnd = payloadStart + Number.parseInt(lenStr, 10);
+		const endMarker = `${END}${session}::${type}`;
+		const end = payloadEnd + endMarker.length;
+
+		if (end > buffer.length) {
+			keepFrom = startIdx;
 			break;
 		}
 
-		const endMarker = `${END}${sessionId ?? match[1]}::${type}`;
 		if (!buffer.startsWith(endMarker, payloadEnd)) {
-			break;
+			searchFrom = startIdx + 1;
+			continue;
 		}
 
-		const json = buffer.slice(payloadStart, payloadEnd);
 		try {
-			const payload = JSON.parse(json) as T;
-			const end = payloadEnd + endMarker.length;
+			const payload = JSON.parse(buffer.slice(payloadStart, payloadEnd)) as T;
 			messages.push({ type, payload, start: startIdx, end });
-			cursor = end;
+			keepFrom = Math.max(end, keepFrom);
 		} catch {
-			cursor = startIdx + 1;
+			// Malformed payload, skip this marker.
 		}
+		searchFrom = end;
 	}
 
-	const remaining = buffer.slice(cursor);
-	return { messages, remaining };
+	return { messages, remaining: buffer.slice(keepFrom) };
 }
 
 export function parseStructuredResults(

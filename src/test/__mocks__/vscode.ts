@@ -206,7 +206,9 @@ class TestItemCollection {
 
 	replace(items: TestItem[]): void {
 		this.items.clear();
-		items.forEach((item) => this.add(item));
+		for (const item of items) {
+			this.add(item);
+		}
 	}
 
 	forEach(callback: (item: TestItem) => void): void {
@@ -367,7 +369,9 @@ class CancellationToken {
 
 	cancel(): void {
 		this.cancelled = true;
-		this.listeners.forEach((listener) => listener());
+		for (const listener of this.listeners) {
+			listener();
+		}
 	}
 }
 
@@ -412,7 +416,9 @@ class EventEmitter<T> {
 	};
 
 	fire(data: T): void {
-		this.listeners.forEach((listener) => listener(data));
+		for (const listener of this.listeners) {
+			listener(data);
+		}
 	}
 
 	dispose(): void {
@@ -421,37 +427,37 @@ class EventEmitter<T> {
 }
 
 export {
-	workspace,
-	window,
-	commands,
-	debug,
-	tests,
-	Uri,
-	Document,
-	TextEditor,
-	WorkspaceFolder,
-	WorkspaceConfiguration,
-	Range,
-	CodeLens,
-	Position,
-	VscodeRange,
-	Location,
-	TestTag,
-	TestMessage,
-	TestItem,
-	TestItemCollection,
-	TestRun,
-	TestController,
-	TestRunProfile,
-	TestRunProfileKind,
+	BranchCoverage,
 	CancellationToken,
 	CancellationTokenSource,
-	RelativePattern,
-	OutputChannel,
-	TestCoverageCount,
-	FileCoverage,
-	StatementCoverage,
-	BranchCoverage,
+	CodeLens,
+	commands,
 	DeclarationCoverage,
+	Document,
+	debug,
 	EventEmitter,
+	FileCoverage,
+	Location,
+	OutputChannel,
+	Position,
+	Range,
+	RelativePattern,
+	StatementCoverage,
+	TestController,
+	TestCoverageCount,
+	TestItem,
+	TestItemCollection,
+	TestMessage,
+	TestRun,
+	TestRunProfile,
+	TestRunProfileKind,
+	TestTag,
+	TextEditor,
+	tests,
+	Uri,
+	VscodeRange,
+	WorkspaceConfiguration,
+	WorkspaceFolder,
+	window,
+	workspace,
 };

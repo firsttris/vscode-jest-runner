@@ -1,8 +1,9 @@
-import * as vscode from 'vscode';
-import type { TestRunnerConfig } from './testRunnerConfig';
-import { parse } from './parser';
 import { existsSync } from 'node:fs';
+import * as vscode from 'vscode';
+import { parse } from './parser';
 import { TerminalManager } from './TerminalManager';
+import type { TestRunnerConfig } from './testRunnerConfig';
+import { getDirName, getFileName } from './utils/PathUtils';
 import {
 	escapeRegExp,
 	findFullTestName,
@@ -10,7 +11,6 @@ import {
 	type TestNode,
 	unquote,
 } from './utils/TestNameUtils';
-import { getDirName, getFileName } from './utils/PathUtils';
 
 interface DebugCommand {
 	documentUri: vscode.Uri;
@@ -211,7 +211,7 @@ export class TestRunner {
 
 	private getCoverageOptions(
 		filePath: string,
-		collectCoverageFromCurrentFile: boolean,
+		collectCoverageFromCurrentFile?: boolean,
 		options?: string[],
 	): string[] {
 		if (!collectCoverageFromCurrentFile) {

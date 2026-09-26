@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as testDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	Document,
@@ -7,7 +8,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import * as testDetection from '../testDetection/testFileDetection';
 
 describe('TestRunnerConfig - Bun Debug', () => {
 	let jestRunnerConfig: TestRunnerConfig;

@@ -1,7 +1,7 @@
+import * as configParsing from '../../testDetection/configParsing';
+import * as frameworkDetection from '../../testDetection/frameworkDetection';
 import { testFileCache } from '../../testDetection/testFileCache';
 import * as testFileDetection from '../../testDetection/testFileDetection';
-import * as frameworkDetection from '../../testDetection/frameworkDetection';
-import * as configParsing from '../../testDetection/configParsing';
 
 jest.mock('../../testDetection/testFileDetection');
 jest.mock('../../testDetection/frameworkDetection');

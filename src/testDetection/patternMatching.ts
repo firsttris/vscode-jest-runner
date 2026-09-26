@@ -32,7 +32,7 @@ function matchesExcludePatterns(
 			if (typeof pattern !== 'string' || pattern.length === 0) {
 				continue;
 			}
-			if (isMatch(relativePath, pattern, { nocase: true, extended: true })) {
+			if (isMatch(relativePath, pattern, { nocase: true })) {
 				return true;
 			}
 		}
@@ -105,12 +105,7 @@ export function fileMatchesPatternsExplicit(
 			} catch {}
 		} else {
 			const normalizedPattern = resolveRootDirToken(pattern, rootDir);
-			if (
-				isMatch(pathToMatch, normalizedPattern, {
-					nocase: true,
-					extended: true,
-				})
-			) {
+			if (isMatch(pathToMatch, normalizedPattern, { nocase: true })) {
 				return true;
 			}
 		}

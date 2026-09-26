@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
-import { TestConfigWatcher } from '../../testController/TestConfigWatcher';
+import * as vscode from 'vscode';
 import * as Settings from '../../config/Settings';
+import { TestConfigWatcher } from '../../testController/TestConfigWatcher';
 
 jest.mock('vscode');
 jest.mock('../../config/Settings');

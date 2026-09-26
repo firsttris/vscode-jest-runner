@@ -1,5 +1,9 @@
+import * as fs from 'node:fs';
+import * as moduleLib from 'node:module';
 import * as vscode from 'vscode';
+import * as frameworkDetection from '../testDetection/frameworkDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
+import { isWindows, normalizePath } from '../utils/PathUtils';
 import {
 	Document,
 	TextEditor,
@@ -7,10 +11,6 @@ import {
 	WorkspaceConfiguration,
 	WorkspaceFolder,
 } from './__mocks__/vscode';
-import { isWindows, normalizePath } from '../utils/PathUtils';
-import * as fs from 'node:fs';
-import * as moduleLib from 'node:module';
-import * as frameworkDetection from '../testDetection/frameworkDetection';
 
 const describes = {
 	windows: isWindows() ? describe : describe.skip,
@@ -54,6 +54,7 @@ describe('TestRunnerConfig', () => {
 	describes.linux('Linux style paths', () => {
 		let jestRunnerConfig: TestRunnerConfig;
 
+		// biome-ignore lint/suspicious/noDuplicateTestHooks: Biome does not recognize describes.linux as its own describe block
 		beforeEach(() => {
 			jestRunnerConfig = new TestRunnerConfig();
 			jest

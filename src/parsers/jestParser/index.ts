@@ -1,25 +1,25 @@
 import { parse as babelParser } from './babelParser';
 import {
-	parseOptions,
 	type JESParserOptions,
 	type JESParserPluginOptions,
+	parseOptions,
 } from './helper';
 import type { ParseResult } from './parserNodes';
 
-export type { CodeLocation } from './types';
+export { getASTfor } from './babelParser';
 export {
 	DescribeBlock,
 	Expect,
+	type IParseResults,
 	ItBlock,
 	NamedBlock,
-	ParseResult,
 	ParsedNode,
 	ParsedNodeType,
 	ParsedRange,
-	type IParseResults,
+	ParseResult,
 } from './parserNodes';
+export type { CodeLocation } from './types';
 export type { JESParserOptions, JESParserPluginOptions };
-export { getASTfor } from './babelParser';
 
 export default function parse(
 	filePath: string,

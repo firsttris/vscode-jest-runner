@@ -9,11 +9,11 @@ import { logTestExecution } from '../execution/TestProcessRunner';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 import { quote } from '../utils/TestNameUtils';
 import {
+	TestItem,
+	TestItemCollection,
 	Uri,
 	WorkspaceConfiguration,
 	WorkspaceFolder,
-	TestItem,
-	TestItemCollection,
 } from './__mocks__/vscode';
 
 jest.mock('../utils/PathUtils', () => ({

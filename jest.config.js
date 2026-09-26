@@ -7,7 +7,7 @@ module.exports = {
     '^(.*)Template\\.js\\?raw$': '$1Template.js',
   },
   transform: {
-    '^.+\\.tsx?$': 'ts-jest',
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.test.json' }],
     'Template\\.js$': '<rootDir>/src/test/__mocks__/rawTransform.js',
   },
 };

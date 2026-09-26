@@ -1,18 +1,18 @@
+import { PassThrough } from 'node:stream';
+import { EventEmitter } from 'events';
 import * as vscode from 'vscode';
-import {
-	TestItem,
-	CancellationToken,
-	CancellationTokenSource,
-	VscodeRange,
-	Position,
-} from './__mocks__/vscode';
-import { JestTestController } from '../TestController';
 import * as parser from '../parser';
+import { JestTestController } from '../TestController';
+import { testFileCache } from '../testDetection/testFileCache';
 import * as util from '../util';
 import * as TestNameUtils from '../utils/TestNameUtils';
-import { EventEmitter } from 'events';
-import { PassThrough } from 'node:stream';
-import { testFileCache } from '../testDetection/testFileCache';
+import {
+	CancellationToken,
+	CancellationTokenSource,
+	Position,
+	TestItem,
+	VscodeRange,
+} from './__mocks__/vscode';
 
 export interface MockProcess extends EventEmitter {
 	stdout: PassThrough;
@@ -21,11 +21,11 @@ export interface MockProcess extends EventEmitter {
 }
 
 export {
-	TestItem,
 	CancellationToken,
 	CancellationTokenSource,
-	VscodeRange,
 	Position,
+	TestItem,
+	VscodeRange,
 };
 
 jest.mock('child_process');

@@ -34,9 +34,11 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 
 	const caseRegex =
 		/<testcase\s+([^>]*?)\/>|<testcase\s+([^>]*?)>([\s\S]*?)<\/testcase>/g;
-	let caseMatch;
-
-	while ((caseMatch = caseRegex.exec(xml)) !== null) {
+	for (
+		let caseMatch = caseRegex.exec(xml);
+		caseMatch !== null;
+		caseMatch = caseRegex.exec(xml)
+	) {
 		const attributesStr = caseMatch[1] || caseMatch[2];
 		const content = caseMatch[3] || '';
 		const attributes = parseAttributes(attributesStr);
@@ -122,8 +124,11 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 function parseAttributes(attributesStr: string): Record<string, string> {
 	const attributes: Record<string, string> = {};
 	const attrRegex = /(\w+)="([^"]*)"/g;
-	let match;
-	while ((match = attrRegex.exec(attributesStr)) !== null) {
+	for (
+		let match = attrRegex.exec(attributesStr);
+		match !== null;
+		match = attrRegex.exec(attributesStr)
+	) {
 		attributes[match[1]] = unescapeXml(match[2]);
 	}
 	return attributes;

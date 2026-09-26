@@ -405,9 +405,10 @@
     "vscode:prepublish": "vite build",
     "build": "vite build",
     "watch": "vite build --watch",
-    "test": "jest .src/test",
+    "test": "jest src/test",
     "package": "vsce package",
     "publish": "vsce publish $VERSION -m '%s [skip ci]' && ovsx publish",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "biome check src",
     "lint:fix": "biome check --write src",
     "format:fix": "biome format --write src"
@@ -415,6 +416,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
     "@types/jest": "^30.0.0",
+    "@types/micromatch": "^4.0.10",
     "@types/node": "^25.5.0",
     "@types/shell-quote": "^1.7.5",
     "@types/vscode": "^1.100.0",

@@ -204,9 +204,7 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 		expect(debugConfig.runtimeArgs).toContain('-g');
 		expect(
 			debugConfig.runtimeArgs?.some((a: string) => a.includes('my test')),
-		).toBe(
-			true,
-		);
+		).toBe(true);
 		expect(debugConfig.runtimeArgs).toContain(mockFilePath);
 	});
 

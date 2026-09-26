@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
 import { type CodeLensOption, validateCodeLensOptions } from '../util';
 
-const getConfig = <T>(key: string, defaultValue?: T): T | undefined =>
-	vscode.workspace.getConfiguration().get(key, defaultValue);
+function getConfig<T>(key: string): T | undefined;
+function getConfig<T>(key: string, defaultValue: T): T;
+function getConfig<T>(key: string, defaultValue?: T): T | undefined {
+	return vscode.workspace.getConfiguration().get(key, defaultValue);
+}
 
 // === Jest Settings ===
 

@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { normalizePath } from '../utils/PathUtils';
 
 import jestReporterSource from './jestReporterTemplate.js?raw';
-import vitestReporterSource from './vitestReporterTemplate.js?raw';
 import nodeReporterSource from './nodeReporterTemplate.js?raw';
+import vitestReporterSource from './vitestReporterTemplate.js?raw';
 
 interface ReporterPaths {
 	jest: string;

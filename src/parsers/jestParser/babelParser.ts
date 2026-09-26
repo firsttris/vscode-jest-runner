@@ -1,21 +1,21 @@
 import { readFileSync } from 'node:fs';
 import { parse as babelParse, type ParserOptions } from '@babel/parser';
 import * as t from '@babel/types';
+import { astToValue } from '../../utils/AstUtils';
 import {
-	getNameForNode,
 	getCallExpression,
+	getNameForNode,
+	type JESParserOptions,
 	parseOptions,
 	shallowAttr,
-	type JESParserOptions,
 } from './helper';
 import {
 	NamedBlock,
-	ParseResult,
 	type ParsedNode,
 	ParsedNodeType,
 	ParsedRange,
+	ParseResult,
 } from './parserNodes';
-import { astToValue } from '../../utils/AstUtils';
 
 const DESCRIBE_EACH_INNER_TEST_FLAG = '__JTR_DESCRIBE_EACH_INNER_TEST' as const;
 type ScopeBindings = Record<string, any>;
@@ -308,7 +308,12 @@ const applyNameInfo = (
 	block.nameType = arg.type;
 	block.lastProperty = lastProperty;
 
-	if (t.isTemplateLiteral(arg) && bindings[DESCRIBE_EACH_INNER_TEST_FLAG]) {
+	if (
+		t.isTemplateLiteral(arg) &&
+		bindings[DESCRIBE_EACH_INNER_TEST_FLAG] &&
+		arg.start != null &&
+		arg.end != null
+	) {
 		block.eachTemplate = source.substring(arg.start + 1, arg.end - 1);
 	}
 

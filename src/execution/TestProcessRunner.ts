@@ -72,6 +72,18 @@ export function executeTestCommandFast(
 
 		let stdout = '';
 		let stderr = '';
+		let cancellationListener: vscode.Disposable | undefined;
+		let settled = false;
+
+		// 'error', 'close' and cancellation can all fire for the same process;
+		// only the first one may report a result.
+		const settle = (report: () => void) => {
+			if (settled) return;
+			settled = true;
+			cancellationListener?.dispose();
+			report();
+			resolve();
+		};
 
 		jestProcess.stdout?.on('data', (chunk: string) => {
 			stdout += chunk;
@@ -84,38 +96,34 @@ export function executeTestCommandFast(
 		});
 
 		jestProcess.on('error', (error) => {
-			run.failed(
-				test,
-				new vscode.TestMessage(
-					`Failed to execute test runner: ${error.message}`,
+			settle(() =>
+				run.failed(
+					test,
+					new vscode.TestMessage(
+						`Failed to execute test runner: ${error.message}`,
+					),
 				),
 			);
-			resolve();
 		});
 
 		jestProcess.on('close', (code) => {
-			cancellationListener.dispose();
-
-			if (token.isCancellationRequested) {
-				run.skipped(test);
-				resolve();
-				return;
-			}
-
-			if (code === 0) {
-				run.passed(test);
-			} else {
-				const errorOutput = stderr || stdout || 'Test failed';
-				const cleanError = stripAnsi(errorOutput);
-				run.failed(test, new vscode.TestMessage(cleanError));
-			}
-			resolve();
+			settle(() => {
+				if (token.isCancellationRequested) {
+					run.skipped(test);
+				} else if (code === 0) {
+					run.passed(test);
+				} else {
+					const errorOutput = stderr || stdout || 'Test failed';
+					run.failed(test, new vscode.TestMessage(stripAnsi(errorOutput)));
+				}
+			});
 		});
 
-		const cancellationListener = token.onCancellationRequested(() => {
-			jestProcess.kill();
-			run.skipped(test);
-			resolve();
+		cancellationListener = token.onCancellationRequested(() => {
+			settle(() => {
+				jestProcess.kill();
+				run.skipped(test);
+			});
 		});
 	});
 }
@@ -151,84 +159,85 @@ export function executeTestCommand(
 		let stderr = '';
 		let parseBuffer = '';
 		let lastStructured: JestResults | undefined;
-		let killed = false;
+		let cancellationListener: vscode.Disposable | undefined;
+		let settled = false;
 
-		const checkBufferSize = (
+		// 'error', 'close', cancellation and buffer overflow can all fire for
+		// the same process; only the first one may report a result.
+		const settle = (result: TestCommandResult | null, report?: () => void) => {
+			if (settled) return;
+			settled = true;
+			cancellationListener?.dispose();
+			report?.();
+			resolve(result);
+		};
+
+		const failAll = (message: string) => () =>
+			tests.forEach(
+				(test) => void run.failed(test, new vscode.TestMessage(message)),
+			);
+
+		const exceedsBuffer = (
 			buffer: string,
 			chunk: string,
 			errorMsg: string,
 		): boolean => {
-			if (buffer.length + chunk.length > maxBufferSize) {
-				killed = true;
-				jestProcess.kill();
-				tests.forEach(
-					(test) => void run.failed(test, new vscode.TestMessage(errorMsg)),
-				);
-				resolve(null);
-				return true;
+			if (buffer.length + chunk.length <= maxBufferSize) {
+				return false;
 			}
-			return false;
+			settle(null, () => {
+				jestProcess.kill();
+				failAll(errorMsg)();
+			});
+			return true;
 		};
 
 		jestProcess.stdout?.on('data', (chunk: string) => {
-			if (killed) return;
+			if (settled) return;
 			if (
-				!checkBufferSize(
-					stdout,
-					chunk,
-					'Test output exceeded maximum buffer size',
-				)
+				exceedsBuffer(stdout, chunk, 'Test output exceeded maximum buffer size')
 			) {
-				stdout += chunk;
-				parseBuffer += chunk;
-
-				const { messages, remaining } = extractStructuredMessages<JestResults>(
-					parseBuffer,
-					sessionId,
-				);
-				parseBuffer = remaining;
-
-				messages.forEach((msg) => {
-					if (msg.type === 'results') {
-						lastStructured = msg.payload;
-						processTestResultsFromParsed(msg.payload, tests, run);
-					}
-				});
+				return;
 			}
+
+			stdout += chunk;
+			parseBuffer += chunk;
+
+			const { messages, remaining } = extractStructuredMessages<JestResults>(
+				parseBuffer,
+				sessionId,
+			);
+			parseBuffer = remaining;
+
+			messages.forEach((msg) => {
+				if (msg.type === 'results') {
+					lastStructured = msg.payload;
+					processTestResultsFromParsed(msg.payload, tests, run);
+				}
+			});
 		});
 
 		jestProcess.stderr?.on('data', (chunk: string) => {
-			if (killed) return;
+			if (settled) return;
 			if (
-				!checkBufferSize(
+				exceedsBuffer(
 					stderr,
 					chunk,
 					'Error output exceeded maximum buffer size',
 				)
 			) {
-				stderr += chunk;
+				return;
 			}
+			stderr += chunk;
 		});
 
 		jestProcess.on('error', (error) => {
-			tests.forEach(
-				(test) =>
-					void run.failed(
-						test,
-						new vscode.TestMessage(
-							`Failed to execute test runner: ${error.message}`,
-						),
-					),
-			);
-			resolve(null);
+			settle(null, failAll(`Failed to execute test runner: ${error.message}`));
 		});
 
 		jestProcess.on('close', () => {
-			cancellationListener.dispose();
-
 			if (token.isCancellationRequested) {
-				tests.forEach((test) => void run.skipped(test));
-				resolve(null);
+				settle(null, () => tests.forEach((test) => void run.skipped(test)));
 				return;
 			}
 
@@ -236,53 +245,34 @@ export function executeTestCommand(
 
 			if (lastStructured) {
 				logDebug('Parsed structured test results from reporters');
-				resolve({ output: combinedOutput, structuredResultsProcessed: true });
+				settle({ output: combinedOutput, structuredResultsProcessed: true });
 				return;
 			}
 
-			if (combinedOutput.trim()) {
-				const hasJsonInStdout =
-					stdout.includes('"testResults"') ||
-					stdout.includes('"numFailedTestSuites"');
-				const hasJsonInStderr =
-					stderr.includes('"testResults"') ||
-					stderr.includes('"numFailedTestSuites"');
-
-				if (hasJsonInStdout || hasJsonInStderr) {
-					logDebug(`Runner output (stdout): ${stdout.substring(0, 500)}...`);
-					resolve({
-						output: combinedOutput,
-						structuredResultsProcessed: false,
-					});
-				} else if (stdout) {
-					logDebug(`Runner output (stdout): ${stdout.substring(0, 500)}...`);
-					resolve({
-						output: combinedOutput,
-						structuredResultsProcessed: false,
-					});
-				} else {
-					logInfo(`Runner stderr: ${stderr}`);
-					tests.forEach(
-						(test) => void run.failed(test, new vscode.TestMessage(stderr)),
-					);
-					resolve(null);
-				}
-			} else {
-				tests.forEach(
-					(test) =>
-						void run.failed(
-							test,
-							new vscode.TestMessage('No output from test runner'),
-						),
-				);
-				resolve(null);
+			if (!combinedOutput.trim()) {
+				settle(null, failAll('No output from test runner'));
+				return;
 			}
+
+			const hasJsonInStderr =
+				stderr.includes('"testResults"') ||
+				stderr.includes('"numFailedTestSuites"');
+
+			if (!stdout && !hasJsonInStderr) {
+				logInfo(`Runner stderr: ${stderr}`);
+				settle(null, failAll(stderr));
+				return;
+			}
+
+			logDebug(`Runner output (stdout): ${stdout.substring(0, 500)}...`);
+			settle({ output: combinedOutput, structuredResultsProcessed: false });
 		});
 
-		const cancellationListener = token.onCancellationRequested(() => {
-			jestProcess.kill();
-			tests.forEach((test) => void run.skipped(test));
-			resolve(null);
+		cancellationListener = token.onCancellationRequested(() => {
+			settle(null, () => {
+				jestProcess.kill();
+				tests.forEach((test) => void run.skipped(test));
+			});
 		});
 	});
 }

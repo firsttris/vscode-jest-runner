@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
 import { isAbsolute, resolve } from 'node:path';
-import { testFrameworks } from '../testDetection/frameworkDefinitions';
+import * as vscode from 'vscode';
 import * as Settings from '../config/Settings';
+import { testFrameworks } from '../testDetection/frameworkDefinitions';
 
 export class TestConfigWatcher {
 	private readonly _onDidChange = new vscode.EventEmitter<void>();

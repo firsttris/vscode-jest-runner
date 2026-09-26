@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import {
-	parse,
 	type ParserPlugin,
 	type ParserPluginWithOptions,
+	parse,
 } from '@babel/parser';
 import * as t from '@babel/types';
 import { astToValue } from '../../utils/AstUtils';

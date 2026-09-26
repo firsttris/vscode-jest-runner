@@ -244,8 +244,7 @@ describe('frameworkDetection', () => {
 				return filePath === path.join(jestDir, 'jest.config.js');
 			});
 
-			const result =
-				findTestFrameworkDirectory(filePath, 'jest')?.directory;
+			const result = findTestFrameworkDirectory(filePath, 'jest')?.directory;
 
 			expect(result).toBe(jestDir);
 		});

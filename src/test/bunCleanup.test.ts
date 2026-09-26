@@ -1,9 +1,9 @@
-import * as vscode from 'vscode';
-import { TestRunExecutor } from '../testController/TestRunExecutor';
-import { TestRunnerConfig } from '../testRunnerConfig';
-import { CoverageProvider } from '../coverageProvider';
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
+import * as vscode from 'vscode';
+import type { CoverageProvider } from '../coverageProvider';
+import { TestRunExecutor } from '../testController/TestRunExecutor';
+import type { TestRunnerConfig } from '../testRunnerConfig';
 
 // Mock dependencies
 jest.mock('vscode', () => ({

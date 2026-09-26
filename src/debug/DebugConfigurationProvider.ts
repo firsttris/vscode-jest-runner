@@ -152,10 +152,8 @@ const getRstestDebugConfig = (
 	testName?: string,
 ): vscode.DebugConfiguration => {
 	const commandState = getProgramCommandState(Settings.getRstestCommand());
-	const debugArgsWithFile = withFileArgs(
-		commandState.args,
-		filePath,
-		(path) => config.buildRstestArgs(path, testName, false),
+	const debugArgsWithFile = withFileArgs(commandState.args, filePath, (path) =>
+		config.buildRstestArgs(path, testName, false),
 	);
 	const executableState = resolveProgramOrNpx(
 		commandState.program,
@@ -184,10 +182,8 @@ const getVitestDebugConfig = (
 	testName?: string,
 ): vscode.DebugConfiguration => {
 	const commandState = getProgramCommandState(Settings.getVitestCommand());
-	const debugArgsWithFile = withFileArgs(
-		commandState.args,
-		filePath,
-		(path) => config.buildVitestArgs(path, testName, false),
+	const debugArgsWithFile = withFileArgs(commandState.args, filePath, (path) =>
+		config.buildVitestArgs(path, testName, false),
 	);
 	const executableState = resolveProgramOrNpx(
 		commandState.program,
@@ -216,10 +212,8 @@ const getPlaywrightDebugConfig = (
 	testName?: string,
 ): vscode.DebugConfiguration => {
 	const commandState = getProgramCommandState(Settings.getPlaywrightCommand());
-	const debugArgsWithFile = withFileArgs(
-		commandState.args,
-		filePath,
-		(path) => config.buildPlaywrightArgs(path, testName, false),
+	const debugArgsWithFile = withFileArgs(commandState.args, filePath, (path) =>
+		config.buildPlaywrightArgs(path, testName, false),
 	);
 	const debugArgs = appendUniqueArgs(debugArgsWithFile, ['--workers=1']);
 	const executableState = resolveProgramOrNpx(
@@ -288,10 +282,8 @@ const getJestDebugConfig = (
 		};
 	}
 
-	const debugArgsWithFile = withFileArgs(
-		commandState.args,
-		filePath,
-		(path) => config.buildJestArgs(path, testName, false),
+	const debugArgsWithFile = withFileArgs(commandState.args, filePath, (path) =>
+		config.buildJestArgs(path, testName, false),
 	);
 	const executableState = commandState.program
 		? resolveCommandExecution(commandState.program, debugArgsWithFile)
@@ -339,9 +331,12 @@ const withFileArgs = (
 	baseArgs: string[],
 	filePath: string | undefined,
 	buildArgs: (filePath: string) => string[],
-): string[] => (filePath ? appendUniqueArgs(baseArgs, buildArgs(filePath)) : baseArgs);
+): string[] =>
+	filePath ? appendUniqueArgs(baseArgs, buildArgs(filePath)) : baseArgs;
 
-const getProgramCommandState = (command?: string): {
+const getProgramCommandState = (
+	command?: string,
+): {
 	program: string | undefined;
 	args: string[];
 	env: Record<string, string>;
@@ -362,7 +357,9 @@ const getProgramCommandState = (command?: string): {
 	};
 };
 
-const getRuntimeCommandState = (command?: string): {
+const getRuntimeCommandState = (
+	command?: string,
+): {
 	runtimeExecutable: string | undefined;
 	args: string[];
 	env: Record<string, string>;

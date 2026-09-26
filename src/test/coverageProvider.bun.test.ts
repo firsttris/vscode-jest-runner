@@ -1,8 +1,8 @@
-import * as path from 'path';
 import * as fs from 'fs';
+import * as path from 'path';
 import { CoverageProvider } from '../coverageProvider';
-import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import * as lcovParser from '../parsers/lcov-parser';
+import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 
 jest.mock('fs');
 jest.mock('../parsers/lcov-parser');

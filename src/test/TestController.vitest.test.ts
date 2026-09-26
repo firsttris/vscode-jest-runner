@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
-import {
-	setupTestController,
-	createMockProcess,
-	TestItem,
-	CancellationToken,
-	TestControllerSetup,
-} from './testControllerSetup';
 import * as testDetection from '../testDetection/testFileDetection';
+import {
+	CancellationToken,
+	createMockProcess,
+	setupTestController,
+	type TestControllerSetup,
+	TestItem,
+} from './testControllerSetup';
 
 jest.mock('child_process');
 

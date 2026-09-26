@@ -24,10 +24,10 @@ function wrapCommandHandler<T extends unknown[]>(
 	};
 }
 
-function registerCommand(
+function registerCommand<T extends unknown[]>(
 	context: vscode.ExtensionContext,
 	commandId: string,
-	handler: (...args: unknown[]) => Promise<void> | void,
+	handler: (...args: T) => Promise<void> | void,
 ): void {
 	const disposable = vscode.commands.registerCommand(
 		commandId,

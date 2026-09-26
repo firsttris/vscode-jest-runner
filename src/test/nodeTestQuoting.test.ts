@@ -1,9 +1,9 @@
+import { pathToFileURL } from 'node:url';
 import * as assert from 'assert';
-import * as vscode from 'vscode';
-import { TestFrameworkName } from '../testDetection/frameworkDefinitions';
+import type * as vscode from 'vscode';
+import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { TestRunnerConfig } from '../testRunnerConfig';
 import { quote } from '../utils/TestNameUtils';
-import { pathToFileURL } from 'node:url';
 
 // Define the mock variable
 let mockIsWindows = false;

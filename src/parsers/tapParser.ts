@@ -1,7 +1,4 @@
-import type {
-	JestAssertionResult,
-	JestResults,
-} from '../testResultTypes';
+import type { JestAssertionResult, JestResults } from '../testResultTypes';
 
 interface TapStackItem {
 	name: string;

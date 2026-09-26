@@ -1,11 +1,11 @@
 import parse, { type ParsedNode } from './parsers/jestParser';
 import {
-	parseNodeTestFile,
 	type ParseResult as NodeTestParseResult,
+	parseNodeTestFile,
 } from './parsers/nodeTestParser';
 import { isNodeTestFile } from './testDetection/frameworkDetection';
 
-export { parse, type ParsedNode };
+export { type ParsedNode, parse };
 
 export function parseTestFile(
 	filePath: string,

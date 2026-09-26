@@ -1,9 +1,9 @@
-import { TestRunnerCodeLensProvider } from '../TestRunnerCodeLensProvider';
-import * as vscode from 'vscode';
-import { Document, Uri, WorkspaceFolder } from './__mocks__/vscode';
 import * as fastGlob from 'fast-glob';
+import * as vscode from 'vscode';
 import * as parser from '../parser';
+import { TestRunnerCodeLensProvider } from '../TestRunnerCodeLensProvider';
 import { testFileCache } from '../testDetection/testFileCache';
+import { Document, Uri, WorkspaceFolder } from './__mocks__/vscode';
 
 jest.mock('fast-glob');
 

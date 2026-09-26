@@ -81,9 +81,7 @@ export function hasConflictingTestFramework(
 				if (specPatterns) {
 					for (const pattern of specPatterns) {
 						const relativePath = relative(dir, filePath).replace(/\\/g, '/');
-						if (
-							isMatch(relativePath, pattern, { nocase: true, extended: true })
-						) {
+						if (isMatch(relativePath, pattern, { nocase: true })) {
 							return true;
 						}
 					}

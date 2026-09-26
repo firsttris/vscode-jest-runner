@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
-import { TestRunnerConfig } from './testRunnerConfig';
-import { CoverageProvider } from './coverageProvider';
-import { discoverTests } from './testDiscovery';
 import { cacheManager } from './cache/CacheManager';
-import { testFileCache } from './testDetection/testFileCache';
-import { TestRunExecutor } from './testController/TestRunExecutor';
+import { CoverageProvider } from './coverageProvider';
 import { DebugHandler } from './testController/DebugHandler';
 import { TestConfigWatcher } from './testController/TestConfigWatcher';
 import { TestFileWatcher } from './testController/TestFileWatcher';
+import { TestRunExecutor } from './testController/TestRunExecutor';
+import { testFileCache } from './testDetection/testFileCache';
+import { discoverTests } from './testDiscovery';
+import { TestRunnerConfig } from './testRunnerConfig';
 
 export class JestTestController {
 	private testController: vscode.TestController;

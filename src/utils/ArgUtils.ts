@@ -52,7 +52,7 @@ export const appendUniqueArgs = (
 	base: string[] | null | undefined,
 	...extras: (string[] | null | undefined)[]
 ): string[] =>
-	extras.reduce(
+	extras.reduce<string[]>(
 		(merged, extra) => mergeUniqueArgSegments(merged, extra, 'append'),
 		base ?? [],
 	);
@@ -61,7 +61,7 @@ export const prependUniqueArgs = (
 	base: string[] | null | undefined,
 	...prefixes: (string[] | null | undefined)[]
 ): string[] =>
-	prefixes.reduce(
+	prefixes.reduce<string[]>(
 		(merged, prefix) => mergeUniqueArgSegments(merged, prefix, 'prepend'),
 		base ?? [],
 	);

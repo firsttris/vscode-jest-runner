@@ -1,9 +1,6 @@
 import { resolve } from 'node:path';
 import * as vscode from 'vscode';
-import {
-	findConfigPath,
-	resolveConfigPath,
-} from './ConfigResolver';
+import { findConfigPath, resolveConfigPath } from './ConfigResolver';
 import * as Settings from './config/Settings';
 import { getDebugConfiguration } from './debug/DebugConfigurationProvider';
 import { getFrameworkAdapter } from './frameworkAdapters';

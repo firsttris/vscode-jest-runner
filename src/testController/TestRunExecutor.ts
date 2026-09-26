@@ -77,9 +77,9 @@ export class TestRunExecutor {
 		const run = this.testController.createTestRun(request);
 		const testsByFile = collectTestsByFile(request, this.testController);
 
-		testsByFile.forEach((tests) => {
-			tests.forEach((test) => run.started(test));
-		});
+		for (const test of Array.from(testsByFile.values()).flat()) {
+			run.started(test);
+		}
 
 		if (token.isCancellationRequested) {
 			run.end();
@@ -134,12 +134,12 @@ export class TestRunExecutor {
 		)?.uri.fsPath;
 
 		if (!workspaceFolder) {
-			allTests.forEach((test) =>
+			for (const test of allTests) {
 				run.failed(
 					test,
 					new vscode.TestMessage('Could not determine workspace folder'),
-				),
-			);
+				);
+			}
 			return null;
 		}
 
@@ -371,7 +371,7 @@ export class TestRunExecutor {
 	private getEsmEnv(
 		file: string,
 		framework: TestFrameworkName,
-	): NodeJS.ProcessEnv | undefined {
+	): Record<string, string> | undefined {
 		const isVitest = framework === 'vitest';
 		const isNodeTest = framework === 'node-test';
 		return isVitest || isNodeTest
@@ -461,11 +461,9 @@ export class TestRunExecutor {
 					? String(error)
 					: 'Test execution failed';
 
-		testsByFile.forEach((tests) => {
-			tests.forEach((test) =>
-				run.failed(test, new vscode.TestMessage(errOutput)),
-			);
-		});
+		for (const test of Array.from(testsByFile.values()).flat()) {
+			run.failed(test, new vscode.TestMessage(errOutput));
+		}
 	}
 
 	private async processCoverageData(

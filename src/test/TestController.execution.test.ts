@@ -3,10 +3,10 @@ import * as testDetection from '../testDetection/testFileDetection';
 import {
 	CancellationToken,
 	CancellationTokenSource,
-	type TestControllerSetup,
-	TestItem,
 	createMockProcess,
 	setupTestController,
+	type TestControllerSetup,
+	TestItem,
 } from './testControllerSetup';
 
 jest.mock('child_process');

@@ -1,11 +1,11 @@
-import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
-	fileMatchesPatternsExplicit,
-	detectFrameworkByPatternMatch,
-} from '../../testDetection/patternMatching';
+import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
+import {
+	detectFrameworkByPatternMatch,
+	fileMatchesPatternsExplicit,
+} from '../../testDetection/patternMatching';
 import { matchesTestFilePattern } from '../../testDetection/testFileDetection';
 
 jest.mock('fs');

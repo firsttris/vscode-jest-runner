@@ -1,9 +1,9 @@
+import * as fs from 'node:fs';
 import * as vscode from 'vscode';
+import * as parser from '../parser';
 import { TestRunner } from '../testRunner';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 import { Document, TextEditor, Uri } from './__mocks__/vscode';
-import * as fs from 'node:fs';
-import * as parser from '../parser';
 
 describe('TestRunner', () => {
 	let jestRunner: TestRunner;

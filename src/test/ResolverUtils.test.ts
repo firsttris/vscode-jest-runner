@@ -1,8 +1,8 @@
-import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { resolveConfigPath } from '../utils/ResolverUtils';
+import * as path from 'path';
 import { normalizePath } from '../utils/PathUtils';
+import { resolveConfigPath } from '../utils/ResolverUtils';
 
 describe('resolveConfigPath', () => {
 	let tmpDir: string;

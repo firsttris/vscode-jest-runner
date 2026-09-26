@@ -1,7 +1,7 @@
-import { parseLcov } from '../../parsers/lcov-parser';
-import { writeFileSync, unlinkSync, mkdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { parseLcov } from '../../parsers/lcov-parser';
 
 describe('LCOV Parser', () => {
 	const testTmpDir = join(tmpdir(), 'lcov-parser-test');

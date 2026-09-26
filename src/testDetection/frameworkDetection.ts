@@ -1,22 +1,22 @@
-import * as vscode from 'vscode';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import {
-	type TestFrameworkName,
-	testFrameworks,
-	type FrameworkResult,
-	type SearchOutcome,
-} from './frameworkDefinitions';
+import * as vscode from 'vscode';
 import { cacheManager } from '../cache/CacheManager';
+import { isPlaywrightDisabled } from '../config/Settings';
+import { logDebug, logError } from '../utils/Logger';
+import { normalizePath } from '../utils/PathUtils';
 import {
 	binaryExists,
 	getConfigPath,
 	resolveAndValidateCustomConfig,
 } from './configParsing';
+import {
+	type FrameworkResult,
+	type SearchOutcome,
+	type TestFrameworkName,
+	testFrameworks,
+} from './frameworkDefinitions';
 import { detectFrameworkByPatternMatch } from './patternMatching';
-import { logDebug, logError } from '../utils/Logger';
-import { normalizePath } from '../utils/PathUtils';
-import { isPlaywrightDisabled } from '../config/Settings';
 
 export function isNodeTestFile(filePath: string): boolean {
 	const cached = cacheManager.getFileFramework(filePath);
@@ -505,4 +505,3 @@ export function findTestFrameworkDirectory(
 		return undefined;
 	return depResult;
 }
-

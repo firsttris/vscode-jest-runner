@@ -1,5 +1,5 @@
 import parse from '../../../../src/parsers/jestParser';
-import { NamedBlock } from '../../../../src/parsers/jestParser/parserNodes';
+import type { NamedBlock } from '../../../../src/parsers/jestParser/parserNodes';
 
 describe('babelParser extended tests', () => {
 	it('should resolve variable references in test names', () => {

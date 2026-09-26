@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { isDenoTestFile } from '../../testDetection/frameworkDetection';
 import { cacheManager } from '../../cache/CacheManager';
+import { isDenoTestFile } from '../../testDetection/frameworkDetection';
 
 jest.mock('fs');
 const mockedFs = fs as jest.Mocked<typeof fs>;

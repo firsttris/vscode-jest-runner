@@ -1,6 +1,6 @@
 import { dirname } from 'node:path';
-import { TestPatterns } from '../frameworkDefinitions';
 import { logDebug, logError } from '../../utils/Logger';
+import type { TestPatterns } from '../frameworkDefinitions';
 import { readConfigFile } from './parseUtils';
 
 function stripJsonComments(json: string): string {

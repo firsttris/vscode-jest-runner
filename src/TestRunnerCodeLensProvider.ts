@@ -1,4 +1,3 @@
-import { parseTestFile } from './parser';
 import {
 	CodeLens,
 	type CodeLensProvider,
@@ -6,14 +5,15 @@ import {
 	type TextDocument,
 	workspace,
 } from 'vscode';
+import { parseTestFile } from './parser';
 import { testFileCache } from './testDetection/testFileCache';
 import type { CodeLensOption } from './util';
+import { logError } from './utils/Logger';
 import {
 	findFullTestName,
-	toTestNamePattern,
 	type TestNode,
+	toTestNamePattern,
 } from './utils/TestNameUtils';
-import { logError } from './utils/Logger';
 
 type LensNode = TestNode & { eachTemplate?: string; children?: LensNode[] };
 
@@ -75,13 +75,11 @@ const hasEachTemplate = (node?: TestNode): boolean =>
 const sortByStartColumn = (nodes: TestNode[]): TestNode[] =>
 	[...nodes].sort((a, b) => (a.start?.column || 0) - (b.start?.column || 0));
 
-const getNodeRange = (node: TestNode): Range =>
-	new Range(
-		node.start.line - 1,
-		node.start.column,
-		node.end.line - 1,
-		node.end.column,
-	);
+const getNodeRange = (node: TestNode): Range => {
+	const start = node.start ?? { line: 1, column: 0 };
+	const end = node.end ?? start;
+	return new Range(start.line - 1, start.column, end.line - 1, end.column);
+};
 
 const isSameLineEachNode =
 	(baseNode: TestNode) =>

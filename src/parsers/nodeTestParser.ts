@@ -1,6 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { parse as babelParse } from '@babel/parser';
 import traverse from '@babel/traverse';
-import { readFileSync } from 'node:fs';
 
 export interface TestNode {
 	name: string;

@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
-import type { JestResults, JestAssertionResult } from './testResultTypes';
-import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
-import { parseTapOutput } from './parsers/tapParser';
-import { logWarning } from './utils/Logger';
-import { parseJestOutput, parseVitestOutput } from './parsers/OutputParser';
 import {
-	findPotentialMatches,
 	findBestMatch,
+	findPotentialMatches,
 	hasTemplateVariable,
 	type IndexedResult,
 } from './matchers/TestMatcher';
-import { parseStructuredResults } from './reporting/structuredOutput';
 import { parseJUnitXML } from './parsers/junitParser';
+import { parseJestOutput, parseVitestOutput } from './parsers/OutputParser';
+import { parseTapOutput } from './parsers/tapParser';
+import { parseStructuredResults } from './reporting/structuredOutput';
+import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
+import type { JestAssertionResult, JestResults } from './testResultTypes';
+import { logWarning } from './utils/Logger';
 
 export function processTestResults(
 	output: string,
@@ -255,12 +255,13 @@ function processTestResultsFallback(
 	logWarning(
 		`No pass/fail indicators found in output. Output preview: ${output.slice(0, 500)}`,
 	);
-	tests.forEach((test) =>
-		void run.errored(
-			test,
-			new vscode.TestMessage(
-				'Could not parse test results. Run tests from terminal to see full output.',
+	tests.forEach(
+		(test) =>
+			void run.errored(
+				test,
+				new vscode.TestMessage(
+					'Could not parse test results. Run tests from terminal to see full output.',
+				),
 			),
-		),
 	);
 }

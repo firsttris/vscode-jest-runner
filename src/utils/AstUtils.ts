@@ -11,8 +11,7 @@ export const astToValue = (
 	if (t.isNullLiteral(node)) return null;
 	if (t.isIdentifier(node)) {
 		if (node.name === 'undefined') return undefined;
-		if (Object.prototype.hasOwnProperty.call(bindings, node.name))
-			return bindings[node.name];
+		if (Object.hasOwn(bindings, node.name)) return bindings[node.name];
 	}
 	if (t.isArrayExpression(node))
 		return node.elements.map((e) => (e ? astToValue(e, bindings) : null));

@@ -1,7 +1,4 @@
-import {
-	appendUniqueArgs,
-	prependUniqueArgs,
-} from '../utils/ArgUtils';
+import { appendUniqueArgs, prependUniqueArgs } from '../utils/ArgUtils';
 
 describe('mergeUniqueArgs append mode', () => {
 	it('returns an empty array for nullish inputs', () => {
@@ -14,7 +11,15 @@ describe('mergeUniqueArgs append mode', () => {
 	it('ignores empty and nullish argument lists across multiple inputs', () => {
 		expect(appendUniqueArgs([], null, [], undefined, [])).toEqual([]);
 		expect(
-			appendUniqueArgs(['--watch'], [], null, [], undefined, ['--coverage'], []),
+			appendUniqueArgs(
+				['--watch'],
+				[],
+				null,
+				[],
+				undefined,
+				['--coverage'],
+				[],
+			),
 		).toEqual(['--watch', '--coverage']);
 	});
 
@@ -70,19 +75,15 @@ describe('mergeUniqueArgs append mode', () => {
 	});
 
 	it('deduplicates standalone flags while preserving order', () => {
-		expect(appendUniqueArgs(['--watch', '--coverage'], ['--watch', '--bail'])).toEqual([
-			'--watch',
-			'--coverage',
-			'--bail',
-		]);
+		expect(
+			appendUniqueArgs(['--watch', '--coverage'], ['--watch', '--bail']),
+		).toEqual(['--watch', '--coverage', '--bail']);
 	});
 
 	it('deduplicates exact known flag-value pairs', () => {
-		expect(appendUniqueArgs(['-t', 'smoke'], ['-t', 'smoke', '--coverage'])).toEqual([
-			'-t',
-			'smoke',
-			'--coverage',
-		]);
+		expect(
+			appendUniqueArgs(['-t', 'smoke'], ['-t', 'smoke', '--coverage']),
+		).toEqual(['-t', 'smoke', '--coverage']);
 	});
 
 	it('keeps repeated known flags when the value differs', () => {
@@ -144,14 +145,17 @@ describe('mergeUniqueArgs append mode', () => {
 	});
 
 	it('preserves repeated playwright project flags with different values', () => {
-		expect(appendUniqueArgs(['--project', 'chromium'], ['--project', 'firefox'])).toEqual(
-			['--project', 'chromium', '--project', 'firefox'],
-		);
+		expect(
+			appendUniqueArgs(['--project', 'chromium'], ['--project', 'firefox']),
+		).toEqual(['--project', 'chromium', '--project', 'firefox']);
 	});
 
 	it('preserves repeated jest reporter flags with different values', () => {
 		expect(
-			appendUniqueArgs(['--reporters', 'default'], ['--reporters', 'jest-junit']),
+			appendUniqueArgs(
+				['--reporters', 'default'],
+				['--reporters', 'jest-junit'],
+			),
 		).toEqual(['--reporters', 'default', '--reporters', 'jest-junit']);
 	});
 
@@ -202,34 +206,23 @@ describe('mergeUniqueArgs prepend mode', () => {
 	});
 
 	it('deduplicates exact prefix pairs while preserving order', () => {
-		expect(prependUniqueArgs(['spec.ts', '-t', 'smoke'], ['run', '-t', 'smoke'])).toEqual([
-			'run',
-			'spec.ts',
-			'-t',
-			'smoke',
-		]);
+		expect(
+			prependUniqueArgs(['spec.ts', '-t', 'smoke'], ['run', '-t', 'smoke']),
+		).toEqual(['run', 'spec.ts', '-t', 'smoke']);
 	});
 
 	it('keeps repeated known prefix flags when the value differs', () => {
-		expect(prependUniqueArgs(['spec.ts'], ['-t', 'smoke', '-t', 'focused'])).toEqual([
-			'-t',
-			'smoke',
-			'-t',
-			'focused',
-			'spec.ts',
-		]);
+		expect(
+			prependUniqueArgs(['spec.ts'], ['-t', 'smoke', '-t', 'focused']),
+		).toEqual(['-t', 'smoke', '-t', 'focused', 'spec.ts']);
 	});
 
 	it('handles mixed standalone and paired prefixes', () => {
 		expect(
-			prependUniqueArgs(['spec.ts', '--watch'], [
-				'run',
-				'-t',
-				'smoke',
-				'--config',
-				'vitest.config.ts',
-				'--watch',
-			]),
+			prependUniqueArgs(
+				['spec.ts', '--watch'],
+				['run', '-t', 'smoke', '--config', 'vitest.config.ts', '--watch'],
+			),
 		).toEqual([
 			'run',
 			'-t',
@@ -259,7 +252,10 @@ describe('mergeUniqueArgs prepend mode', () => {
 
 	it('treats equals syntax as exact standalone tokens', () => {
 		expect(
-			prependUniqueArgs(['spec.ts'], ['--config=vitest.config.ts', '--config=alt.config.ts']),
+			prependUniqueArgs(
+				['spec.ts'],
+				['--config=vitest.config.ts', '--config=alt.config.ts'],
+			),
 		).toEqual([
 			'--config=vitest.config.ts',
 			'--config=alt.config.ts',

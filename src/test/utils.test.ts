@@ -1,22 +1,23 @@
+import * as fs from 'node:fs';
 import { pushMany, validateCodeLensOptions } from '../util';
 import {
-	isWindows,
+	escapeRegExpForPath,
 	getDirName,
 	getFileName,
+	isWindows,
 	normalizePath,
-	escapeRegExpForPath,
 	resolveConfigPathOrMapping,
 } from '../utils/PathUtils';
+import { normalizeArgsForNonShellSpawn } from '../utils/ShellUtils';
 import {
 	escapeRegExp,
 	escapeSingleQuotes,
-	quote,
-	unquote,
-	resolveTestNameStringInterpolation,
-	updateTestNameIfUsingProperties,
 	findFullTestName,
+	quote,
+	resolveTestNameStringInterpolation,
+	unquote,
+	updateTestNameIfUsingProperties,
 } from '../utils/TestNameUtils';
-import * as fs from 'node:fs';
 
 const its = {
 	windows: isWindows() ? it : it.skip,
@@ -98,7 +99,7 @@ describe('resolveTestNameStringInterpolation', () => {
 		expect(resolveTestNameStringInterpolation('xyz by \\$title')).toBe(
 			'xyz by (.*?)',
 		);
-		expect(resolveTestNameStringInterpolation('xyz by \\\${title}')).toBe(
+		expect(resolveTestNameStringInterpolation('xyz by \\${title}')).toBe(
 			'xyz by (.*?)',
 		);
 	});
@@ -148,6 +149,31 @@ describe('quote', () => {
 
 	its.linux('should wrap string with single quotes on Linux', () => {
 		expect(quote('test')).toBe("'test'");
+	});
+
+	its.linux('should escape inner single quotes on Linux', () => {
+		expect(quote("it's")).toBe("'it'\\''s'");
+	});
+
+	const trickyValues = [
+		"it's",
+		"'leading and trailing'",
+		'double "quotes"',
+		'$HOME `cmd` \\ back\\slash',
+		"/path/with spaces/it's.test.ts",
+	];
+
+	its.linux.each(trickyValues)(
+		'should produce a single POSIX shell word for %s',
+		(value) => {
+			expect(parseShellCommand(`cmd ${quote(value)}`)).toEqual(['cmd', value]);
+		},
+	);
+
+	it.each(
+		trickyValues,
+	)('should survive normalization for non-shell spawn: %s', (value) => {
+		expect(normalizeArgsForNonShellSpawn([quote(value)])).toEqual([value]);
 	});
 });
 

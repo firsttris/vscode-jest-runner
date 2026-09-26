@@ -47,6 +47,12 @@ export function toTestItemNamePattern(test: {
 }
 
 export function updateTestNameIfUsingProperties(
+	receivedTestName: string,
+): string;
+export function updateTestNameIfUsingProperties(
+	receivedTestName?: string,
+): string | undefined;
+export function updateTestNameIfUsingProperties(
 	receivedTestName?: string,
 ): string | undefined {
 	if (receivedTestName === undefined) {
@@ -66,22 +72,26 @@ export function findFullTestName(
 		return;
 	}
 	for (const element of children) {
-		if (element.type === 'describe' && selectedLine === element.start.line) {
-			return resolveTestNameStringInterpolation(element.name);
+		const startLine = element.start?.line;
+		const endLine = element.end?.line;
+		if (element.type === 'describe' && selectedLine === startLine) {
+			return resolveTestNameStringInterpolation(element.name ?? '');
 		}
 		if (
 			element.type !== 'describe' &&
-			selectedLine >= element.start.line &&
-			selectedLine <= element.end.line
+			startLine !== undefined &&
+			endLine !== undefined &&
+			selectedLine >= startLine &&
+			selectedLine <= endLine
 		) {
-			const name = resolveTestNameStringInterpolation(element.name);
+			const name = resolveTestNameStringInterpolation(element.name ?? '');
 			return updateTestNameIfUsingProperties(name);
 		}
 	}
 	for (const element of children) {
 		const result = findFullTestName(selectedLine, element.children || []);
 		if (result) {
-			const parentName = resolveTestNameStringInterpolation(element.name);
+			const parentName = resolveTestNameStringInterpolation(element.name ?? '');
 			const cleanParentName = updateTestNameIfUsingProperties(parentName);
 			return (cleanParentName || parentName) + ' ' + result;
 		}
@@ -92,13 +102,17 @@ export function escapeSingleQuotes(s: string): string {
 	return isWindows() ? s : s.replace(/'/g, "'\\''");
 }
 
+/**
+ * Quotes `s` as a single shell word. Callers must pass the raw value; it is
+ * escaped here, so never pre-escape it.
+ */
 export function quote(s: string): string {
 	if (isWindows()) {
 		const escaped = s.replace(/"/g, '""');
 		return `"${escaped}"`;
 	}
 
-	return `'${s}'`;
+	return `'${escapeSingleQuotes(s)}'`;
 }
 
 export function unquote(s: string): string {

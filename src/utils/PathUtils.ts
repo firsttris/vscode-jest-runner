@@ -36,12 +36,10 @@ export function resolveConfigPathOrMapping(
 	configPathOrMapping: string | Record<string, string> | undefined,
 	targetPath: string,
 ): string | undefined {
-	if (['string', 'undefined'].includes(typeof configPathOrMapping)) {
-		return configPathOrMapping as string | undefined;
+	if (typeof configPathOrMapping !== 'object') {
+		return configPathOrMapping;
 	}
-	for (const [key, value] of Object.entries(
-		configPathOrMapping as Record<string, string>,
-	)) {
+	for (const [key, value] of Object.entries(configPathOrMapping)) {
 		const isMatch = matcher(key);
 		if (isMatch(targetPath) || isMatch(normalizePath(targetPath))) {
 			return normalizePath(value);

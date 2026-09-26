@@ -1,8 +1,10 @@
 import { cacheManager } from '../cache/CacheManager';
-import { matchesTestFilePattern } from './testFileDetection';
-import { findTestFrameworkDirectory } from './frameworkDetection';
 import { resolveAndValidateCustomConfig } from './configParsing';
-import { hasConflictingTestFramework } from './testFileDetection';
+import { findTestFrameworkDirectory } from './frameworkDetection';
+import {
+	hasConflictingTestFramework,
+	matchesTestFilePattern,
+} from './testFileDetection';
 
 class TestFileCache {
 	public isTestFile(filePath: string): boolean {
