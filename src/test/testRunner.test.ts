@@ -241,7 +241,7 @@ describe('TestRunner', () => {
 
 			const calls = (mockTerminal.sendText as jest.Mock).mock.calls;
 			const command = calls[calls.length - 1][0];
-			expect(command).toContain('-t Utils\\.ts(\\s.*)?');
+			expect(command).toContain('-t Utils\\.ts(\\s[\\s\\S]*)?');
 		});
 	});
 

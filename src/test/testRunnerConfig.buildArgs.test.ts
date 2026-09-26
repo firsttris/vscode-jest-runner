@@ -408,7 +408,7 @@ describe('TestRunnerConfig', () => {
 		it('should match nested names joined with " " (vitest <=4) and " > " (vitest >=5)', () => {
 			const args = jestRunnerConfig.buildVitestArgs(
 				'/workspace/test.spec.ts',
-				'my suite does (.*?) thing(\\s.*)?',
+				'my suite does (.*?) thing(\\s[\\s\\S]*)?',
 				false,
 			);
 
@@ -417,6 +417,9 @@ describe('TestRunnerConfig', () => {
 			expect(filterRegex.test('my suite > does the thing')).toBe(true);
 			expect(filterRegex.test('my > suite > does > the thing')).toBe(true);
 			expect(filterRegex.test('my suite > does the thing > nested')).toBe(true);
+			expect(
+				filterRegex.test('my suite does the thing multi\n      - line'),
+			).toBe(true);
 			expect(filterRegex.test('other suite > does the thing')).toBe(false);
 		});
 

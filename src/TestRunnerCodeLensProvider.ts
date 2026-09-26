@@ -209,7 +209,7 @@ const withDescribeChildrenSuffix = (
 	pattern: string | undefined,
 ): string | undefined =>
 	node.type === 'describe' && (node.children?.length ?? 0) > 0 && pattern
-		? `${pattern}(\\s.*)?`
+		? `${pattern}(\\s[\\s\\S]*)?`
 		: pattern;
 
 const buildPatternForNode = (

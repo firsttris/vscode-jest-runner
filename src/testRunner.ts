@@ -195,7 +195,7 @@ export class TestRunner {
 
 		const escapedName = escapeRegExp(fullTestName);
 		return this.isDescribeBlockLine(selectedLine, children)
-			? `${escapedName}(\\s.*)?`
+			? `${escapedName}(\\s[\\s\\S]*)?`
 			: escapedName;
 	}
 
