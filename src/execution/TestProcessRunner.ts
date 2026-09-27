@@ -68,6 +68,22 @@ function spawnTestProcess(
 	return child;
 }
 
+/**
+ * On Windows, kill() only ends the direct child: cmd.exe for .cmd shims such
+ * as npx, or the runner without its workers. taskkill /T ends the whole tree.
+ */
+function killProcessTree(child: ChildProcess): void {
+	if (!isWindows() || child.pid === undefined) {
+		child.kill();
+		return;
+	}
+
+	const taskkill = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+		windowsHide: true,
+	});
+	taskkill.on('error', () => child.kill());
+}
+
 export function executeTestCommandFast(
 	command: string,
 	args: string[],
@@ -138,7 +154,7 @@ export function executeTestCommandFast(
 
 		cancellationListener = token.onCancellationRequested(() => {
 			settle(() => {
-				jestProcess.kill();
+				killProcessTree(jestProcess);
 				run.skipped(test);
 			});
 		});
@@ -208,7 +224,7 @@ export function executeTestCommand(
 				return false;
 			}
 			settle(null, () => {
-				jestProcess.kill();
+				killProcessTree(jestProcess);
 				failAll(errorMsg)();
 			});
 			return true;
@@ -292,7 +308,7 @@ export function executeTestCommand(
 
 		cancellationListener = token.onCancellationRequested(() => {
 			settle(null, () => {
-				jestProcess.kill();
+				killProcessTree(jestProcess);
 				tests.forEach((test) => void run.skipped(test));
 			});
 		});

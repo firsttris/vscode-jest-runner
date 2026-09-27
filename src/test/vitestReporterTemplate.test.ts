@@ -93,4 +93,34 @@ describe('vitestReporterTemplate', () => {
 		expect(results?.numTotalTests).toBe(2);
 		expect(results?.numFailedTests).toBe(1);
 	});
+
+	it('should report a file that fails to collect as failed', () => {
+		const { reporter, output } = loadReporter();
+
+		reporter.onTestRunEnd([
+			{
+				task: {
+					type: 'suite',
+					name: 'broken.test.ts',
+					filepath: '/ws/broken.test.ts',
+					tasks: [],
+					result: {
+						state: 'fail',
+						errors: [{ message: "Cannot find module './missing'" }],
+					},
+				},
+			},
+		]);
+
+		const results = parseStructuredResults(output(), 's1');
+		expect(results?.success).toBe(false);
+		expect(results?.numFailedTestSuites).toBe(1);
+		expect(results?.testResults[0]).toEqual(
+			expect.objectContaining({
+				status: 'failed',
+				message: "Cannot find module './missing'",
+				assertionResults: [],
+			}),
+		);
+	});
 });

@@ -1,13 +1,22 @@
 import type * as vscode from 'vscode';
 import {
 	findBestMatch,
-	findPotentialMatches,
+	findPotentialMatchesIn,
 	hasTemplateVariable,
 	type IndexedResult,
 } from '../../matchers/TestMatcher';
 import type { JestAssertionResult } from '../../testResultTypes';
 
 jest.mock('vscode');
+
+const findPotentialMatches = (
+	results: JestAssertionResult[],
+	test: vscode.TestItem,
+): IndexedResult[] =>
+	findPotentialMatchesIn(
+		results.map((result, index) => ({ result, index })),
+		test,
+	);
 
 describe('TestMatcher', () => {
 	describe('hasTemplateVariable', () => {
@@ -64,7 +73,7 @@ describe('TestMatcher', () => {
 		});
 	});
 
-	describe('findPotentialMatches', () => {
+	describe('findPotentialMatchesIn', () => {
 		const createTestItem = (
 			id: string,
 			label: string,

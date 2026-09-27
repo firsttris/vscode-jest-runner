@@ -78,11 +78,18 @@ class VitestStructuredReporter {
 			const failed = assertions.filter((a) => a.status === 'failed').length;
 			const pending = assertions.filter((a) => a.status === 'skipped').length;
 			const passed = assertions.filter((a) => a.status === 'passed').length;
+			// A file that fails to collect (e.g. an import error) has no failing
+			// tests, only a failed state and file-level errors.
+			const fileErrors = (file.result?.errors || []).map(
+				(e) => e?.message || String(e),
+			);
+			const fileFailed =
+				failed > 0 || file.result?.state === 'fail' || fileErrors.length > 0;
 			return {
 				assertionResults: assertions,
 				name: file.filepath || file.name || '',
-				status: failed > 0 ? 'failed' : 'passed',
-				message: '',
+				status: fileFailed ? 'failed' : 'passed',
+				message: fileErrors.join('\n\n'),
 				startTime: file.result?.startTime || 0,
 				endTime: file.result?.endTime || 0,
 				numFailingTests: failed,
@@ -108,7 +115,9 @@ class VitestStructuredReporter {
 				.length,
 			numTotalTestSuites: testResults.length,
 			numTotalTests: flatAssertions.length,
-			success: flatAssertions.every((a) => a.status === 'passed'),
+			success:
+				testResults.every((t) => t.status !== 'failed') &&
+				flatAssertions.every((a) => a.status === 'passed'),
 			testResults,
 		};
 

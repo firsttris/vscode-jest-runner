@@ -417,6 +417,55 @@ console output
 
 				expect(run.passed).toHaveBeenCalledWith(test, undefined);
 			});
+
+			it('should not borrow results of another requested file', () => {
+				// a.test.ts failed to import, so it has no assertion results.
+				const testA = createTest('/project/a.test.ts');
+				const testB = createTest('/project/b.test.ts');
+				const results = {
+					testResults: [
+						{ name: '/project/a.test.ts', assertionResults: [] },
+						{
+							name: '/project/b.test.ts',
+							assertionResults: [renders('passed')],
+						},
+					],
+				};
+
+				processTestResultsFromParsed(
+					results as any,
+					[testA, testB] as any,
+					run as any,
+				);
+
+				expect(run.passed).toHaveBeenCalledTimes(1);
+				expect(run.passed).toHaveBeenCalledWith(testB, undefined);
+				expect(run.skipped).toHaveBeenCalledWith(testA);
+			});
+
+			it('should fail the tests of a file that failed to run', () => {
+				const test = createTest('/project/a.test.ts');
+				const results = {
+					testResults: [
+						{
+							name: '/project/a.test.ts',
+							status: 'failed',
+							message: "\u001b[31mCannot find module './missing'\u001b[39m",
+							assertionResults: [],
+						},
+					],
+				};
+
+				processTestResultsFromParsed(results as any, [test] as any, run as any);
+
+				expect(run.skipped).not.toHaveBeenCalled();
+				expect(run.failed).toHaveBeenCalledWith(
+					test,
+					expect.objectContaining({
+						message: "Cannot find module './missing'",
+					}),
+				);
+			});
 		});
 
 		it('should correctly match it.each tests with regex special characters', () => {

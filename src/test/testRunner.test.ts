@@ -25,6 +25,7 @@ describe('TestRunner', () => {
 				return '/workspace';
 			},
 			getCwd: () => '/workspace',
+			getTestRunCwd: () => '/workspace',
 			get changeDirectoryToWorkspaceRoot() {
 				return false;
 			},
@@ -427,13 +428,15 @@ describe('TestRunner', () => {
 				get changeDirectoryToWorkspaceRoot() {
 					return true;
 				},
-				getCwd: jest.fn().mockReturnValue('/different/path'),
+				getTestRunCwd: jest.fn().mockReturnValue('/different/path'),
 			} as any;
 			jestRunner = new TestRunner(mockConfig);
 
 			await jestRunner.runTestsOnPath('/workspace/test.ts');
 
-			expect(mockConfig.getCwd).toHaveBeenCalledWith('/workspace/test.ts');
+			expect(mockConfig.getTestRunCwd).toHaveBeenCalledWith(
+				'/workspace/test.ts',
+			);
 
 			expect(vscode.window.createTerminal).toHaveBeenCalledWith({
 				name: 'jest',

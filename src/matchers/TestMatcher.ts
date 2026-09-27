@@ -161,17 +161,8 @@ const preferSameAncestors = (
 	return suffix.length > 0 ? suffix : matches;
 };
 
-export const findPotentialMatches = (
-	testResults: JestAssertionResult[],
-	test: vscode.TestItem,
-): IndexedResult[] =>
-	findPotentialMatchesIn(
-		testResults.map((result, index) => ({ result, index })),
-		test,
-	);
-
 /**
- * Like findPotentialMatches, but keeps the indices of the given candidates.
+ * Results among `candidates` that may belong to `test`, with their indices.
  * Short-name matches only count when nothing matches the full label, so a
  * test cannot pick up the result of a namesake that matches its last word.
  */

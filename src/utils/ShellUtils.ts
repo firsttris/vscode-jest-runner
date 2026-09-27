@@ -134,7 +134,23 @@ export function needsWindowsShell(
 	);
 }
 
-/** Quotes `arg` as one word of a cmd.exe command line. */
+/**
+ * Quotes `arg` as one word of a cmd.exe command line that is then split into
+ * argv by the C runtime of the started program.
+ *
+ * - Backslashes before a quote (the closing one or an escaped inner one) are
+ *   doubled, or the C runtime would read `\"` as a literal quote and merge
+ *   the following arguments into this one.
+ * - cmd.exe expands `%VAR%` even inside quotes, so each `%` is written
+ *   outside the quotes as `^%`: the caret makes the variable name invalid
+ *   during expansion and is removed afterwards, leaving a plain `%`.
+ */
 export function quoteForCmd(arg: string): string {
-	return /^[\w\-.:\\/=@+,]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '""')}"`;
+	if (/^[\w\-.:\\/=@+,]+$/.test(arg)) {
+		return arg;
+	}
+
+	const quoteSegment = (segment: string) =>
+		`"${segment.replace(/(\\*)"/g, '$1$1""').replace(/(\\+)$/, '$1$1')}"`;
+	return arg.split('%').map(quoteSegment).join('^%');
 }

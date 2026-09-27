@@ -236,7 +236,7 @@ export class TestRunner {
 		this.previousEnv = env;
 
 		const cwd = this.config.changeDirectoryToWorkspaceRoot
-			? this.config.getCwd(filePath)
+			? this.config.getTestRunCwd(filePath)
 			: undefined;
 		this.previousCwd = cwd;
 

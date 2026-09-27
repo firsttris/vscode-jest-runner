@@ -336,8 +336,12 @@ const createDebugConfigBase = (
 	name,
 	request: 'launch',
 	type,
+	// Same directory as a Test Explorer run, so Playwright and Deno find
+	// their config when debugging too.
 	cwd: config.changeDirectoryToWorkspaceRoot
-		? config.getCwd(filePath)
+		? filePath
+			? config.getTestRunCwd(filePath)
+			: config.getCwd()
 		: undefined,
 	...options,
 });

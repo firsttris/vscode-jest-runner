@@ -14,6 +14,7 @@ import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import type { JestAssertionResult, JestResults } from './testResultTypes';
 import { logWarning } from './utils/Logger';
 import { normalizePath } from './utils/PathUtils';
+import { stripAnsi } from './utils/ShellUtils';
 
 export function processTestResults(
 	output: string,
@@ -159,13 +160,24 @@ const isSameFile = (resultFile: string, testFile: string): boolean => {
 
 /**
  * Tests with the same name in different files must not pick up each other's
- * results, so candidates are limited to the test's own file. Results that
- * cannot be attributed to that file (no or unknown file name, as with TAP or
- * some JUnit reports) fall back to the full result list.
+ * results, so candidates are limited to the test's own file. A file without
+ * results of its own (e.g. it failed to import) only falls back to results
+ * that belong to none of the requested files: those without or with an
+ * unrecognized file name, as with TAP or some JUnit reports. Results of
+ * another requested file are never borrowed.
  */
 const createCandidateLookup = (
 	indexedResults: FileIndexedResult[],
+	tests: vscode.TestItem[],
 ): ((test: vscode.TestItem) => IndexedResult[]) => {
+	const testFiles = [
+		...new Set(
+			tests.flatMap((test) => (test.uri?.fsPath ? [test.uri.fsPath] : [])),
+		),
+	];
+	const unattributedResults = indexedResults.filter(
+		(r) => !testFiles.some((testFile) => isSameFile(r.file, testFile)),
+	);
 	const byTestFile = new Map<string, IndexedResult[]>();
 
 	return (test) => {
@@ -177,7 +189,7 @@ const createCandidateLookup = (
 			const ownResults = indexedResults.filter((r) =>
 				isSameFile(r.file, testFile),
 			);
-			candidates = ownResults.length > 0 ? ownResults : indexedResults;
+			candidates = ownResults.length > 0 ? ownResults : unattributedResults;
 			byTestFile.set(testFile, candidates);
 		}
 		return candidates;
@@ -202,15 +214,40 @@ export function processTestResultsFromParsed(
 		return;
 	}
 
+	// Files that failed without running any test, e.g. on an import error.
+	const fileFailures = results.testResults.filter(
+		(fileResult) =>
+			fileResult.status === 'failed' &&
+			fileResult.message &&
+			(fileResult.assertionResults ?? []).length === 0,
+	);
+	const findFileFailure = (test: vscode.TestItem) => {
+		const testFile = test.uri?.fsPath;
+		return testFile
+			? fileFailures.find((f) => isSameFile(f.name ?? '', testFile))
+			: undefined;
+	};
+
 	const getCandidates = createCandidateLookup(
 		indexedResults.map((entry, index) => ({ ...entry, index })),
+		tests,
 	);
 
 	tests.reduce((usedIndices, test) => {
 		const matches = findPotentialMatchesIn(getCandidates(test), test);
 
 		if (matches.length === 0) {
-			reportTestResult(run, test, undefined);
+			// The file failed as a whole (e.g. an import error), so its tests
+			// did not run: show why instead of silently skipping them.
+			const fileFailure = findFileFailure(test);
+			if (fileFailure) {
+				run.failed(
+					test,
+					new vscode.TestMessage(stripAnsi(fileFailure.message)),
+				);
+			} else {
+				reportTestResult(run, test, undefined);
+			}
 			return usedIndices;
 		}
 

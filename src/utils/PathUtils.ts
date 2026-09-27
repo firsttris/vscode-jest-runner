@@ -32,6 +32,18 @@ export function escapeRegExpForPath(s: string): string {
 	return s.replace(/[.*+?^${}<>()|[\]\\]/g, '\\$&');
 }
 
+const matcherCache = new Map<string, (path: string) => boolean>();
+
+/** Compiling a glob is costly and a run resolves the mapping for every file. */
+function getMatcher(glob: string): (path: string) => boolean {
+	let isMatch = matcherCache.get(glob);
+	if (!isMatch) {
+		isMatch = matcher(glob);
+		matcherCache.set(glob, isMatch);
+	}
+	return isMatch;
+}
+
 export function resolveConfigPathOrMapping(
 	configPathOrMapping: string | Record<string, string> | undefined,
 	targetPath: string,
@@ -40,7 +52,7 @@ export function resolveConfigPathOrMapping(
 		return configPathOrMapping;
 	}
 	for (const [key, value] of Object.entries(configPathOrMapping)) {
-		const isMatch = matcher(key);
+		const isMatch = getMatcher(key);
 		if (isMatch(targetPath) || isMatch(normalizePath(targetPath))) {
 			return normalizePath(value);
 		}

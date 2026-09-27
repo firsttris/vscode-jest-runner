@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { DetailedFileCoverage } from '../coverageProvider';
 import * as parser from '../parser';
 import { JestTestController } from '../TestController';
+import { TestRunExecutor } from '../testController/TestRunExecutor';
+import * as testDiscovery from '../testDiscovery';
 import {
 	setupTestController,
 	type TestControllerSetup,
@@ -272,6 +274,83 @@ describe('JestTestController - configuration watcher', () => {
 		await onDidChangeConfig(mockEvent);
 
 		expect(replaceSpy).toHaveBeenCalledWith([]);
+	});
+});
+
+describe('JestTestController - refresh scheduling', () => {
+	let setup: TestControllerSetup;
+	let pendingDiscoveries: Array<() => void>;
+	let replaceSpy: jest.SpyInstance;
+
+	const fireConfigChange = () =>
+		(vscode.workspace.onDidChangeConfiguration as jest.Mock).mock.calls[0][0]({
+			affectsConfiguration: (section: string) => section === 'jestrunner',
+		});
+
+	/** Lets every started and queued discovery run to completion. */
+	const finishDiscoveries = async () => {
+		for (let i = 0; i < 10; i++) {
+			for (const resolve of pendingDiscoveries.splice(0)) resolve();
+			await new Promise((resolve) => setImmediate(resolve));
+		}
+	};
+
+	const discoveryRounds = () =>
+		replaceSpy.mock.calls.filter(([items]) => items.length === 0).length;
+
+	beforeEach(() => {
+		jest.clearAllMocks();
+		setup = setupTestController();
+		pendingDiscoveries = [];
+		jest
+			.spyOn(testDiscovery, 'discoverTests')
+			.mockImplementation(
+				() => new Promise<void>((resolve) => pendingDiscoveries.push(resolve)),
+			);
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		replaceSpy = jest.spyOn(mockTestController.items, 'replace');
+	});
+
+	afterEach(() => {
+		setup.controller?.dispose();
+		jest.restoreAllMocks();
+	});
+
+	it('should merge a burst of config changes into one queued refresh', async () => {
+		for (let i = 0; i < 5; i++) {
+			fireConfigChange();
+		}
+		expect(discoveryRounds()).toBe(1);
+
+		await finishDiscoveries();
+
+		// The running refresh plus one that sees the final state.
+		expect(discoveryRounds()).toBe(2);
+	});
+
+	it('should let a run wait for a refresh after the first discovery', async () => {
+		fireConfigChange();
+		await finishDiscoveries();
+
+		const runHandler = jest
+			.spyOn(TestRunExecutor.prototype, 'runHandler')
+			.mockResolvedValue();
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		const runProfileHandler =
+			mockTestController.createRunProfile.mock.calls[0][2];
+
+		fireConfigChange();
+		const run = runProfileHandler({}, {});
+		await new Promise((resolve) => setImmediate(resolve));
+
+		expect(runHandler).not.toHaveBeenCalled();
+
+		await finishDiscoveries();
+		await run;
+
+		expect(runHandler).toHaveBeenCalledTimes(1);
 	});
 });
 

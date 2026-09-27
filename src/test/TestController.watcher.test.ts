@@ -1,3 +1,5 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import * as parser from '../parser';
@@ -92,6 +94,47 @@ describe('JestTestController - file watcher', () => {
 		saveCallback({ uri: vscode.Uri.file(testFilePath) });
 
 		expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
+	});
+
+	it('should parse a saved file once, not again for the watcher event', () => {
+		const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jest-runner-watch-'));
+		try {
+			const testFilePath = path.join(dir, 'saved.test.ts');
+			fs.writeFileSync(testFilePath, '');
+			const saveCallback = (vscode.workspace.onDidSaveTextDocument as jest.Mock)
+				.mock.calls[0][0];
+			const mockWatcher = (
+				vscode.workspace.createFileSystemWatcher as jest.Mock
+			).mock.results[0].value;
+			const changeCallback = (mockWatcher.onDidChange as jest.Mock).mock
+				.calls[0][0];
+			const mockTestController = (
+				vscode.tests.createTestController as jest.Mock
+			).mock.results[0].value;
+			mockTestController.items.add(
+				new TestItem(
+					testFilePath,
+					'saved.test.ts',
+					vscode.Uri.file(testFilePath),
+				),
+			);
+			jest.spyOn(testFileCache, 'isTestFile').mockReturnValue(true);
+			(parser.parseTestFile as jest.Mock).mockClear();
+
+			saveCallback({ uri: vscode.Uri.file(testFilePath) });
+			changeCallback(vscode.Uri.file(testFilePath));
+
+			expect(parser.parseTestFile).toHaveBeenCalledTimes(1);
+
+			// A later change on disk (e.g. git checkout) is parsed again.
+			const later = new Date(Date.now() + 5000);
+			fs.utimesSync(testFilePath, later, later);
+			changeCallback(vscode.Uri.file(testFilePath));
+
+			expect(parser.parseTestFile).toHaveBeenCalledTimes(2);
+		} finally {
+			fs.rmSync(dir, { recursive: true, force: true });
+		}
 	});
 
 	it('should add new test file on create', () => {

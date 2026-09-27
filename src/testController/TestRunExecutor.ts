@@ -34,6 +34,8 @@ interface RunContext {
 	framework: TestFrameworkName;
 	workspaceFolder: string;
 	cwd: string;
+	/** Config passed to the runner; empty for frameworks that take none. */
+	configPath: string;
 }
 
 export class TestRunExecutor {
@@ -189,6 +191,7 @@ export class TestRunExecutor {
 					framework,
 					workspaceFolder,
 					cwd,
+					configPath,
 				};
 				contexts.set(key, context);
 			}
@@ -347,10 +350,10 @@ export class TestRunExecutor {
 			}
 
 			if (collectCoverage) {
-				const configPath = this.resolveCoverageConfigPath(
-					framework,
-					allFiles[0],
-				);
+				// Jest, Vitest and Rstest already resolved it for grouping.
+				const configPath =
+					context.configPath ||
+					this.resolveCoverageConfigPath(framework, allFiles[0]);
 
 				await this.processCoverageData(
 					run,

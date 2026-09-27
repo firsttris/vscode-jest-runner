@@ -103,25 +103,44 @@ export class JestTestController {
 
 	private didFullDiscovery = false;
 
-	private pendingRefresh: Promise<void> | undefined;
+	private runningRefresh: Promise<void> | undefined;
+
+	private queuedRefresh: Promise<void> | undefined;
 
 	/**
 	 * Refreshes run one after another: two interleaved discoveries would
 	 * clear each other's items while the other is still adding them.
+	 * At most one refresh waits behind the running one, so a burst of
+	 * config changes (npm install, git checkout) costs two discoveries,
+	 * not one per event.
 	 */
 	private refreshAllTests(): Promise<void> {
-		const refresh = this.pendingRefresh
-			? this.pendingRefresh.catch(() => {}).then(() => this.discoverAllTests())
-			: this.discoverAllTests();
+		if (this.queuedRefresh) {
+			return this.queuedRefresh;
+		}
+		if (!this.runningRefresh) {
+			return this.startRefresh();
+		}
 
-		this.pendingRefresh = refresh;
-		const clearPending = () => {
-			if (this.pendingRefresh === refresh) {
-				this.pendingRefresh = undefined;
+		const queued = this.runningRefresh
+			.catch(() => {})
+			.then(() => {
+				this.queuedRefresh = undefined;
+				return this.startRefresh();
+			});
+		this.queuedRefresh = queued;
+		return queued;
+	}
+
+	private startRefresh(): Promise<void> {
+		const refresh = this.discoverAllTests();
+		this.runningRefresh = refresh;
+		const clearRunning = () => {
+			if (this.runningRefresh === refresh) {
+				this.runningRefresh = undefined;
 			}
 		};
-		refresh.then(clearPending, clearPending);
-
+		refresh.then(clearRunning, clearRunning);
 		return refresh;
 	}
 
@@ -143,12 +162,21 @@ export class JestTestController {
 		this.didFullDiscovery = true;
 	}
 
+	/**
+	 * A refresh clears the tree before rebuilding it, so a run must wait for
+	 * it even after the first full discovery; otherwise it would only see
+	 * the files re-added so far.
+	 */
 	private async ensureTestsDiscovered(): Promise<void> {
-		if (this.didFullDiscovery) {
+		const pending = this.queuedRefresh ?? this.runningRefresh;
+		if (pending) {
+			await pending;
 			return;
 		}
 
-		await (this.pendingRefresh ?? this.refreshAllTests());
+		if (!this.didFullDiscovery) {
+			await this.refreshAllTests();
+		}
 	}
 
 	public dispose(): void {

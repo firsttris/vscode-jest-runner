@@ -79,6 +79,12 @@ describe('Windows spawning', () => {
 			['(a|b)', '"(a|b)"'],
 			['say "hi"', '"say ""hi"""'],
 			['', '""'],
+			// Backslashes before a quote are doubled for the C runtime.
+			['C:\\dir with space\\', '"C:\\dir with space\\\\"'],
+			['a\\"b c', '"a\\\\""b c"'],
+			// cmd.exe must not expand %VAR%, even inside quotes.
+			['^shows %USERNAME% badge$', '"^shows "^%"USERNAME"^%" badge$"'],
+			['50% a\\%', '"50"^%" a\\\\"^%""'],
 		])('%s -> %s', (arg, expected) => {
 			expect(quoteForCmd(arg)).toBe(expected);
 		});
@@ -141,6 +147,45 @@ describe('Windows spawning', () => {
 				['C:\\Program Files\\jest\\bin\\jest.js', '--json'],
 				expect.objectContaining({ shell: false }),
 			);
+		});
+
+		it('kills the whole process tree when cancelled', async () => {
+			const child = Object.assign(new EventEmitter(), {
+				stdout: new PassThrough(),
+				stderr: new PassThrough(),
+				kill: jest.fn(),
+				pid: 4711,
+			});
+			const taskkill = Object.assign(new EventEmitter(), { kill: jest.fn() });
+			(spawn as unknown as jest.Mock)
+				.mockReturnValueOnce(child)
+				.mockReturnValueOnce(taskkill);
+			let cancel: () => void = () => {};
+
+			const promise = executeTestCommand(
+				'npx --no-install jest',
+				[],
+				{
+					isCancellationRequested: false,
+					onCancellationRequested: (listener: () => void) => {
+						cancel = listener;
+						return { dispose: jest.fn() };
+					},
+				} as any,
+				[],
+				{ appendOutput: jest.fn(), skipped: jest.fn() } as any,
+				'C:\\project',
+			);
+			cancel();
+			await promise;
+
+			// kill() would only end cmd.exe, not jest below it.
+			expect(spawn).toHaveBeenLastCalledWith(
+				'taskkill',
+				['/pid', '4711', '/T', '/F'],
+				expect.objectContaining({ windowsHide: true }),
+			);
+			expect(child.kill).not.toHaveBeenCalled();
 		});
 	});
 });

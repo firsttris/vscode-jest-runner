@@ -14,6 +14,7 @@ import {
 
 jest.mock('../cache/CacheManager', () => ({
 	cacheManager: {
+		hasConfigPath: jest.fn().mockReturnValue(false),
 		getConfigPath: jest.fn(),
 		setConfigPath: jest.fn(),
 		invalidateAll: jest.fn(),

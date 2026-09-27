@@ -45,6 +45,11 @@ export class CacheManager {
 
 	private configPathCache = new Map<string, string | undefined>();
 
+	/** Whether a lookup is cached, including one that found no config. */
+	public hasConfigPath(key: string): boolean {
+		return this.configPathCache.has(key);
+	}
+
 	public getConfigPath(key: string): string | undefined {
 		return this.configPathCache.get(key);
 	}

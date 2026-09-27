@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import { dirname } from 'node:path';
 import * as vscode from 'vscode';
 import { cacheManager } from '../cache/CacheManager';
@@ -13,6 +14,13 @@ import type { TestRunnerConfig } from '../testRunnerConfig';
 
 export class TestFileWatcher {
 	private disposables: vscode.Disposable[] = [];
+
+	/**
+	 * Modification time of the file content each file item was last parsed
+	 * from. Saving in the editor fires both the save handler and the file
+	 * system watcher; whichever comes second finds the file unchanged.
+	 */
+	private parsedMtimes = new Map<string, number>();
 
 	constructor(
 		private readonly testController: vscode.TestController,
@@ -35,8 +43,7 @@ export class TestFileWatcher {
 				uri.fsPath,
 			);
 			if (item) {
-				item.children.replace([]);
-				parseTestsInFile(uri.fsPath, item, this.testController);
+				this.reparse(uri.fsPath, item);
 			}
 		});
 
@@ -61,6 +68,7 @@ export class TestFileWatcher {
 
 		watcher.onDidDelete((uri) => {
 			cacheManager.invalidate(uri.fsPath);
+			this.parsedMtimes.delete(uri.fsPath);
 
 			this.testController.items.delete(uri.fsPath);
 
@@ -159,14 +167,36 @@ export class TestFileWatcher {
 				);
 			}
 
-			testItem.children.replace([]);
-			parseTestsInFile(filePath, testItem, this.testController);
+			this.reparse(filePath, testItem);
 		});
 
 		this.disposables.push(saveHandler);
 	}
 
+	private reparse(filePath: string, item: vscode.TestItem): void {
+		const mtime = getMtime(filePath);
+		if (mtime !== undefined && this.parsedMtimes.get(filePath) === mtime) {
+			return;
+		}
+
+		if (mtime === undefined) {
+			this.parsedMtimes.delete(filePath);
+		} else {
+			this.parsedMtimes.set(filePath, mtime);
+		}
+		item.children.replace([]);
+		parseTestsInFile(filePath, item, this.testController);
+	}
+
 	public dispose(): void {
 		this.disposables.forEach((d) => void d.dispose());
+	}
+}
+
+function getMtime(filePath: string): number | undefined {
+	try {
+		return statSync(filePath).mtimeMs;
+	} catch {
+		return undefined;
 	}
 }

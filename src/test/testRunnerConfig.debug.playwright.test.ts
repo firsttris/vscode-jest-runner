@@ -49,6 +49,21 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 		expect(debugConfig.name).toBe('Debug Playwright Tests');
 	});
 
+	it('should debug from the same directory as a Test Explorer run', () => {
+		jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+			new WorkspaceConfiguration({
+				'jestrunner.changeDirectoryToWorkspaceRoot': true,
+			}),
+		);
+		jest.spyOn(ResolverUtils, 'resolveBinaryPath').mockReturnValue(undefined);
+		jest.spyOn(config, 'getTestRunCwd').mockReturnValue('/home/user/project');
+
+		const debugConfig = config.getDebugConfiguration(mockFilePath);
+
+		expect(config.getTestRunCwd).toHaveBeenCalledWith(mockFilePath);
+		expect(debugConfig.cwd).toBe('/home/user/project');
+	});
+
 	it('should include --workers=1 for single-threaded debugging', () => {
 		jest
 			.spyOn(vscode.workspace, 'getConfiguration')

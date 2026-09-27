@@ -54,7 +54,12 @@ class JestStructuredReporter {
 							: undefined),
 				})),
 				name: fileResult.name,
-				status: fileResult.numFailingTests > 0 ? 'failed' : 'passed',
+				// A suite that fails to run (e.g. an import error) has no failing
+				// tests, only a testExecError.
+				status:
+					fileResult.numFailingTests > 0 || fileResult.testExecError
+						? 'failed'
+						: 'passed',
 				message: fileResult.failureMessage || '',
 				startTime:
 					fileResult.perfStats?.start || fileResult.perfStats?.startTime || 0,

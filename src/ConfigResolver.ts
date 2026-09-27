@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { cacheManager } from './cache/CacheManager';
@@ -98,15 +98,17 @@ export function findConfigPath(
 		return undefined;
 	}
 
-	const cacheKey = `config:${startPath}:${configFiles.join(',')}`;
-	const cachedPath = cacheManager.getConfigPath(cacheKey);
-	if (cachedPath !== undefined) {
-		return cachedPath;
+	// No config can live below a file, so all files of a directory share
+	// one lookup (and one cache entry) instead of walking the tree each.
+	const searchDir = isFile(startPath) ? dirname(startPath) : startPath;
+	const cacheKey = `config:${searchDir}:${configFiles.join(',')}`;
+	if (cacheManager.hasConfigPath(cacheKey)) {
+		return cacheManager.getConfigPath(cacheKey);
 	}
 
 	const foundPath = resolveConfigPathInTree(
 		[...configFiles],
-		startPath,
+		searchDir,
 		currentWorkspaceFolderPath,
 		(filePath: string) => {
 			if (filePath.endsWith('package.json')) {
@@ -124,4 +126,12 @@ export function findConfigPath(
 
 	cacheManager.setConfigPath(cacheKey, foundPath);
 	return foundPath;
+}
+
+function isFile(path: string): boolean {
+	try {
+		return statSync(path, { throwIfNoEntry: false })?.isFile() ?? false;
+	} catch {
+		return false;
+	}
 }
