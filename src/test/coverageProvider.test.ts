@@ -103,9 +103,6 @@ describe('CoverageProvider', () => {
 			};
 
 			const jestConfigPath = normalizePath('/workspace/jest.config.js');
-			const customCoveragePath = normalizePath(
-				'/workspace/custom-coverage/coverage-final.json',
-			);
 
 			mockFs.existsSync.mockImplementation(
 				(p) =>
@@ -138,7 +135,7 @@ describe('CoverageProvider', () => {
 			};
 
 			const vitestConfigPath = normalizePath('/workspace/vitest.config.ts');
-			const vitestCoveragePath = normalizePath(
+			const _vitestCoveragePath = normalizePath(
 				'/workspace/vitest-coverage/coverage-final.json',
 			);
 
@@ -243,7 +240,7 @@ describe('CoverageProvider', () => {
 				),
 			};
 
-			const appCoveragePath = normalizePath(
+			const _appCoveragePath = normalizePath(
 				'/workspace/packages/app/coverage/coverage-final.json',
 			);
 

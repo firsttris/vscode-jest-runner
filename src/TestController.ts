@@ -103,7 +103,29 @@ export class JestTestController {
 
 	private didFullDiscovery = false;
 
-	private async refreshAllTests(): Promise<void> {
+	private pendingRefresh: Promise<void> | undefined;
+
+	/**
+	 * Refreshes run one after another: two interleaved discoveries would
+	 * clear each other's items while the other is still adding them.
+	 */
+	private refreshAllTests(): Promise<void> {
+		const refresh = this.pendingRefresh
+			? this.pendingRefresh.catch(() => {}).then(() => this.discoverAllTests())
+			: this.discoverAllTests();
+
+		this.pendingRefresh = refresh;
+		const clearPending = () => {
+			if (this.pendingRefresh === refresh) {
+				this.pendingRefresh = undefined;
+			}
+		};
+		refresh.then(clearPending, clearPending);
+
+		return refresh;
+	}
+
+	private async discoverAllTests(): Promise<void> {
 		cacheManager.invalidateAll();
 		testFileCache.invalidate();
 
@@ -126,7 +148,7 @@ export class JestTestController {
 			return;
 		}
 
-		await this.refreshAllTests();
+		await (this.pendingRefresh ?? this.refreshAllTests());
 	}
 
 	public dispose(): void {

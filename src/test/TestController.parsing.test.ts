@@ -46,7 +46,7 @@ describe('JestTestController - result parsing', () => {
 		} as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -106,7 +106,7 @@ describe('JestTestController - result parsing', () => {
 		} as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -166,7 +166,7 @@ describe('JestTestController - result parsing', () => {
 		} as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -217,7 +217,7 @@ describe('JestTestController - result parsing', () => {
 		const mockRequest = { include: [mockTestItem], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -248,7 +248,7 @@ describe('JestTestController - result parsing', () => {
 		const mockRequest = { include: [mockTestItem], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -289,7 +289,7 @@ describe('JestTestController - result parsing', () => {
 		} as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 

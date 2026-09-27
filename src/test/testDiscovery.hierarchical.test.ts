@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import * as vscode from 'vscode';
+import * as parser from '../parser';
 import { discoverTests } from '../testDiscovery';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 
@@ -181,5 +182,32 @@ describe('discoverTests - hierarchical', () => {
 			'**/node_modules/**',
 		);
 		expect(mockCreateTestItem).not.toHaveBeenCalled();
+	});
+
+	it('parses every file without blocking the event loop throughout', async () => {
+		const files = Array.from({ length: 120 }, (_, i) => ({
+			fsPath: `/root/test${i}.test.ts`,
+		}));
+		vscode.workspace.findFiles = jest.fn().mockResolvedValue(files);
+
+		let otherWorkRan = false;
+		setImmediate(() => {
+			otherWorkRan = true;
+		});
+		let otherWorkRanBeforeDiscoveryEnded = false;
+
+		await discoverTests(
+			mockWorkspaceFolder,
+			mockTestController,
+			mockJestConfig,
+		).then(() => {
+			otherWorkRanBeforeDiscoveryEnded = otherWorkRan;
+		});
+
+		expect(parser.parseTestFile).toHaveBeenCalledTimes(120);
+		expect(parser.parseTestFile).toHaveBeenLastCalledWith(
+			'/root/test119.test.ts',
+		);
+		expect(otherWorkRanBeforeDiscoveryEnded).toBe(true);
 	});
 });

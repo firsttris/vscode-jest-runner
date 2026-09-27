@@ -1,4 +1,4 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import * as Settings from '../../config/Settings';
 import { TestConfigWatcher } from '../../testController/TestConfigWatcher';
@@ -167,7 +167,7 @@ describe('TestConfigWatcher', () => {
 				'old.config.js',
 			);
 
-			const watcher = new TestConfigWatcher();
+			new TestConfigWatcher();
 			const initialCallCount = (
 				vscode.workspace.createFileSystemWatcher as jest.Mock
 			).mock.calls.length;

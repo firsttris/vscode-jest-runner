@@ -103,10 +103,10 @@ class WorkspaceConfiguration {
 	has(key: string) {
 		return key in this.dict;
 	}
-	inspect(section: string): undefined {
+	inspect(_section: string): undefined {
 		throw new Error('not implemented');
 	}
-	update(key: string, value: string): Thenable<void> {
+	update(_key: string, _value: string): Thenable<void> {
 		throw new Error('not implemented');
 	}
 }
@@ -127,42 +127,42 @@ class Window {
 		return new TextEditor(new Document(new Uri('hi')));
 	}
 	showWarningMessage<T extends string>(
-		message: string,
-		...items: T[]
+		_message: string,
+		..._items: T[]
 	): Thenable<T | undefined> {
 		return Promise.resolve(undefined);
 	}
 	showErrorMessage<T extends string>(
-		message: string,
-		...items: T[]
+		_message: string,
+		..._items: T[]
 	): Thenable<T | undefined> {
 		return Promise.resolve(undefined);
 	}
-	createTerminal(name: string): any {
+	createTerminal(_name: string): any {
 		return {
 			show: jest.fn(),
 			sendText: jest.fn(),
 			dispose: jest.fn(),
 		};
 	}
-	createOutputChannel(name: string): OutputChannel {
+	createOutputChannel(_name: string): OutputChannel {
 		return new OutputChannel();
 	}
 	onDidCloseTerminal: jest.Mock = jest.fn(
-		(callback: (terminal: any) => void) => {
+		(_callback: (terminal: any) => void) => {
 			return { dispose: jest.fn() };
 		},
 	);
 }
 
 class Commands {
-	executeCommand(command: string, ...args: any[]): Promise<any> {
+	executeCommand(_command: string, ..._args: any[]): Promise<any> {
 		return Promise.resolve(undefined);
 	}
 }
 
 class Debug {
-	startDebugging(folder: any, nameOrConfig: any): Promise<boolean> {
+	startDebugging(_folder: any, _nameOrConfig: any): Promise<boolean> {
 		return Promise.resolve(true);
 	}
 }
@@ -403,7 +403,7 @@ const debug = new Debug();
 class EventEmitter<T> {
 	private listeners: Array<(e: T) => any> = [];
 
-	event = (listener: (e: T) => any, thisArgs?: any, disposables?: any[]) => {
+	event = (listener: (e: T) => any, _thisArgs?: any, _disposables?: any[]) => {
 		this.listeners.push(listener);
 		return {
 			dispose: () => {

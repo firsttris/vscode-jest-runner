@@ -876,9 +876,11 @@ describe('testFileDetection', () => {
 						return '';
 					});
 
-				configMock.get.mockImplementation((key: string, defaultValue?: any) => {
-					return defaultValue;
-				});
+				configMock.get.mockImplementation(
+					(_key: string, defaultValue?: any) => {
+						return defaultValue;
+					},
+				);
 
 				const result = isTestFile(filePath);
 

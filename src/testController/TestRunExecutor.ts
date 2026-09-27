@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import * as vscode from 'vscode';
 import {
 	type CoverageProvider,
@@ -26,11 +26,14 @@ import { logError, logInfo } from '../utils/Logger';
 import { isWindows, normalizePath } from '../utils/PathUtils';
 import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 
+/** Files that can run in one process: same framework, directory and config. */
 interface RunContext {
 	allFiles: string[];
 	allTests: vscode.TestItem[];
+	testsByFile: Map<string, vscode.TestItem[]>;
 	framework: TestFrameworkName;
 	workspaceFolder: string;
+	cwd: string;
 }
 
 export class TestRunExecutor {
@@ -58,7 +61,7 @@ export class TestRunExecutor {
 	}
 
 	public async loadDetailedCoverage(
-		testRun: vscode.TestRun,
+		_testRun: vscode.TestRun,
 		fileCoverage: vscode.FileCoverage,
 		token: vscode.CancellationToken,
 	): Promise<vscode.FileCoverageDetail[]> {
@@ -87,29 +90,25 @@ export class TestRunExecutor {
 		}
 
 		try {
-			const context = this.validateRunContext(testsByFile, run);
-			if (!context) {
-				run.end();
-				return;
-			}
+			for (const context of this.createRunContexts(testsByFile, run)) {
+				if (token.isCancellationRequested) {
+					for (const test of context.allTests) {
+						run.skipped(test);
+					}
+					continue;
+				}
 
-			const { allFiles, allTests, framework, workspaceFolder } = context;
-
-			this.cleanupBunCoverage(framework, collectCoverage);
-
-			if (
-				this.shouldRunFastMode(testsByFile, collectCoverage, additionalArgs)
-			) {
-				await this.runFastMode(allFiles[0], allTests[0], framework, token, run);
-			} else {
-				await this.runStandardMode(
-					context,
-					testsByFile,
-					additionalArgs,
-					collectCoverage,
-					token,
-					run,
-				);
+				try {
+					await this.runContext(
+						context,
+						additionalArgs,
+						collectCoverage,
+						token,
+						run,
+					);
+				} catch (error) {
+					this.handleError(error, context.testsByFile, run);
+				}
 			}
 		} catch (error) {
 			this.handleError(error, testsByFile, run);
@@ -118,53 +117,120 @@ export class TestRunExecutor {
 		}
 	}
 
-	private validateRunContext(
+	private async runContext(
+		context: RunContext,
+		additionalArgs: string[],
+		collectCoverage: boolean,
+		token: vscode.CancellationToken,
+		run: vscode.TestRun,
+	): Promise<void> {
+		const { allFiles, allTests, framework, testsByFile, cwd } = context;
+
+		this.cleanupBunCoverage(framework, collectCoverage, cwd);
+
+		if (this.shouldRunFastMode(testsByFile, collectCoverage, additionalArgs)) {
+			await this.runFastMode(
+				allFiles[0],
+				allTests[0],
+				framework,
+				cwd,
+				token,
+				run,
+			);
+		} else {
+			await this.runStandardMode(
+				context,
+				additionalArgs,
+				collectCoverage,
+				token,
+				run,
+			);
+		}
+	}
+
+	/**
+	 * Splits the requested files into groups that can share one process.
+	 * A request may span frameworks (e.g. Vitest and Playwright), workspace
+	 * folders or packages of a monorepo, and each needs its own command,
+	 * working directory and config.
+	 */
+	private createRunContexts(
 		testsByFile: Map<string, vscode.TestItem[]>,
 		run: vscode.TestRun,
-	): RunContext | null {
-		const allFiles = Array.from(testsByFile.keys());
-		const allTests = Array.from(testsByFile.values()).flat();
+	): RunContext[] {
+		const contexts = new Map<string, RunContext>();
 
-		if (allFiles.length === 0) {
-			return null;
-		}
+		for (const [file, tests] of testsByFile) {
+			const workspaceFolder = vscode.workspace.getWorkspaceFolder(
+				vscode.Uri.file(file),
+			)?.uri.fsPath;
 
-		const workspaceFolder = vscode.workspace.getWorkspaceFolder(
-			vscode.Uri.file(allFiles[0]),
-		)?.uri.fsPath;
-
-		if (!workspaceFolder) {
-			for (const test of allTests) {
-				run.failed(
-					test,
-					new vscode.TestMessage('Could not determine workspace folder'),
-				);
+			if (!workspaceFolder) {
+				for (const test of tests) {
+					run.failed(
+						test,
+						new vscode.TestMessage('Could not determine workspace folder'),
+					);
+				}
+				continue;
 			}
-			return null;
+
+			const framework = getTestFrameworkForFile(file) || 'jest';
+			const cwd = this.testRunnerConfig.getTestRunCwd(file);
+			const configPath = this.resolveGroupingConfigPath(framework, file);
+			const key = [framework, workspaceFolder, cwd, configPath].join('\0');
+
+			let context = contexts.get(key);
+			if (!context) {
+				context = {
+					allFiles: [],
+					allTests: [],
+					testsByFile: new Map(),
+					framework,
+					workspaceFolder,
+					cwd,
+				};
+				contexts.set(key, context);
+			}
+
+			context.allFiles.push(file);
+			context.allTests.push(...tests);
+			context.testsByFile.set(file, tests);
 		}
 
-		const framework = getTestFrameworkForFile(allFiles[0]) || 'jest';
-		return { allFiles, allTests, framework, workspaceFolder };
+		return Array.from(contexts.values());
+	}
+
+	/** Config file passed to the runner, for frameworks that take one. */
+	private resolveGroupingConfigPath(
+		framework: TestFrameworkName,
+		file: string,
+	): string {
+		switch (framework) {
+			case 'jest':
+			case 'vitest':
+			case 'rstest':
+				return this.resolveCoverageConfigPath(framework, file);
+			default:
+				return '';
+		}
 	}
 
 	private cleanupBunCoverage(
 		framework: TestFrameworkName,
 		collectCoverage: boolean,
+		cwd: string,
 	): void {
 		if (framework !== 'bun' || !collectCoverage) {
 			return;
 		}
 
 		try {
-			const coveragePath = join(
-				this.testRunnerConfig.cwd,
-				'coverage',
-				'lcov.info',
-			);
+			const coveragePath = join(cwd, 'coverage', 'lcov.info');
 			if (fs.existsSync(coveragePath)) {
 				fs.unlinkSync(coveragePath);
 			}
-		} catch (e) {
+		} catch (_e) {
 			// Ignore errors during cleanup
 		}
 	}
@@ -184,6 +250,7 @@ export class TestRunExecutor {
 		file: string,
 		test: vscode.TestItem,
 		framework: TestFrameworkName,
+		cwd: string,
 		token: vscode.CancellationToken,
 		run: vscode.TestRun,
 	): Promise<void> {
@@ -207,20 +274,20 @@ export class TestRunExecutor {
 			token,
 			test,
 			run,
-			this.testRunnerConfig.cwd,
+			cwd,
 			esmEnv,
 		);
 	}
 
 	private async runStandardMode(
 		context: RunContext,
-		testsByFile: Map<string, vscode.TestItem[]>,
 		additionalArgs: string[],
 		collectCoverage: boolean,
 		token: vscode.CancellationToken,
 		run: vscode.TestRun,
 	): Promise<void> {
-		const { allFiles, allTests, framework, workspaceFolder } = context;
+		const { allFiles, allTests, testsByFile, framework, workspaceFolder, cwd } =
+			context;
 		const sessionId = randomUUID();
 
 		const testCommand = this.testRunnerConfig.getTestCommand(allFiles[0]);
@@ -258,7 +325,7 @@ export class TestRunExecutor {
 			token,
 			allTests,
 			run,
-			this.testRunnerConfig.cwd,
+			cwd,
 			{ ...(esmEnv ?? {}), JSTR_SESSION_ID: sessionId },
 			sessionId,
 		);
@@ -269,14 +336,14 @@ export class TestRunExecutor {
 
 		try {
 			if (!result.structuredResultsProcessed) {
-				this.handleBunReport(framework, result);
-				this.handleDenoReport(framework, result);
+				this.handleBunReport(framework, result, cwd);
+				this.handleDenoReport(framework, result, cwd);
 				processTestResults(result.output, allTests, run, framework, sessionId);
 			}
 		} finally {
 			// Always process coverage, even if test result processing fails
 			if (framework === 'deno' && collectCoverage) {
-				await this.handleDenoCoverage(workspaceFolder);
+				await this.handleDenoCoverage(workspaceFolder, cwd);
 			}
 
 			if (collectCoverage) {
@@ -382,16 +449,17 @@ export class TestRunExecutor {
 	private handleBunReport(
 		framework: TestFrameworkName,
 		result: { output: string },
+		cwd: string,
 	): void {
 		if (framework !== 'bun') {
 			return;
 		}
 
-		const bunReportPath = join(this.testRunnerConfig.cwd, '.bun-report.xml');
+		const bunReportPath = join(cwd, '.bun-report.xml');
 		try {
 			if (fs.existsSync(bunReportPath)) {
 				const reportContent = fs.readFileSync(bunReportPath, 'utf8');
-				result.output += '\n' + reportContent;
+				result.output += `\n${reportContent}`;
 				try {
 					fs.unlinkSync(bunReportPath);
 				} catch (e) {
@@ -406,16 +474,17 @@ export class TestRunExecutor {
 	private handleDenoReport(
 		framework: TestFrameworkName,
 		result: { output: string },
+		cwd: string,
 	): void {
 		if (framework !== 'deno') {
 			return;
 		}
 
-		const denoReportPath = join(this.testRunnerConfig.cwd, '.deno-report.xml');
+		const denoReportPath = join(cwd, '.deno-report.xml');
 		try {
 			if (fs.existsSync(denoReportPath)) {
 				const reportContent = fs.readFileSync(denoReportPath, 'utf8');
-				result.output += '\n' + reportContent;
+				result.output += `\n${reportContent}`;
 				try {
 					fs.unlinkSync(denoReportPath);
 				} catch (e) {
@@ -427,13 +496,16 @@ export class TestRunExecutor {
 		}
 	}
 
-	private async handleDenoCoverage(workspaceFolder: string): Promise<void> {
+	private async handleDenoCoverage(
+		workspaceFolder: string,
+		cwd: string,
+	): Promise<void> {
 		try {
 			const coverageCommand = `deno coverage coverage --lcov > ${quote(join(workspaceFolder, 'lcov.info'))}`;
 			await new Promise<void>((resolve, reject) => {
 				const cp = spawn(coverageCommand, {
 					shell: true,
-					cwd: this.testRunnerConfig.cwd,
+					cwd,
 				});
 				cp.on('close', (code) => {
 					if (code === 0) resolve();

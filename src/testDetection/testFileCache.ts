@@ -1,5 +1,4 @@
 import { cacheManager } from '../cache/CacheManager';
-import { resolveAndValidateCustomConfig } from './configParsing';
 import { findTestFrameworkDirectory } from './frameworkDetection';
 import {
 	hasConflictingTestFramework,
@@ -36,14 +35,7 @@ class TestFileCache {
 			return null;
 		}
 
-		const hasCustomConfig =
-			!!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
-			!!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
-
-		if (frameworkResult || hasCustomConfig) {
-			return frameworkResult;
-		}
-		return null;
+		return frameworkResult;
 	}
 
 	public invalidate(filePath?: string): void {

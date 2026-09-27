@@ -19,7 +19,7 @@ export function logError(message: string, error?: unknown): void {
 	const errorDetails =
 		error instanceof Error ? error.stack || error.message : String(error);
 	getOutputChannel().appendLine(
-		`[${timestamp}] [ERROR] ${message}${error ? ': ' + errorDetails : ''}`,
+		`[${timestamp}] [ERROR] ${message}${error ? `: ${errorDetails}` : ''}`,
 	);
 }
 

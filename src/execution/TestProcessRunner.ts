@@ -4,9 +4,12 @@ import { extractStructuredMessages } from '../reporting/structuredOutput';
 import { processTestResultsFromParsed } from '../testResultProcessor';
 import type { JestResults } from '../testResultTypes';
 import { logDebug, logInfo } from '../utils/Logger';
+import { isWindows } from '../utils/PathUtils';
 import {
+	needsWindowsShell,
 	normalizeArgsForNonShellSpawn,
 	parseCommandAndEnv,
+	quoteForCmd,
 	stripAnsi,
 } from '../utils/ShellUtils';
 
@@ -14,11 +17,13 @@ interface ResolvedSpawnCommand {
 	command: string;
 	args: string[];
 	env: NodeJS.ProcessEnv;
+	shell: boolean;
 }
 
 function resolveSpawnCommand(
 	command: string,
 	args: string[],
+	cwd: string,
 	additionalEnv?: Record<string, string>,
 ): ResolvedSpawnCommand {
 	const {
@@ -27,17 +32,24 @@ function resolveSpawnCommand(
 		args: baseArgs,
 	} = parseCommandAndEnv(command);
 	const commandExecutable = executable || command;
-
-	return {
-		command: commandExecutable,
-		args: normalizeArgsForNonShellSpawn([...baseArgs, ...args]),
-		env: {
-			...process.env,
-			FORCE_COLOR: 'true',
-			...parsedEnv,
-			...additionalEnv,
-		},
+	const commandArgs = normalizeArgsForNonShellSpawn([...baseArgs, ...args]);
+	const env = {
+		...process.env,
+		FORCE_COLOR: 'true',
+		...parsedEnv,
+		...additionalEnv,
 	};
+
+	if (isWindows() && needsWindowsShell(commandExecutable, env, cwd)) {
+		return {
+			command: [commandExecutable, ...commandArgs].map(quoteForCmd).join(' '),
+			args: [],
+			env,
+			shell: true,
+		};
+	}
+
+	return { command: commandExecutable, args: commandArgs, env, shell: false };
 }
 
 function spawnTestProcess(
@@ -47,7 +59,7 @@ function spawnTestProcess(
 	const child = spawn(resolvedCommand.command, resolvedCommand.args, {
 		cwd,
 		env: resolvedCommand.env,
-		shell: false,
+		shell: resolvedCommand.shell,
 	});
 	// Decode as a stream so multi-byte UTF-8 characters split across
 	// chunk boundaries are not garbled.
@@ -66,7 +78,12 @@ export function executeTestCommandFast(
 	additionalEnv?: Record<string, string>,
 ): Promise<void> {
 	return new Promise((resolve) => {
-		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
+		const resolvedCommand = resolveSpawnCommand(
+			command,
+			args,
+			cwd,
+			additionalEnv,
+		);
 
 		const jestProcess = spawnTestProcess(resolvedCommand, cwd);
 
@@ -151,7 +168,12 @@ export function executeTestCommand(
 			1024 *
 			1024;
 
-		const resolvedCommand = resolveSpawnCommand(command, args, additionalEnv);
+		const resolvedCommand = resolveSpawnCommand(
+			command,
+			args,
+			cwd,
+			additionalEnv,
+		);
 
 		const jestProcess = spawnTestProcess(resolvedCommand, cwd);
 

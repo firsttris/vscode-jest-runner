@@ -12,33 +12,60 @@ import { normalizePath } from './utils/PathUtils';
 import { resolveBinaryPath } from './utils/ResolverUtils';
 import { quote } from './utils/TestNameUtils';
 
+const PROJECT_DIRECTORY_FRAMEWORKS: ReadonlySet<TestFrameworkName> = new Set([
+	'jest',
+	'vitest',
+	'rstest',
+]);
+
 export class TestRunnerConfig {
 	public get jestCommand(): string {
-		const customCommand = Settings.getJestCommand();
-		if (customCommand) {
-			return customCommand;
-		}
+		return this.getJestCommand();
+	}
 
-		const binaryPath = resolveBinaryPath('jest', this.cwd);
-		if (binaryPath) {
-			return `node ${quote(binaryPath)}`;
-		}
-
-		return 'npx --no-install jest';
+	private getJestCommand(filePath?: string): string {
+		return this.resolveNodeCommand(
+			Settings.getJestCommand(),
+			'jest',
+			'npx --no-install jest',
+			filePath,
+		);
 	}
 
 	public get vitestCommand(): string {
-		const customCommand = Settings.getVitestCommand();
+		return this.getVitestCommand();
+	}
+
+	private getVitestCommand(filePath?: string): string {
+		return this.resolveNodeCommand(
+			Settings.getVitestCommand(),
+			'vitest',
+			'npx --no-install vitest',
+			filePath,
+		);
+	}
+
+	/**
+	 * Custom command if configured, else the package's binary resolved from
+	 * the working directory of `filePath`, else `fallback`.
+	 */
+	private resolveNodeCommand(
+		customCommand: string | undefined,
+		packageName: string,
+		fallback: string,
+		filePath?: string,
+		binName?: string,
+	): string {
 		if (customCommand) {
 			return customCommand;
 		}
 
-		const binaryPath = resolveBinaryPath('vitest', this.cwd);
-		if (binaryPath) {
-			return `node ${quote(binaryPath)}`;
-		}
-
-		return 'npx --no-install vitest';
+		const binaryPath = resolveBinaryPath(
+			packageName,
+			this.getCwd(filePath),
+			binName,
+		);
+		return binaryPath ? `node ${quote(binaryPath)}` : fallback;
 	}
 
 	public get nodeTestCommand(): string {
@@ -62,24 +89,24 @@ export class TestRunnerConfig {
 	}
 
 	public get rstestCommand(): string {
-		const customCommand = Settings.getRstestCommand();
-		if (customCommand) {
-			return customCommand;
-		}
+		return this.getRstestCommand();
+	}
 
-		const binaryPath = resolveBinaryPath('@rstest/core', this.cwd, 'rstest');
-		if (binaryPath) {
-			return `node ${quote(binaryPath)}`;
-		}
-
-		return 'npx --no-install rstest';
+	private getRstestCommand(filePath?: string): string {
+		return this.resolveNodeCommand(
+			Settings.getRstestCommand(),
+			'@rstest/core',
+			'npx --no-install rstest',
+			filePath,
+			'rstest',
+		);
 	}
 
 	public getTestCommand(filePath?: string): string {
 		if (filePath) {
 			const framework = getTestFrameworkForFile(filePath);
 			if (framework === 'vitest') {
-				return this.vitestCommand;
+				return this.getVitestCommand(filePath);
 			}
 			if (framework === 'node-test') {
 				return this.nodeTestCommand;
@@ -94,10 +121,10 @@ export class TestRunnerConfig {
 				return this.playwrightCommand;
 			}
 			if (framework === 'rstest') {
-				return this.rstestCommand;
+				return this.getRstestCommand(filePath);
 			}
 		}
-		return this.jestCommand;
+		return this.getJestCommand(filePath);
 	}
 
 	// ... (existing getters)
@@ -188,18 +215,54 @@ export class TestRunnerConfig {
 		return Settings.isPreserveEditorFocus();
 	}
 
+	/** Working directory for the active editor's file. */
 	public get cwd(): string {
+		return this.getCwd();
+	}
+
+	/**
+	 * Working directory for running `filePath`. Without a path, the active
+	 * editor's file is used, which is only right for editor-driven commands:
+	 * Test Explorer runs must pass the test file.
+	 */
+	public getCwd(filePath?: string): string {
 		return (
-			this.projectPathFromConfig ||
-			this.currentPackagePath ||
-			this.currentWorkspaceFolderPath
+			this.getProjectPathFromConfig(filePath) ||
+			this.getPackagePath(filePath) ||
+			this.getWorkspaceFolderPath(filePath)
+		);
+	}
+
+	/**
+	 * Working directory for a Test Explorer run of `filePath`.
+	 *
+	 * Only Jest, Vitest and Rstest report their project directory (where the
+	 * config lives). For the other frameworks the detected directory is just
+	 * the test file's folder, which would split batched runs per folder and
+	 * hide the runner's root config, so they run from the project root.
+	 */
+	public getTestRunCwd(filePath: string): string {
+		const result = findTestFrameworkDirectory(filePath);
+		const packagePath =
+			result && PROJECT_DIRECTORY_FRAMEWORKS.has(result.framework)
+				? normalizePath(result.directory)
+				: '';
+
+		return (
+			this.getProjectPathFromConfig(filePath) ||
+			packagePath ||
+			this.getWorkspaceFolderPath(filePath)
 		);
 	}
 
 	public get projectPathFromConfig(): string | undefined {
+		return this.getProjectPathFromConfig();
+	}
+
+	private getProjectPathFromConfig(filePath?: string): string | undefined {
 		const projectPath = Settings.getProjectPath();
 		if (projectPath) {
-			return resolve(this.currentWorkspaceFolderPath, projectPath);
+			return resolve(this.getWorkspaceFolderPath(filePath), projectPath);
 		}
 		return undefined;
 	}
@@ -209,29 +272,48 @@ export class TestRunnerConfig {
 	}
 
 	public get currentPackagePath() {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
+		return this.getPackagePath();
+	}
+
+	private getPackagePath(filePath?: string): string {
+		const uri = this.getContextUri(filePath);
+		if (!uri) {
 			return '';
 		}
 
-		const result = findTestFrameworkDirectory(editor.document.uri.fsPath);
+		const result = findTestFrameworkDirectory(uri.fsPath);
 		return result ? normalizePath(result.directory) : '';
 	}
 
 	public get currentWorkspaceFolderPath(): string {
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-		}
+		return this.getWorkspaceFolderPath();
+	}
 
-		const workspaceFolder = vscode.workspace.getWorkspaceFolder(
-			editor.document.uri,
+	private getWorkspaceFolderPath(filePath?: string): string {
+		const uri = this.getContextUri(filePath);
+		const workspaceFolder = uri
+			? vscode.workspace.getWorkspaceFolder(uri)
+			: undefined;
+
+		return (
+			workspaceFolder?.uri.fsPath ||
+			vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ||
+			''
 		);
-		if (!workspaceFolder) {
-			return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-		}
+	}
 
-		return workspaceFolder.uri.fsPath;
+	private getContextUri(filePath?: string): vscode.Uri | undefined {
+		return filePath
+			? vscode.Uri.file(filePath)
+			: vscode.window.activeTextEditor?.document.uri;
+	}
+
+	private getResolutionContext(targetPath?: string) {
+		return {
+			currentWorkspaceFolderPath: this.getWorkspaceFolderPath(targetPath),
+			projectPathFromConfig: this.getProjectPathFromConfig(targetPath),
+			useNearestConfig: this.useNearestConfig,
+		};
 	}
 
 	private getConfigPath(
@@ -242,11 +324,7 @@ export class TestRunnerConfig {
 		return resolveConfigPath(
 			targetPath,
 			configKey,
-			{
-				currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
-				projectPathFromConfig: this.projectPathFromConfig,
-				useNearestConfig: this.useNearestConfig,
-			},
+			this.getResolutionContext(targetPath),
 			framework,
 		);
 	}
@@ -262,11 +340,7 @@ export class TestRunnerConfig {
 	): string | undefined {
 		return findConfigPath(
 			targetPath,
-			{
-				currentWorkspaceFolderPath: this.currentWorkspaceFolderPath,
-				projectPathFromConfig: this.projectPathFromConfig,
-				useNearestConfig: this.useNearestConfig,
-			},
+			this.getResolutionContext(targetPath),
 			targetConfigFilename,
 			framework,
 		);

@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import { parseNodeTestFile } from '../../parsers/nodeTestParser';
 
 jest.mock('fs', () => ({

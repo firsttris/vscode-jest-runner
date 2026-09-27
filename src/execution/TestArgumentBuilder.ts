@@ -454,7 +454,7 @@ class PlaywrightStrategy
 		allFiles: string[],
 		testsByFile: Map<string, vscode.TestItem[]>,
 		additionalArgs: string[],
-		collectCoverage: boolean,
+		_collectCoverage: boolean,
 	): string[] {
 		if (this.isPartialRun(allFiles, testsByFile)) {
 			const tests = testsByFile.get(allFiles[0])!;

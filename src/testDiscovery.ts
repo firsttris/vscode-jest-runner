@@ -17,7 +17,13 @@ export async function discoverTests(
 ): Promise<void> {
 	const testFiles = await findTestFiles(workspaceFolder.uri.fsPath, jestConfig);
 
-	for (const file of testFiles) {
+	for (const [index, file] of testFiles.entries()) {
+		// Parsing is synchronous; yield now and then so a large workspace does
+		// not block the extension host for the whole discovery.
+		if (index > 0 && index % FILES_PER_BATCH === 0) {
+			await yieldToEventLoop();
+		}
+
 		const testItem = getOrCreateFileTestItem(
 			testController,
 			workspaceFolder,
@@ -27,6 +33,11 @@ export async function discoverTests(
 		parseTestsInFile(file, testItem, testController);
 	}
 }
+
+const FILES_PER_BATCH = 50;
+
+const yieldToEventLoop = (): Promise<void> =>
+	new Promise((resolve) => setImmediate(resolve));
 
 export function getOrCreateFolderTestItem(
 	testController: vscode.TestController,
@@ -90,6 +101,24 @@ export function findFolderTestItem(
 	return currentItem;
 }
 
+/** Finds the item of an already discovered test file, nested or not. */
+export function findFileTestItem(
+	testController: vscode.TestController,
+	workspaceFolder: vscode.WorkspaceFolder | undefined,
+	filePath: string,
+): vscode.TestItem | undefined {
+	const rootItem = testController.items.get(filePath);
+	if (rootItem || !workspaceFolder) {
+		return rootItem;
+	}
+
+	return findFolderTestItem(
+		testController,
+		workspaceFolder,
+		dirname(filePath),
+	)?.children.get(filePath);
+}
+
 export function getOrCreateFileTestItem(
 	testController: vscode.TestController,
 	workspaceFolder: vscode.WorkspaceFolder,
@@ -131,7 +160,7 @@ export function parseTestsInFile(
 	try {
 		const testFile = parseTestFile(filePath);
 
-		if (!testFile || !testFile.root || !testFile.root.children) {
+		if (!testFile?.root?.children) {
 			return;
 		}
 
@@ -225,7 +254,14 @@ export async function findTestFiles(
 	);
 	const files = await vscode.workspace.findFiles(pattern, '**/node_modules/**');
 
-	return files
-		.map((file) => file.fsPath)
-		.filter((filePath) => testFileCache.isTestFile(filePath));
+	const testFiles: string[] = [];
+	for (const [index, file] of files.entries()) {
+		if (index > 0 && index % FILES_PER_BATCH === 0) {
+			await yieldToEventLoop();
+		}
+		if (testFileCache.isTestFile(file.fsPath)) {
+			testFiles.push(file.fsPath);
+		}
+	}
+	return testFiles;
 }

@@ -1,5 +1,5 @@
+import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
-import { EventEmitter } from 'events';
 import * as vscode from 'vscode';
 import * as parser from '../parser';
 import { JestTestController } from '../TestController';

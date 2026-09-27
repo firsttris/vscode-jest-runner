@@ -1,5 +1,5 @@
+import * as assert from 'node:assert';
 import { pathToFileURL } from 'node:url';
-import * as assert from 'assert';
 import type * as vscode from 'vscode';
 import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { TestRunnerConfig } from '../testRunnerConfig';
@@ -84,7 +84,7 @@ describe('Node Test Argument Quoting', () => {
 		);
 
 		// Check if file path is quoted
-		const fileIndex = args.findIndex((arg) => arg === expectedFileArg);
+		const fileIndex = args.indexOf(expectedFileArg);
 		assert.ok(fileIndex !== -1, 'File path should be in args and quoted');
 	});
 

@@ -93,7 +93,7 @@ export function findFullTestName(
 		if (result) {
 			const parentName = resolveTestNameStringInterpolation(element.name ?? '');
 			const cleanParentName = updateTestNameIfUsingProperties(parentName);
-			return (cleanParentName || parentName) + ' ' + result;
+			return `${cleanParentName || parentName} ${result}`;
 		}
 	}
 }

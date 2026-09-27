@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import type { CoverageProvider } from '../coverageProvider';
 import { TestRunExecutor } from '../testController/TestRunExecutor';
@@ -70,7 +70,7 @@ describe('TestRunExecutor Bun Cleanup', () => {
 			items: new Map(),
 		};
 		mockConfig = {
-			cwd: '/mock/cwd',
+			getTestRunCwd: jest.fn().mockReturnValue('/mock/cwd'),
 			getTestCommand: jest.fn().mockReturnValue('bun test'),
 			getEnvironmentForRun: jest.fn().mockReturnValue({}),
 			getJestConfigPath: jest.fn(),

@@ -43,10 +43,10 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 		const content = caseMatch[3] || '';
 		const attributes = parseAttributes(attributesStr);
 
-		const name = attributes['name'];
+		const name = attributes.name;
 		if (!name) continue;
 
-		const file = attributes['file'] || attributes['classname'] || 'unknown';
+		const file = attributes.file || attributes.classname || 'unknown';
 		const { title, ancestorTitles } = splitHierarchicalName(name);
 
 		let fileResult = resultsByFile.get(file);
@@ -63,7 +63,7 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 			resultsByFile.set(file, fileResult);
 		}
 
-		const duration = Number.parseFloat(attributes['time'] || '0') * 1000;
+		const duration = Number.parseFloat(attributes.time || '0') * 1000;
 		let status: 'passed' | 'failed' | 'skipped' | 'pending' | 'todo' = 'passed';
 		const failureMessages: string[] = [];
 
@@ -77,7 +77,7 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 			const message = messageMatch ? unescapeXml(messageMatch[1]) : '';
 			const stack = textMatch ? unescapeXml(textMatch[1]) : '';
 
-			failureMessages.push(message + (stack ? '\n' + stack : ''));
+			failureMessages.push(message + (stack ? `\n${stack}` : ''));
 		} else if (content.includes('<skipped') || content.includes('<skipped/>')) {
 			status = 'skipped';
 		}
@@ -89,9 +89,9 @@ export function parseJUnitXML(xml: string): JestResults | undefined {
 			ancestorTitles,
 			duration,
 			failureMessages,
-			location: attributes['line']
+			location: attributes.line
 				? {
-						line: Number.parseInt(attributes['line'], 10),
+						line: Number.parseInt(attributes.line, 10),
 						column: 0,
 					}
 				: undefined,

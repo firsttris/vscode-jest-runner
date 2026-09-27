@@ -1,7 +1,8 @@
+import { isAbsolute } from 'node:path';
 import * as vscode from 'vscode';
 import {
 	findBestMatch,
-	findPotentialMatches,
+	findPotentialMatchesIn,
 	hasTemplateVariable,
 	type IndexedResult,
 } from './matchers/TestMatcher';
@@ -12,6 +13,7 @@ import { parseStructuredResults } from './reporting/structuredOutput';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import type { JestAssertionResult, JestResults } from './testResultTypes';
 import { logWarning } from './utils/Logger';
+import { normalizePath } from './utils/PathUtils';
 
 export function processTestResults(
 	output: string,
@@ -137,23 +139,75 @@ const reportTemplateTestResult = (
 	}
 };
 
+type FileIndexedResult = IndexedResult & { file: string };
+
+const toComparablePath = (path: string): string =>
+	normalizePath(path).replace(/\\/g, '/').replace(/^\.\//, '');
+
+/**
+ * Whether a result's file name refers to `testFile`. Runners report absolute
+ * paths, but JUnit reports may use paths relative to the working directory.
+ */
+const isSameFile = (resultFile: string, testFile: string): boolean => {
+	if (!resultFile) return false;
+	const result = toComparablePath(resultFile);
+	const test = toComparablePath(testFile);
+	return (
+		result === test || (!isAbsolute(resultFile) && test.endsWith(`/${result}`))
+	);
+};
+
+/**
+ * Tests with the same name in different files must not pick up each other's
+ * results, so candidates are limited to the test's own file. Results that
+ * cannot be attributed to that file (no or unknown file name, as with TAP or
+ * some JUnit reports) fall back to the full result list.
+ */
+const createCandidateLookup = (
+	indexedResults: FileIndexedResult[],
+): ((test: vscode.TestItem) => IndexedResult[]) => {
+	const byTestFile = new Map<string, IndexedResult[]>();
+
+	return (test) => {
+		const testFile = test.uri?.fsPath;
+		if (!testFile) return indexedResults;
+
+		let candidates = byTestFile.get(testFile);
+		if (!candidates) {
+			const ownResults = indexedResults.filter((r) =>
+				isSameFile(r.file, testFile),
+			);
+			candidates = ownResults.length > 0 ? ownResults : indexedResults;
+			byTestFile.set(testFile, candidates);
+		}
+		return candidates;
+	};
+};
+
 export function processTestResultsFromParsed(
 	results: JestResults,
 	tests: vscode.TestItem[],
 	run: vscode.TestRun,
 ): void {
-	const assertionResults = results?.testResults?.flatMap(
-		(r) => r.assertionResults,
+	const indexedResults = results?.testResults?.flatMap((fileResult) =>
+		(fileResult.assertionResults ?? []).map((result) => ({
+			result,
+			file: fileResult.name ?? '',
+		})),
 	);
 
-	if (!assertionResults) {
+	if (!indexedResults) {
 		logWarning('No assertion results found in test output');
 		tests.forEach((test) => void run.skipped(test));
 		return;
 	}
 
+	const getCandidates = createCandidateLookup(
+		indexedResults.map((entry, index) => ({ ...entry, index })),
+	);
+
 	tests.reduce((usedIndices, test) => {
-		const matches = findPotentialMatches(assertionResults, test);
+		const matches = findPotentialMatchesIn(getCandidates(test), test);
 
 		if (matches.length === 0) {
 			reportTestResult(run, test, undefined);

@@ -22,7 +22,7 @@ function emit(type, payload) {
 			'::' +
 			type;
 		process.stdout.write(message);
-	} catch (err) {}
+	} catch (_err) {}
 }
 
 class JestStructuredReporter {

@@ -445,7 +445,7 @@ describe('TestArgumentBuilder', () => {
 					'/path/to/test.spec.ts',
 				]);
 
-			const args = buildTestArgs(
+			buildTestArgs(
 				files,
 				testsByFile,
 				'playwright',
@@ -501,7 +501,7 @@ describe('TestArgumentBuilder', () => {
 				.fn()
 				.mockReturnValue(['test', '-g', "'test1'", '/path/to/test.spec.ts']);
 
-			const args = buildTestArgs(
+			buildTestArgs(
 				files,
 				testsByFile,
 				'playwright',

@@ -85,11 +85,25 @@ const matchesByAncestors = (
 const getTestName = (test: vscode.TestItem): string =>
 	test.label.split(' ').pop() || test.label;
 
+/**
+ * Loose fallback: the last word of the label equals the result title
+ * (e.g. label "should render", result "render").
+ */
+const matchesShortName = (
+	r: JestAssertionResult,
+	test: vscode.TestItem,
+): boolean => {
+	if (isOnlyTemplateVar(test.label)) {
+		return false;
+	}
+	const testName = getTestName(test);
+	return !isOnlyTemplateVar(testName) && matchesTestLabel(r.title, testName);
+};
+
 const matchesTest = (
 	r: JestAssertionResult,
 	test: vscode.TestItem,
 ): boolean => {
-	const testName = getTestName(test);
 	const fullPath = r.ancestorTitles?.concat(r.title).join(' ') ?? '';
 
 	const matchesWithSuffix = (actual: string, expected: string) => {
@@ -104,12 +118,8 @@ const matchesTest = (
 		return matchesByAncestors(r, test);
 	}
 
-	const testNameMatches =
-		!isOnlyTemplateVar(testName) && matchesTestLabel(r.title, testName);
-
 	return (
 		matchesTestLabel(r.title, test.label) ||
-		testNameMatches ||
 		matchesWithSuffix(r.title, test.label) ||
 		matchesWithSuffix(fullPath, test.label) ||
 		r.fullName === test.label ||
@@ -155,12 +165,27 @@ export const findPotentialMatches = (
 	testResults: JestAssertionResult[],
 	test: vscode.TestItem,
 ): IndexedResult[] =>
-	preferSameAncestors(
-		testResults
-			.map((result, index) => ({ result, index }))
-			.filter(({ result }) => matchesTest(result, test)),
+	findPotentialMatchesIn(
+		testResults.map((result, index) => ({ result, index })),
 		test,
 	);
+
+/**
+ * Like findPotentialMatches, but keeps the indices of the given candidates.
+ * Short-name matches only count when nothing matches the full label, so a
+ * test cannot pick up the result of a namesake that matches its last word.
+ */
+export const findPotentialMatchesIn = (
+	candidates: IndexedResult[],
+	test: vscode.TestItem,
+): IndexedResult[] => {
+	const exact = candidates.filter(({ result }) => matchesTest(result, test));
+	const matches =
+		exact.length > 0
+			? exact
+			: candidates.filter(({ result }) => matchesShortName(result, test));
+	return preferSameAncestors(matches, test);
+};
 
 export const findBestMatch = (
 	matches: IndexedResult[],

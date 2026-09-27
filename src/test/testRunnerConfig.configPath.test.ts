@@ -25,13 +25,6 @@ jest.mock('../cache/CacheManager', () => ({
 	},
 }));
 
-const describes = {
-	windows: isWindows() ? describe : describe.skip,
-	linux: ['linux', 'darwin'].includes(process.platform)
-		? describe
-		: describe.skip,
-};
-
 const its = {
 	windows: isWindows() ? it : it.skip,
 	linux: ['linux', 'darwin'].includes(process.platform) ? it : it.skip,
@@ -711,7 +704,7 @@ describe('TestRunnerConfig', () => {
 					'/home/user/workspace/src/test.spec.ts',
 				);
 				const customConfigPath = 'jest.config.custom.js';
-				const customConfigFullPath = normalizePath(
+				const _customConfigFullPath = normalizePath(
 					path.resolve(workspacePath, customConfigPath),
 				);
 				const standardConfigPath = normalizePath(
@@ -923,7 +916,7 @@ describe('TestRunnerConfig', () => {
 						jest
 							.spyOn(fs, 'existsSync')
 							.mockImplementation((filePath) => filePath === configFilePath);
-						jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
+						jest.spyOn(fs, 'statSync').mockImplementation((_path): any => ({
 							isDirectory: () => !openedFilePath.endsWith('.ts'),
 						}));
 					});
@@ -963,7 +956,7 @@ describe('TestRunnerConfig', () => {
 						jest
 							.spyOn(fs, 'existsSync')
 							.mockImplementation((filePath) => filePath === configFilePath);
-						jest.spyOn(fs, 'statSync').mockImplementation((path): any => ({
+						jest.spyOn(fs, 'statSync').mockImplementation((_path): any => ({
 							isDirectory: () => !openedFilePath.endsWith('.ts'),
 						}));
 					});
@@ -1028,7 +1021,7 @@ describe('TestRunnerConfig', () => {
 			const workspacePath = path.resolve('/home/user/workspace');
 			const targetPath = path.resolve('/home/user/workspace/src/test.spec.ts');
 			const customConfigPath = 'vitest.config.custom.ts';
-			const customConfigFullPath = normalizePath(
+			const _customConfigFullPath = normalizePath(
 				path.resolve(workspacePath, customConfigPath),
 			);
 			const standardConfigPath = normalizePath(

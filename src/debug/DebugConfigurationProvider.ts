@@ -62,6 +62,7 @@ const getBunDebugConfig = (
 			'Debug Bun Tests',
 			'bun',
 			config.bunDebugOptions,
+			filePath,
 		),
 		args: [],
 		program: filePath,
@@ -94,6 +95,7 @@ const getDenoDebugConfig = (
 			'Debug Deno Tests',
 			'node',
 			config.denoDebugOptions,
+			filePath,
 		),
 		port: 9229,
 		runtimeExecutable: 'deno',
@@ -137,6 +139,7 @@ const getNodeTestDebugConfig = (
 			'Debug Node.js Tests',
 			'node',
 			config.nodeTestDebugOptions,
+			filePath,
 		),
 		args: [],
 		program: filePath || '',
@@ -157,7 +160,7 @@ const getRstestDebugConfig = (
 	);
 	const executableState = resolveProgramOrNpx(
 		commandState.program,
-		resolveBinaryPath('@rstest/core', config.cwd, 'rstest'),
+		resolveBinaryPath('@rstest/core', config.getCwd(filePath), 'rstest'),
 		'rstest',
 		debugArgsWithFile,
 		'Could not resolve rstest binary path, falling back to npx',
@@ -170,6 +173,7 @@ const getRstestDebugConfig = (
 			'Debug Rstest Tests',
 			'node',
 			config.rstestDebugOptions,
+			filePath,
 		),
 		...executableState,
 		env: debugEnv,
@@ -187,7 +191,7 @@ const getVitestDebugConfig = (
 	);
 	const executableState = resolveProgramOrNpx(
 		commandState.program,
-		resolveBinaryPath('vitest', config.cwd),
+		resolveBinaryPath('vitest', config.getCwd(filePath)),
 		'vitest',
 		debugArgsWithFile,
 		'Could not resolve vitest binary path, falling back to npx',
@@ -200,6 +204,7 @@ const getVitestDebugConfig = (
 			'Debug Vitest Tests',
 			'node',
 			config.vitestDebugOptions,
+			filePath,
 		),
 		...executableState,
 		env: optionalEnv(mergedEnv),
@@ -218,7 +223,11 @@ const getPlaywrightDebugConfig = (
 	const debugArgs = appendUniqueArgs(debugArgsWithFile, ['--workers=1']);
 	const executableState = resolveProgramOrNpx(
 		commandState.program,
-		resolveBinaryPath('@playwright/test', config.cwd, 'playwright'),
+		resolveBinaryPath(
+			'@playwright/test',
+			config.getCwd(filePath),
+			'playwright',
+		),
 		'playwright',
 		debugArgs,
 		'Could not resolve playwright binary path, falling back to npx',
@@ -234,6 +243,7 @@ const getPlaywrightDebugConfig = (
 			'Debug Playwright Tests',
 			'node',
 			config.playwrightDebugOptions,
+			filePath,
 		),
 		...executableState,
 		env: debugEnv,
@@ -273,6 +283,7 @@ const getJestDebugConfig = (
 				'Debug Jest Tests',
 				'node',
 				config.debugOptions,
+				filePath,
 			),
 			program: undefined,
 			args: [],
@@ -289,7 +300,7 @@ const getJestDebugConfig = (
 		? resolveCommandExecution(commandState.program, debugArgsWithFile)
 		: resolveProgramOrNpx(
 				undefined,
-				resolveBinaryPath('jest', config.cwd),
+				resolveBinaryPath('jest', config.getCwd(filePath)),
 				'jest',
 				prependUniqueArgs(debugArgsWithFile, ['--runInBand']),
 				'Could not resolve jest binary path, falling back to npx',
@@ -306,6 +317,7 @@ const getJestDebugConfig = (
 			'Debug Jest Tests',
 			'node',
 			config.debugOptions,
+			filePath,
 		),
 		...executableState,
 		env: optionalEnv(debugEnv),
@@ -317,13 +329,16 @@ const createDebugConfigBase = (
 	name: string,
 	type: string,
 	options: Partial<vscode.DebugConfiguration>,
+	filePath?: string,
 ): vscode.DebugConfiguration => ({
 	console: 'integratedTerminal',
 	internalConsoleOptions: 'neverOpen',
 	name,
 	request: 'launch',
 	type,
-	cwd: config.changeDirectoryToWorkspaceRoot ? config.cwd : undefined,
+	cwd: config.changeDirectoryToWorkspaceRoot
+		? config.getCwd(filePath)
+		: undefined,
 	...options,
 });
 

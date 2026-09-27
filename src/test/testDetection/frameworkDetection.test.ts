@@ -326,7 +326,6 @@ describe('frameworkDetection', () => {
 		});
 
 		it('should stop at workspace root boundary', () => {
-			const outsidePath = '/different/workspace/file.test.ts';
 			const outsideRoot = '/different/workspace';
 
 			(vscode.workspace.getWorkspaceFolder as jest.Mock) = jest.fn(() => ({

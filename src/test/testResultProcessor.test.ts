@@ -3,7 +3,10 @@ import {
 	parseJestOutput,
 	parseVitestOutput,
 } from '../parsers/OutputParser';
-import { processTestResults } from '../testResultProcessor';
+import {
+	processTestResults,
+	processTestResultsFromParsed,
+} from '../testResultProcessor';
 import { TestItem, TestRun, Uri } from './__mocks__/vscode';
 
 describe('testResultProcessor', () => {
@@ -325,6 +328,97 @@ console output
 			);
 		});
 
+		describe('namesakes in different files', () => {
+			const createTest = (file: string) => {
+				const test = new TestItem(
+					`${file}:it:5:renders`,
+					'renders',
+					Uri.file(file),
+				);
+				test.range = { start: { line: 4 } } as any;
+				return test;
+			};
+			const renders = (status: string) => ({
+				title: 'renders',
+				ancestorTitles: [],
+				status,
+				failureMessages: status === 'failed' ? ['boom'] : [],
+				location: { line: 5, column: 0 },
+			});
+
+			it('should report each test with the result of its own file', () => {
+				const testA = createTest('/project/a.test.ts');
+				const testB = createTest('/project/b.test.ts');
+				// Jest reports files in completion order, not in test order.
+				const output = JSON.stringify({
+					testResults: [
+						{
+							name: '/project/b.test.ts',
+							assertionResults: [renders('failed')],
+						},
+						{
+							name: '/project/a.test.ts',
+							assertionResults: [renders('passed')],
+						},
+					],
+				});
+
+				processTestResults(output, [testA, testB] as any, run as any, 'jest');
+
+				expect(run.passed).toHaveBeenCalledTimes(1);
+				expect(run.passed).toHaveBeenCalledWith(testA, undefined);
+				expect(run.failed).toHaveBeenCalledTimes(1);
+				expect(run.failed).toHaveBeenCalledWith(
+					testB,
+					expect.any(Object),
+					undefined,
+				);
+			});
+
+			it('should match relative file names from JUnit reports', () => {
+				const testA = createTest('/project/src/a.test.ts');
+				const testB = createTest('/project/src/b.test.ts');
+				const results = {
+					testResults: [
+						{
+							name: 'src/b.test.ts',
+							assertionResults: [renders('failed')],
+						},
+						{
+							name: './src/a.test.ts',
+							assertionResults: [renders('passed')],
+						},
+					],
+				};
+
+				processTestResultsFromParsed(
+					results as any,
+					[testA, testB] as any,
+					run as any,
+				);
+
+				expect(run.passed).toHaveBeenCalledWith(testA, undefined);
+				expect(run.failed).toHaveBeenCalledWith(
+					testB,
+					expect.any(Object),
+					undefined,
+				);
+			});
+
+			it('should fall back to all results when no file name matches', () => {
+				const test = createTest('/project/a.test.ts');
+				const results = {
+					testResults: [
+						{ name: 'unknown', assertionResults: [renders('passed')] },
+					],
+				};
+
+				processTestResultsFromParsed(results as any, [test] as any, run as any);
+
+				expect(run.passed).toHaveBeenCalledWith(test, undefined);
+			});
+		});
+
 		it('should correctly match it.each tests with regex special characters', () => {
 			const eachTestItem = new TestItem(
 				'adds %d + %d',
@@ -602,6 +696,45 @@ ok 1 - node test
 			processTestResults(output, [testItem] as any, testRun as any, 'jest');
 
 			expect(testRun.passed).toHaveBeenCalledWith(testItem, undefined);
+		});
+
+		it('should prefer the full label over a namesake of its last word', () => {
+			const shouldRender = new TestItem(
+				'/test.ts:it:1:should render',
+				'should render',
+				Uri.file('/test.ts'),
+			);
+			const render = new TestItem(
+				'/test.ts:it:5:render',
+				'render',
+				Uri.file('/test.ts'),
+			);
+
+			const output = JSON.stringify({
+				testResults: [
+					{
+						assertionResults: [
+							{ title: 'render', ancestorTitles: [], status: 'failed' },
+							{ title: 'should render', ancestorTitles: [], status: 'passed' },
+						],
+					},
+				],
+			});
+
+			const testRun = new TestRun();
+			processTestResults(
+				output,
+				[shouldRender, render] as any,
+				testRun as any,
+				'jest',
+			);
+
+			expect(testRun.passed).toHaveBeenCalledWith(shouldRender, undefined);
+			expect(testRun.failed).toHaveBeenCalledWith(
+				render,
+				expect.any(Object),
+				undefined,
+			);
 		});
 	});
 

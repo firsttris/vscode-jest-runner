@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 import * as testFileDetection from '../testDetection/testFileDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';

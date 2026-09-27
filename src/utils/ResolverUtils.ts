@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { createRequire } from 'module';
 import { logDebug, logWarning } from './Logger';
 import { normalizePath } from './PathUtils';
 

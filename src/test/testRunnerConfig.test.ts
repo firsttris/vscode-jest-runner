@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as moduleLib from 'node:module';
+import { resolve } from 'node:path';
 import * as vscode from 'vscode';
 import * as frameworkDetection from '../testDetection/frameworkDetection';
 import { TestRunnerConfig } from '../testRunnerConfig';
@@ -213,6 +214,76 @@ describe('TestRunnerConfig', () => {
 				});
 			},
 		);
+	});
+
+	describe('getCwd', () => {
+		const packagesDir = normalizePath('/repo/packages');
+		const fileIn = (pkg: string) => `${packagesDir}/${pkg}/src/x.test.ts`;
+		let jestRunnerConfig: TestRunnerConfig;
+
+		beforeEach(() => {
+			jestRunnerConfig = new TestRunnerConfig();
+			jest
+				.spyOn(vscode.workspace, 'getConfiguration')
+				.mockReturnValue(new WorkspaceConfiguration({}));
+			jest
+				.spyOn(vscode.workspace, 'getWorkspaceFolder')
+				.mockReturnValue(new WorkspaceFolder(new Uri('/repo') as any) as any);
+			jest
+				.spyOn(vscode.window, 'activeTextEditor', 'get')
+				.mockReturnValue(
+					new TextEditor(new Document(new Uri(fileIn('a')))) as any,
+				);
+			jest
+				.spyOn(frameworkDetection, 'findTestFrameworkDirectory')
+				.mockImplementation((filePath: string) => ({
+					directory: normalizePath(filePath).split('/src/')[0],
+					framework: 'jest' as const,
+				}));
+		});
+
+		it('uses the package of the given file, not of the active editor', () => {
+			expect(jestRunnerConfig.getCwd(fileIn('b'))).toBe(`${packagesDir}/b`);
+		});
+
+		it('falls back to the active editor without a file', () => {
+			expect(jestRunnerConfig.getCwd()).toBe(`${packagesDir}/a`);
+			expect(jestRunnerConfig.cwd).toBe(`${packagesDir}/a`);
+		});
+
+		describe('getTestRunCwd', () => {
+			it('runs Jest from the package of the test file', () => {
+				expect(jestRunnerConfig.getTestRunCwd(fileIn('b'))).toBe(
+					`${packagesDir}/b`,
+				);
+			});
+
+			it.each(['playwright', 'bun', 'deno', 'node-test'] as const)(
+				'runs %s from the workspace, not the test file folder',
+				(framework) => {
+					jest
+						.spyOn(frameworkDetection, 'findTestFrameworkDirectory')
+						.mockReturnValue({
+							directory: `${packagesDir}/b/src`,
+							framework,
+						});
+
+					expect(jestRunnerConfig.getTestRunCwd(fileIn('b'))).toBe('/repo');
+				},
+			);
+
+			it('prefers jestrunner.projectPath', () => {
+				jest
+					.spyOn(vscode.workspace, 'getConfiguration')
+					.mockReturnValue(
+						new WorkspaceConfiguration({ 'jestrunner.projectPath': 'app' }),
+					);
+
+				expect(jestRunnerConfig.getTestRunCwd(fileIn('b'))).toBe(
+					resolve('/repo', 'app'),
+				);
+			});
+		});
 	});
 
 	describe('isCodeLensEnabled - backwards compatibility', () => {

@@ -44,7 +44,7 @@ describe('JestTestController - Vitest support', () => {
 		const mockRequest = { include: [test1], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -112,7 +112,7 @@ describe('JestTestController - Vitest support', () => {
 		const mockRequest = { include: [test1, test2], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -182,7 +182,7 @@ describe('JestTestController - Vitest support', () => {
 		const mockRequest = { include: [test1], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -231,7 +231,7 @@ describe('JestTestController - Vitest support', () => {
 		const mockRequest = { include: [test1], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -278,6 +278,7 @@ describe('JestTestController - Vitest support', () => {
 		jest
 			.spyOn(testDetection, 'getTestFrameworkForFile')
 			.mockReturnValue('vitest');
+		// biome-ignore lint/complexity/useLiteralKeys: bracket access reaches the private field
 		const mockConfig = setup.controller['jestConfig'] as any;
 		jest
 			.spyOn(mockConfig, 'getVitestConfigPath')
@@ -288,7 +289,7 @@ describe('JestTestController - Vitest support', () => {
 		const mockRequest = { include: [test1, test2], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -347,6 +348,7 @@ describe('JestTestController - Vitest support', () => {
 		jest
 			.spyOn(testDetection, 'getTestFrameworkForFile')
 			.mockReturnValue('jest');
+		// biome-ignore lint/complexity/useLiteralKeys: bracket access reaches the private field
 		const mockConfig = setup.controller['jestConfig'] as any;
 		jest
 			.spyOn(mockConfig, 'getJestConfigPath')
@@ -357,7 +359,7 @@ describe('JestTestController - Vitest support', () => {
 		const mockRequest = { include: [test1, test2], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 

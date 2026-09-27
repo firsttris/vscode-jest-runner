@@ -292,7 +292,7 @@ const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
 		: playwrightFramework.configFiles.map((f) => join(dir, f));
 
 	const found = findFirstValidConfig(configPaths, getPlaywrightConfig);
-	if (!found || !found.config || found.config.length === 0)
+	if (!found?.config || found.config.length === 0)
 		return [createDefaultResult(dir)];
 
 	return found.config.map((config) => ({

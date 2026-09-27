@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { win32 } from 'node:path';
 import { parse } from 'shell-quote';
 
 export function stripAnsi(str: string): string {
@@ -84,4 +86,55 @@ function unquoteShellArg(arg: string): string {
 
 export function normalizeArgsForNonShellSpawn(args: string[]): string[] {
 	return args.map(unquoteShellArg);
+}
+
+const WINDOWS_DIRECT_EXTENSIONS = ['.com', '.exe'];
+const WINDOWS_SCRIPT_EXTENSIONS = ['.cmd', '.bat'];
+
+/**
+ * Whether `executable` has to be started through cmd.exe on Windows.
+ *
+ * Without a shell, Windows only finds .exe and .com files, so npm-style shims
+ * such as npx.cmd, yarn.cmd or pnpm.cmd fail with ENOENT (and Node >= 20.12
+ * refuses to spawn .cmd/.bat files without a shell at all).
+ *
+ * Deliberately conservative: only a .cmd/.bat that is found while no
+ * .exe/.com is switches to the shell. Anything else is spawned directly,
+ * exactly as before, so commands that already worked keep their behavior.
+ */
+export function needsWindowsShell(
+	executable: string,
+	env: NodeJS.ProcessEnv,
+	cwd: string,
+): boolean {
+	const extension = win32.extname(executable).toLowerCase();
+	if (extension) {
+		return WINDOWS_SCRIPT_EXTENSIONS.includes(extension);
+	}
+
+	// A copied env may hold the path under several spellings (Path, PATH),
+	// and entries may be quoted.
+	const pathDirs = Object.keys(env)
+		.filter((key) => key.toUpperCase() === 'PATH')
+		.flatMap((key) => (env[key] ?? '').split(';'))
+		.map((dir) => dir.trim().replace(/^"(.*)"$/, '$1'))
+		.filter(Boolean);
+	const searchDirs = /[\\/]/.test(executable) ? [''] : ['', ...pathDirs];
+
+	const existsWith = (extensions: string[]) =>
+		searchDirs.some((dir) =>
+			extensions.some((ext) =>
+				existsSync(win32.resolve(cwd, dir, `${executable}${ext}`)),
+			),
+		);
+
+	return (
+		!existsWith(WINDOWS_DIRECT_EXTENSIONS) &&
+		existsWith(WINDOWS_SCRIPT_EXTENSIONS)
+	);
+}
+
+/** Quotes `arg` as one word of a cmd.exe command line. */
+export function quoteForCmd(arg: string): string {
+	return /^[\w\-.:\\/=@+,]+$/.test(arg) ? arg : `"${arg.replace(/"/g, '""')}"`;
 }

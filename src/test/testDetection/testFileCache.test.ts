@@ -140,9 +140,6 @@ describe('TestFileCache', () => {
 			const result = testFileCache.isTestFile(filePath);
 
 			expect(result).toBe(true);
-			expect(
-				mockedConfigParsing.resolveAndValidateCustomConfig,
-			).toHaveBeenCalledWith('jestrunner.configPath', filePath);
 		});
 
 		it('should return true when custom Vitest config exists with framework directory', () => {
@@ -172,9 +169,6 @@ describe('TestFileCache', () => {
 			const result = testFileCache.isTestFile(filePath);
 
 			expect(result).toBe(true);
-			expect(
-				mockedConfigParsing.resolveAndValidateCustomConfig,
-			).toHaveBeenCalledWith('jestrunner.vitestConfigPath', filePath);
 		});
 
 		it('should return true when framework directory exists', () => {

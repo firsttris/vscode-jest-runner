@@ -21,7 +21,7 @@ function emit(type, payload) {
 			'::' +
 			type;
 		process.stdout.write(message);
-	} catch (err) {}
+	} catch (_err) {}
 }
 
 function extractErrorMessage(details) {
@@ -125,7 +125,7 @@ export default async function* (source) {
 				default:
 					break;
 			}
-		} catch (err) {}
+		} catch (_err) {}
 	}
 
 	const testResults = Array.from(files.entries()).map(

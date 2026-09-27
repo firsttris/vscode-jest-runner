@@ -73,8 +73,6 @@ describe('babelParser extended tests', () => {
 	});
 
 	it('should resolve multiple variables in template literal', () => {
-		const a = 'Hello';
-		const b = 'World';
 		const code = `
         const a = 'Hello';
         const b = 'World';

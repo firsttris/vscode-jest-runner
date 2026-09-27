@@ -1,6 +1,8 @@
+import * as path from 'node:path';
 import * as vscode from 'vscode';
 import * as parser from '../parser';
 import { testFileCache } from '../testDetection/testFileCache';
+import { getOrCreateFileTestItem } from '../testDiscovery';
 import {
 	setupTestController,
 	type TestControllerSetup,
@@ -41,6 +43,32 @@ describe('JestTestController - file watcher', () => {
 		(parser.parseTestFile as jest.Mock).mockClear();
 
 		changeCallback({ fsPath: testFilePath });
+
+		expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
+	});
+
+	it('should reparse a nested file on change', () => {
+		const mockWatcher = (vscode.workspace.createFileSystemWatcher as jest.Mock)
+			.mock.results[0].value;
+		const changeCallback = (mockWatcher.onDidChange as jest.Mock).mock
+			.calls[0][0];
+
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		const testFilePath = path.join('/workspace', 'src', 'nested.test.ts');
+		getOrCreateFileTestItem(
+			mockTestController,
+			setup.mockWorkspaceFolder,
+			testFilePath,
+		);
+		expect(mockTestController.items.get(testFilePath)).toBeUndefined();
+
+		jest
+			.spyOn(vscode.workspace, 'getWorkspaceFolder')
+			.mockReturnValue(setup.mockWorkspaceFolder);
+		(parser.parseTestFile as jest.Mock).mockClear();
+
+		changeCallback(vscode.Uri.file(testFilePath));
 
 		expect(parser.parseTestFile).toHaveBeenCalledWith(testFilePath);
 	});

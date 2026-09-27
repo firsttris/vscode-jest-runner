@@ -4,6 +4,7 @@ import { cacheManager } from '../cache/CacheManager';
 import { invalidateNodeTestCache } from '../testDetection/frameworkDetection';
 import { testFileCache } from '../testDetection/testFileCache';
 import {
+	findFileTestItem,
 	findFolderTestItem,
 	getOrCreateFileTestItem,
 	parseTestsInFile,
@@ -28,7 +29,11 @@ export class TestFileWatcher {
 
 		watcher.onDidChange((uri) => {
 			invalidateNodeTestCache(uri.fsPath);
-			const item = this.testController.items.get(uri.fsPath);
+			const item = findFileTestItem(
+				this.testController,
+				vscode.workspace.getWorkspaceFolder(uri),
+				uri.fsPath,
+			);
 			if (item) {
 				item.children.replace([]);
 				parseTestsInFile(uri.fsPath, item, this.testController);

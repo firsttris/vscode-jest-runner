@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import { pushMany, validateCodeLensOptions } from '../util';
 import {
 	escapeRegExpForPath,

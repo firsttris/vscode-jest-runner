@@ -138,6 +138,7 @@ function extractTestName(arg: any): string | null {
 		if (arg.quasis.length === 1 && arg.expressions.length === 0) {
 			return arg.quasis[0].value.cooked || arg.quasis[0].value.raw;
 		}
+		// biome-ignore lint/suspicious/noTemplateCurlyInString: literal placeholder for the interpolated parts
 		return arg.quasis.map((q: any) => q.value.raw).join('${...}');
 	}
 

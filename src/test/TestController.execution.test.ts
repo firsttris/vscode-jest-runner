@@ -46,7 +46,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -89,7 +89,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -119,7 +119,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -160,7 +160,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -194,7 +194,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -223,7 +223,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -247,7 +247,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -316,7 +316,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -361,7 +361,7 @@ describe('JestTestController - test execution', () => {
 		const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
 			.mock.calls[2][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -403,7 +403,7 @@ describe('JestTestController - test execution', () => {
 		const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
 			.mock.calls[2][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -445,7 +445,7 @@ describe('JestTestController - test execution', () => {
 		const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
 			.mock.calls[2][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -480,7 +480,7 @@ describe('JestTestController - test execution', () => {
 		const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
 			.mock.calls[2][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -516,7 +516,7 @@ describe('JestTestController - test execution', () => {
 		const coverageProfile = (mockTestController.createRunProfile as jest.Mock)
 			.mock.calls[2][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -571,7 +571,7 @@ describe('JestTestController - test execution', () => {
 		const snapshotProfile = (mockTestController.createRunProfile as jest.Mock)
 			.mock.calls[3][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -608,7 +608,7 @@ describe('JestTestController - test execution', () => {
 			onCancellationRequested: jest.fn(),
 		};
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 
 		await runProfile(mockRequest, preCancelledToken);
 
@@ -626,7 +626,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 
 		await runProfile(emptyRequest, mockToken);
 
@@ -665,7 +665,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		spawn.mockImplementation(() => {
 			throw new Error('Spawn failed');
 		});
@@ -689,7 +689,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		spawn.mockImplementation(() => {
 			throw 'String error';
 		});
@@ -713,7 +713,7 @@ describe('JestTestController - test execution', () => {
 		const runProfile = (mockTestController.createRunProfile as jest.Mock).mock
 			.calls[0][2];
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		spawn.mockImplementation(() => {
 			throw undefined;
 		});

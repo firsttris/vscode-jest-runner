@@ -24,6 +24,7 @@ describe('TestRunner', () => {
 			get cwd() {
 				return '/workspace';
 			},
+			getCwd: () => '/workspace',
 			get changeDirectoryToWorkspaceRoot() {
 				return false;
 			},
@@ -35,16 +36,18 @@ describe('TestRunner', () => {
 			getTestFramework: jest.fn().mockReturnValue('jest'),
 			getTestCommand: jest.fn().mockReturnValue('node jest'),
 			getEnvironmentForRun: jest.fn().mockReturnValue(undefined),
-			buildJestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
-				const args = [filePath];
-				if (testName) {
-					args.push('-t', testName);
-				}
-				args.push(...options);
-				return args;
-			}),
+			buildJestArgs: jest.fn(
+				(filePath, testName, _withQuotes, options = []) => {
+					const args = [filePath];
+					if (testName) {
+						args.push('-t', testName);
+					}
+					args.push(...options);
+					return args;
+				},
+			),
 			buildVitestArgs: jest.fn(
-				(filePath, testName, withQuotes, options = []) => {
+				(filePath, testName, _withQuotes, options = []) => {
 					const args = ['run', filePath];
 					if (testName) {
 						args.push('-t', testName);
@@ -53,16 +56,18 @@ describe('TestRunner', () => {
 					return args;
 				},
 			),
-			buildTestArgs: jest.fn((filePath, testName, withQuotes, options = []) => {
-				const args = [filePath];
-				if (testName) {
-					args.push('-t', testName);
-				}
-				args.push(...options);
-				return args;
-			}),
+			buildTestArgs: jest.fn(
+				(filePath, testName, _withQuotes, options = []) => {
+					const args = [filePath];
+					if (testName) {
+						args.push('-t', testName);
+					}
+					args.push(...options);
+					return args;
+				},
+			),
 			buildNodeTestArgs: jest.fn(
-				(filePath, testName, withQuotes, options = []) => {
+				(_filePath, _testName, _withQuotes, options = []) => {
 					const args = ['--test'];
 					if (options.includes('--coverage')) {
 						args.push('--experimental-test-coverage');
@@ -422,13 +427,13 @@ describe('TestRunner', () => {
 				get changeDirectoryToWorkspaceRoot() {
 					return true;
 				},
-				get cwd() {
-					return '/different/path';
-				},
+				getCwd: jest.fn().mockReturnValue('/different/path'),
 			} as any;
 			jestRunner = new TestRunner(mockConfig);
 
 			await jestRunner.runTestsOnPath('/workspace/test.ts');
+
+			expect(mockConfig.getCwd).toHaveBeenCalledWith('/workspace/test.ts');
 
 			expect(vscode.window.createTerminal).toHaveBeenCalledWith({
 				name: 'jest',

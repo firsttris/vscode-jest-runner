@@ -85,7 +85,7 @@ const getNodeAttribute = <T = t.Node>(
 		}
 
 		if (isDeep) {
-			while (walker && walker[attr]) {
+			while (walker?.[attr]) {
 				walker = walker[attr];
 			}
 			return walker as T;

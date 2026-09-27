@@ -47,7 +47,7 @@ describe('JestTestController - edge cases', () => {
 		const mockRequest = { include: [test1, test2], exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -96,7 +96,7 @@ describe('JestTestController - edge cases', () => {
 		const mockRequest = { include: [test1, test2], exclude: [test2] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 
@@ -194,7 +194,7 @@ describe('JestTestController - edge cases', () => {
 		const mockRequest = { include: undefined, exclude: [] } as any;
 		const mockToken = new CancellationToken();
 
-		const { spawn } = require('child_process');
+		const { spawn } = require('node:child_process');
 		const mockProcess = createMockProcess();
 		spawn.mockReturnValue(mockProcess);
 

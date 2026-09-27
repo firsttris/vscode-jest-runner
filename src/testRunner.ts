@@ -24,9 +24,9 @@ export class TestRunner {
 
 	private previousEnv: Record<string, string> | undefined;
 
-	private terminalManager = new TerminalManager();
+	private previousCwd: string | undefined;
 
-	private commands: string[] = [];
+	private terminalManager = new TerminalManager();
 
 	private isExecuting: boolean = false;
 
@@ -88,13 +88,10 @@ export class TestRunner {
 		await editor.document.save();
 
 		if (typeof this.previousCommand === 'string') {
-			const cwd = this.config.changeDirectoryToWorkspaceRoot
-				? this.config.cwd
-				: undefined;
 			await this.runTerminalCommand(
 				this.previousCommand,
 				this.previousFramework,
-				cwd,
+				this.previousCwd,
 				this.previousEnv,
 			);
 		} else {
@@ -139,11 +136,6 @@ export class TestRunner {
 
 		this.isExecuting = true;
 		try {
-			for (const command of this.commands) {
-				await this.runTerminalCommand(command);
-			}
-			this.commands = [];
-
 			await vscode.debug.startDebugging(undefined, debugCommand.config);
 
 			this.previousCommand = debugCommand;
@@ -244,8 +236,9 @@ export class TestRunner {
 		this.previousEnv = env;
 
 		const cwd = this.config.changeDirectoryToWorkspaceRoot
-			? this.config.cwd
+			? this.config.getCwd(filePath)
 			: undefined;
+		this.previousCwd = cwd;
 
 		await this.runTerminalCommand(command, framework, cwd, env);
 	}

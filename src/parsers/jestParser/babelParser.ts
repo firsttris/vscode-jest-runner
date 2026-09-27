@@ -136,23 +136,6 @@ const getEachCallbackFunction = (
 	return undefined;
 };
 
-const getInlineEachTable = (
-	callExpr: t.CallExpression,
-	scopeBindings: ScopeBindings,
-): unknown[] | undefined => {
-	if (!t.isCallExpression(callExpr.callee)) {
-		return undefined;
-	}
-
-	const eachArgs = callExpr.callee.arguments;
-	if (eachArgs.length === 0 || !t.isArrayExpression(eachArgs[0])) {
-		return undefined;
-	}
-
-	const table = astToValue(eachArgs[0], scopeBindings);
-	return Array.isArray(table) ? table : undefined;
-};
-
 const getResolvableEachTable = (
 	callExpr: t.CallExpression,
 	scopeBindings: ScopeBindings,
