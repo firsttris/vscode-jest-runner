@@ -56,10 +56,25 @@ function collectTests(task, ancestors, out) {
 }
 
 class VitestStructuredReporter {
+	// Vitest >=4 only calls onTestRunEnd, Vitest 3 calls both, <3 only onFinished.
+	onTestRunEnd(testModules = []) {
+		this.reportedOnTestRunEnd = true;
+		this.report(testModules.map((testModule) => testModule.task));
+	}
+
 	onFinished(files = []) {
+		if (this.reportedOnTestRunEnd) return;
+		this.report(files);
+	}
+
+	report(files) {
 		const testResults = files.map((file) => {
 			const assertions = [];
-			collectTests(file, [], assertions);
+			// Start below the file task so ancestorTitles hold only describe
+			// names, like in Jest's and Vitest's JSON results.
+			for (const task of file.tasks || []) {
+				collectTests(task, [], assertions);
+			}
 			const failed = assertions.filter((a) => a.status === 'failed').length;
 			const pending = assertions.filter((a) => a.status === 'skipped').length;
 			const passed = assertions.filter((a) => a.status === 'passed').length;

@@ -117,13 +117,50 @@ const matchesTest = (
 	);
 };
 
+const hasSameAncestors = (
+	r: JestAssertionResult,
+	testAncestors: string[],
+): boolean => {
+	const resultAncestors = r.ancestorTitles ?? [];
+	return (
+		resultAncestors.length === testAncestors.length &&
+		testAncestors.every((title, i) => resultAncestors[i] === title)
+	);
+};
+
+/**
+ * The same test name can appear in several describe blocks of a file.
+ * Prefer results from the test's own describe path, so it is not reported
+ * with the result of a namesake (e.g. one skipped by a -t filter).
+ */
+const preferSameAncestors = (
+	matches: IndexedResult[],
+	test: vscode.TestItem,
+): IndexedResult[] => {
+	if (matches.length < 2) return matches;
+
+	const testAncestors = getAncestorTitles(test);
+	const exact = matches.filter(({ result }) =>
+		hasSameAncestors(result, testAncestors),
+	);
+	if (exact.length > 0) return exact;
+
+	const suffix = matches.filter(({ result }) =>
+		matchesByAncestors(result, test),
+	);
+	return suffix.length > 0 ? suffix : matches;
+};
+
 export const findPotentialMatches = (
 	testResults: JestAssertionResult[],
 	test: vscode.TestItem,
 ): IndexedResult[] =>
-	testResults
-		.map((result, index) => ({ result, index }))
-		.filter(({ result }) => matchesTest(result, test));
+	preferSameAncestors(
+		testResults
+			.map((result, index) => ({ result, index }))
+			.filter(({ result }) => matchesTest(result, test)),
+		test,
+	);
 
 export const findBestMatch = (
 	matches: IndexedResult[],

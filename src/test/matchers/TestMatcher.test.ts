@@ -185,6 +185,33 @@ describe('TestMatcher', () => {
 			expect(matches[0].result.title).toBe('test case 1');
 		});
 
+		it('should prefer results from the same describe block for duplicate names', () => {
+			const results: JestAssertionResult[] = [
+				{ ...createResult('adds'), status: 'skipped' },
+				createResult('adds', ['sum', 'nested']),
+				createResult('adds', ['sum']),
+			];
+			const topLevel = createTestItem('test1', 'adds');
+			const inSum = createTestItem('test2', 'adds', 'sum');
+
+			expect(findPotentialMatches(results, topLevel)).toEqual([
+				{ result: results[0], index: 0 },
+			]);
+			expect(findPotentialMatches(results, inSum)).toEqual([
+				{ result: results[2], index: 2 },
+			]);
+		});
+
+		it('should keep all matches when no ancestors match', () => {
+			const results: JestAssertionResult[] = [
+				createResult('adds', ['a']),
+				createResult('adds', ['b']),
+			];
+			const test = createTestItem('test1', 'adds', 'c');
+
+			expect(findPotentialMatches(results, test)).toHaveLength(2);
+		});
+
 		it('should not match when ancestors do not match for template-only labels', () => {
 			const test = createTestItem('test1', '%s', 'MyClass');
 

@@ -241,6 +241,66 @@ console output
 			tests = [testItem1, testItem2];
 		});
 
+		it('should not report nested tests with results of top-level namesakes', () => {
+			// Partial run of describe('sum'): the top-level namesakes are skipped
+			// by the -t filter, and Vitest reports no locations to disambiguate.
+			const file = '/sum.vitest.js';
+			const sum = new TestItem(
+				`${file}:describe:16:sum`,
+				'sum',
+				Uri.file(file),
+			);
+			const nestedDescribe = new TestItem(
+				`${file}:describe:18:sum adds`,
+				'adds',
+				Uri.file(file),
+			);
+			nestedDescribe.parent = sum;
+			const nested = new TestItem(
+				`${file}:it:19:sum adds adds`,
+				'adds',
+				Uri.file(file),
+			);
+			nested.parent = nestedDescribe;
+			const inSum = new TestItem(
+				`${file}:it:23:sum adds`,
+				'adds',
+				Uri.file(file),
+			);
+			inSum.parent = sum;
+
+			const output = JSON.stringify({
+				testResults: [
+					{
+						assertionResults: [
+							{ title: 'adds', ancestorTitles: [], status: 'skipped' },
+							{
+								title: 'adds',
+								ancestorTitles: ['sum', 'adds'],
+								status: 'passed',
+							},
+							{
+								title: 'adds',
+								ancestorTitles: ['sum'],
+								status: 'failed',
+								failureMessages: ['expected 3 to be 34'],
+							},
+						],
+					},
+				],
+			});
+
+			processTestResults(output, [nested, inSum] as any, run as any, 'vitest');
+
+			expect(run.passed).toHaveBeenCalledWith(nested, undefined);
+			expect(run.failed).toHaveBeenCalledWith(
+				inSum,
+				expect.anything(),
+				undefined,
+			);
+			expect(run.skipped).not.toHaveBeenCalled();
+		});
+
 		it('should process results from multiple files', () => {
 			const output = JSON.stringify({
 				testResults: [
