@@ -52,6 +52,14 @@ function resolveSpawnCommand(
 	return { command: commandExecutable, args: commandArgs, env, shell: false };
 }
 
+/**
+ * Whether `command` is started through cmd.exe, which limits the command
+ * line to 8191 characters (instead of 32767 for a direct spawn).
+ */
+export function runsInWindowsShell(command: string, cwd: string): boolean {
+	return resolveSpawnCommand(command, [], cwd).shell;
+}
+
 function spawnTestProcess(
 	resolvedCommand: ResolvedSpawnCommand,
 	cwd: string,

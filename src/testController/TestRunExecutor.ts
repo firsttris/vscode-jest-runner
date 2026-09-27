@@ -17,13 +17,18 @@ import {
 	executeTestCommand,
 	executeTestCommandFast,
 	logTestExecution,
+	runsInWindowsShell,
 } from '../execution/TestProcessRunner';
 import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { getTestFrameworkForFile } from '../testDetection/testFileDetection';
 import { processTestResults } from '../testResultProcessor';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 import { logError, logInfo } from '../utils/Logger';
-import { isWindows, normalizePath } from '../utils/PathUtils';
+import {
+	escapeRegExpForPath,
+	isWindows,
+	normalizePath,
+} from '../utils/PathUtils';
 import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 
 /** Files that can run in one process: same framework, directory and config. */
@@ -40,6 +45,8 @@ interface RunContext {
 
 export class TestRunExecutor {
 	private static readonly WINDOWS_SAFE_COMMAND_LENGTH = 30000;
+	/** cmd.exe allows 8191 characters, minus room for its quoting. */
+	private static readonly WINDOWS_SHELL_SAFE_COMMAND_LENGTH = 7500;
 
 	constructor(
 		private readonly testController: vscode.TestController,
@@ -310,6 +317,7 @@ export class TestRunExecutor {
 			framework,
 			allFiles,
 			args,
+			cwd,
 		);
 		const esmEnv = this.getEsmEnv(allFiles[0], framework);
 
@@ -371,21 +379,30 @@ export class TestRunExecutor {
 		framework: TestFrameworkName,
 		allFiles: string[],
 		args: string[],
+		cwd: string,
 	): string[] {
 		if (!isWindows()) {
 			return args;
 		}
 
 		const commandLength = `${testCommand} ${args.join(' ')}`.length;
-		if (commandLength <= TestRunExecutor.WINDOWS_SAFE_COMMAND_LENGTH) {
+		// Checked last: finding out whether cmd.exe is used looks up PATH.
+		const fits =
+			commandLength <= TestRunExecutor.WINDOWS_SHELL_SAFE_COMMAND_LENGTH ||
+			(commandLength <= TestRunExecutor.WINDOWS_SAFE_COMMAND_LENGTH &&
+				!runsInWindowsShell(testCommand, cwd));
+		if (fits) {
 			return args;
 		}
 
 		let fallbackArgs = args;
 
 		if (framework === 'jest') {
-			const fileSet = new Set(allFiles.map(normalizePath));
-			fallbackArgs = args.filter((arg) => !fileSet.has(arg));
+			// Jest takes the files as regex path patterns (see JestStrategy).
+			const filePatterns = new Set(
+				allFiles.map((file) => escapeRegExpForPath(normalizePath(file))),
+			);
+			fallbackArgs = args.filter((arg) => !filePatterns.has(arg));
 		}
 
 		if (framework === 'vitest') {

@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { findConfigPath } from '../ConfigResolver';
 import { cacheManager } from '../cache/CacheManager';
+import { normalizePath } from '../utils/PathUtils';
 
 describe('findConfigPath caching', () => {
 	let root: string;
@@ -14,6 +15,10 @@ describe('findConfigPath caching', () => {
 		fs.writeFileSync(file, '');
 		return file;
 	};
+
+	// Found config paths are normalized (forward slashes on Windows).
+	const inRoot = (relativePath: string) =>
+		normalizePath(path.join(root, relativePath));
 
 	beforeEach(() => {
 		cacheManager.invalidateAll();
@@ -29,7 +34,8 @@ describe('findConfigPath caching', () => {
 	});
 
 	it('shares one lookup between the files of a directory', () => {
-		const config = writeFile('jest.config.js');
+		const config = inRoot('jest.config.js');
+		writeFile('jest.config.js');
 		const fileA = writeFile('src/a.test.ts');
 		const fileB = writeFile('src/b.test.ts');
 
@@ -50,15 +56,15 @@ describe('findConfigPath caching', () => {
 
 		cacheManager.invalidateAll();
 		expect(findConfigPath(file, context, undefined, 'jest')).toBe(
-			path.join(root, 'jest.config.js'),
+			inRoot('jest.config.js'),
 		);
 	});
 
 	it('still searches from a directory target itself', () => {
-		const config = writeFile('packages/a/jest.config.js');
+		writeFile('packages/a/jest.config.js');
 
 		expect(
 			findConfigPath(path.join(root, 'packages/a'), context, undefined, 'jest'),
-		).toBe(config);
+		).toBe(inRoot('packages/a/jest.config.js'));
 	});
 });

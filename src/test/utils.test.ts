@@ -431,12 +431,18 @@ describe('parseShellCommand', () => {
 		]);
 	});
 
-	it('should handle escaped characters', () => {
+	its.linux('should handle escaped characters', () => {
 		expect(parseShellCommand('npm run test\\:watch')).toEqual([
 			'npm',
 			'run',
 			'test:watch',
 		]);
+	});
+
+	its.windows('should keep backslashes as path separators', () => {
+		expect(
+			parseShellCommand('node .\\node_modules\\jest\\bin\\jest.js'),
+		).toEqual(['node', '.\\node_modules\\jest\\bin\\jest.js']);
 	});
 
 	it('should handle quotes inside words', () => {

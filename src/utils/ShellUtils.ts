@@ -1,14 +1,37 @@
 import { existsSync } from 'node:fs';
 import { win32 } from 'node:path';
 import { parse } from 'shell-quote';
+import { isWindows } from './PathUtils';
 
 export function stripAnsi(str: string): string {
 	// biome-ignore lint/suspicious/noControlCharactersInRegex: matching the ESC character is the point
 	return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '');
 }
 
+/**
+ * shell-quote follows POSIX rules, where a backslash escapes the next
+ * character. On Windows it separates path segments (`node .\bin\jest.js`),
+ * so outside single quotes (where POSIX keeps it literal) it is escaped to
+ * survive parsing.
+ */
+function escapeWindowsBackslashes(command: string): string {
+	let quote: string | undefined;
+	let escaped = '';
+	for (const char of command) {
+		if (char === quote) {
+			quote = undefined;
+		} else if (!quote && (char === "'" || char === '"')) {
+			quote = char;
+		}
+		escaped += char === '\\' && quote !== "'" ? '\\\\' : char;
+	}
+	return escaped;
+}
+
 export function parseShellCommand(command: string): string[] {
-	const entries = parse(command);
+	const entries = parse(
+		isWindows() ? escapeWindowsBackslashes(command) : command,
+	);
 	const args: string[] = [];
 
 	for (const entry of entries) {

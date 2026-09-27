@@ -7,6 +7,7 @@ import {
 	processTestResults,
 	processTestResultsFromParsed,
 } from '../testResultProcessor';
+import * as PathUtils from '../utils/PathUtils';
 import { TestItem, TestRun, Uri } from './__mocks__/vscode';
 
 describe('testResultProcessor', () => {
@@ -329,6 +330,10 @@ console output
 		});
 
 		describe('namesakes in different files', () => {
+			afterEach(() => {
+				jest.restoreAllMocks();
+			});
+
 			const createTest = (file: string) => {
 				const test = new TestItem(
 					`${file}:it:5:renders`,
@@ -397,6 +402,39 @@ console output
 					run as any,
 				);
 
+				expect(run.passed).toHaveBeenCalledWith(testA, undefined);
+				expect(run.failed).toHaveBeenCalledWith(
+					testB,
+					expect.any(Object),
+					undefined,
+				);
+			});
+
+			it('should match file names case-insensitively on Windows', () => {
+				jest.spyOn(PathUtils, 'isWindows').mockReturnValue(true);
+				// VS Code keeps the casing the folder was opened with.
+				const testA = createTest('c:\\projects\\app\\a.test.ts');
+				const testB = createTest('c:\\projects\\app\\b.test.ts');
+				const results = {
+					testResults: [
+						{
+							name: 'C:\\Projects\\App\\b.test.ts',
+							assertionResults: [renders('failed')],
+						},
+						{
+							name: 'C:\\Projects\\App\\a.test.ts',
+							assertionResults: [renders('passed')],
+						},
+					],
+				};
+
+				processTestResultsFromParsed(
+					results as any,
+					[testA, testB] as any,
+					run as any,
+				);
+
+				expect(run.passed).toHaveBeenCalledTimes(1);
 				expect(run.passed).toHaveBeenCalledWith(testA, undefined);
 				expect(run.failed).toHaveBeenCalledWith(
 					testB,

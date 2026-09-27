@@ -4,7 +4,11 @@ import { existsSync } from 'node:fs';
 import { PassThrough } from 'node:stream';
 import * as vscode from 'vscode';
 import { executeTestCommand } from '../execution/TestProcessRunner';
-import { needsWindowsShell, quoteForCmd } from '../utils/ShellUtils';
+import {
+	needsWindowsShell,
+	parseCommandAndEnv,
+	quoteForCmd,
+} from '../utils/ShellUtils';
 import { WorkspaceConfiguration } from './__mocks__/vscode';
 
 jest.mock('node:child_process', () => ({ spawn: jest.fn() }));
@@ -71,6 +75,29 @@ describe('Windows spawning', () => {
 		});
 	});
 
+	describe('parseCommandAndEnv', () => {
+		it.each([
+			[
+				'node C:\\proj\\node_modules\\jest\\bin\\jest.js',
+				['node', 'C:\\proj\\node_modules\\jest\\bin\\jest.js'],
+			],
+			[
+				'node "C:\\Program Files\\jest\\bin\\jest.js"',
+				['node', 'C:\\Program Files\\jest\\bin\\jest.js'],
+			],
+			['node "C:\\dir\\" --json', ['node', 'C:\\dir\\', '--json']],
+			// Single quotes keep backslashes literal, as in POSIX shells.
+			["node 'C:\\it''s\\jest.js'", ['node', 'C:\\its\\jest.js']],
+			['"C:\\tools\\it\'s\\jest.cmd"', ["C:\\tools\\it's\\jest.cmd"]],
+		])('%s', (command, [executable, ...args]) => {
+			expect(parseCommandAndEnv(command)).toEqual({
+				env: {},
+				executable,
+				args,
+			});
+		});
+	});
+
 	describe('quoteForCmd', () => {
 		it.each([
 			['--json', '--json'],
@@ -134,6 +161,16 @@ describe('Windows spawning', () => {
 				'npx --no-install jest -t "(a|b)"',
 				[],
 				expect.objectContaining({ shell: true, cwd: 'C:\\project' }),
+			);
+		});
+
+		it('keeps the backslashes of Windows paths in the command', async () => {
+			await runCommand('node .\\node_modules\\jest\\bin\\jest.js', ['--json']);
+
+			expect(spawn).toHaveBeenCalledWith(
+				'node',
+				['.\\node_modules\\jest\\bin\\jest.js', '--json'],
+				expect.objectContaining({ shell: false }),
 			);
 		});
 

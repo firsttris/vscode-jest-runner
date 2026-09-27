@@ -13,7 +13,7 @@ import { parseStructuredResults } from './reporting/structuredOutput';
 import type { TestFrameworkName } from './testDetection/frameworkDefinitions';
 import type { JestAssertionResult, JestResults } from './testResultTypes';
 import { logWarning } from './utils/Logger';
-import { normalizePath } from './utils/PathUtils';
+import { isWindows, normalizePath } from './utils/PathUtils';
 import { stripAnsi } from './utils/ShellUtils';
 
 export function processTestResults(
@@ -142,8 +142,16 @@ const reportTemplateTestResult = (
 
 type FileIndexedResult = IndexedResult & { file: string };
 
-const toComparablePath = (path: string): string =>
-	normalizePath(path).replace(/\\/g, '/').replace(/^\.\//, '');
+/**
+ * Windows paths are case-insensitive: VS Code keeps the casing the folder
+ * was opened with, while runners report the real one.
+ */
+const toComparablePath = (path: string): string => {
+	const comparable = normalizePath(path)
+		.replace(/\\/g, '/')
+		.replace(/^\.\//, '');
+	return isWindows() ? comparable.toLowerCase() : comparable;
+};
 
 /**
  * Whether a result's file name refers to `testFile`. Runners report absolute
