@@ -10,6 +10,7 @@ import {
 	toRunnerPath,
 } from '../utils/PathUtils';
 import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
+import { isPartiallySelected } from './TestCollector';
 
 interface TestArgumentStrategy {
 	build(
@@ -155,9 +156,9 @@ abstract class JestLikeStrategy extends BaseStrategy {
 	}
 
 	/**
-	 * Name filter for a batched run, needed as soon as any file is only
-	 * partially selected. Fully selected files still match, since all of
-	 * their tests are part of the pattern.
+	 * Name filter for a batched run of partially selected files.
+	 * TestRunExecutor runs fully selected files in a separate process, so
+	 * they are never filtered by names that may not match at runtime.
 	 */
 	protected getBatchTestNameFilter(
 		framework: TestFrameworkName,
@@ -185,37 +186,8 @@ abstract class JestLikeStrategy extends BaseStrategy {
 		filePath: string,
 		tests: vscode.TestItem[] | undefined,
 	): boolean {
-		if (!tests || tests.length === 0) return false;
-
-		const fileItem = this.findFileItem(filePath, tests[0]);
-		if (!fileItem) return false;
-
-		// testsByFile holds leaf tests, so compare against the file's leaves,
-		// not its top-level children (which may be describe blocks).
-		return tests.length < countLeafTests(fileItem);
+		return isPartiallySelected(this.testController, filePath, tests);
 	}
-
-	private findFileItem(
-		filePath: string,
-		test: vscode.TestItem,
-	): vscode.TestItem | undefined {
-		// File items are nested under folder items, so walk up from the test
-		// instead of looking them up at the controller root.
-		for (let item = test.parent; item; item = item.parent) {
-			if (item.id === filePath) return item;
-		}
-		return this.testController.items.get(filePath);
-	}
-}
-
-function countLeafTests(item: vscode.TestItem): number {
-	if (item.children.size === 0) return 1;
-
-	let count = 0;
-	item.children.forEach((child) => {
-		count += countLeafTests(child);
-	});
-	return count;
 }
 
 class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {

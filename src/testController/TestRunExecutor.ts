@@ -12,7 +12,10 @@ import {
 	buildTestArgsFast,
 	canUseFastMode,
 } from '../execution/TestArgumentBuilder';
-import { collectTestsByFile } from '../execution/TestCollector';
+import {
+	collectTestsByFile,
+	isPartiallySelected,
+} from '../execution/TestCollector';
 import {
 	executeTestCommand,
 	executeTestCommandFast,
@@ -40,7 +43,21 @@ const DROPPABLE_FILE_ARGS_FRAMEWORKS: ReadonlySet<TestFrameworkName> = new Set([
 	'vitest',
 ]);
 
-/** Files that can run in one process: same framework, directory and config. */
+/**
+ * Frameworks whose batched runs filter by test name when files are only
+ * partially selected (see TestArgumentBuilder).
+ */
+const NAME_FILTERED_BATCH_FRAMEWORKS: ReadonlySet<TestFrameworkName> = new Set([
+	'jest',
+	'vitest',
+	'rstest',
+	'deno',
+]);
+
+/**
+ * Files that can run in one process: same framework, directory and config,
+ * and, for name-filtered frameworks, all fully or all partially selected.
+ */
 interface RunContext {
 	allFiles: string[];
 	allTests: vscode.TestItem[];
@@ -196,7 +213,19 @@ export class TestRunExecutor {
 			const framework = getTestFrameworkForFile(file) || 'jest';
 			const cwd = this.testRunnerConfig.getTestRunCwd(file);
 			const configPath = this.resolveGroupingConfigPath(framework, file);
-			const key = [framework, workspaceFolder, cwd, configPath].join('\0');
+			// A name filter applies to the whole process, so fully selected
+			// files must not share one with partially selected files: their
+			// tests would have to match names that may differ at runtime.
+			const partial =
+				NAME_FILTERED_BATCH_FRAMEWORKS.has(framework) &&
+				isPartiallySelected(this.testController, file, tests);
+			const key = [
+				framework,
+				workspaceFolder,
+				cwd,
+				configPath,
+				partial ? 'partial' : 'full',
+			].join('\0');
 
 			let context = contexts.get(key);
 			if (!context) {

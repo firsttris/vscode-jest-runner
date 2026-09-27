@@ -24,6 +24,7 @@ jest.mock('vscode', () => ({
 jest.mock('child_process');
 jest.mock('../coverageProvider');
 jest.mock('../execution/TestCollector', () => ({
+	...jest.requireActual('../execution/TestCollector'),
 	collectTestsByFile: jest.fn(),
 }));
 jest.mock('../execution/TestArgumentBuilder', () => ({
@@ -41,6 +42,22 @@ jest.mock('../testDetection/testFileDetection', () => ({
 }));
 
 const frameworks: Record<string, string> = {};
+
+/** Number of leaf tests each discovered file item holds. */
+const testsInFile: Record<string, number> = {};
+
+const fileItem = (file: string) => {
+	const leaves = testsInFile[file] ?? 1;
+	return {
+		id: file,
+		children: {
+			size: leaves,
+			forEach: (cb: (child: unknown) => void) => {
+				for (let i = 0; i < leaves; i++) cb({ children: { size: 0 } });
+			},
+		},
+	};
+};
 
 const setRequestedFiles = (files: Record<string, string>) => {
 	const testsByFile = new Map<string, unknown[]>();
@@ -69,6 +86,7 @@ describe('TestRunExecutor grouping', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		for (const file of Object.keys(frameworks)) delete frameworks[file];
+		for (const file of Object.keys(testsInFile)) delete testsInFile[file];
 
 		(getTestFrameworkForFile as jest.Mock).mockImplementation(
 			(file: string) => frameworks[file],
@@ -90,7 +108,10 @@ describe('TestRunExecutor grouping', () => {
 		};
 
 		executor = new TestRunExecutor(
-			{ createTestRun: jest.fn().mockReturnValue(run) } as any,
+			{
+				createTestRun: jest.fn().mockReturnValue(run),
+				items: { get: (file: string) => fileItem(file) },
+			} as any,
 			config as unknown as TestRunnerConfig,
 			{} as CoverageProvider,
 		);
@@ -157,6 +178,38 @@ describe('TestRunExecutor grouping', () => {
 		await executor.runHandler(request, token);
 
 		expect(executeTestCommand).toHaveBeenCalledTimes(2);
+	});
+
+	it('runs fully selected files apart from partially selected ones', async () => {
+		setRequestedFiles({
+			'/workspace/app/full.test.ts': 'jest',
+			'/workspace/app/partial.test.ts': 'jest',
+			'/workspace/app/full2.test.ts': 'jest',
+		});
+		testsInFile['/workspace/app/partial.test.ts'] = 3;
+
+		await executor.runHandler(request, token);
+
+		expect(spawnedRuns()).toEqual([
+			[
+				'jest',
+				['/workspace/app/full.test.ts', '/workspace/app/full2.test.ts'],
+				'/workspace/app',
+			],
+			['jest', ['/workspace/app/partial.test.ts'], '/workspace/app'],
+		]);
+	});
+
+	it('keeps partially selected files of other frameworks together', async () => {
+		setRequestedFiles({
+			'/workspace/app/full.test.ts': 'bun',
+			'/workspace/app/partial.test.ts': 'bun',
+		});
+		testsInFile['/workspace/app/partial.test.ts'] = 3;
+
+		await executor.runHandler(request, token);
+
+		expect(executeTestCommand).toHaveBeenCalledTimes(1);
 	});
 
 	it('still runs the other groups when one fails to start', async () => {

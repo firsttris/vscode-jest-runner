@@ -33,6 +33,7 @@ jest.mock('../utils/PathUtils', () => ({
 }));
 jest.mock('../execution/TestCollector', () => ({
 	collectTestsByFile: jest.fn(),
+	isPartiallySelected: jest.fn().mockReturnValue(false),
 }));
 jest.mock('../execution/TestArgumentBuilder', () => ({
 	buildTestArgs: jest.fn(),
