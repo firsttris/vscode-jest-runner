@@ -406,6 +406,7 @@
     "build": "vite build",
     "watch": "vite build --watch",
     "test": "jest src/test",
+    "test:e2e": "jest src/e2e --runInBand",
     "package": "vsce package",
     "publish": "vsce publish $VERSION -m '%s [skip ci]' && ovsx publish",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
@@ -428,7 +429,8 @@
     "jest": "^30.5.2",
     "ovsx": "^1.2.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1"
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
   },
   "dependencies": {
     "@babel/parser": "^8.0.6",

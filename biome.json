@@ -33,7 +33,7 @@
 	},
 	"overrides": [
 		{
-			"includes": ["src/test/**"],
+			"includes": ["src/test/**", "src/e2e/**"],
 			"linter": {
 				"rules": {
 					"suspicious": {

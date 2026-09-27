@@ -157,20 +157,27 @@ export function needsWindowsShell(
 	);
 }
 
-type TerminalShell = 'powershell' | 'cmd' | 'posix';
+type TerminalShell = 'windows-powershell' | 'pwsh' | 'cmd' | 'posix';
 
 function getTerminalShell(shellPath: string): TerminalShell | undefined {
 	const name = win32
 		.basename(shellPath)
 		.toLowerCase()
 		.replace(/\.exe$/, '');
-	if (name === 'powershell' || name === 'pwsh') return 'powershell';
+	if (name === 'powershell') return 'windows-powershell';
+	if (name === 'pwsh') return 'pwsh';
 	if (name === 'cmd') return 'cmd';
 	if (['bash', 'sh', 'zsh', 'fish', 'git-bash'].includes(name)) return 'posix';
 	return undefined;
 }
 
 const WINDOWS_QUOTED_ARG = /^"((?:[^"]|"")*)"$/s;
+
+function escapeForLegacyPowerShell(value: string): string {
+	const escaped = value.replace(/(\\*)"/g, '$1$1\\"');
+	// The closing quote PowerShell adds must not be escaped either.
+	return /\s/.test(value) ? escaped.replace(/(\\+)$/, '$1$1') : escaped;
+}
 
 /**
  * Re-quotes the args that quote() wrapped in double quotes on Windows for
@@ -192,10 +199,17 @@ export function quoteArgsForTerminal(
 		if (!match) return arg;
 
 		const value = match[1].replace(/""/g, '"');
-		if (shell === 'powershell') {
+		if (shell === 'windows-powershell' || shell === 'pwsh') {
+			// Windows PowerShell (5.1) passes an argument to native programs
+			// in quotes when it holds whitespace, but does not escape the
+			// quotes inside it for the C runtime; PowerShell 7.3+ does.
+			const nativeValue =
+				shell === 'windows-powershell'
+					? escapeForLegacyPowerShell(value)
+					: value;
 			// Single quotes are literal; PowerShell also treats typographic
 			// single quotes as delimiters, so those are doubled too.
-			return `'${value.replace(/['‘’‚‛]/g, '$&$&')}'`;
+			return `'${nativeValue.replace(/['‘’‚‛]/g, '$&$&')}'`;
 		}
 		if (shell === 'posix') {
 			return `'${value.replace(/'/g, "'\\''")}'`;

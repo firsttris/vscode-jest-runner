@@ -104,16 +104,12 @@ describe('Windows spawning', () => {
 		const args = ['-t', '"costs $5 `now`"', '"it\'s ""quoted"""', '--ci'];
 		const powershell =
 			'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
-		const forPowerShell = [
-			'-t',
-			"'costs $5 `now`'",
-			`'it''s "quoted"'`,
-			'--ci',
-		];
+		const forPwsh = ['-t', "'costs $5 `now`'", `'it''s "quoted"'`, '--ci'];
 
 		it.each([
-			[powershell, forPowerShell],
-			['C:\\Program Files\\PowerShell\\7\\pwsh.exe', forPowerShell],
+			// Windows PowerShell does not escape inner quotes for native programs.
+			[powershell, ['-t', "'costs $5 `now`'", `'it''s \\"quoted\\"'`, '--ci']],
+			['C:\\Program Files\\PowerShell\\7\\pwsh.exe', forPwsh],
 			[
 				'C:\\Program Files\\Git\\bin\\bash.exe',
 				['-t', "'costs $5 `now`'", `'it'\\''s "quoted"'`, '--ci'],
