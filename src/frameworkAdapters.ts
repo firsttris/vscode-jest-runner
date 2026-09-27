@@ -7,6 +7,7 @@ import {
 	escapeRegExpForPath,
 	isWindows,
 	normalizePath,
+	toRunnerPath,
 } from './utils/PathUtils';
 import {
 	quote,
@@ -77,7 +78,7 @@ const buildJestArgs: BuildArgsFn = (
 	runOptions,
 ) => {
 	const q = withQuotes ? quote : (s: string) => s;
-	const args = [q(escapeRegExpForPath(normalizePath(filePath)))];
+	const args = [q(escapeRegExpForPath(toRunnerPath(filePath)))];
 
 	if (configPath) {
 		args.push('-c', q(normalizePath(configPath)));
@@ -107,7 +108,7 @@ const buildVitestArgs: BuildArgsFn = (
 		normalizeVitestOptions(options, hasWatchMode),
 		runOptions ? normalizeVitestOptions(runOptions, hasWatchMode) : null,
 	);
-	const args = [q(normalizePath(resolve(filePath)))];
+	const args = [q(toRunnerPath(resolve(filePath)))];
 	const maybeRunArgs = hasWatchMode ? args : prependUniqueArgs(args, ['run']);
 
 	if (configPath) {
@@ -181,7 +182,7 @@ const buildNodeTestArgs: BuildArgsFn = (
 			])
 		: withOptions;
 
-	return [...withCoverage, q(normalizePath(filePath))];
+	return [...withCoverage, q(toRunnerPath(filePath))];
 };
 
 const buildBunArgs: BuildArgsFn = (
@@ -210,7 +211,7 @@ const buildBunArgs: BuildArgsFn = (
 		runOptions,
 	);
 
-	return [...merged, q(normalizePath(filePath))];
+	return [...merged, q(toRunnerPath(filePath))];
 };
 
 const buildDenoArgs: BuildArgsFn = (
@@ -242,7 +243,7 @@ const buildDenoArgs: BuildArgsFn = (
 			: null,
 	);
 
-	return [...finalArgs, q(normalizePath(filePath))];
+	return [...finalArgs, q(toRunnerPath(filePath))];
 };
 
 const buildPlaywrightArgs: BuildArgsFn = (
@@ -263,7 +264,7 @@ const buildPlaywrightArgs: BuildArgsFn = (
 
 	return [
 		...appendUniqueArgs(args, options, runOptions),
-		q(normalizePath(filePath)),
+		q(toRunnerPath(filePath)),
 	];
 };
 
@@ -282,7 +283,7 @@ const buildRstestArgs: BuildArgsFn = (
 		args.push('--config', q(normalizePath(configPath)));
 	}
 
-	args.push(q(normalizePath(filePath)));
+	args.push(q(toRunnerPath(filePath)));
 
 	const resolved = prepareTestName(testName, withQuotes, true);
 	if (resolved) {

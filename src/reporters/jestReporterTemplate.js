@@ -53,7 +53,8 @@ class JestStructuredReporter {
 							? { line: assertion.line, column: assertion.column || 0 }
 							: undefined),
 				})),
-				name: fileResult.name,
+				// Reporters get the file as testFilePath; name is the --json field.
+				name: fileResult.testFilePath || fileResult.name,
 				// A suite that fails to run (e.g. an import error) has no failing
 				// tests, only a testExecError.
 				status:

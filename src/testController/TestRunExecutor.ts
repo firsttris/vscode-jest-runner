@@ -27,7 +27,7 @@ import { logError, logInfo } from '../utils/Logger';
 import {
 	escapeRegExpForPath,
 	isWindows,
-	normalizePath,
+	toRunnerPath,
 } from '../utils/PathUtils';
 import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 
@@ -478,7 +478,7 @@ export class TestRunExecutor {
 		if (framework === 'jest') {
 			// Jest takes the files as regex path patterns (see JestStrategy).
 			const filePatterns = new Set(
-				allFiles.map((file) => escapeRegExpForPath(normalizePath(file))),
+				allFiles.map((file) => escapeRegExpForPath(toRunnerPath(file))),
 			);
 			fallbackArgs = args.filter((arg) => !filePatterns.has(arg));
 		}

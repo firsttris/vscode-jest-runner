@@ -48,10 +48,14 @@ const SPECIAL_NAMES = [
 	'a|b & c > d',
 ];
 
-const namesTestFile = (header: string) => `${header}
+/**
+ * `failingPlain` makes a copy whose "plain" fails at the same line and in the
+ * same describe block, so only the file tells the two apart.
+ */
+const namesTestFile = (header: string, failingPlain = false) => `${header}
 describe('names', () => {
 ${SPECIAL_NAMES.map((name) => `\tit(${JSON.stringify(name)}, () => {});`).join('\n')}
-\tit('plain', () => {});
+\tit('plain', () => {${failingPlain ? ' expect(1).toBe(2); ' : ''}});
 \tit('fails', () => {
 \t\texpect(1).toBe(2);
 \t});
@@ -59,6 +63,9 @@ ${SPECIAL_NAMES.map((name) => `\tit(${JSON.stringify(name)}, () => {});`).join('
 `;
 
 let root: string;
+let linkedRoot: string;
+/** Root of the workspace as VS Code opened it. */
+let workspaceRoot: string;
 let settings: Record<string, unknown>;
 let logs: string[];
 
@@ -92,7 +99,7 @@ beforeAll(() => {
 	);
 	write('jest-project/jest.config.js', 'module.exports = {};\n');
 	write('jest-project/names.test.js', namesTestFile(''));
-	write('jest-project/other.test.js', "it('plain', () => {});\n");
+	write('jest-project/other.test.js', namesTestFile('', true));
 	write(
 		'jest-project/slow.test.js',
 		`it('sleeps', async () => {
@@ -115,15 +122,25 @@ beforeAll(() => {
 		'vitest-project/names.test.js',
 		namesTestFile("import { describe, expect, it } from 'vitest';"),
 	);
+	write(
+		'vitest-project/other.test.js',
+		namesTestFile("import { describe, expect, it } from 'vitest';", true),
+	);
+
+	// The same workspace opened through a symlink (as /var on macOS, which
+	// links to /private/var), while runners report the resolved paths.
+	linkedRoot = path.join(path.dirname(root), 'linked workspace');
+	fs.symlinkSync(root, linkedRoot, 'junction');
 });
 
 afterAll(() => {
-	// Removes the junction first, never the repository's node_modules.
-	const link = path.join(root, 'node_modules');
-	try {
-		fs.unlinkSync(link);
-	} catch {
-		fs.rmdirSync(link);
+	// Removes the junctions first, never what they point to.
+	for (const link of [path.join(root, 'node_modules'), linkedRoot]) {
+		try {
+			fs.unlinkSync(link);
+		} catch {
+			fs.rmdirSync(link);
+		}
 	}
 	fs.rmSync(path.dirname(root), { recursive: true, force: true });
 });
@@ -131,12 +148,13 @@ afterAll(() => {
 beforeEach(() => {
 	settings = {};
 	logs = [];
+	workspaceRoot = root;
 	jest
 		.spyOn(vscode.workspace, 'getConfiguration')
 		.mockImplementation(() => new WorkspaceConfiguration(settings) as any);
 	jest
 		.spyOn(vscode.workspace, 'getWorkspaceFolder')
-		.mockReturnValue(workspaceFolder() as any);
+		.mockImplementation(() => workspaceFolder() as any);
 	jest.spyOn(vscode.window, 'createOutputChannel').mockReturnValue({
 		appendLine: (line: string) => logs.push(line),
 	} as any);
@@ -146,7 +164,7 @@ afterEach(() => {
 	jest.restoreAllMocks();
 });
 
-const workspaceFolder = () => new WorkspaceFolder(Uri.file(root));
+const workspaceFolder = () => new WorkspaceFolder(Uri.file(workspaceRoot));
 
 /** Fails with the extension's log, since CI output is all there is. */
 const withLogs = (assertion: () => void) => {
@@ -160,7 +178,7 @@ const withLogs = (assertion: () => void) => {
 
 /** Discovers the tests of `relativePath` as the Test Explorer does. */
 const discover = (controller: TestController, relativePath: string) => {
-	const file = path.join(root, relativePath);
+	const file = path.join(workspaceRoot, relativePath);
 	const fileItem = getOrCreateFileTestItem(
 		controller as any,
 		workspaceFolder() as any,
@@ -194,6 +212,12 @@ const findTest = (item: TestItem, label: string): TestItem => {
 const labels = (mock: jest.Mock) =>
 	mock.mock.calls.map(([test]) => test.label as string).sort();
 
+/** "file > label" of each reported test. */
+const inFiles = (mock: jest.Mock) =>
+	mock.mock.calls
+		.map(([test]) => `${path.basename(test.uri.fsPath)} > ${test.label}`)
+		.sort();
+
 /** Runs `include` through the Test Explorer's run handler. */
 const runTests = async (
 	controller: TestController,
@@ -211,6 +235,8 @@ const runTests = async (
 	return {
 		passed: labels(run.passed),
 		failed: labels(run.failed),
+		passedInFiles: inFiles(run.passed),
+		failedInFiles: inFiles(run.failed),
 		skipped: labels(run.skipped),
 		messages: run.failed.mock.calls.map(([, message]) => message.message),
 	};
@@ -260,20 +286,32 @@ describe.each([
 	});
 });
 
+describe.each([
+	['jest', 'jest-project'],
+	['vitest', 'vitest-project'],
+])('Test Explorer runs of %s in two files', (_framework, project) => {
+	it.each([
+		['its real path', () => root],
+		['a symlink', () => linkedRoot],
+	])(
+		'keeps namesakes apart in a workspace opened through %s',
+		async (_, getRoot) => {
+			workspaceRoot = getRoot();
+			const controller = new TestController('e2e', 'e2e');
+			const outcome = await runTests(controller, [
+				findTest(discover(controller, `${project}/names.test.js`), 'plain'),
+				findTest(discover(controller, `${project}/other.test.js`), 'plain'),
+			]);
+
+			withLogs(() => {
+				expect(outcome.passedInFiles).toEqual(['names.test.js > plain']);
+				expect(outcome.failedInFiles).toEqual(['other.test.js > plain']);
+			});
+		},
+	);
+});
+
 describe('Test Explorer runs of jest', () => {
-	it('keeps namesakes in different files apart', async () => {
-		const controller = new TestController('e2e', 'e2e');
-		const outcome = await runTests(controller, [
-			findTest(discover(controller, 'jest-project/names.test.js'), 'plain'),
-			findTest(discover(controller, 'jest-project/other.test.js'), 'plain'),
-		]);
-
-		withLogs(() => {
-			expect(outcome.passed).toEqual(['plain', 'plain']);
-			expect(outcome.failed).toEqual([]);
-		});
-	});
-
 	describe('through the npm shim of a custom command', () => {
 		// On Windows the shim is jest.cmd, which only runs through cmd.exe.
 		beforeEach(() => {

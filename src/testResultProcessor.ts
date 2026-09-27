@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 import * as vscode from 'vscode';
 import {
@@ -153,17 +154,38 @@ const toComparablePath = (path: string): string => {
 	return isWindows() ? comparable.toLowerCase() : comparable;
 };
 
+type SameFileCheck = (resultFile: string, testFile: string) => boolean;
+
 /**
- * Whether a result's file name refers to `testFile`. Runners report absolute
- * paths, but JUnit reports may use paths relative to the working directory.
+ * Creates the check whether a result's file name refers to `testFile`.
+ * Runners report absolute paths, but JUnit reports may use paths relative to
+ * the working directory. Runners also resolve symlinks, while VS Code keeps
+ * the path the workspace was opened with (e.g. /var on macOS, which links to
+ * /private/var), so differing absolute paths are compared resolved too.
  */
-const isSameFile = (resultFile: string, testFile: string): boolean => {
-	if (!resultFile) return false;
-	const result = toComparablePath(resultFile);
-	const test = toComparablePath(testFile);
-	return (
-		result === test || (!isAbsolute(resultFile) && test.endsWith(`/${result}`))
-	);
+const createSameFileCheck = (): SameFileCheck => {
+	const resolved = new Map<string, string>();
+	const toResolvedPath = (path: string): string => {
+		let resolvedPath = resolved.get(path);
+		if (resolvedPath === undefined) {
+			try {
+				resolvedPath = toComparablePath(realpathSync.native(path));
+			} catch {
+				resolvedPath = toComparablePath(path);
+			}
+			resolved.set(path, resolvedPath);
+		}
+		return resolvedPath;
+	};
+
+	return (resultFile, testFile) => {
+		if (!resultFile) return false;
+		const result = toComparablePath(resultFile);
+		const test = toComparablePath(testFile);
+		if (result === test) return true;
+		if (!isAbsolute(resultFile)) return test.endsWith(`/${result}`);
+		return toResolvedPath(resultFile) === toResolvedPath(testFile);
+	};
 };
 
 /**
@@ -177,6 +199,7 @@ const isSameFile = (resultFile: string, testFile: string): boolean => {
 const createCandidateLookup = (
 	indexedResults: FileIndexedResult[],
 	tests: vscode.TestItem[],
+	isSameFile: SameFileCheck,
 ): ((test: vscode.TestItem) => IndexedResult[]) => {
 	const testFiles = [
 		...new Set(
@@ -222,6 +245,8 @@ export function processTestResultsFromParsed(
 		return;
 	}
 
+	const isSameFile = createSameFileCheck();
+
 	// Files that failed without running any test, e.g. on an import error.
 	const fileFailures = results.testResults.filter(
 		(fileResult) =>
@@ -239,6 +264,7 @@ export function processTestResultsFromParsed(
 	const getCandidates = createCandidateLookup(
 		indexedResults.map((entry, index) => ({ ...entry, index })),
 		tests,
+		isSameFile,
 	);
 
 	tests.reduce((usedIndices, test) => {

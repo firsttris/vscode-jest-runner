@@ -18,6 +18,8 @@ import {
 
 jest.mock('../utils/PathUtils', () => ({
 	normalizePath: (path: string) => path.replace(/\\/g, '/'),
+	// The test paths do not exist, so they have no symlinks to resolve.
+	toRunnerPath: (path: string) => path.replace(/\\/g, '/'),
 	isWindows: () => false,
 	escapeRegExpForPath: (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
 }));

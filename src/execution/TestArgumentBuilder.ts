@@ -7,7 +7,7 @@ import type { TestRunnerConfig } from '../testRunnerConfig';
 import {
 	escapeRegExpForPath,
 	isWindows,
-	normalizePath,
+	toRunnerPath,
 } from '../utils/PathUtils';
 import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 
@@ -63,7 +63,7 @@ abstract class BaseStrategy {
 	}
 
 	protected getNormalizedFiles(allFiles: string[]): string[] {
-		return allFiles.map(normalizePath);
+		return allFiles.map(toRunnerPath);
 	}
 }
 
