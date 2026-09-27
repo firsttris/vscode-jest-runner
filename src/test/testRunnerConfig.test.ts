@@ -259,7 +259,7 @@ describe('TestRunnerConfig', () => {
 			});
 
 			it.each(['playwright', 'bun', 'deno', 'node-test'] as const)(
-				'runs %s from the workspace, not the test file folder',
+				'runs %s from the workspace when no config or package.json exists',
 				(framework) => {
 					jest
 						.spyOn(frameworkDetection, 'findTestFrameworkDirectory')

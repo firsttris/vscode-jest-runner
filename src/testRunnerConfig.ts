@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { findConfigPath, resolveConfigPath } from './ConfigResolver';
 import * as Settings from './config/Settings';
@@ -9,7 +9,10 @@ import { findTestFrameworkDirectory } from './testDetection/frameworkDetection';
 import { getTestFrameworkForFile } from './testDetection/testFileDetection';
 import type { CodeLensOption } from './util';
 import { normalizePath } from './utils/PathUtils';
-import { resolveBinaryPath } from './utils/ResolverUtils';
+import {
+	resolveBinaryPath,
+	resolveConfigPath as resolveConfigPathInTree,
+} from './utils/ResolverUtils';
 import { quote } from './utils/TestNameUtils';
 
 const PROJECT_DIRECTORY_FRAMEWORKS: ReadonlySet<TestFrameworkName> = new Set([
@@ -236,23 +239,34 @@ export class TestRunnerConfig {
 	/**
 	 * Working directory for a Test Explorer run of `filePath`.
 	 *
-	 * Only Jest, Vitest and Rstest report their project directory (where the
-	 * config lives). For the other frameworks the detected directory is just
-	 * the test file's folder, which would split batched runs per folder and
-	 * hide the runner's root config, so they run from the project root.
+	 * Jest, Vitest and Rstest report their project directory (where the config
+	 * lives). For the other frameworks the detected directory is just the test
+	 * file's folder, so they run from the directory of their nearest config
+	 * (deno.json, bun.lock, playwright.config.*): Deno and Playwright look for
+	 * it in the working directory, not next to the test file. Without a
+	 * config they run from the nearest package.json, else the workspace.
 	 */
 	public getTestRunCwd(filePath: string): string {
-		const result = findTestFrameworkDirectory(filePath);
-		const packagePath =
-			result && PROJECT_DIRECTORY_FRAMEWORKS.has(result.framework)
-				? normalizePath(result.directory)
-				: '';
+		const projectPath = this.getProjectPathFromConfig(filePath);
+		if (projectPath) {
+			return projectPath;
+		}
 
-		return (
-			this.getProjectPathFromConfig(filePath) ||
-			packagePath ||
-			this.getWorkspaceFolderPath(filePath)
-		);
+		const result = findTestFrameworkDirectory(filePath);
+		if (result && PROJECT_DIRECTORY_FRAMEWORKS.has(result.framework)) {
+			return normalizePath(result.directory);
+		}
+
+		const workspaceFolderPath = this.getWorkspaceFolderPath(filePath);
+		const configPath =
+			(result && this.findConfigPath(filePath, undefined, result.framework)) ||
+			resolveConfigPathInTree(
+				['package.json'],
+				dirname(filePath),
+				workspaceFolderPath,
+			);
+
+		return configPath ? dirname(configPath) : workspaceFolderPath;
 	}
 
 	public get projectPathFromConfig(): string | undefined {
