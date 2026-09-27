@@ -300,6 +300,15 @@ class DenoTestStrategy
 	}
 }
 
+// Vitest skips the coverage report when a test fails unless told otherwise,
+// but the Test Explorer should show coverage for failing runs too (like Jest).
+const VITEST_COVERAGE_ARGS = [
+	'--coverage',
+	'--coverage.reporter',
+	'json',
+	'--coverage.reportOnFailure',
+];
+
 class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 	build(
 		allFiles: string[],
@@ -321,7 +330,7 @@ class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 			];
 
 			if (collectCoverage) {
-				extraArgs.push('--coverage', '--coverage.reporter', 'json');
+				extraArgs.push(...VITEST_COVERAGE_ARGS);
 			}
 
 			return this.jestConfig.buildVitestArgs(
@@ -359,7 +368,7 @@ class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 		args.push(...additionalArgs);
 
 		if (collectCoverage) {
-			args.push('--coverage', '--coverage.reporter', 'json');
+			args.push(...VITEST_COVERAGE_ARGS);
 		}
 
 		return args;

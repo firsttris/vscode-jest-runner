@@ -354,6 +354,7 @@ describe('TestArgumentBuilder', () => {
 			expect(args).toContain('--coverage');
 			expect(args).toContain('--coverage.reporter');
 			expect(args).toContain('json');
+			expect(args).toContain('--coverage.reportOnFailure');
 		});
 
 		it('should use partial run logic when appropriate', () => {

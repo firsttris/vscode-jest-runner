@@ -704,6 +704,7 @@ describe('testExecution', () => {
 						'--coverage',
 						'--coverage.reporter',
 						'json',
+						'--coverage.reportOnFailure',
 					],
 				);
 			});
