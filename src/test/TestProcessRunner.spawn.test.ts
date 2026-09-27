@@ -11,6 +11,12 @@ import { WorkspaceConfiguration } from './__mocks__/vscode';
 jest.mock('node:child_process', () => ({
 	spawn: jest.fn(),
 }));
+// Assert the direct (non-shell) spawn shape on every platform; the Windows
+// shell path is covered in windowsSpawn.test.ts.
+jest.mock('../utils/ShellUtils', () => ({
+	...jest.requireActual('../utils/ShellUtils'),
+	needsWindowsShell: () => false,
+}));
 
 type MockChildProcess = EventEmitter & {
 	stdout: PassThrough;

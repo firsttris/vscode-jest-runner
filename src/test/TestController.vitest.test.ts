@@ -9,6 +9,12 @@ import {
 } from './testControllerSetup';
 
 jest.mock('child_process');
+// Assert the direct (non-shell) spawn shape on every platform; the Windows
+// shell path is covered in windowsSpawn.test.ts.
+jest.mock('../utils/ShellUtils', () => ({
+	...jest.requireActual('../utils/ShellUtils'),
+	needsWindowsShell: () => false,
+}));
 
 describe('JestTestController - Vitest support', () => {
 	let setup: TestControllerSetup;
