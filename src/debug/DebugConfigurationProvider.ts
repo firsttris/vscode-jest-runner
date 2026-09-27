@@ -440,11 +440,17 @@ const resolveCommandExecution = (
 	runtimeArgs?: string[];
 	args: string[];
 } => {
-	if (isNodeRuntimeExecutable(executable)) {
+	const scriptIndex = isNodeRuntimeExecutable(executable)
+		? findNodeScriptIndex(args)
+		: -1;
+	if (scriptIndex !== -1) {
+		// `node [options] <script> [args]`: the script is the program to debug,
+		// the options belong to the runtime.
 		return {
-			program: executable,
-			runtimeExecutable: undefined,
-			args,
+			program: args[scriptIndex],
+			runtimeExecutable: /[\\/]/.test(executable) ? executable : undefined,
+			runtimeArgs: args.slice(0, scriptIndex),
+			args: args.slice(scriptIndex + 1),
 		};
 	}
 
@@ -454,6 +460,28 @@ const resolveCommandExecution = (
 		runtimeArgs: args,
 		args: [],
 	};
+};
+
+const NODE_OPTIONS_WITH_VALUES = new Set([
+	'-r',
+	'--require',
+	'--import',
+	'--loader',
+	'--experimental-loader',
+	'-C',
+	'--conditions',
+]);
+
+/** Index of the script in node's arguments, skipping node's own options. */
+const findNodeScriptIndex = (args: string[]): number => {
+	for (let i = 0; i < args.length; i++) {
+		if (NODE_OPTIONS_WITH_VALUES.has(args[i])) {
+			i++;
+		} else if (!args[i].startsWith('-')) {
+			return i;
+		}
+	}
+	return -1;
 };
 
 const isNodeRuntimeExecutable = (executable: string): boolean => {

@@ -7,6 +7,7 @@ import { executeTestCommand } from '../execution/TestProcessRunner';
 import {
 	needsWindowsShell,
 	parseCommandAndEnv,
+	quoteArgsForTerminal,
 	quoteForCmd,
 } from '../utils/ShellUtils';
 import { WorkspaceConfiguration } from './__mocks__/vscode';
@@ -95,6 +96,49 @@ describe('Windows spawning', () => {
 				executable,
 				args,
 			});
+		});
+	});
+
+	describe('quoteArgsForTerminal', () => {
+		// As quote() produces them on Windows.
+		const args = ['-t', '"costs $5 `now`"', '"it\'s ""quoted"""', '--ci'];
+		const powershell =
+			'C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+		const forPowerShell = [
+			'-t',
+			"'costs $5 `now`'",
+			`'it''s "quoted"'`,
+			'--ci',
+		];
+
+		it.each([
+			[powershell, forPowerShell],
+			['C:\\Program Files\\PowerShell\\7\\pwsh.exe', forPowerShell],
+			[
+				'C:\\Program Files\\Git\\bin\\bash.exe',
+				['-t', "'costs $5 `now`'", `'it'\\''s "quoted"'`, '--ci'],
+			],
+			[
+				'C:\\WINDOWS\\System32\\cmd.exe',
+				['-t', '"costs $5 `now`"', '"it\'s ""quoted"""', '--ci'],
+			],
+			// Unknown shells keep the quoting as it was.
+			['C:\\tools\\nu.exe', args],
+			['', args],
+		])('%s', (shell, expected) => {
+			expect(quoteArgsForTerminal(args, shell)).toEqual(expected);
+		});
+
+		it('doubles typographic single quotes for PowerShell', () => {
+			expect(quoteArgsForTerminal(['"doesn’t crash"'], powershell)).toEqual([
+				"'doesn’’t crash'",
+			]);
+		});
+
+		it('keeps cmd.exe from expanding %VAR%', () => {
+			expect(
+				quoteArgsForTerminal(['"shows %USERNAME%"'], 'C:\\WINDOWS\\cmd.exe'),
+			).toEqual(['"shows "^%"USERNAME"^%""']);
 		});
 	});
 

@@ -31,6 +31,15 @@ import {
 } from '../utils/PathUtils';
 import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
 
+/**
+ * Frameworks that still run the requested tests when the file arguments of a
+ * too long Windows command line are dropped (they then run their project).
+ */
+const DROPPABLE_FILE_ARGS_FRAMEWORKS: ReadonlySet<TestFrameworkName> = new Set([
+	'jest',
+	'vitest',
+]);
+
 /** Files that can run in one process: same framework, directory and config. */
 interface RunContext {
 	allFiles: string[];
@@ -312,6 +321,21 @@ export class TestRunExecutor {
 			this.testController,
 		);
 
+		if (
+			!DROPPABLE_FILE_ARGS_FRAMEWORKS.has(framework) &&
+			allFiles.length > 1 &&
+			this.exceedsWindowsCommandLength(testCommand, args, cwd)
+		) {
+			await this.runInHalves(
+				context,
+				additionalArgs,
+				collectCoverage,
+				token,
+				run,
+			);
+			return;
+		}
+
 		const commandArgs = this.adjustArgsForWindowsLengthLimit(
 			testCommand,
 			framework,
@@ -374,6 +398,68 @@ export class TestRunExecutor {
 		}
 	}
 
+	/**
+	 * Runs the files of a context whose command line is too long for Windows
+	 * in two processes, each split further while still too long. Frameworks
+	 * without a project-wide fallback cannot just drop the file arguments.
+	 */
+	private async runInHalves(
+		context: RunContext,
+		additionalArgs: string[],
+		collectCoverage: boolean,
+		token: vscode.CancellationToken,
+		run: vscode.TestRun,
+	): Promise<void> {
+		const { allFiles, testsByFile, framework } = context;
+		const half = Math.ceil(allFiles.length / 2);
+		logInfo(
+			`Windows command line too long for ${framework}, splitting ${allFiles.length} files into two runs`,
+		);
+
+		for (const files of [allFiles.slice(0, half), allFiles.slice(half)]) {
+			const tests = files.flatMap((file) => testsByFile.get(file) ?? []);
+			if (token.isCancellationRequested) {
+				for (const test of tests) {
+					run.skipped(test);
+				}
+				continue;
+			}
+
+			await this.runStandardMode(
+				{
+					...context,
+					allFiles: files,
+					allTests: tests,
+					testsByFile: new Map(
+						files.map((file) => [file, testsByFile.get(file) ?? []]),
+					),
+				},
+				additionalArgs,
+				collectCoverage,
+				token,
+				run,
+			);
+		}
+	}
+
+	private exceedsWindowsCommandLength(
+		testCommand: string,
+		args: string[],
+		cwd: string,
+	): boolean {
+		if (!isWindows()) {
+			return false;
+		}
+
+		const commandLength = `${testCommand} ${args.join(' ')}`.length;
+		// Checked last: finding out whether cmd.exe is used looks up PATH.
+		return (
+			commandLength > TestRunExecutor.WINDOWS_SAFE_COMMAND_LENGTH ||
+			(commandLength > TestRunExecutor.WINDOWS_SHELL_SAFE_COMMAND_LENGTH &&
+				runsInWindowsShell(testCommand, cwd))
+		);
+	}
+
 	private adjustArgsForWindowsLengthLimit(
 		testCommand: string,
 		framework: TestFrameworkName,
@@ -381,19 +467,11 @@ export class TestRunExecutor {
 		args: string[],
 		cwd: string,
 	): string[] {
-		if (!isWindows()) {
+		if (!this.exceedsWindowsCommandLength(testCommand, args, cwd)) {
 			return args;
 		}
 
 		const commandLength = `${testCommand} ${args.join(' ')}`.length;
-		// Checked last: finding out whether cmd.exe is used looks up PATH.
-		const fits =
-			commandLength <= TestRunExecutor.WINDOWS_SHELL_SAFE_COMMAND_LENGTH ||
-			(commandLength <= TestRunExecutor.WINDOWS_SAFE_COMMAND_LENGTH &&
-				!runsInWindowsShell(testCommand, cwd));
-		if (fits) {
-			return args;
-		}
 
 		let fallbackArgs = args;
 

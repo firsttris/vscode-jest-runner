@@ -157,6 +157,53 @@ export function needsWindowsShell(
 	);
 }
 
+type TerminalShell = 'powershell' | 'cmd' | 'posix';
+
+function getTerminalShell(shellPath: string): TerminalShell | undefined {
+	const name = win32
+		.basename(shellPath)
+		.toLowerCase()
+		.replace(/\.exe$/, '');
+	if (name === 'powershell' || name === 'pwsh') return 'powershell';
+	if (name === 'cmd') return 'cmd';
+	if (['bash', 'sh', 'zsh', 'fish', 'git-bash'].includes(name)) return 'posix';
+	return undefined;
+}
+
+const WINDOWS_QUOTED_ARG = /^"((?:[^"]|"")*)"$/s;
+
+/**
+ * Re-quotes the args that quote() wrapped in double quotes on Windows for
+ * the shell of the integrated terminal: PowerShell and Git Bash expand `$`
+ * (and PowerShell backticks) inside double quotes, and cmd.exe `%VAR%`.
+ * Other args (e.g. user-provided run options) are left as they are.
+ */
+export function quoteArgsForTerminal(
+	args: string[],
+	shellPath: string | undefined,
+): string[] {
+	const shell = isWindows() && shellPath && getTerminalShell(shellPath);
+	if (!shell) {
+		return args;
+	}
+
+	return args.map((arg) => {
+		const match = WINDOWS_QUOTED_ARG.exec(arg);
+		if (!match) return arg;
+
+		const value = match[1].replace(/""/g, '"');
+		if (shell === 'powershell') {
+			// Single quotes are literal; PowerShell also treats typographic
+			// single quotes as delimiters, so those are doubled too.
+			return `'${value.replace(/['‘’‚‛]/g, '$&$&')}'`;
+		}
+		if (shell === 'posix') {
+			return `'${value.replace(/'/g, "'\\''")}'`;
+		}
+		return quoteForCmd(value);
+	});
+}
+
 /**
  * Quotes `arg` as one word of a cmd.exe command line that is then split into
  * argv by the C runtime of the started program.

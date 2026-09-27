@@ -224,8 +224,9 @@ describe('TestRunnerConfig', () => {
 
 			const config = jestRunnerConfig.getDebugConfiguration();
 
-			expect(config.program).toBe('node');
-			expect(config.args).toEqual(['./node_modules/jest/bin/jest.js']);
+			expect(config.program).toBe('./node_modules/jest/bin/jest.js');
+			expect(config.args).toEqual([]);
+			expect(config.runtimeArgs).toEqual([]);
 			expect(config.runtimeExecutable).toBeUndefined();
 		});
 
@@ -242,11 +243,8 @@ describe('TestRunnerConfig', () => {
 
 			const config = jestRunnerConfig.getDebugConfiguration();
 
-			expect(config.program).toBe('node');
-			expect(config.args).toEqual([
-				'node_modules/.bin/jest',
-				'--config=jest.config.js',
-			]);
+			expect(config.program).toBe('node_modules/.bin/jest');
+			expect(config.args).toEqual(['--config=jest.config.js']);
 		});
 
 		it('should use runtimeExecutable for package manager based jest commands', () => {
@@ -373,8 +371,29 @@ describe('TestRunnerConfig', () => {
 
 			const config = jestRunnerConfig.getDebugConfiguration();
 
-			expect(config.program).toBe('node');
-			expect(config.args).toEqual(['./custom-jest.js']);
+			expect(config.program).toBe('./custom-jest.js');
+			expect(config.args).toEqual([]);
+		});
+
+		it('should pass node options of a custom jest command to the runtime', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand':
+						'/opt/node/bin/node --experimental-vm-modules -r ./setup.js ./custom-jest.js --ci',
+				}),
+			);
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration();
+
+			expect(config.runtimeExecutable).toBe('/opt/node/bin/node');
+			expect(config.runtimeArgs).toEqual([
+				'--experimental-vm-modules',
+				'-r',
+				'./setup.js',
+			]);
+			expect(config.program).toBe('./custom-jest.js');
+			expect(config.args).toEqual(['--ci']);
 		});
 
 		it('should keep --runInBand for jest file debug without explicit runOptions', () => {
@@ -455,8 +474,8 @@ describe('TestRunnerConfig', () => {
 				'my test',
 			);
 
+			expect(config.program).toBe('./custom-jest.js');
 			expect(config.args).toEqual([
-				'./custom-jest.js',
 				'-t',
 				'smoke',
 				'/home/user/project/src/test\\.spec\\.ts',
@@ -646,10 +665,9 @@ describe('TestRunnerConfig', () => {
 				'Test 1',
 			);
 
-			expect(config.program).toBe('node');
+			expect(config.program).toBe('./custom-vitest.mjs');
 			expect(config.runtimeExecutable).toBeUndefined();
 			expect(config.args).toEqual([
-				'./custom-vitest.mjs',
 				'--config=vitest.custom.ts',
 				'run',
 				normalizePath(path.resolve('/workspace/test.spec.ts')),
@@ -818,10 +836,9 @@ describe('TestRunnerConfig', () => {
 				'works',
 			);
 
-			expect(config.program).toBe('node');
+			expect(config.program).toBe('./custom-rstest.mjs');
 			expect(config.runtimeExecutable).toBeUndefined();
 			expect(config.args).toEqual([
-				'./custom-rstest.mjs',
 				'--config',
 				'/workspace/rstest.config.ts',
 				rstestFilePath,

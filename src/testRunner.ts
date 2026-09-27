@@ -4,6 +4,7 @@ import { parse } from './parser';
 import { TerminalManager } from './TerminalManager';
 import type { TestRunnerConfig } from './testRunnerConfig';
 import { getDirName, getFileName } from './utils/PathUtils';
+import { quoteArgsForTerminal } from './utils/ShellUtils';
 import {
 	escapeRegExp,
 	findFullTestName,
@@ -197,7 +198,10 @@ export class TestRunner {
 		options?: string[],
 	): string {
 		const command = this.config.getTestCommand(filePath);
-		const args = this.config.buildTestArgs(filePath, testName, true, options);
+		const args = quoteArgsForTerminal(
+			this.config.buildTestArgs(filePath, testName, true, options),
+			vscode.env.shell,
+		);
 		return `${command} ${args.join(' ')}`;
 	}
 

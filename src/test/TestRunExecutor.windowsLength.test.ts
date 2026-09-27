@@ -51,7 +51,7 @@ jest.mock('../testDetection/testFileDetection', () => ({
 
 const FLAGS = ['--json', '--reporters', 'default'];
 
-/** Requests `count` files and returns the args their runner gets. */
+/** Requests `count` files and returns the args of each runner process. */
 const runFiles = async (
 	framework: string,
 	count: number,
@@ -65,10 +65,10 @@ const runFiles = async (
 		new Map(files.map((file) => [file, [{ id: file, label: 'test' }]])),
 	);
 	(getTestFrameworkForFile as jest.Mock).mockReturnValue(framework);
-	(buildTestArgs as jest.Mock).mockReturnValue(
+	(buildTestArgs as jest.Mock).mockImplementation((requested: string[]) =>
 		framework === 'vitest'
-			? ['run', ...files.map(toArg), ...FLAGS]
-			: [...files.map(toArg), ...FLAGS],
+			? ['run', ...requested.map(toArg), ...FLAGS]
+			: [...requested.map(toArg), ...FLAGS],
 	);
 
 	const executor = new TestRunExecutor(
@@ -91,7 +91,9 @@ const runFiles = async (
 		{ isCancellationRequested: false } as vscode.CancellationToken,
 	);
 
-	return (executeTestCommand as jest.Mock).mock.calls[0][1] as string[];
+	return (executeTestCommand as jest.Mock).mock.calls.map(
+		(call) => call[1] as string[],
+	);
 };
 
 describe('TestRunExecutor Windows command length', () => {
@@ -106,7 +108,7 @@ describe('TestRunExecutor Windows command length', () => {
 	it('drops the escaped Jest path patterns of a too long command', async () => {
 		(runsInWindowsShell as jest.Mock).mockReturnValue(false);
 
-		const args = await runFiles('jest', 600, escapeRegExpForPath);
+		const [args] = await runFiles('jest', 600, escapeRegExpForPath);
 
 		expect(args).toEqual(FLAGS);
 	});
@@ -115,7 +117,7 @@ describe('TestRunExecutor Windows command length', () => {
 		// ~9000 characters fit into 32767, but not into cmd.exe's 8191.
 		(runsInWindowsShell as jest.Mock).mockReturnValue(true);
 
-		const args = await runFiles('jest', 150, escapeRegExpForPath);
+		const [args] = await runFiles('jest', 150, escapeRegExpForPath);
 
 		expect(args).toEqual(FLAGS);
 		expect(runsInWindowsShell).toHaveBeenCalledWith(
@@ -127,7 +129,7 @@ describe('TestRunExecutor Windows command length', () => {
 	it('keeps the files when the command fits', async () => {
 		(runsInWindowsShell as jest.Mock).mockReturnValue(false);
 
-		const args = await runFiles('jest', 150, escapeRegExpForPath);
+		const [args] = await runFiles('jest', 150, escapeRegExpForPath);
 
 		expect(args).toHaveLength(150 + FLAGS.length);
 	});
@@ -135,8 +137,33 @@ describe('TestRunExecutor Windows command length', () => {
 	it('drops the explicit Vitest files of a too long command', async () => {
 		(runsInWindowsShell as jest.Mock).mockReturnValue(true);
 
-		const args = await runFiles('vitest', 150, (file) => file);
+		const [args] = await runFiles('vitest', 150, (file) => file);
 
 		expect(args).toEqual(['run', ...FLAGS]);
+	});
+
+	it('splits too long commands of frameworks that need their files', async () => {
+		(runsInWindowsShell as jest.Mock).mockReturnValue(true);
+
+		const runs = await runFiles('playwright', 300, (file) => file);
+
+		// ~18000 characters: four runs of 75 files fit into cmd.exe's limit.
+		expect(runs.map((args) => args.length - FLAGS.length)).toEqual([
+			75, 75, 75, 75,
+		]);
+		expect(runs.flatMap((args) => args.slice(0, -FLAGS.length))).toHaveLength(
+			300,
+		);
+		for (const args of runs) {
+			expect(`npx --no-install jest ${args.join(' ')}`.length).toBeLessThan(
+				7500,
+			);
+		}
+		// Each run reports the results of its own tests only.
+		expect(
+			(executeTestCommand as jest.Mock).mock.calls.map(
+				(call) => call[3].length,
+			),
+		).toEqual([75, 75, 75, 75]);
 	});
 });

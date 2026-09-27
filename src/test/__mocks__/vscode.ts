@@ -399,6 +399,7 @@ const workspace = new Workspace();
 const window = new Window();
 const commands = new Commands();
 const debug = new Debug();
+const env = { shell: '' };
 
 class EventEmitter<T> {
 	private listeners: Array<(e: T) => any> = [];
@@ -436,6 +437,7 @@ export {
 	Document,
 	debug,
 	EventEmitter,
+	env,
 	FileCoverage,
 	Location,
 	OutputChannel,

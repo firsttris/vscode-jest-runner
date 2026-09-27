@@ -175,10 +175,9 @@ describe('TestRunnerConfig - Playwright Debug', () => {
 
 		const debugConfig = config.getDebugConfiguration(mockFilePath, 'my test');
 
-		expect(debugConfig.program).toBe('node');
+		expect(debugConfig.program).toBe('./custom-playwright.mjs');
 		expect(debugConfig.runtimeExecutable).toBeUndefined();
 		expect(debugConfig.args).toEqual([
-			'./custom-playwright.mjs',
 			'--config=playwright.custom.ts',
 			'test',
 			'-g',
