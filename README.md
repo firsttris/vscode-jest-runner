@@ -366,6 +366,14 @@ Add the following command to settings:
 }
 ```
 
+**VS Code variables in commands**
+
+The command settings (`jestrunner.jestCommand`, `vitestCommand`, `nodeTestCommand`, `playwrightCommand`, `rstestCommand`) support `${workspaceFolder}`, `${workspaceRoot}`, `${workspaceFolderBasename}`, `${userHome}` and `${env:NAME}`:
+
+```json
+"jestrunner.jestCommand": "node --experimental-vm-modules ${workspaceFolder}/node_modules/jest/bin/jest.js"
+```
+
 **nvm**
 
 ```json
