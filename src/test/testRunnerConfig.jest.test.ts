@@ -34,6 +34,19 @@ describe('TestRunnerConfig', () => {
 			expect(jestRunnerConfig.jestCommand).toBe('yarn jest');
 		});
 
+		it('should resolve ${workspaceFolder} in custom jest command', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand':
+						'node ${workspaceFolder}/node_modules/jest/bin/jest.js',
+				}),
+			);
+
+			expect(
+				jestRunnerConfig.getTestCommand('/home/user/project/src/a.test.ts'),
+			).toBe('node /home/user/project/node_modules/jest/bin/jest.js');
+		});
+
 		it('should return default jest command when not set (fallback)', () => {
 			jest
 				.spyOn(vscode.workspace, 'getConfiguration')

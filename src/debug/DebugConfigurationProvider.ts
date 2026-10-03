@@ -7,6 +7,13 @@ import { resolveBinaryPath } from '../utils/ResolverUtils';
 import { parseCommandAndEnv } from '../utils/ShellUtils';
 import { resolveTestNameStringInterpolation } from '../utils/TestNameUtils';
 
+const resolveCommand = (
+	config: TestRunnerConfig,
+	command: string | undefined,
+	filePath?: string,
+): string | undefined =>
+	command ? config.resolveVariables(command, filePath) : command;
+
 export const getDebugConfiguration = (
 	config: TestRunnerConfig,
 	filePath?: string,
@@ -112,7 +119,11 @@ const getNodeTestDebugConfig = (
 	filePath?: string,
 	testName?: string,
 ): vscode.DebugConfiguration => {
-	const customCommand = Settings.getNodeTestCommand();
+	const customCommand = resolveCommand(
+		config,
+		Settings.getNodeTestCommand(),
+		filePath,
+	);
 	const runtimeState = getRuntimeCommandState(customCommand);
 	const baseRuntimeArgs = runtimeState.runtimeExecutable
 		? appendUniqueArgs(runtimeState.args, ['--test'])
@@ -154,7 +165,9 @@ const getRstestDebugConfig = (
 	filePath?: string,
 	testName?: string,
 ): vscode.DebugConfiguration => {
-	const commandState = getProgramCommandState(Settings.getRstestCommand());
+	const commandState = getProgramCommandState(
+		resolveCommand(config, Settings.getRstestCommand(), filePath),
+	);
 	const debugArgsWithFile = withFileArgs(commandState.args, filePath, (path) =>
 		config.buildRstestArgs(path, testName, false),
 	);
@@ -185,7 +198,9 @@ const getVitestDebugConfig = (
 	filePath?: string,
 	testName?: string,
 ): vscode.DebugConfiguration => {
-	const commandState = getProgramCommandState(Settings.getVitestCommand());
+	const commandState = getProgramCommandState(
+		resolveCommand(config, Settings.getVitestCommand(), filePath),
+	);
 	const debugArgsWithFile = withFileArgs(commandState.args, filePath, (path) =>
 		config.buildVitestArgs(path, testName, false),
 	);
@@ -216,7 +231,9 @@ const getPlaywrightDebugConfig = (
 	filePath?: string,
 	testName?: string,
 ): vscode.DebugConfiguration => {
-	const commandState = getProgramCommandState(Settings.getPlaywrightCommand());
+	const commandState = getProgramCommandState(
+		resolveCommand(config, Settings.getPlaywrightCommand(), filePath),
+	);
 	const debugArgsWithFile = withFileArgs(commandState.args, filePath, (path) =>
 		config.buildPlaywrightArgs(path, testName, false),
 	);
@@ -258,7 +275,9 @@ const getJestDebugConfig = (
 	const baseDebugEnv: Record<string, string> = config.enableESM
 		? { NODE_OPTIONS: '--experimental-vm-modules' }
 		: {};
-	const commandState = getProgramCommandState(Settings.getJestCommand());
+	const commandState = getProgramCommandState(
+		resolveCommand(config, Settings.getJestCommand(), filePath),
+	);
 	const debugOptionsRuntimeExecutable = config.debugOptions.runtimeExecutable;
 	const hasCustomRuntimeExecutable =
 		typeof debugOptionsRuntimeExecutable === 'string' &&

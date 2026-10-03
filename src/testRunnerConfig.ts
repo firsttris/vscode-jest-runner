@@ -14,6 +14,7 @@ import {
 	resolveConfigPath as resolveConfigPathInTree,
 } from './utils/ResolverUtils';
 import { quote } from './utils/TestNameUtils';
+import { resolveVariables } from './utils/VariableUtils';
 
 const PROJECT_DIRECTORY_FRAMEWORKS: ReadonlySet<TestFrameworkName> = new Set([
 	'jest',
@@ -60,7 +61,7 @@ export class TestRunnerConfig {
 		binName?: string,
 	): string {
 		if (customCommand) {
-			return customCommand;
+			return this.resolveVariables(customCommand, filePath);
 		}
 
 		const binaryPath = resolveBinaryPath(
@@ -72,7 +73,14 @@ export class TestRunnerConfig {
 	}
 
 	public get nodeTestCommand(): string {
-		return Settings.getNodeTestCommand() || 'node';
+		return this.getNodeTestCommand();
+	}
+
+	private getNodeTestCommand(filePath?: string): string {
+		const customCommand = Settings.getNodeTestCommand();
+		return customCommand
+			? this.resolveVariables(customCommand, filePath)
+			: 'node';
 	}
 
 	public get bunCommand(): string {
@@ -84,9 +92,13 @@ export class TestRunnerConfig {
 	}
 
 	public get playwrightCommand(): string {
+		return this.getPlaywrightCommand();
+	}
+
+	private getPlaywrightCommand(filePath?: string): string {
 		const customCommand = Settings.getPlaywrightCommand();
 		if (customCommand) {
-			return customCommand;
+			return this.resolveVariables(customCommand, filePath);
 		}
 		return 'npx playwright';
 	}
@@ -112,7 +124,7 @@ export class TestRunnerConfig {
 				return this.getVitestCommand(filePath);
 			}
 			if (framework === 'node-test') {
-				return this.nodeTestCommand;
+				return this.getNodeTestCommand(filePath);
 			}
 			if (framework === 'bun') {
 				return this.bunCommand;
@@ -121,7 +133,7 @@ export class TestRunnerConfig {
 				return this.denoCommand;
 			}
 			if (framework === 'playwright') {
-				return this.playwrightCommand;
+				return this.getPlaywrightCommand(filePath);
 			}
 			if (framework === 'rstest') {
 				return this.getRstestCommand(filePath);
@@ -297,6 +309,14 @@ export class TestRunnerConfig {
 
 		const result = findTestFrameworkDirectory(uri.fsPath);
 		return result ? normalizePath(result.directory) : '';
+	}
+
+	/**
+	 * `value` with VS Code variables such as `${workspaceFolder}` replaced,
+	 * resolved against the workspace folder of `filePath`.
+	 */
+	public resolveVariables(value: string, filePath?: string): string {
+		return resolveVariables(value, this.getWorkspaceFolderPath(filePath));
 	}
 
 	public get currentWorkspaceFolderPath(): string {

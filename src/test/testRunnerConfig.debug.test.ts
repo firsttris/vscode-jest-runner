@@ -247,6 +247,25 @@ describe('TestRunnerConfig', () => {
 			expect(config.args).toEqual(['--config=jest.config.js']);
 		});
 
+		it('should resolve ${workspaceFolder} in custom jest command', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand':
+						'node --experimental-vm-modules ${workspaceFolder}/node_modules/jest/bin/jest.js',
+				}),
+			);
+
+			// Mock no Yarn PnP
+			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+			const config = jestRunnerConfig.getDebugConfiguration(mockFilePath);
+
+			expect(config.runtimeArgs).toEqual(['--experimental-vm-modules']);
+			expect(config.program).toBe(
+				'/home/user/project/node_modules/jest/bin/jest.js',
+			);
+		});
+
 		it('should use runtimeExecutable for package manager based jest commands', () => {
 			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 				new WorkspaceConfiguration({
