@@ -1,0 +1,33 @@
+name: Release
+
+# A tag vX.Y.Z (the button in bump.yml or npm run release:patch|minor|major) publishes that
+# version: the CI and the .vsix from ci.yml, then the shared GitHub release with the .vsix and the
+# shared publish to the Visual Studio Marketplace and Open VSX from firsttris/workflows. Started by
+# hand on an existing tag, it publishes that version again (versions already there are skipped);
+# on master it only runs the checks.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  release:
+    needs: checks
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: firsttris/workflows/.github/workflows/github-release.yml@v1
+    with:
+      release-artifact: vsix
+    permissions:
+      contents: write
+
+  publish:
+    needs: release
+    uses: firsttris/workflows/.github/workflows/vscode-extension-publish.yml@v1
+    secrets: inherit
