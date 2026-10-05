@@ -1,0 +1,20 @@
+name: Bump version
+
+# Raises the version in package.json, tags it vX.Y.Z and starts release.yml on the tag, without a checkout; the same as npm run release:patch|minor|major.
+# Same scheme as in every project, see https://github.com/firsttris/workflows#bump-version
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+jobs:
+  bump:
+    uses: firsttris/workflows/.github/workflows/bump-version.yml@v1
+    with:
+      bump: ${{ inputs.bump }}
+    permissions:
+      contents: write
+      actions: write

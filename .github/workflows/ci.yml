@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+  # The release workflow runs the same checks and publishes the .vsix built here
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      # Platform independent, so only once (also avoids CRLF checkouts on Windows)
+      - name: Lint
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run lint
+      - name: Typecheck
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run typecheck
+      - name: Run tests with coverage
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run test -- --coverage
+      - name: Run tests
+        if: matrix.os != 'ubuntu-latest'
+        run: npm run test
+      # Real Jest/Vitest processes and terminal shells, above all for Windows
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && github.ref == 'refs/heads/master'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - run: npm ci
+      - run: npm run build
+      - run: npm run package
+      # Installable from a pull request; the release attaches it and publishes it
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: '*.vsix'
+          if-no-files-found: error
