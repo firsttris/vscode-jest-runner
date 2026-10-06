@@ -7,13 +7,21 @@ on:
       - '**.md'
   pull_request:
     branches: [master]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - '**.md'
   # The release workflow runs the same checks and publishes the .vsix built here
   workflow_call:
 
+# A new push to a pull request cancels its outdated run; runs on master and tags finish
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
+    # Draft pull requests do not build; "Ready for review" starts the run (with Windows and macOS)
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ${{ matrix.os }}
 
     strategy:
