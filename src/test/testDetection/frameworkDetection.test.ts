@@ -5,7 +5,13 @@ import { cacheManager } from '../../cache/CacheManager';
 import {
 	detectTestFramework,
 	findTestFrameworkDirectory,
+	invalidateNodeTestCache,
+	isBunTestFile,
+	isDenoTestFile,
 	isFrameworkUsedIn,
+	isNodeTestFile,
+	isPlaywrightTestFile,
+	isRstestTestFile,
 } from '../../testDetection/frameworkDetection';
 import { isJestTestFile } from '../../testDetection/testFileDetection';
 
@@ -771,6 +777,39 @@ describe('frameworkDetection', () => {
 				});
 			},
 		);
+	});
+
+	describe('test import checks', () => {
+		const testFile = '/test/project/a.test.ts';
+
+		beforeEach(() => {
+			mockedFs.existsSync = jest.fn().mockReturnValue(true);
+			mockedFs.readFileSync = jest
+				.fn()
+				.mockReturnValue("import { test } from 'bun:test';");
+		});
+
+		it('should read the file once for all frameworks', () => {
+			expect(isNodeTestFile(testFile)).toBe(false);
+			expect(isBunTestFile(testFile)).toBe(true);
+			expect(isDenoTestFile(testFile)).toBe(false);
+			expect(isPlaywrightTestFile(testFile)).toBe(false);
+			expect(isRstestTestFile(testFile)).toBe(false);
+
+			expect(mockedFs.readFileSync).toHaveBeenCalledTimes(1);
+		});
+
+		it('should read the file again after it changed', () => {
+			expect(isBunTestFile(testFile)).toBe(true);
+
+			mockedFs.readFileSync = jest
+				.fn()
+				.mockReturnValue("import { test } from 'node:test';");
+			invalidateNodeTestCache(testFile);
+
+			expect(isBunTestFile(testFile)).toBe(false);
+			expect(isNodeTestFile(testFile)).toBe(true);
+		});
 	});
 
 	describe('detectTestFramework', () => {

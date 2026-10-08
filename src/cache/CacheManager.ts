@@ -45,6 +45,21 @@ export class CacheManager {
 
 	private configPathCache = new Map<string, string | undefined>();
 
+	private importedFrameworksCache = new Map<string, ReadonlySet<string>>();
+
+	public getImportedFrameworks(
+		filePath: string,
+	): ReadonlySet<string> | undefined {
+		return this.importedFrameworksCache.get(filePath);
+	}
+
+	public setImportedFrameworks(
+		filePath: string,
+		frameworks: ReadonlySet<string>,
+	): void {
+		this.importedFrameworksCache.set(filePath, frameworks);
+	}
+
 	/** Whether a lookup is cached, including one that found no config. */
 	public hasConfigPath(key: string): boolean {
 		return this.configPathCache.has(key);
@@ -62,11 +77,13 @@ export class CacheManager {
 		this.directoryFrameworkCache.clear();
 		this.fileFrameworkCache.clear();
 		this.configPathCache.clear();
+		this.importedFrameworksCache.clear();
 	}
 
 	public invalidate(key: string): void {
 		this.directoryFrameworkCache.delete(key);
 		this.fileFrameworkCache.delete(key);
+		this.importedFrameworksCache.delete(key);
 
 		for (const cacheKey of this.configPathCache.keys()) {
 			if (cacheKey.includes(key)) {

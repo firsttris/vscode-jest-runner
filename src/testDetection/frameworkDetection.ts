@@ -18,80 +18,78 @@ import {
 } from './frameworkDefinitions';
 import { detectFrameworkByPatternMatch } from './patternMatching';
 
-export function isNodeTestFile(filePath: string): boolean {
-	const cached = cacheManager.getFileFramework(filePath);
-	if (cached !== undefined) {
-		return cached?.framework === 'node-test';
+const moduleImport = (moduleName: string): RegExp =>
+	new RegExp(
+		`from\\s+['"]${moduleName}['"]|require\\s*\\(\\s*['"]${moduleName}['"]\\s*\\)`,
+	);
+
+const IMPORT_PATTERNS: ReadonlyArray<[TestFrameworkName, RegExp]> = [
+	['node-test', moduleImport('node:test')],
+	['bun', moduleImport('bun:test')],
+	[
+		'deno',
+		/Deno\.test|from\s+['"](?:jsr:@std\/expect|@std\/assert|jsr:@std\/assert)['"]|from\s+['"]https:\/\/deno\.land\//,
+	],
+	['playwright', moduleImport('@playwright/test')],
+	['rstest', moduleImport('(?:@rstest/core|rstest)')],
+];
+
+const NO_FRAMEWORKS: ReadonlySet<string> = new Set();
+
+/**
+ * Frameworks whose test module `filePath` imports. The file is read once
+ * for all of them and cached until it changes (see invalidateNodeTestCache).
+ */
+function getImportedFrameworks(filePath: string): ReadonlySet<string> {
+	const cached = cacheManager.getImportedFrameworks(filePath);
+	if (cached) {
+		return cached;
 	}
 
 	try {
 		if (!existsSync(filePath)) {
-			return false;
+			return NO_FRAMEWORKS;
 		}
 
 		const content = readFileSync(filePath, 'utf-8');
-		const isNodeTest =
-			/from\s+['"]node:test['"]/.test(content) ||
-			/require\s*\(\s*['"]node:test['"]\s*\)/.test(content);
-
-		return isNodeTest;
-	} catch (error) {
-		logError(`Error checking for node:test in ${filePath}`, error);
-		return false;
-	}
-}
-
-export function isBunTestFile(filePath: string): boolean {
-	return hasImport(filePath, 'bun:test');
-}
-
-export function isDenoTestFile(filePath: string): boolean {
-	const cached = cacheManager.getFileFramework(filePath);
-	if (cached !== undefined) {
-		return cached?.framework === 'deno';
-	}
-
-	try {
-		if (!existsSync(filePath)) return false;
-		const content = readFileSync(filePath, 'utf-8');
-		return (
-			/Deno\.test/.test(content) ||
-			/from\s+['"]jsr:@std\/expect['"]/.test(content) ||
-			/from\s+['"]@std\/assert['"]/.test(content) ||
-			/from\s+['"]jsr:@std\/assert['"]/.test(content) ||
-			/from\s+['"]https:\/\/deno\.land\//.test(content)
+		const frameworks = new Set(
+			IMPORT_PATTERNS.filter(([, pattern]) => pattern.test(content)).map(
+				([framework]) => framework,
+			),
 		);
+		cacheManager.setImportedFrameworks(filePath, frameworks);
+		return frameworks;
 	} catch (error) {
-		logError(`Error checking for Deno.test in ${filePath}`, error);
-		return false;
+		logError(`Error checking the test imports of ${filePath}`, error);
+		return NO_FRAMEWORKS;
 	}
 }
 
-export function isPlaywrightTestFile(filePath: string): boolean {
-	return hasImport(filePath, '@playwright/test');
-}
-
-const rstestImportRegex =
-	/from\s+['"](?:@rstest\/core|rstest)['"]|require\s*\(\s*['"](?:@rstest\/core|rstest)['"]\s*\)/;
-
-export function isRstestTestFile(filePath: string): boolean {
+function hasFrameworkImport(
+	filePath: string,
+	framework: TestFrameworkName,
+): boolean {
 	const cached = cacheManager.getFileFramework(filePath);
 	if (cached !== undefined) {
-		return cached?.framework === 'rstest';
+		return cached?.framework === framework;
 	}
-
-	try {
-		if (!existsSync(filePath)) {
-			return false;
-		}
-
-		const content = readFileSync(filePath, 'utf-8');
-		return rstestImportRegex.test(content);
-	} catch (error) {
-		logError(`Error checking for rstest in ${filePath}`, error);
-		return false;
-	}
+	return getImportedFrameworks(filePath).has(framework);
 }
+
+export const isNodeTestFile = (filePath: string): boolean =>
+	hasFrameworkImport(filePath, 'node-test');
+
+export const isBunTestFile = (filePath: string): boolean =>
+	hasFrameworkImport(filePath, 'bun');
+
+export const isDenoTestFile = (filePath: string): boolean =>
+	hasFrameworkImport(filePath, 'deno');
+
+export const isPlaywrightTestFile = (filePath: string): boolean =>
+	hasFrameworkImport(filePath, 'playwright');
+
+export const isRstestTestFile = (filePath: string): boolean =>
+	hasFrameworkImport(filePath, 'rstest');
 
 export const isRstestFile = isRstestTestFile;
 
@@ -116,33 +114,6 @@ function hasFrameworkDependency(
 		sources.some((deps) => deps?.[frameworkName]) ||
 		!!packageJson[frameworkName]
 	);
-}
-
-function hasImport(filePath: string, moduleName: string): boolean {
-	const cached = cacheManager.getFileFramework(filePath);
-	if (cached !== undefined) {
-		return (
-			cached?.framework ===
-			(moduleName === 'bun:test'
-				? 'bun'
-				: moduleName === '@playwright/test'
-					? 'playwright'
-					: 'node-test')
-		);
-	}
-
-	try {
-		if (!existsSync(filePath)) return false;
-
-		const content = readFileSync(filePath, 'utf-8');
-		const regex = new RegExp(
-			`from\\s+['"]${moduleName}['"]|require\\s*\\(\\s*['"]${moduleName}['"]\\s*\\)`,
-		);
-		return regex.test(content);
-	} catch (error) {
-		logError(`Error checking for ${moduleName} in ${filePath}`, error);
-		return false;
-	}
 }
 
 export function clearNodeTestCache(): void {
