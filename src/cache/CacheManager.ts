@@ -38,13 +38,6 @@ export class CacheManager {
 		this.fileFrameworkCache.set(filePath, value);
 	}
 
-	public getTestFileStats(): { size: number; entries: string[] } {
-		return {
-			size: this.fileFrameworkCache.size,
-			entries: Array.from(this.fileFrameworkCache.keys()),
-		};
-	}
-
 	private configPathCache = new Map<string, string | undefined>();
 
 	private importedFrameworksCache = new Map<string, ReadonlySet<string>>();
