@@ -47,6 +47,15 @@ export class CacheManager {
 
 	private importedFrameworksCache = new Map<string, ReadonlySet<string>>();
 
+	private parsedConfigCache = new Map<string, unknown>();
+
+	public getParsedConfig<T>(key: string, parse: () => T): T {
+		if (!this.parsedConfigCache.has(key)) {
+			this.parsedConfigCache.set(key, parse());
+		}
+		return this.parsedConfigCache.get(key) as T;
+	}
+
 	public getImportedFrameworks(
 		filePath: string,
 	): ReadonlySet<string> | undefined {
@@ -78,6 +87,7 @@ export class CacheManager {
 		this.fileFrameworkCache.clear();
 		this.configPathCache.clear();
 		this.importedFrameworksCache.clear();
+		this.parsedConfigCache.clear();
 	}
 
 	public invalidate(key: string): void {

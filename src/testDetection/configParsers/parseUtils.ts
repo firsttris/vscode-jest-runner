@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { type ParserPlugin, parse } from '@babel/parser';
 import * as t from '@babel/types';
+import { cacheManager } from '../../cache/CacheManager';
 import { astToValue } from '../../utils/AstUtils';
 
 export const readConfigFile = (configPath: string): string =>
@@ -332,9 +333,22 @@ const resolveConfigNode = (
 	return undefined;
 };
 
+/**
+ * The config object `content` exports, as far as it can be evaluated
+ * statically. Detection asks for every file's config, so the result is
+ * cached by path and content: a changed config gets a new entry.
+ */
 export const parseConfigObject = (
 	content: string,
 	configPath: string = '__inline__',
+): any | undefined =>
+	cacheManager.getParsedConfig(`${configPath}\0${content}`, () =>
+		evaluateConfigObject(content, configPath),
+	);
+
+const evaluateConfigObject = (
+	content: string,
+	configPath: string,
 ): any | undefined => {
 	let ast: t.File;
 	try {
