@@ -16,11 +16,7 @@ export class TestConfigWatcher {
 
 	private setupConfigurationWatcher(): void {
 		const configWatcher = vscode.workspace.onDidChangeConfiguration((e) => {
-			if (
-				e.affectsConfiguration('jestrunner') ||
-				e.affectsConfiguration('vitest') ||
-				e.affectsConfiguration('jest')
-			) {
+			if (e.affectsConfiguration('jestrunner')) {
 				this.refreshCustomConfigWatchers();
 				this._onDidChange.fire();
 			}
