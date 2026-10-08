@@ -136,9 +136,9 @@ const getNodeTestDebugConfig = (
 		Settings.getNodeTestCommand(),
 		filePath,
 	);
-	const runtimeState = getRuntimeCommandState(customCommand);
-	const baseRuntimeArgs = runtimeState.runtimeExecutable
-		? appendUniqueArgs(runtimeState.args, ['--test'])
+	const commandState = getProgramCommandState(customCommand);
+	const baseRuntimeArgs = commandState.program
+		? appendUniqueArgs(commandState.args, ['--test'])
 		: customCommand
 			? []
 			: ['--test'];
@@ -154,7 +154,7 @@ const getNodeTestDebugConfig = (
 		runtimeArgsWithTestName,
 		config.nodeTestRunOptions,
 	);
-	const debugEnv = mergeEnv(runtimeState.env, config.nodeTestDebugOptions.env);
+	const debugEnv = mergeEnv(commandState.env, config.nodeTestDebugOptions.env);
 
 	return {
 		...createDebugConfigBase(
@@ -167,7 +167,7 @@ const getNodeTestDebugConfig = (
 		args: [],
 		program: filePath || '',
 		runtimeArgs,
-		runtimeExecutable: runtimeState.runtimeExecutable,
+		runtimeExecutable: commandState.program,
 		env: debugEnv,
 	};
 };
@@ -384,6 +384,7 @@ const withFileArgs = (
 ): string[] =>
 	filePath ? appendUniqueArgs(baseArgs, buildArgs(filePath)) : baseArgs;
 
+/** Executable, args and leading env assignments of a custom command. */
 const getProgramCommandState = (
 	command?: string,
 ): {
@@ -391,43 +392,10 @@ const getProgramCommandState = (
 	args: string[];
 	env: Record<string, string>;
 } => {
-	if (!command) {
-		return { program: undefined, args: [], env: {} };
-	}
-
-	const { env, executable, args } = parseCommandAndEnv(command);
-	if (!executable) {
-		return { program: undefined, args: [], env: {} };
-	}
-
-	return {
-		program: executable,
-		args,
-		env: Object.keys(env).length > 0 ? env : {},
-	};
-};
-
-const getRuntimeCommandState = (
-	command?: string,
-): {
-	runtimeExecutable: string | undefined;
-	args: string[];
-	env: Record<string, string>;
-} => {
-	if (!command) {
-		return { runtimeExecutable: undefined, args: [], env: {} };
-	}
-
-	const { env, executable, args } = parseCommandAndEnv(command);
-	if (!executable) {
-		return { runtimeExecutable: undefined, args: [], env: {} };
-	}
-
-	return {
-		runtimeExecutable: executable,
-		args,
-		env: Object.keys(env).length > 0 ? env : {},
-	};
+	const { env, executable, args } = parseCommandAndEnv(command ?? '');
+	return executable
+		? { program: executable, args, env }
+		: { program: undefined, args: [], env: {} };
 };
 
 const resolveProgramOrNpx = (

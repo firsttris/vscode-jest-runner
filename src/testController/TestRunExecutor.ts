@@ -68,6 +68,12 @@ interface RunContext {
 	configPath: string;
 }
 
+/** Files the JUnit reporter of these frameworks writes (see TestArgumentBuilder). */
+const JUNIT_REPORT_FILES: Partial<Record<TestFrameworkName, string>> = {
+	bun: '.bun-report.xml',
+	deno: '.deno-report.xml',
+};
+
 export class TestRunExecutor {
 	private static readonly WINDOWS_SAFE_COMMAND_LENGTH = 30000;
 	/** cmd.exe allows 8191 characters, minus room for its quoting. */
@@ -389,8 +395,10 @@ export class TestRunExecutor {
 
 		try {
 			if (!result.structuredResultsProcessed) {
-				this.handleBunReport(framework, result, cwd);
-				this.handleDenoReport(framework, result, cwd);
+				const reportFile = JUNIT_REPORT_FILES[framework];
+				if (reportFile) {
+					this.appendJUnitReport(result, join(cwd, reportFile));
+				}
 				processTestResults(result.output, allTests, run, framework, sessionId);
 			}
 		} finally {
@@ -551,53 +559,21 @@ export class TestRunExecutor {
 		return ['run', ...args.slice(nextOptionIndex)];
 	}
 
-	private handleBunReport(
-		framework: TestFrameworkName,
-		result: { output: string },
-		cwd: string,
-	): void {
-		if (framework !== 'bun') {
+	/** Appends the JUnit report the run wrote to a file to its output. */
+	private appendJUnitReport(result: { output: string }, reportPath: string) {
+		try {
+			if (!fs.existsSync(reportPath)) {
+				return;
+			}
+			result.output += `\n${fs.readFileSync(reportPath, 'utf8')}`;
+		} catch (e) {
+			logError(`Failed to read test report ${reportPath}`, e);
 			return;
 		}
-
-		const bunReportPath = join(cwd, '.bun-report.xml');
 		try {
-			if (fs.existsSync(bunReportPath)) {
-				const reportContent = fs.readFileSync(bunReportPath, 'utf8');
-				result.output += `\n${reportContent}`;
-				try {
-					fs.unlinkSync(bunReportPath);
-				} catch (e) {
-					logError('Failed to delete Bun report file', e);
-				}
-			}
+			fs.unlinkSync(reportPath);
 		} catch (e) {
-			logError('Failed to read Bun report file', e);
-		}
-	}
-
-	private handleDenoReport(
-		framework: TestFrameworkName,
-		result: { output: string },
-		cwd: string,
-	): void {
-		if (framework !== 'deno') {
-			return;
-		}
-
-		const denoReportPath = join(cwd, '.deno-report.xml');
-		try {
-			if (fs.existsSync(denoReportPath)) {
-				const reportContent = fs.readFileSync(denoReportPath, 'utf8');
-				result.output += `\n${reportContent}`;
-				try {
-					fs.unlinkSync(denoReportPath);
-				} catch (e) {
-					logError('Failed to delete Deno report file', e);
-				}
-			}
-		} catch (e) {
-			logError('Failed to read Deno report file', e);
+			logError(`Failed to delete test report ${reportPath}`, e);
 		}
 	}
 

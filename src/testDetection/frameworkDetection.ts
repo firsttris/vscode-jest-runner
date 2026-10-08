@@ -208,14 +208,12 @@ export function detectTestFramework(
 		}
 	}
 
-	if (jestConfigPath && !vitestConfigPath) {
+	// Without a pattern that decides, Jest wins over Vitest.
+	if (jestConfigPath) {
 		return 'jest';
 	}
-	if (vitestConfigPath && !jestConfigPath) {
+	if (vitestConfigPath) {
 		return 'vitest';
-	}
-	if (jestConfigPath && vitestConfigPath) {
-		return 'jest';
 	}
 
 	if (rstestConfigPath) {
