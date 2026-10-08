@@ -157,6 +157,28 @@ Jest Runner ships no default keybindings so it never collides with yours. Add wh
 { "key": "alt+4", "command": "extension.runPrevJest" }
 ```
 
+### Commands
+
+All commands keep their historic `Jest` names, but each one runs the framework of the current file.
+
+| Command | ID | What it runs |
+|---|---|---|
+| Run Jest / Debug Jest | `extension.runJest`, `extension.debugJest` | The test at the cursor (or the selected text as test name) |
+| Run Jest on File | `extension.runJestFile` | The whole file |
+| Run Jest on Path / Debug Jest on Path | `extension.runJestPath`, `extension.debugJestPath` | A file or folder from the explorer context menu |
+| Run Jest --watch | `extension.watchJest` | The test at the cursor in watch mode |
+| Run Jest and generate Coverage | `extension.runJestCoverage` | The test at the cursor with `--coverage` |
+| Run Jest and update Snapshots | `extension.runJestAndUpdateSnapshots` | The test at the cursor with `-u` |
+| Run Jest - Run Previous Test | `extension.runPrevJest` | Repeats the last run or debug session |
+
+## Good to know
+
+- **Config files are parsed, not executed.** Jest Runner reads `testMatch`, `testRegex`, `include`, `exclude`, `roots`, `testDir` and `projects` with a static parser that understands literals, local variables, `require()` of local files and wrappers such as `defineConfig`. Configs built at runtime (package imports, conditions, `process.env`) fall back to the default patterns; set `jestrunner.disableFrameworkConfig` and `jestrunner.defaultTestPatterns` in that case.
+- **Coverage in the editor** needs the Test Explorer. Jest, Rstest, Node.js, Bun and Deno work without setup; Vitest needs `@vitest/coverage-v8` or `@vitest/coverage-istanbul` installed and `coverage.provider` set in its config. The report directory is read from `coverageDirectory` / `reportsDirectory`, otherwise `coverage/`.
+- **Debugging Bun tests** requires the [Bun for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=Oven.bun-vscode) extension; everything else uses the built-in JavaScript debugger.
+- **Parameterized tests** (`it.each`, `test.each`, `describe.each`) get one entry per row when the table is a literal in the file, with `%s`, `%i`, `%#`, `$name` and `$obj.prop` filled in. Dynamic names such as `it(MyClass.prototype.method.name, ...)` work too.
+- **Logs** of what was detected and which command was started go to the **Jest Runner** output channel. Turn on `jestrunner.enableDebugLogs` before reporting a bug.
+
 ## Documentation
 
 The full documentation lives at **[firsttris.github.io/vscode-jest-runner](https://firsttris.github.io/vscode-jest-runner/)**:
