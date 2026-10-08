@@ -1,0 +1,127 @@
+# Documentation site: https://firsttris.github.io/vscode-jest-runner/
+# Source is docs/, built with MkDocs Material (.github/workflows/docs.yml).
+# Locally: pip install -r requirements-docs.txt && mkdocs serve
+site_name: Jest Runner for VS Code
+site_description: >-
+  Jest Runner: run and debug Jest, Vitest, Playwright, Rstest, Bun, Deno and
+  Node.js tests in Visual Studio Code. CodeLens, Test Explorer, coverage,
+  watch mode and monorepo support, with zero configuration.
+site_url: https://firsttris.github.io/vscode-jest-runner/
+repo_url: https://github.com/firsttris/vscode-jest-runner
+repo_name: firsttris/vscode-jest-runner
+edit_uri: edit/master/docs/
+copyright: >-
+  MIT License · Jest, Vitest, Playwright, Rstest, Bun, Deno and Node.js are
+  trademarks of their respective owners. This project is not affiliated with them.
+
+docs_dir: docs
+# Pages as usage.html instead of usage/: relative image paths in <img> tags
+# then work here and on GitHub alike
+use_directory_urls: false
+
+nav:
+  - Overview: README.md
+  - User Guide:
+      - Getting Started: getting-started.md
+      - Running & Debugging Tests: usage.md
+      - Supported Test Frameworks: frameworks.md
+      - Settings Reference: configuration.md
+      - Recipes: recipes.md
+      - Troubleshooting & FAQ: troubleshooting.md
+  - Internals:
+      - Architecture: architecture.md
+      - Test Detection: internals/test-detection.md
+      - Config File Parsing: internals/config-parsing.md
+      - Test File Parsing: internals/test-parsing.md
+      - Command Building & Execution: internals/execution.md
+      - Reporters & Result Matching: internals/results.md
+      - Test Explorer: internals/test-explorer.md
+      - Debugging: internals/debugging.md
+      - Coverage: internals/coverage.md
+      - Module Reference: internals/module-reference.md
+      - Development & Release: development.md
+
+theme:
+  name: material
+  language: en
+  logo: assets/icon.png
+  favicon: assets/icon.png
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    # Follows the system setting, switchable like in VS Code
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - toc.follow
+    - content.code.copy
+    - content.action.edit
+    - content.tabs.link
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+plugins:
+  - search:
+      lang: en
+  - git-revision-date-localized:
+      type: date
+      locale: en
+      fallback_to_build_date: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Link to this section
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/firsttris/vscode-jest-runner
+      name: Source code on GitHub
+    - icon: material/microsoft-visual-studio-code
+      link: https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner
+      name: Install from the Visual Studio Marketplace
+    - icon: material/package-variant
+      link: https://open-vsx.org/extension/firsttris/vscode-jest-runner
+      name: Install from Open VSX

@@ -1,490 +1,239 @@
 <div align="center">
 
-# 🧪 Jest & Vitest Runner
+<img src="public/icon.png" alt="Jest Runner for VS Code logo" width="96" height="96">
 
-**Run and debug tests with ease, right from your editor**
+# Jest Runner for Visual Studio Code
 
-![Extension Example](./docs/Banner.png)
+**Run and debug Jest, Vitest, Playwright, Rstest, Bun, Deno and Node.js tests right from your editor. One click, zero configuration.**
 
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/firsttris.vscode-jest-runner?label=VS%20Marketplace&logo=visualstudiocode&logoColor=white&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/firsttris.vscode-jest-runner?label=Installs&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/stars/firsttris.vscode-jest-runner?label=Rating&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner&ssr=false#review-details)
+[![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX&style=flat-square)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 [![Build](https://img.shields.io/github/actions/workflow/status/firsttris/vscode-jest-runner/ci.yml?branch=master&label=Build&logo=github&style=flat-square)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/firsttris/vscode-jest-runner?logo=codecov&style=flat-square)](https://codecov.io/gh/firsttris/vscode-jest-runner)
-[![VS Marketplace Version](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX&style=flat-square)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
-[![Installs](https://vsmarketplacebadges.dev/installs-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![Rating](https://vsmarketplacebadges.dev/rating-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 
-[Overview](#-overview) •
-[Features](#-features) •
-[Configuration](#️-configuration) •
-[Keyboard Shortcuts](#️-configuration) •
-[Contributing](#-contributing)
+[Install](#install) •
+[Quick Start](#quick-start) •
+[Features](#features) •
+[Supported Frameworks](#supported-test-frameworks) •
+[Configuration](#configuration) •
+[Documentation](https://firsttris.github.io/vscode-jest-runner/) •
+[FAQ](#faq)
+
+<img src="docs/Banner.png" alt="Jest Runner in VS Code: Run and Debug CodeLens above a test, the Test Explorer with the test tree and the terminal with the test output" width="900">
 
 </div>
 
 ---
 
-## 🎯 Overview
+## What is Jest Runner?
 
-A **lightweight** VS Code extension for running and debugging Jest, Vitest, Rstest, Node.js (native), Bun, Deno and Playwright tests directly in your editor. Works **out-of-the-box** with minimal configuration.
+**Jest Runner** is a lightweight Visual Studio Code extension that lets you **run a single test, a describe block or a whole test file** without leaving the editor. It adds **Run** and **Debug** actions above every test (CodeLens), a native **Test Explorer** with **code coverage**, context menu entries and commands for the keyboard.
 
-> ✨ **What's New?** Try the new native Test Explorer with code coverage integration! Enable it by setting `"jestrunner.enableTestExplorer": true` in your VS Code settings.
+It started as a Jest test runner and grew into a **universal JavaScript and TypeScript test runner for VS Code**: it detects whether a file belongs to **Jest, Vitest, Playwright, Rstest, Bun, Deno or the Node.js test runner** and builds the right command for it. Monorepos, multiple configs, Create React App, Nx, Next.js, NestJS and Vite projects work out of the box.
 
-> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It supports static resolution of variables defined in the file and configuration wrappers (like `defineConfig`), but it does **not** execute the file (function calls are ignored). Complex runtime logic or external imports are not supported. If your configuration is too complex, you can set **`disableFrameworkConfig: true`** to rely on **`defaultTestPatterns`**.
+> 💡 **Why not the built-in runner of each framework?** Jest Runner runs the *real* CLI of your project in a terminal or the debugger, with your config, your environment and your Node version. Nothing is emulated, so what passes here passes in CI.
 
-> 🚧 **Notice:** The extension is currently undergoing major refactoring. If you encounter any issues or have questions, please don't hesitate to [create a GitHub issue](https://github.com/firsttris/vscode-jest-runner/issues).
+## Install
 
-## ✨ Features
+Search for **Jest Runner** in the Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`), or install from the command line:
+
+```bash
+code --install-extension firsttris.vscode-jest-runner
+```
+
+Also available on [Open VSX](https://open-vsx.org/extension/firsttris/vscode-jest-runner) for VSCodium, Cursor, Windsurf, Gitpod and other VS Code based editors. Requires VS Code 1.100 or newer.
+
+## Quick Start
+
+1. Open a project that uses one of the [supported test frameworks](#supported-test-frameworks).
+2. Open a test file. **Run** and **Debug** appear above each `describe`, `it` and `test`.
+3. Click **Run** to execute that test in the integrated terminal, or **Debug** to hit your breakpoints.
+
+That is all. Jest Runner reads your `jest.config.*`, `vitest.config.*`, `playwright.config.*`, `rstest.config.*` or `deno.json` to find your tests, so there is nothing to configure in most projects.
+
+Want the tree view? Enable the native Test Explorer:
+
+```json
+"jestrunner.enableTestExplorer": true
+```
+
+## Features
 
 <table>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-### 🚀 Run & Debug Experience
+### 🚀 Run & Debug
 
-- ✅ **Run individual tests** or entire test suites with a single click
-- 🐛 **Debug tests** with full breakpoint and variable inspection support
-- 📊 **Generate coverage reports** to analyze test coverage
-- 👀 **Watch mode** for automatic test re-runs during development
-- 📸 **Snapshot updating** with dedicated command
+- **Run a single test**, a `describe` block, a file or a folder
+- **Debug with breakpoints**, variable inspection and the call stack
+- **Watch mode** for automatic re-runs while you code
+- **Update snapshots** with one command
+- **Re-run the previous test** with a keyboard shortcut
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
-### 📋 Multiple Access Points
+### 📊 Coverage
 
-- 🖱️ **Context menu** in editor and explorer (right-click on tests)
-- 🔍 **CodeLens** annotations above test definitions (optional)
-- 🗂️ **Test Explorer** integration showing test hierarchy in dedicated panel
-- ⌨️ **Command palette** (Ctrl+Shift+P) with full command access
-- ⚡ **Keyboard shortcuts** for quick test execution
+- **Inline coverage** in the editor via the VS Code coverage API
+- **Coverage view** with statement, branch and function counts
+- Works with **Jest, Vitest, Rstest, Node.js, Bun and Deno**
+- Coverage for the **current file only** on demand
 
 </td>
 </tr>
 <tr>
-<td width="50%">
+<td width="50%" valign="top">
 
-### 🎯 Smart Test Detection
+### 🧭 Five ways to start a test
 
-- 🤖 **Automatic framework detection** - distinguishes between Jest, Vitest, Rstest, Node.js, Bun, Deno, and Playwright tests
-- 🔍 **Reads and applies include/exclude patterns** (globs and regex) from [framework configs](#️-configuration) for fine-grained control over which tests appear
+- **CodeLens** actions above every test
+- **Test Explorer** with the full test hierarchy
+- **Context menu** in the editor and the file explorer
+- **Command Palette** commands
+- **Keyboard shortcuts** you bind yourself
 
 </td>
-<td width="50%">
+<td width="50%" valign="top">
 
-### 💼 Project Flexibility
+### 🧠 Smart detection
 
-- 📦 **Monorepo support** for yarn & VS Code workspaces
-- ⚙️ **Multiple configurations** with glob-based config resolution
-- ⚛️ **Create React App** and similar abstraction layers
-- 🛠️ **Framework support** including Vite, Tanstack Start, Nx, Next.js, and NestJS
+- **Automatic framework detection** per file: imports, config files, dependencies and binaries
+- **Reads your config**: `testMatch`, `testRegex`, `include`, `exclude`, `roots`, `testDir`, `projects` and more
+- **Parameterized tests**: `it.each`, `describe.each`, `test.each` with `%s`, `$name` and `%#`
+- **Monorepos**: per-package configs, Jest and Vitest side by side, glob mapped configs
 
 </td>
 </tr>
 </table>
 
-## ⚙️ Configuration
+## Supported Test Frameworks
+
+| Framework | Run | Debug | Coverage | How it is detected |
+|---|:-:|:-:|:-:|---|
+| [Jest](https://jestjs.io/) | ✅ | ✅ | ✅ | `jest.config.*`, `jest` key in `package.json`, dependency or binary |
+| [Vitest](https://vitest.dev/) | ✅ | ✅ | ✅ | `vitest.config.*` or `vite.config.*` with a `test` section, dependency or binary |
+| [Playwright](https://playwright.dev/) | ✅ | ✅ | — | `import ... from '@playwright/test'`, `playwright.config.*` |
+| [Rstest](https://rstest.rs/) | ✅ | ✅ | ✅ | `import ... from '@rstest/core'`, `rstest.config.*` |
+| [Bun test](https://bun.sh/docs/cli/test) | ✅ | ✅ ¹ | ✅ | `import ... from 'bun:test'`, `bun.lock` |
+| [Deno test](https://docs.deno.com/runtime/fundamentals/testing/) | ✅ | ✅ | ✅ | `Deno.test(...)`, `@std/assert` imports, `deno.json` |
+| [Node.js test runner](https://nodejs.org/api/test.html) | ✅ | ✅ | ✅ | `import ... from 'node:test'` |
+
+¹ Debugging Bun tests needs the [Bun for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=Oven.bun-vscode) extension.
+
+Jest Runner also works with the tools built on top of these frameworks: **Create React App**, **Vite**, **Nx**, **Next.js**, **NestJS**, **TanStack Start** and other setups that wrap one of these runners. See [Supported Test Frameworks](https://firsttris.github.io/vscode-jest-runner/frameworks.html) in the documentation for what is read from each config file.
+
+## Configuration
+
+Most projects need no settings. When you do, every option lives under `jestrunner.*` in your VS Code settings. The most used ones:
+
+| Setting | What it does |
+|---|---|
+| `jestrunner.enableTestExplorer` | Show tests in the native Test Explorer with run, debug and coverage profiles. Default `false`. |
+| `jestrunner.enableCodeLens` / `jestrunner.codeLens` | Show the inline actions and choose which: `run`, `debug`, `watch`, `coverage`, `current-test-coverage`. |
+| `jestrunner.jestCommand`, `vitestCommand`, `playwrightCommand`, `rstestCommand`, `nodeTestCommand` | Replace the command, e.g. `npm run test --` for Create React App. Supports `${workspaceFolder}` and `${env:NAME}`. |
+| `jestrunner.runOptions`, `vitestRunOptions`, `playwrightRunOptions`, ... | Extra CLI flags for each framework, e.g. `["--coverage", "--colors"]`. |
+| `jestrunner.debugOptions`, `vitestDebugOptions`, ... | Add or override the generated VS Code debug configuration. |
+| `jestrunner.configPath` / `jestrunner.vitestConfigPath` | A config path, or a glob-to-config mapping for several configs in one workspace. |
+| `jestrunner.projectPath` | Run tests from a sub folder instead of the workspace root. |
+| `jestrunner.useNearestConfig` | Use the closest config file above the test file. Handy for nested projects. |
+| `jestrunner.disableFrameworkConfig` / `jestrunner.defaultTestPatterns` | Skip config parsing and use your own test file globs. |
+| `jestrunner.enableESM` | Add `--experimental-vm-modules` for ESM projects on Jest. |
+
+The complete list of all settings with examples is in the [Settings Reference](https://firsttris.github.io/vscode-jest-runner/configuration.html). Ready-made setups for Create React App, nvm, ESM, monorepos and Windows shells are in the [Recipes](https://firsttris.github.io/vscode-jest-runner/recipes.html).
+
+### Keyboard shortcuts
+
+Jest Runner ships no default keybindings so it never collides with yours. Add what you need in **Preferences: Open Keyboard Shortcuts (JSON)**:
+
+```json
+{ "key": "alt+1", "command": "extension.runJest" },
+{ "key": "alt+2", "command": "extension.debugJest" },
+{ "key": "alt+3", "command": "extension.watchJest" },
+{ "key": "alt+4", "command": "extension.runPrevJest" }
+```
+
+## Documentation
+
+The full documentation lives at **[firsttris.github.io/vscode-jest-runner](https://firsttris.github.io/vscode-jest-runner/)**:
+
+| For users | For contributors |
+|---|---|
+| [Getting Started](https://firsttris.github.io/vscode-jest-runner/getting-started.html) | [Architecture](https://firsttris.github.io/vscode-jest-runner/architecture.html) |
+| [Running & Debugging Tests](https://firsttris.github.io/vscode-jest-runner/usage.html) | [Test Detection](https://firsttris.github.io/vscode-jest-runner/internals/test-detection.html) |
+| [Supported Test Frameworks](https://firsttris.github.io/vscode-jest-runner/frameworks.html) | [Command Building & Execution](https://firsttris.github.io/vscode-jest-runner/internals/execution.html) |
+| [Settings Reference](https://firsttris.github.io/vscode-jest-runner/configuration.html) | [Reporters & Result Matching](https://firsttris.github.io/vscode-jest-runner/internals/results.html) |
+| [Recipes](https://firsttris.github.io/vscode-jest-runner/recipes.html) | [Module Reference](https://firsttris.github.io/vscode-jest-runner/internals/module-reference.html) |
+| [Troubleshooting & FAQ](https://firsttris.github.io/vscode-jest-runner/troubleshooting.html) | [Development & Release](https://firsttris.github.io/vscode-jest-runner/development.html) |
+
+The same pages are browsable in the [docs folder](docs/README.md) of this repository.
+
+## FAQ
 
 <details>
-<summary><b>📊 Coverage Support</b></summary>
+<summary><b>Does Jest Runner replace the official Jest, Vitest or Playwright extension?</b></summary>
 <br>
 
-The extension supports test coverage through VS Code's Test Explorer. When you run tests with coverage, the results are displayed directly in VS Code's coverage view.
+It can. Jest Runner is deliberately small: it does not watch your whole project in the background or run tests on save. It runs exactly the test you ask for, through the real CLI, and shows the result in the terminal or the Test Explorer. If you only want a fast way to run and debug a single test, this is it.
 
-**Prerequisites**
+</details>
 
-**For Jest:**
+<details>
+<summary><b>How does it know whether a file is a Jest or a Vitest test?</b></summary>
+<br>
 
-- Coverage works out of the box! No configuration needed.
+Per file. Jest Runner first looks at the imports (`bun:test`, `node:test`, `@playwright/test`, `@rstest/core`, `Deno.test`), then walks up the directories looking for `jest.config.*`, `vitest.config.*` or `vite.config.*`, then checks `package.json` dependencies and installed binaries. When both Jest and Vitest configs exist, the `testMatch` and `include` patterns decide. Details are in [Test Detection](https://firsttris.github.io/vscode-jest-runner/internals/test-detection.html).
 
-**For Vitest:**
+</details>
 
-- Install a coverage provider:
+<details>
+<summary><b>My tests do not show up or the wrong framework is used.</b></summary>
+<br>
+
+Enable `jestrunner.enableDebugLogs` and open the **Jest Runner** output channel: it logs which config was read and which patterns were applied. Config files are read by a static parser that does not execute code, so a config built at runtime may not be understood. In that case set `jestrunner.disableFrameworkConfig: true` and list your test globs in `jestrunner.defaultTestPatterns`. More in [Troubleshooting](https://firsttris.github.io/vscode-jest-runner/troubleshooting.html).
+
+</details>
+
+<details>
+<summary><b>Does it work on Windows, with PowerShell, cmd and Git Bash?</b></summary>
+<br>
+
+Yes. Test names are quoted for the shell of your integrated terminal, `.cmd` shims such as `npx` are started through `cmd.exe` where needed, long command lines are split and the whole process tree is killed on cancel. The end-to-end tests run on Windows, macOS and Linux in CI.
+
+</details>
+
+<details>
+<summary><b>Does it support ESM projects?</b></summary>
+<br>
+
+Vitest, Bun, Deno and the Node.js runner are ESM-native. For Jest set `jestrunner.enableESM: true`, which adds `--experimental-vm-modules` to `NODE_OPTIONS` for runs and debug sessions.
+
+</details>
+
+## Contributing
+
+Bug reports, feature requests and pull requests are welcome. Start with the [open issues](https://github.com/firsttris/vscode-jest-runner/issues) or read [Development & Release](https://firsttris.github.io/vscode-jest-runner/development.html) to build, test and debug the extension locally:
 
 ```bash
-npm install -D @vitest/coverage-v8
-# or
-npm install -D @vitest/coverage-istanbul
+git clone https://github.com/firsttris/vscode-jest-runner.git
+cd vscode-jest-runner
+npm ci
+npm test        # unit tests
+npm run build   # bundle to dist/extension.js, then press F5 in VS Code
 ```
 
-- You only need to specify the coverage provider in `vitest.config.ts`:
+## License
 
-```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  test: {
-    coverage: {
-      provider: 'v8', // or 'istanbul'
-    },
-  },
-});
-```
-
-**For Node.js Native Test Runner:**
-- Coverage is supported natively via the `--experimental-test-coverage` flag (enabled by default for coverage runs).
-- No extra setup required!
-
-**For Bun:**
-- Coverage works out of the box! (uses `bun test --coverage`)
-- No extra setup required.
-
-
-**Coverage Directory Detection**
-
-The extension automatically detects the coverage directory from your framework configuration:
-
-- **Jest**: Reads the `coverageDirectory` option from your Jest config
-- **Vitest**: Reads the `reportsDirectory` option from your Vitest coverage config
-- **Node.js**: Defaults to `coverage/` directory (standard native behavior)
-
-If not specified, it defaults to `coverage/` in your project root.
-
-**Running Tests with Coverage**
-
-All coverage entry points use the same **Coverage** profile powered by VS Code's native coverage API.
-
-**Coverage via Test Explorer**
-
-- Click the "Coverage" button (shield icon) in the Test Explorer panel
-- Coverage results appear in VS Code's Coverage panel (View → Testing → Show Coverage)
-- Inline decorations in the editor show covered/uncovered lines
-
-**Coverage via CodeLens / Command Palette**
-
-- Use the CodeLens "Coverage" action (if enabled) above a test or suite
-- Or run the Command Palette command: "Jest: Run Test with Coverage"
-
-</details>
-
-
-<details>
-<summary><b>🛠️ Extension Settings</b></summary>
-<br>
-
-Customize the test runner for your project:
-
-| Setting                                     | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Jest Configuration**                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.configPath`                     | Path to Jest config (relative to workspace folder, e.g. `jest-config.json`). Can be a string or a glob mapping object to support multiple Jest configs.<br><br>**Example with glob mapping:** `{"**/*.it.spec.ts": "./jest.it.config.js", "**/*.spec.ts": "./jest.unit.config.js"}` - The first matching glob is used, so specify more specific patterns first. Config path is relative to `jestrunner.projectPath` or workspace root. Use `jestrunner.useNearestConfig: true` to search up directories for the matching config file. |
-| `jestrunner.jestCommand`                    | Define an alternative Jest command for projects using abstractions like Create React App (e.g. `npm run test --`).                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `jestrunner.runOptions`                     | CLI options to add to Jest commands (e.g. `["--coverage", "--colors"]`). See [Jest CLI documentation](https://jestjs.io/docs/en/cli).                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `jestrunner.debugOptions`                   | Add or override VS Code debug configurations (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging tests.                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `jestrunner.enableESM`                      | Manually enable ESM support. When set to true, `--experimental-vm-modules` is added to NODE_OPTIONS. Default: `false`.                                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Vitest Configuration**                    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.vitestConfigPath`               | Path to Vitest config (relative to workspace folder, e.g. `vitest.config.ts`). Can be a string or a glob mapping object similar to `configPath`.                                                                                                                                                                                                                                                                                                                                                                                      |
-| `jestrunner.vitestCommand`                  | Define an alternative Vitest command (default: `npx --no-install vitest`).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `jestrunner.vitestRunOptions`               | CLI options to add to Vitest commands (e.g. `["--reporter=verbose"]`). See [Vitest CLI documentation](https://vitest.dev/guide/cli.html).                                                                                                                                                                                                                                                                                                                                                                                             |
-| `jestrunner.vitestDebugOptions`             | Add or override VS Code debug configurations for Vitest (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging Vitest tests.                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Rstest Configuration**                    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.rstestCommand`                  | Define an alternative Rstest command (default: `npx --no-install rstest`).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `jestrunner.rstestRunOptions`               | CLI options to add to Rstest commands (e.g. `["--globals"]`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `jestrunner.rstestDebugOptions`             | Add or override VS Code debug configurations for Rstest. Only applies when debugging Rstest tests.                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| **Node.js Test Configuration**              |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.nodeTestCommand`                | Define an alternative Node.js test command (defaults to `node`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `jestrunner.nodeTestRunOptions`             | CLI options to add to the Node.js test runner command (e.g. `["--experimental-test-coverage"]`).                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `jestrunner.nodeTestDebugOptions`           | Add or override VS Code debug configurations for local Node.js tests (e.g. `{ "args": ["--no-warnings"] }`). Only applies when debugging `node:test` tests.                                                                                                                                                                                                                                                                                                                                                                           |
-| **Bun Configuration**                       |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.bunRunOptions`                  | CLI options to add to Bun test command (e.g. `["--silent"]`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `jestrunner.bunDebugOptions`                | Add or override VS Code debug configurations for Bun (e.g. `{ "args": ["--no-cache"] }`). Only applies when debugging bun tests.<br><br>⚠️ **Note:** Debugging requires the [Bun for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=Oven.bun-vscode) extension. |
-| **Deno Configuration**                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.denoRunOptions`                 | CLI options to add to Deno test command (e.g. `["--allow-net"]`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `jestrunner.denoDebugOptions`               | Add or override VS Code debug configurations for Deno. Only applies when debugging deno tests.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| **Playwright Configuration**              |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.playwrightConfigPath`           | Path to Playwright config (relative to workspace folder, e.g. `playwright.config.ts`).                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `jestrunner.disablePlaywright`              | Disable the Playwright test runner integration. Default: `false`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `jestrunner.playwrightCommand`              | Define an alternative Playwright command (default: `npx playwright test`).                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `jestrunner.playwrightRunOptions`           | CLI options to add to Playwright commands (e.g. `["--headed"]`). See [Playwright CLI documentation](https://playwright.dev/docs/test-cli).                                                                                                                                                                                                                                                                                                                                                                                            |
-| `jestrunner.playwrightDebugOptions`         | Add or override VS Code debug configurations for Playwright. Only applies when debugging Playwright tests.                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| **UI Options**                              |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.defaultTestPatterns`            | Fallback patterns used when no 'testMatch'/'testRegex' (Jest) or 'include' (Vitest) configuration is found. Default: `["**/*.{test,spec}.?(c\|m)[jt]s?(x)", "**/__tests__/**/*.?(c\|m)[jt]s?(x)"]`                                                                                                                                                                                                                                                                                                                                                         |
-| `jestrunner.enableTestExplorer`             | Enable the Test Explorer integration using VS Code's Testing API. Shows tests in dedicated Test Explorer panel. Default: `false`                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `jestrunner.enableCodeLens`                 | Bring back the old CodeLens feature with inline run/debug buttons (replaced by Test Explorer). Default: `true`                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `jestrunner.codeLens`                       | Specify which CodeLens actions to show when CodeLens is enabled. Options: `"run"`, `"debug"`, `"watch"`, `"coverage"`, `"current-test-coverage"`. Default: `["run", "debug"]`                                                                                                                                                                                                                                                                                                                                         |
-| `jestrunner.preserveEditorFocus`            | Keep focus on the editor instead of switching to the terminal when running tests.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **Debugging**                               |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.enableDebugLogs`                | Enable debug logging to the "Jest Runner" output channel. Useful for troubleshooting test detection and configuration issues. Default: `false`                                                                                                                                                                                                                                                                                                                                                                                        |
-| `jestrunner.maxBufferSize`                  | Maximum buffer size in MB for test output (default: `50`MB).                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **Project Management**                      |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `jestrunner.projectPath`                    | Path to project directory. Can be absolute (e.g. `/home/me/project/sub-folder`) or relative to workspace root (e.g. `./sub-folder`).                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `jestrunner.changeDirectoryToWorkspaceRoot` | Change directory before running tests. Priority order: 1. `projectPath` 2. nearest package.json location 3. workspace folder.                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `jestrunner.useNearestConfig`               | If `true`, the extension automatically searches for the nearest configuration file (e.g. `jest.config.js` or `package.json`) relative to the test file. Useful for projects with multiple configs or nested projects where no global config is set.<br><br>**Default: `false`** (Strict Mode). By default, if `configPath` is empty, the extension passes **no** config argument to Jest, allowing native resolution (best for Monorepos).                                                                               |
-| `jestrunner.disableFrameworkConfig`         | If true, the extension will ignore any framework configuration files (e.g. jest.config.js, vitest.config.ts) and use the `jestrunner.defaultTestPatterns` instead.                                                                                                                                                                                                                                                                                                                                                                    |
-
-This updated configuration table now includes the Node.js Test Runner settings.
-
-</details>
-
-
-<details>
-<summary><b>📋 Supported Framework Config</b></summary>
-<br>
-
-The extension **automatically reads configuration** from your framework config files.
-
-> ⚠️ **Important:** The extension uses **AST-based parsing** to read configuration files. It does **not** execute the file as JavaScript/TypeScript code.
-> 
-> This means:
-> - It **cannot** resolve external imports or complex runtime logic.
-> - **Variables** are supported via static analysis as long as they are defined within the file.
-> - **Function Calls** are **not** executed. Only configuration wrappers (like `defineConfig`) are supported.
-> - Only a **single configuration file** is parsed. If you use config inheritance, ensure the file the extension reads contains the necessary patterns.
->
-> If your configuration is too complex for this parser, you can set **`jestrunner.disableFrameworkConfig: true`**. This will disable config parsing and the extension will rely solely on `jestrunner.defaultTestPatterns` to identify test files.
-
-### 🏗️ Projects Support
-The extension supports the `projects` configuration for **Jest**, **Vitest**, and **Rstest**. This is essential for monorepos or multi-project workspaces.
-
-- **Jest**: Supports `projects` array defined as string paths (e.g. `['<rootDir>/packages/*']`) or configuration objects.
-- **Vitest**: Supports `projects` array in your config file or `vitest.workspace.ts` exporting an array of project configurations.
-- **Rstest**: Supports `projects` as an array of config objects or relative config paths.
-
-The extension will recursively parse these project configurations to identify test files across your entire workspace.
-
-### Jest Config Options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `rootDir` | `string` | Root directory for resolving paths |
-| `roots` | `string[]` | Directories to search for test files (e.g., `["<rootDir>/src", "<rootDir>/tests"]`) |
-| `testMatch` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
-| `testRegex` | `string \| string[]` | Regex patterns for test files |
-| `testPathIgnorePatterns` | `string[]` | Regex patterns to exclude files (e.g., `["/fixtures/", "/node_modules/"]`) |
-| `projects` | `string[] \| object[]` | List of projects or paths to project config files |
-
-**Example Jest Config:**
-
-```javascript
-// jest.config.js
-module.exports = {
-  rootDir: '.',
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: ['**/?(*.)+(spec|test).ts?(x)'],
-  testPathIgnorePatterns: ['/node_modules/', '/fixtures/', '/__mocks__/'],
-};
-```
-
-### Vitest Config Options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `root` | `string` | Project root directory |
-| `test.dir` | `string` | Base directory for test file discovery |
-| `test.include` | `string[]` | Glob patterns for test files (e.g., `["**/*.test.ts"]`) |
-| `test.exclude` | `string[]` | Glob patterns to exclude (e.g., `["**/e2e/**"]`) |
-| `projects` | `object[] \| string[]` | List of project configurations (or workspace array) |
-
-**Example Vitest Config:**
-
-```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config';
-
-export default defineConfig({
-  root: '.',
-  test: {
-    dir: 'src',
-    include: ['**/*.{test,spec}.{js,ts,jsx,tsx}'],
-    exclude: ['**/node_modules/**', '**/e2e/**', '**/fixtures/**'],
-  },
-});
-```
-
-### Node.js Native Runner
-
-The Node.js test runner does not use a specific configuration file in the same way Jest or Vitest do. Instead, it relies on glob patterns or file naming conventions.
-
-- By default, the extension looks for files matching: `**/*.{test,spec}.?(c|m)[jt]s?(x)` and `**/__tests__/**/*.?(c|m)[jt]s?(x)`.
-- You can customize this by modifying `jestrunner.defaultTestPatterns` in your VS Code settings.
-
-### Playwright Config Options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `testDir` | `string` | Base directory for Playwright test discovery |
-| `testMatch` | `string \| string[] \| RegExp` | File matching pattern(s) for Playwright tests |
-| `testIgnore` | `string \| string[]` | Pattern(s) to exclude from discovery |
-
-**Example Playwright Config:**
-
-```typescript
-// playwright.config.ts
-import { defineConfig } from '@playwright/test';
-
-export default defineConfig({
-  testDir: './tests',
-  testMatch: ['**/*.spec.ts'],
-  testIgnore: ['**/fixtures/**'],
-});
-```
-
-### Rstest Config Options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `root` | `string` | Root directory used to resolve test paths (`__dirname` is supported) |
-| `include` | `string[]` | Glob patterns for test discovery |
-| `exclude` | `string[] \| { patterns: string[] }` | Glob patterns to exclude from discovery |
-| `projects` | `string[] \| object[]` | Multi-project setup with relative config paths or inline project configs |
-
-**Example Rstest Config:**
-
-```typescript
-// rstest.config.ts
-export default {
-  root: '__dirname',
-  include: ['src/**/*.test.ts', 'tests/**/*.spec.ts'],
-  exclude: ['**/fixtures/**', '**/node_modules/**'],
-  projects: [
-    './packages/app/rstest.config.ts',
-    {
-      include: ['packages/lib/**/*.test.ts'],
-      exclude: { patterns: ['**/legacy/**'] },
-    },
-  ],
-};
-```
-
-</details>
-
-
-<details>
-<summary><b>🔧 Advanced Configuration Examples</b></summary>
-<br>
-
-**Usage with CRA or similar abstractions**
-
-Add the following command to settings:
-
-```json
-"jestrunner.jestCommand": "npm run test --",
-"jestrunner.debugOptions": {
-    "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/react-scripts",
-    "runtimeArgs": ["test", "${fileBasename}", "--runInBand", "--no-cache", "--watchAll=false"]
-}
-```
-
-**VS Code variables in commands**
-
-The command settings (`jestrunner.jestCommand`, `vitestCommand`, `nodeTestCommand`, `playwrightCommand`, `rstestCommand`) support `${workspaceFolder}`, `${workspaceRoot}`, `${workspaceFolderBasename}`, `${userHome}` and `${env:NAME}`:
-
-```json
-"jestrunner.jestCommand": "node --experimental-vm-modules ${workspaceFolder}/node_modules/jest/bin/jest.js"
-```
-
-**nvm**
-
-```json
-"jestrunner.jestCommand": "nvm use && npm run test --",
-"jestrunner.debugOptions": {
-    "runtimeExecutable": "/PATH/TO/YOUR/node"
-}
-```
-
-**ESM (ECMAScript Modules)**
-
-ESM support is now opt-in. To enable it, set **"jestrunner.enableESM": true** in your settings. This will automatically add `--experimental-vm-modules` to `NODE_OPTIONS` for debugging.
-
-</details>
-
-
-<details>
-<summary><b>🧪 Advanced Test Examples</b></summary>
-<br>
-
-The extension fully supports Jest's parameterized tests using `it.each` and `describe.each`. These allow you to run the same test logic with different inputs, making your tests more concise and maintainable.
-
-In the test names, you can use **template variables** like `%s` (string), `%i` (integer), `%f` (float), etc., which Jest replaces with the actual parameter values for better readability.
-
-**Jest Example**
-
-```javascript
-it.each([
-  ['apple', 5],
-  ['banana', 6],
-  ['cherry', 6],
-])('should return correct length for %s', (fruit, expectedLength) => {
-  expect(fruit.length).toBe(expectedLength);
-});
-```
-
-**Vitest Example**
-
-```javascript
-import { describe, it, expect } from 'vitest';
-
-it.each([
-  { input: 'hello', expected: 5 },
-  { input: 'world', expected: 5 },
-])('length of $input is $expected', ({ input, expected }) => {
-  expect(input.length).toBe(expected);
-});
-```
-
-**Dynamic Test Names**
-
-You can also use dynamic test names derived from class method names:
-
-```javascript
-class TestClass {
-  myFunction() {
-  }
-}
-it(TestClass.prototype.myFunction.name, () => {
-  expect(true).toBe(true);
-});
-```
-
-</details>
-
-<details>
-<summary><b>⌨️ Keyboard Shortcuts</b></summary>
-<br>
-
-1. Open **Command Palette** → **Preferences: Open Keyboard Shortcuts (JSON)**
-2. Add the following shortcuts:
-
-```json
-{
-  "key": "alt+1",
-  "command": "extension.runJest"
-},
-{
-  "key": "alt+2",
-  "command": "extension.debugJest"
-},
-{
-  "key": "alt+3",
-  "command": "extension.watchJest"
-},
-{
-  "key": "alt+4",
-  "command": "extension.runPrevJest"
-}
-```
-
-</details>
-
-## 🤝 Contributing
-
-**Want to start contributing features?** Check out our [open issues](https://github.com/firsttris/vscode-jest-runner/issues) to get started!
-
-### 🚀 Development Setup
-
-1. **Clone the repository**
-2. **Install dependencies**
-3. **Start debugging**
-  - Press `F5` or go to **Run** → **Start Debugging**
-  - A new VS Code window will open with the extension loaded
+[MIT](LICENSE) © Tristan Teufel and contributors.
 
 ---
 
 <div align="center">
 
-**Made by the open source community**
-
-⭐ Star us on [GitHub](https://github.com/firsttris/vscode-jest-runner) • 🐛 [Report a Bug](https://github.com/firsttris/vscode-jest-runner/issues) • 💡 [Request a Feature](https://github.com/firsttris/vscode-jest-runner/issues)
+⭐ Star the project on [GitHub](https://github.com/firsttris/vscode-jest-runner) • 🐛 [Report a bug](https://github.com/firsttris/vscode-jest-runner/issues/new?template=bug_report.md) • 💡 [Request a feature](https://github.com/firsttris/vscode-jest-runner/issues/new?template=feature_request.md)
 
 </div>
