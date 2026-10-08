@@ -301,7 +301,7 @@ export class TestRunExecutor {
 			true,
 			[],
 		);
-		const esmEnv = this.getEsmEnv(file, framework);
+		const esmEnv = this.testRunnerConfig.getEnvironmentForRun(framework);
 
 		logInfo(`Running fast mode: ${testCommand} ${commandArgs.join(' ')}`);
 
@@ -361,7 +361,7 @@ export class TestRunExecutor {
 			args,
 			cwd,
 		);
-		const esmEnv = this.getEsmEnv(allFiles[0], framework);
+		const esmEnv = this.testRunnerConfig.getEnvironmentForRun(framework);
 
 		logTestExecution(
 			framework,
@@ -549,17 +549,6 @@ export class TestRunExecutor {
 		}
 
 		return ['run', ...args.slice(nextOptionIndex)];
-	}
-
-	private getEsmEnv(
-		file: string,
-		framework: TestFrameworkName,
-	): Record<string, string> | undefined {
-		const isVitest = framework === 'vitest';
-		const isNodeTest = framework === 'node-test';
-		return isVitest || isNodeTest
-			? undefined
-			: this.testRunnerConfig.getEnvironmentForRun(file);
 	}
 
 	private handleBunReport(

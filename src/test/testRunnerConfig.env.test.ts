@@ -34,7 +34,7 @@ describe('TestRunnerConfig', () => {
 				}),
 			);
 
-			const env = jestRunnerConfig.getEnvironmentForRun(mockFilePath);
+			const env = jestRunnerConfig.getEnvironmentForRun('jest');
 			expect(env).toBeUndefined();
 		});
 
@@ -45,8 +45,23 @@ describe('TestRunnerConfig', () => {
 				}),
 			);
 
-			const env = jestRunnerConfig.getEnvironmentForRun(mockFilePath);
+			const env = jestRunnerConfig.getEnvironmentForRun('jest');
 			expect(env).toEqual({ NODE_OPTIONS: '--experimental-vm-modules' });
 		});
+
+		it.each(['vitest', 'node-test'] as const)(
+			'should not set NODE_OPTIONS for %s, which supports ES modules natively',
+			(framework) => {
+				jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+					new WorkspaceConfiguration({
+						'jestrunner.enableESM': true,
+					}),
+				);
+
+				expect(
+					jestRunnerConfig.getEnvironmentForRun(framework),
+				).toBeUndefined();
+			},
+		);
 	});
 });

@@ -186,7 +186,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				}),
 			);
 
-			expect(config.getEnvironmentForRun('/path/to/test.js')).toBeUndefined();
+			expect(config.getEnvironmentForRun('jest')).toBeUndefined();
 		});
 
 		it('should return NODE_OPTIONS when ESM is enabled', () => {
@@ -196,7 +196,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				}),
 			);
 
-			const env = config.getEnvironmentForRun('/path/to/test.js');
+			const env = config.getEnvironmentForRun('jest');
 
 			expect(env).toEqual({ NODE_OPTIONS: '--experimental-vm-modules' });
 		});

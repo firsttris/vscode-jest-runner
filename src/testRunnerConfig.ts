@@ -202,13 +202,21 @@ export class TestRunnerConfig {
 		return Settings.isESMEnabled();
 	}
 
+	/**
+	 * Environment for a run of `framework`: enableESM sets the NODE_OPTIONS
+	 * Jest needs for ES modules. Vitest and node:test support them natively.
+	 */
 	public getEnvironmentForRun(
-		_filePath: string,
+		framework: TestFrameworkName | undefined,
 	): Record<string, string> | undefined {
-		if (this.enableESM) {
-			return { NODE_OPTIONS: '--experimental-vm-modules' };
+		if (
+			!this.enableESM ||
+			framework === 'vitest' ||
+			framework === 'node-test'
+		) {
+			return undefined;
 		}
-		return undefined;
+		return { NODE_OPTIONS: '--experimental-vm-modules' };
 	}
 
 	public getTestFramework(filePath?: string): TestFrameworkName | undefined {
