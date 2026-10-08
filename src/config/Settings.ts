@@ -113,7 +113,7 @@ export const getProjectPath = (): string | undefined =>
 	getConfig<string>('jestrunner.projectPath');
 
 export const isChangeDirectoryToWorkspaceRoot = (): boolean =>
-	getConfig('jestrunner.changeDirectoryToWorkspaceRoot', false);
+	getConfig('jestrunner.changeDirectoryToWorkspaceRoot', true);
 
 export const isPreserveEditorFocus = (): boolean =>
 	getConfig('jestrunner.preserveEditorFocus', false);
