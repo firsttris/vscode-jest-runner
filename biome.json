@@ -33,6 +33,20 @@
 	},
 	"overrides": [
 		{
+			"includes": [
+				"src/parsers/**",
+				"src/testDetection/configParsers/**",
+				"src/utils/AstUtils.ts"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
 			"includes": ["src/test/**", "src/e2e/**"],
 			"linter": {
 				"rules": {

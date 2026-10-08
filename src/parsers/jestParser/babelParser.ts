@@ -602,7 +602,7 @@ export const parse = (
 				(name === 'test' &&
 					(lastProperty === 'describe' ||
 						(['parallel', 'serial', 'only', 'skip', 'fixme', 'fail'].includes(
-							lastProperty!,
+							lastProperty ?? '',
 						) &&
 							isTestDescribe(element))))
 			) {

@@ -70,7 +70,8 @@ export function parseTapOutput(output: string, filePath: string): JestResults {
 			if (stack.length > 0) {
 				const top = stack[stack.length - 1];
 				if (name === top.name) {
-					const item = stack.pop()!;
+					const item = top;
+					stack.pop();
 					matchedStackItem = true;
 
 					if (!item.hasChildren) {

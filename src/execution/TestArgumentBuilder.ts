@@ -141,14 +141,14 @@ abstract class JestLikeStrategy extends BaseStrategy {
 		super();
 	}
 
-	protected isPartialRun(
+	/** The tests of a run of one partially selected file, else undefined. */
+	protected getPartialRunTests(
 		allFiles: string[],
 		testsByFile: Map<string, vscode.TestItem[]>,
-	): boolean {
-		return (
-			allFiles.length === 1 &&
-			this.isPartiallySelected(allFiles[0], testsByFile.get(allFiles[0]))
-		);
+	): vscode.TestItem[] | undefined {
+		const tests =
+			allFiles.length === 1 ? testsByFile.get(allFiles[0]) : undefined;
+		return this.isPartiallySelected(allFiles[0], tests) ? tests : undefined;
 	}
 
 	/**
@@ -197,9 +197,9 @@ class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 		const extraArgs = [...additionalArgs, ...coverageArgs, '--reporter=junit'];
 		const configPath = this.jestConfig.getRstestConfigPath(allFiles[0]);
 
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 
 			return this.jestConfig.buildRstestArgs(
 				allFiles[0],
@@ -286,9 +286,9 @@ class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 	): string[] {
 		const reporters = getReporterPaths();
 
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 
 			const extraArgs = [
 				...additionalArgs,
@@ -352,9 +352,9 @@ class JestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 	): string[] {
 		const reporters = getReporterPaths();
 
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 
 			const extraArgs = [
 				...additionalArgs,
@@ -424,9 +424,9 @@ class PlaywrightStrategy
 		additionalArgs: string[],
 		_collectCoverage: boolean,
 	): string[] {
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 			return this.jestConfig.buildPlaywrightArgs(
 				allFiles[0],
 				testNamePattern,

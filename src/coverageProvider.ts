@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { type LcovCoverageData, parseLcov } from './parsers/lcov-parser';
 import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
@@ -265,7 +265,10 @@ export class CoverageProvider {
 				if (!file.file) {
 					continue;
 				}
-				const fileCoverage = this.processLcovRecord(file, baseDir);
+				const fileCoverage = this.processLcovRecord(
+					file,
+					resolve(baseDir, file.file),
+				);
 				coverageMap[fileCoverage.path] = fileCoverage;
 			}
 
@@ -276,15 +279,11 @@ export class CoverageProvider {
 		}
 	}
 
+	/** `filePath` is the absolute path of the record's source file. */
 	private processLcovRecord(
 		file: LcovCoverageData,
-		baseDir: string,
+		filePath: string,
 	): FileCoverageData {
-		let filePath = file.file!;
-		if (!isAbsolute(filePath)) {
-			filePath = resolve(baseDir, filePath);
-		}
-
 		const lines = file.lines?.details || [];
 		const functions = file.functions?.details || [];
 		const branches = file.branches?.details || [];

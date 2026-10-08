@@ -17,10 +17,12 @@ export class CacheManager {
 		framework: string,
 		value: boolean,
 	): void {
-		if (!this.directoryFrameworkCache.has(directory)) {
-			this.directoryFrameworkCache.set(directory, new Map());
+		let frameworks = this.directoryFrameworkCache.get(directory);
+		if (!frameworks) {
+			frameworks = new Map();
+			this.directoryFrameworkCache.set(directory, frameworks);
 		}
-		this.directoryFrameworkCache.get(directory)!.set(framework, value);
+		frameworks.set(framework, value);
 	}
 
 	public getFileFramework(

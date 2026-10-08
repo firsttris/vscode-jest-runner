@@ -91,8 +91,15 @@ export const isPlaywrightTestFile = (filePath: string): boolean =>
 export const isRstestTestFile = (filePath: string): boolean =>
 	hasFrameworkImport(filePath, 'rstest');
 
+interface PackageJson {
+	dependencies?: Record<string, string>;
+	devDependencies?: Record<string, string>;
+	peerDependencies?: Record<string, string>;
+	[key: string]: unknown;
+}
+
 function hasFrameworkDependency(
-	packageJson: any,
+	packageJson: PackageJson,
 	frameworkName: TestFrameworkName,
 ): boolean {
 	const sources = [
