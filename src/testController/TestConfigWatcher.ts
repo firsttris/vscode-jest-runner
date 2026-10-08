@@ -28,19 +28,15 @@ export class TestConfigWatcher {
 
 		this.disposables.push(configWatcher);
 
-		const configFilePatterns = [
-			...testFrameworks.flatMap((f) => f.configFiles.map((c) => `**/${c}`)),
-		];
-
+		const configFiles = new Set(testFrameworks.flatMap((f) => f.configFiles));
+		const watcher = vscode.workspace.createFileSystemWatcher(
+			`**/{${[...configFiles].join(',')}}`,
+		);
 		const handleConfigChange = () => this._onDidChange.fire();
-
-		for (const pattern of configFilePatterns) {
-			const watcher = vscode.workspace.createFileSystemWatcher(pattern);
-			watcher.onDidChange(handleConfigChange);
-			watcher.onDidCreate(handleConfigChange);
-			watcher.onDidDelete(handleConfigChange);
-			this.disposables.push(watcher);
-		}
+		watcher.onDidChange(handleConfigChange);
+		watcher.onDidCreate(handleConfigChange);
+		watcher.onDidDelete(handleConfigChange);
+		this.disposables.push(watcher);
 
 		this.refreshCustomConfigWatchers();
 	}

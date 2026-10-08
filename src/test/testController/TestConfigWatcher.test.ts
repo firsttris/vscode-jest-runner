@@ -60,6 +60,20 @@ describe('TestConfigWatcher', () => {
 			expect(vscode.workspace.onDidChangeConfiguration).toHaveBeenCalled();
 			expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalled();
 		});
+
+		it('should watch all framework config files with one watcher', () => {
+			new TestConfigWatcher();
+
+			const patterns = (
+				vscode.workspace.createFileSystemWatcher as jest.Mock
+			).mock.calls.map(([pattern]) => pattern);
+			const configPattern = patterns.find((p) => p.startsWith('**/{'));
+
+			expect(patterns.filter((p) => p.startsWith('**/'))).toHaveLength(1);
+			expect(configPattern).toContain('jest.config.js');
+			expect(configPattern).toContain('vitest.config.ts');
+			expect(configPattern).toContain('deno.json');
+		});
 	});
 
 	describe('onDidChange event', () => {
