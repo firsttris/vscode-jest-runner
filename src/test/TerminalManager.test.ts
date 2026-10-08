@@ -53,6 +53,14 @@ describe('TerminalManager', () => {
 			expect(mockTerminal.sendText).toHaveBeenCalledWith('npm test');
 		});
 
+		it('should name the terminal after any other framework', async () => {
+			await terminalManager.runCommand('bun test', { framework: 'bun' });
+
+			expect(vscode.window.createTerminal).toHaveBeenCalledWith(
+				expect.objectContaining({ name: 'bun' }),
+			);
+		});
+
 		it('should create vitest terminal for vitest framework', async () => {
 			await terminalManager.runCommand('npx vitest', {
 				framework: 'vitest',

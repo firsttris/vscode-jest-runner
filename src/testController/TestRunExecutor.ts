@@ -9,7 +9,6 @@ import {
 } from '../coverageProvider';
 import {
 	buildTestArgs,
-	buildTestArgsFast,
 	canUseFastMode,
 } from '../execution/TestArgumentBuilder';
 import {
@@ -68,6 +67,12 @@ interface RunContext {
 	/** Config passed to the runner; empty for frameworks that take none. */
 	configPath: string;
 }
+
+/** Files the JUnit reporter of these frameworks writes (see TestArgumentBuilder). */
+const JUNIT_REPORT_FILES: Partial<Record<TestFrameworkName, string>> = {
+	bun: '.bun-report.xml',
+	deno: '.deno-report.xml',
+};
 
 export class TestRunExecutor {
 	private static readonly WINDOWS_SAFE_COMMAND_LENGTH = 30000;
@@ -163,7 +168,10 @@ export class TestRunExecutor {
 
 		this.cleanupBunCoverage(framework, collectCoverage, cwd);
 
-		if (this.shouldRunFastMode(testsByFile, collectCoverage, additionalArgs)) {
+		if (
+			canUseFastMode(framework, testsByFile, collectCoverage) &&
+			additionalArgs.length === 0
+		) {
 			await this.runFastMode(
 				allFiles[0],
 				allTests[0],
@@ -283,17 +291,6 @@ export class TestRunExecutor {
 		}
 	}
 
-	private shouldRunFastMode(
-		testsByFile: Map<string, vscode.TestItem[]>,
-		collectCoverage: boolean,
-		additionalArgs: string[],
-	): boolean {
-		return (
-			canUseFastMode(testsByFile, collectCoverage) &&
-			additionalArgs.length === 0
-		);
-	}
-
 	private async runFastMode(
 		file: string,
 		test: vscode.TestItem,
@@ -304,15 +301,13 @@ export class TestRunExecutor {
 	): Promise<void> {
 		const testCommand = this.testRunnerConfig.getTestCommand(file);
 
-		const testName = toTestItemNamePattern(test);
-		const args = buildTestArgsFast(
+		const commandArgs = this.testRunnerConfig.buildTestArgs(
 			file,
-			testName,
-			framework,
-			this.testRunnerConfig,
+			toTestItemNamePattern(test),
+			true,
+			[],
 		);
-		const commandArgs = args;
-		const esmEnv = this.getEsmEnv(file, framework);
+		const esmEnv = this.testRunnerConfig.getEnvironmentForRun(framework);
 
 		logInfo(`Running fast mode: ${testCommand} ${commandArgs.join(' ')}`);
 
@@ -372,7 +367,7 @@ export class TestRunExecutor {
 			args,
 			cwd,
 		);
-		const esmEnv = this.getEsmEnv(allFiles[0], framework);
+		const esmEnv = this.testRunnerConfig.getEnvironmentForRun(framework);
 
 		logTestExecution(
 			framework,
@@ -400,8 +395,10 @@ export class TestRunExecutor {
 
 		try {
 			if (!result.structuredResultsProcessed) {
-				this.handleBunReport(framework, result, cwd);
-				this.handleDenoReport(framework, result, cwd);
+				const reportFile = JUNIT_REPORT_FILES[framework];
+				if (reportFile) {
+					this.appendJUnitReport(result, join(cwd, reportFile));
+				}
 				processTestResults(result.output, allTests, run, framework, sessionId);
 			}
 		} finally {
@@ -562,64 +559,21 @@ export class TestRunExecutor {
 		return ['run', ...args.slice(nextOptionIndex)];
 	}
 
-	private getEsmEnv(
-		file: string,
-		framework: TestFrameworkName,
-	): Record<string, string> | undefined {
-		const isVitest = framework === 'vitest';
-		const isNodeTest = framework === 'node-test';
-		return isVitest || isNodeTest
-			? undefined
-			: this.testRunnerConfig.getEnvironmentForRun(file);
-	}
-
-	private handleBunReport(
-		framework: TestFrameworkName,
-		result: { output: string },
-		cwd: string,
-	): void {
-		if (framework !== 'bun') {
+	/** Appends the JUnit report the run wrote to a file to its output. */
+	private appendJUnitReport(result: { output: string }, reportPath: string) {
+		try {
+			if (!fs.existsSync(reportPath)) {
+				return;
+			}
+			result.output += `\n${fs.readFileSync(reportPath, 'utf8')}`;
+		} catch (e) {
+			logError(`Failed to read test report ${reportPath}`, e);
 			return;
 		}
-
-		const bunReportPath = join(cwd, '.bun-report.xml');
 		try {
-			if (fs.existsSync(bunReportPath)) {
-				const reportContent = fs.readFileSync(bunReportPath, 'utf8');
-				result.output += `\n${reportContent}`;
-				try {
-					fs.unlinkSync(bunReportPath);
-				} catch (e) {
-					logError('Failed to delete Bun report file', e);
-				}
-			}
+			fs.unlinkSync(reportPath);
 		} catch (e) {
-			logError('Failed to read Bun report file', e);
-		}
-	}
-
-	private handleDenoReport(
-		framework: TestFrameworkName,
-		result: { output: string },
-		cwd: string,
-	): void {
-		if (framework !== 'deno') {
-			return;
-		}
-
-		const denoReportPath = join(cwd, '.deno-report.xml');
-		try {
-			if (fs.existsSync(denoReportPath)) {
-				const reportContent = fs.readFileSync(denoReportPath, 'utf8');
-				result.output += `\n${reportContent}`;
-				try {
-					fs.unlinkSync(denoReportPath);
-				} catch (e) {
-					logError('Failed to delete Deno report file', e);
-				}
-			}
-		} catch (e) {
-			logError('Failed to read Deno report file', e);
+			logError(`Failed to delete test report ${reportPath}`, e);
 		}
 	}
 

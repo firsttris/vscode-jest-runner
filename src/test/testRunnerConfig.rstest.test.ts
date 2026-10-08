@@ -42,7 +42,7 @@ describe('TestRunnerConfig - Rstest Runner', () => {
 				}),
 			);
 
-			expect(config.rstestCommand).toBe('pnpm rstest');
+			expect(config.getRstestCommand()).toBe('pnpm rstest');
 		});
 
 		it('should return fallback rstest command when no custom command is set', () => {
@@ -50,7 +50,7 @@ describe('TestRunnerConfig - Rstest Runner', () => {
 				.spyOn(vscode.workspace, 'getConfiguration')
 				.mockReturnValue(new WorkspaceConfiguration({}));
 
-			expect(config.rstestCommand).toBe('npx --no-install rstest');
+			expect(config.getRstestCommand()).toBe('npx --no-install rstest');
 		});
 	});
 

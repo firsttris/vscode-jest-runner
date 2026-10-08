@@ -1,7 +1,3 @@
-export function pushMany<T>(arr: T[], items: T[]): number {
-	return Array.prototype.push.apply(arr, items);
-}
-
 export type CodeLensOption =
 	| 'run'
 	| 'debug'

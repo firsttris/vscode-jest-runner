@@ -2,13 +2,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
+import type { TestFrameworkName } from '../../testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
+import { testFileCache } from '../../testDetection/testFileCache';
 import {
 	getTestFrameworkForFile,
 	hasConflictingTestFramework,
-	isJestTestFile,
-	isTestFile,
-	isVitestTestFile,
 } from '../../testDetection/testFileDetection';
 import { normalizePath } from '../../utils/PathUtils';
 
@@ -16,6 +15,26 @@ jest.mock('fs');
 jest.mock('vscode');
 
 const mockedFs = fs as jest.Mocked<typeof fs>;
+
+/** findTestFrameworkDirectory, when it detects `framework` for the file. */
+const findFrameworkDirectory = (
+	filePath: string,
+	framework: TestFrameworkName,
+) => {
+	const result = findTestFrameworkDirectory(filePath);
+	return result?.framework === framework ? result : undefined;
+};
+
+const isTestFile = (filePath: string): boolean =>
+	testFileCache.isTestFile(filePath);
+
+const isTestFileOf =
+	(framework: TestFrameworkName) =>
+	(filePath: string): boolean =>
+		isTestFile(filePath) && getTestFrameworkForFile(filePath) === framework;
+
+const isJestTestFile = isTestFileOf('jest');
+const isVitestTestFile = isTestFileOf('vitest');
 
 describe('testFileDetection', () => {
 	beforeEach(() => {
@@ -1110,7 +1129,7 @@ describe('testFileDetection', () => {
 				return fsPath === path.join(rootPath, 'vitest.config.ts');
 			});
 
-			const result = findTestFrameworkDirectory(filePath, 'vitest');
+			const result = findFrameworkDirectory(filePath, 'vitest');
 
 			expect(result).toEqual({
 				directory: rootPath,
@@ -1130,7 +1149,7 @@ describe('testFileDetection', () => {
 				return fsPath === path.join(rootPath, 'vitest.config.ts');
 			});
 
-			const result = findTestFrameworkDirectory(filePath, 'jest');
+			const result = findFrameworkDirectory(filePath, 'jest');
 
 			expect(result).toBeUndefined();
 		});

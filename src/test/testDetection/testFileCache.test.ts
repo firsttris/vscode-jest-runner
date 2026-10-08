@@ -1,3 +1,4 @@
+import { cacheManager } from '../../cache/CacheManager';
 import * as configParsing from '../../testDetection/configParsing';
 import * as frameworkDetection from '../../testDetection/frameworkDetection';
 import { testFileCache } from '../../testDetection/testFileCache';
@@ -14,6 +15,9 @@ const mockedFrameworkDetection = frameworkDetection as jest.Mocked<
 	typeof frameworkDetection
 >;
 const mockedConfigParsing = configParsing as jest.Mocked<typeof configParsing>;
+
+const isCached = (filePath: string): boolean =>
+	cacheManager.getFileFramework(filePath) !== undefined;
 
 describe('TestFileCache', () => {
 	beforeEach(() => {
@@ -406,20 +410,12 @@ describe('TestFileCache', () => {
 			// Invalidate a file that was never cached
 			expect(() => testFileCache.invalidate(filePath)).not.toThrow();
 
-			const stats = testFileCache.getCacheStats();
-			expect(stats.size).toBe(0);
+			expect(isCached(filePath)).toBe(false);
 		});
 	});
 
-	describe('getCacheStats', () => {
-		it('should return empty stats for empty cache', () => {
-			const stats = testFileCache.getCacheStats();
-
-			expect(stats.size).toBe(0);
-			expect(stats.entries).toEqual([]);
-		});
-
-		it('should return correct stats after caching files', () => {
+	describe('cache entries', () => {
+		it('should hold an entry for each checked file', () => {
 			const file1 = '/workspace/project/src/component1.test.ts';
 			const file2 = '/workspace/project/src/component2.test.ts';
 
@@ -443,14 +439,11 @@ describe('TestFileCache', () => {
 			testFileCache.isTestFile(file1);
 			testFileCache.isTestFile(file2);
 
-			const stats = testFileCache.getCacheStats();
-
-			expect(stats.size).toBe(2);
-			expect(stats.entries).toContain(file1);
-			expect(stats.entries).toContain(file2);
+			expect(isCached(file1)).toBe(true);
+			expect(isCached(file2)).toBe(true);
 		});
 
-		it('should return updated stats after invalidation', () => {
+		it('should drop only the invalidated file', () => {
 			const file1 = '/workspace/project/src/component1.test.ts';
 			const file2 = '/workspace/project/src/component2.test.ts';
 
@@ -477,14 +470,11 @@ describe('TestFileCache', () => {
 			// Invalidate one file
 			testFileCache.invalidate(file1);
 
-			const stats = testFileCache.getCacheStats();
-
-			expect(stats.size).toBe(1);
-			expect(stats.entries).toContain(file2);
-			expect(stats.entries).not.toContain(file1);
+			expect(isCached(file1)).toBe(false);
+			expect(isCached(file2)).toBe(true);
 		});
 
-		it('should return empty stats after clearing cache', () => {
+		it('should drop all entries when cleared', () => {
 			const file1 = '/workspace/project/src/component1.test.ts';
 
 			mockedTestFileDetection.matchesTestFilePattern = jest
@@ -509,10 +499,7 @@ describe('TestFileCache', () => {
 			// Clear cache
 			testFileCache.invalidate();
 
-			const stats = testFileCache.getCacheStats();
-
-			expect(stats.size).toBe(0);
-			expect(stats.entries).toEqual([]);
+			expect(isCached(file1)).toBe(false);
 		});
 	});
 
@@ -561,8 +548,8 @@ describe('TestFileCache', () => {
 			expect(result3).toBe(true);
 			expect(result4).toBe(false);
 
-			const stats = testFileCache.getCacheStats();
-			expect(stats.size).toBe(2);
+			expect(isCached(testFile)).toBe(true);
+			expect(isCached(nonTestFile)).toBe(true);
 		});
 
 		it('should handle files with special characters in path', () => {

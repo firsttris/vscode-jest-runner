@@ -209,37 +209,22 @@ describe('JestTestController - configuration watcher', () => {
 		expect(vscode.workspace.findFiles).toHaveBeenCalled();
 	});
 
-	it('should refresh tests when vitest configuration changes', async () => {
-		const onDidChangeConfig = (
-			vscode.workspace.onDidChangeConfiguration as jest.Mock
-		).mock.calls[0][0];
+	it.each(['jest', 'vitest'])(
+		'should not refresh tests for the %s settings of other extensions',
+		async (section) => {
+			const onDidChangeConfig = (
+				vscode.workspace.onDidChangeConfiguration as jest.Mock
+			).mock.calls[0][0];
 
-		const mockEvent = {
-			affectsConfiguration: (section: string) => section === 'vitest',
-		};
+			(vscode.workspace.findFiles as jest.Mock).mockClear();
 
-		(vscode.workspace.findFiles as jest.Mock).mockClear();
+			await onDidChangeConfig({
+				affectsConfiguration: (changed: string) => changed === section,
+			});
 
-		await onDidChangeConfig(mockEvent);
-
-		expect(vscode.workspace.findFiles).toHaveBeenCalled();
-	});
-
-	it('should refresh tests when jest configuration changes', async () => {
-		const onDidChangeConfig = (
-			vscode.workspace.onDidChangeConfiguration as jest.Mock
-		).mock.calls[0][0];
-
-		const mockEvent = {
-			affectsConfiguration: (section: string) => section === 'jest',
-		};
-
-		(vscode.workspace.findFiles as jest.Mock).mockClear();
-
-		await onDidChangeConfig(mockEvent);
-
-		expect(vscode.workspace.findFiles).toHaveBeenCalled();
-	});
+			expect(vscode.workspace.findFiles).not.toHaveBeenCalled();
+		},
+	);
 
 	it('should not refresh tests for unrelated configuration changes', async () => {
 		const onDidChangeConfig = (

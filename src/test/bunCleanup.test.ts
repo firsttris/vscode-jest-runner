@@ -34,7 +34,6 @@ jest.mock('../execution/TestCollector', () => ({
 }));
 jest.mock('../execution/TestArgumentBuilder', () => ({
 	buildTestArgs: jest.fn().mockReturnValue(['test']),
-	buildTestArgsFast: jest.fn().mockReturnValue(['test']),
 	canUseFastMode: jest.fn().mockReturnValue(false),
 }));
 jest.mock('../execution/TestProcessRunner', () => ({

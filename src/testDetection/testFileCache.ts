@@ -45,10 +45,6 @@ class TestFileCache {
 			cacheManager.invalidateAll();
 		}
 	}
-
-	public getCacheStats(): { size: number; entries: string[] } {
-		return cacheManager.getTestFileStats();
-	}
 }
 
 export const testFileCache = new TestFileCache();

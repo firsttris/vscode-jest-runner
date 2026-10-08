@@ -234,7 +234,7 @@ export class TestRunner {
 		filePath: string,
 	): Promise<void> {
 		const framework = this.config.getTestFramework(filePath);
-		const env = this.config.getEnvironmentForRun(filePath);
+		const env = this.config.getEnvironmentForRun(framework);
 		this.previousCommand = command;
 		this.previousFramework = framework;
 		this.previousEnv = env;

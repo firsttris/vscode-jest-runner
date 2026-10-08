@@ -6,7 +6,6 @@ import {
 } from './helper';
 import type { ParseResult } from './parserNodes';
 
-export { getASTfor } from './babelParser';
 export {
 	DescribeBlock,
 	Expect,

@@ -60,6 +60,20 @@ describe('TestConfigWatcher', () => {
 			expect(vscode.workspace.onDidChangeConfiguration).toHaveBeenCalled();
 			expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalled();
 		});
+
+		it('should watch all framework config files with one watcher', () => {
+			new TestConfigWatcher();
+
+			const patterns = (
+				vscode.workspace.createFileSystemWatcher as jest.Mock
+			).mock.calls.map(([pattern]) => pattern);
+			const configPattern = patterns.find((p) => p.startsWith('**/{'));
+
+			expect(patterns.filter((p) => p.startsWith('**/'))).toHaveLength(1);
+			expect(configPattern).toContain('jest.config.js');
+			expect(configPattern).toContain('vitest.config.ts');
+			expect(configPattern).toContain('deno.json');
+		});
 	});
 
 	describe('onDidChange event', () => {
@@ -74,27 +88,19 @@ describe('TestConfigWatcher', () => {
 			expect(didChangeCallback).toHaveBeenCalled();
 		});
 
-		it('should fire when vitest config changes', () => {
-			const watcher = new TestConfigWatcher();
-			watcher.onDidChange(didChangeCallback);
+		it.each(['jest', 'vitest'])(
+			'should not fire for the %s settings of other extensions',
+			(section) => {
+				const watcher = new TestConfigWatcher();
+				watcher.onDidChange(didChangeCallback);
 
-			configChangeCallback?.({
-				affectsConfiguration: (section: string) => section === 'vitest',
-			});
+				configChangeCallback?.({
+					affectsConfiguration: (changed: string) => changed === section,
+				});
 
-			expect(didChangeCallback).toHaveBeenCalled();
-		});
-
-		it('should fire when jest config changes', () => {
-			const watcher = new TestConfigWatcher();
-			watcher.onDidChange(didChangeCallback);
-
-			configChangeCallback?.({
-				affectsConfiguration: (section: string) => section === 'jest',
-			});
-
-			expect(didChangeCallback).toHaveBeenCalled();
-		});
+				expect(didChangeCallback).not.toHaveBeenCalled();
+			},
+		);
 
 		it('should not fire for unrelated config changes', () => {
 			const watcher = new TestConfigWatcher();

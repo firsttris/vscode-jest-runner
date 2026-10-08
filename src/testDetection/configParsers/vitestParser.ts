@@ -151,13 +151,3 @@ export function getVitestConfig(
 		return undefined;
 	}
 }
-
-export function getIncludeFromVitestConfig(
-	configPath: string,
-): string[] | undefined {
-	const configs = getVitestConfig(configPath);
-	if (!configs || configs.length === 0) return undefined;
-
-	const allPatterns = configs.flatMap((c) => c.patterns);
-	return allPatterns.length > 0 ? allPatterns : undefined;
-}

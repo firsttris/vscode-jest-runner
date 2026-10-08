@@ -17,10 +17,12 @@ export class CacheManager {
 		framework: string,
 		value: boolean,
 	): void {
-		if (!this.directoryFrameworkCache.has(directory)) {
-			this.directoryFrameworkCache.set(directory, new Map());
+		let frameworks = this.directoryFrameworkCache.get(directory);
+		if (!frameworks) {
+			frameworks = new Map();
+			this.directoryFrameworkCache.set(directory, frameworks);
 		}
-		this.directoryFrameworkCache.get(directory)!.set(framework, value);
+		frameworks.set(framework, value);
 	}
 
 	public getFileFramework(
@@ -36,14 +38,31 @@ export class CacheManager {
 		this.fileFrameworkCache.set(filePath, value);
 	}
 
-	public getTestFileStats(): { size: number; entries: string[] } {
-		return {
-			size: this.fileFrameworkCache.size,
-			entries: Array.from(this.fileFrameworkCache.keys()),
-		};
+	private configPathCache = new Map<string, string | undefined>();
+
+	private importedFrameworksCache = new Map<string, ReadonlySet<string>>();
+
+	private parsedConfigCache = new Map<string, unknown>();
+
+	public getParsedConfig<T>(key: string, parse: () => T): T {
+		if (!this.parsedConfigCache.has(key)) {
+			this.parsedConfigCache.set(key, parse());
+		}
+		return this.parsedConfigCache.get(key) as T;
 	}
 
-	private configPathCache = new Map<string, string | undefined>();
+	public getImportedFrameworks(
+		filePath: string,
+	): ReadonlySet<string> | undefined {
+		return this.importedFrameworksCache.get(filePath);
+	}
+
+	public setImportedFrameworks(
+		filePath: string,
+		frameworks: ReadonlySet<string>,
+	): void {
+		this.importedFrameworksCache.set(filePath, frameworks);
+	}
 
 	/** Whether a lookup is cached, including one that found no config. */
 	public hasConfigPath(key: string): boolean {
@@ -62,11 +81,14 @@ export class CacheManager {
 		this.directoryFrameworkCache.clear();
 		this.fileFrameworkCache.clear();
 		this.configPathCache.clear();
+		this.importedFrameworksCache.clear();
+		this.parsedConfigCache.clear();
 	}
 
 	public invalidate(key: string): void {
 		this.directoryFrameworkCache.delete(key);
 		this.fileFrameworkCache.delete(key);
+		this.importedFrameworksCache.delete(key);
 
 		for (const cacheKey of this.configPathCache.keys()) {
 			if (cacheKey.includes(key)) {

@@ -46,6 +46,17 @@ export function toTestItemNamePattern(test: {
 	return toTestNamePattern(test.label) || '';
 }
 
+/** Name pattern that matches any of `tests`. */
+export function toTestItemsNamePattern(
+	tests: { id?: string; label: string }[],
+): string | undefined {
+	if (tests.length === 0) return undefined;
+
+	return tests.length > 1
+		? `(${tests.map((test) => toTestItemNamePattern(test)).join('|')})`
+		: toTestItemNamePattern(tests[0]);
+}
+
 export function updateTestNameIfUsingProperties(
 	receivedTestName: string,
 ): string;

@@ -308,6 +308,46 @@ describe('TestRunnerConfig', () => {
 			expect(config.name).toBe('Debug Jest Tests'); // Original properties preserved
 		});
 
+		it('should append debugOptions.args after the test file args', () => {
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.jestCommand': 'pnpm --workspace-root exec jest',
+					'jestrunner.debugOptions': { args: ['--no-cache'] },
+				}),
+			);
+
+			const config = jestRunnerConfig.getDebugConfiguration(
+				mockFilePath,
+				'my test',
+			);
+
+			expect(config.runtimeArgs).toEqual([
+				'--workspace-root',
+				'exec',
+				'jest',
+				'/home/user/project/src/test\\.spec\\.ts',
+				'-t',
+				'^my test$',
+			]);
+			expect(config.args).toEqual(['--no-cache']);
+		});
+
+		it('should append vitestDebugOptions.args for Vitest files', () => {
+			jest
+				.spyOn(testDetection, 'getTestFrameworkForFile')
+				.mockReturnValue('vitest');
+			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
+				new WorkspaceConfiguration({
+					'jestrunner.vitestDebugOptions': { args: ['--no-cache'] },
+				}),
+			);
+
+			const config = jestRunnerConfig.getDebugConfiguration(mockFilePath);
+
+			expect(config.args.at(-1)).toBe('--no-cache');
+			expect(config.args).toContain(normalizePath(path.resolve(mockFilePath)));
+		});
+
 		it('should respect debugOptions.runtimeExecutable for Jest debug', () => {
 			jest.spyOn(vscode.workspace, 'getConfiguration').mockReturnValue(
 				new WorkspaceConfiguration({

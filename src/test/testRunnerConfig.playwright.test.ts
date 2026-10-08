@@ -42,7 +42,7 @@ describe('TestRunnerConfig - Playwright Runner', () => {
 				}),
 			);
 
-			expect(config.playwrightCommand).toBe('pnpm playwright');
+			expect(config.getPlaywrightCommand()).toBe('pnpm playwright');
 		});
 
 		it('should return default playwright command when not set', () => {
@@ -50,7 +50,7 @@ describe('TestRunnerConfig - Playwright Runner', () => {
 				.spyOn(vscode.workspace, 'getConfiguration')
 				.mockReturnValue(new WorkspaceConfiguration({}));
 
-			expect(config.playwrightCommand).toBe('npx playwright');
+			expect(config.getPlaywrightCommand()).toBe('npx playwright');
 		});
 	});
 

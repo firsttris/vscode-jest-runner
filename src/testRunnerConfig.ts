@@ -23,11 +23,7 @@ const PROJECT_DIRECTORY_FRAMEWORKS: ReadonlySet<TestFrameworkName> = new Set([
 ]);
 
 export class TestRunnerConfig {
-	public get jestCommand(): string {
-		return this.getJestCommand();
-	}
-
-	private getJestCommand(filePath?: string): string {
+	public getJestCommand(filePath?: string): string {
 		return this.resolveNodeCommand(
 			Settings.getJestCommand(),
 			'jest',
@@ -36,11 +32,7 @@ export class TestRunnerConfig {
 		);
 	}
 
-	public get vitestCommand(): string {
-		return this.getVitestCommand();
-	}
-
-	private getVitestCommand(filePath?: string): string {
+	public getVitestCommand(filePath?: string): string {
 		return this.resolveNodeCommand(
 			Settings.getVitestCommand(),
 			'vitest',
@@ -72,11 +64,7 @@ export class TestRunnerConfig {
 		return binaryPath ? `node ${quote(binaryPath)}` : fallback;
 	}
 
-	public get nodeTestCommand(): string {
-		return this.getNodeTestCommand();
-	}
-
-	private getNodeTestCommand(filePath?: string): string {
+	public getNodeTestCommand(filePath?: string): string {
 		const customCommand = Settings.getNodeTestCommand();
 		return customCommand
 			? this.resolveVariables(customCommand, filePath)
@@ -91,11 +79,7 @@ export class TestRunnerConfig {
 		return 'deno';
 	}
 
-	public get playwrightCommand(): string {
-		return this.getPlaywrightCommand();
-	}
-
-	private getPlaywrightCommand(filePath?: string): string {
+	public getPlaywrightCommand(filePath?: string): string {
 		const customCommand = Settings.getPlaywrightCommand();
 		if (customCommand) {
 			return this.resolveVariables(customCommand, filePath);
@@ -103,11 +87,7 @@ export class TestRunnerConfig {
 		return 'npx playwright';
 	}
 
-	public get rstestCommand(): string {
-		return this.getRstestCommand();
-	}
-
-	private getRstestCommand(filePath?: string): string {
+	public getRstestCommand(filePath?: string): string {
 		return this.resolveNodeCommand(
 			Settings.getRstestCommand(),
 			'@rstest/core',
@@ -142,8 +122,6 @@ export class TestRunnerConfig {
 		return this.getJestCommand(filePath);
 	}
 
-	// ... (existing getters)
-
 	public get playwrightRunOptions(): string[] | null {
 		return Settings.getPlaywrightRunOptions();
 	}
@@ -151,8 +129,6 @@ export class TestRunnerConfig {
 	public get playwrightDebugOptions(): Partial<vscode.DebugConfiguration> {
 		return Settings.getPlaywrightDebugOptions();
 	}
-
-	// ...
 
 	public buildPlaywrightArgs(
 		filePath: string,
@@ -202,13 +178,21 @@ export class TestRunnerConfig {
 		return Settings.isESMEnabled();
 	}
 
+	/**
+	 * Environment for a run of `framework`: enableESM sets the NODE_OPTIONS
+	 * Jest needs for ES modules. Vitest and node:test support them natively.
+	 */
 	public getEnvironmentForRun(
-		_filePath: string,
+		framework: TestFrameworkName | undefined,
 	): Record<string, string> | undefined {
-		if (this.enableESM) {
-			return { NODE_OPTIONS: '--experimental-vm-modules' };
+		if (
+			!this.enableESM ||
+			framework === 'vitest' ||
+			framework === 'node-test'
+		) {
+			return undefined;
 		}
-		return undefined;
+		return { NODE_OPTIONS: '--experimental-vm-modules' };
 	}
 
 	public getTestFramework(filePath?: string): TestFrameworkName | undefined {
@@ -228,11 +212,6 @@ export class TestRunnerConfig {
 
 	public get preserveEditorFocus(): boolean {
 		return Settings.isPreserveEditorFocus();
-	}
-
-	/** Working directory for the active editor's file. */
-	public get cwd(): string {
-		return this.getCwd();
 	}
 
 	/**
@@ -281,10 +260,6 @@ export class TestRunnerConfig {
 		return configPath ? dirname(configPath) : workspaceFolderPath;
 	}
 
-	public get projectPathFromConfig(): string | undefined {
-		return this.getProjectPathFromConfig();
-	}
-
 	private getProjectPathFromConfig(filePath?: string): string | undefined {
 		const projectPath = Settings.getProjectPath();
 		if (projectPath) {
@@ -295,10 +270,6 @@ export class TestRunnerConfig {
 
 	public get useNearestConfig(): boolean | undefined {
 		return Settings.isUseNearestConfig();
-	}
-
-	public get currentPackagePath() {
-		return this.getPackagePath();
 	}
 
 	private getPackagePath(filePath?: string): string {
@@ -317,10 +288,6 @@ export class TestRunnerConfig {
 	 */
 	public resolveVariables(value: string, filePath?: string): string {
 		return resolveVariables(value, this.getWorkspaceFolderPath(filePath));
-	}
-
-	public get currentWorkspaceFolderPath(): string {
-		return this.getWorkspaceFolderPath();
 	}
 
 	private getWorkspaceFolderPath(filePath?: string): string {

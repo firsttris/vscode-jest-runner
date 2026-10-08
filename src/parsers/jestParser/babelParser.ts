@@ -2,13 +2,7 @@ import { readFileSync } from 'node:fs';
 import { parse as babelParse, type ParserOptions } from '@babel/parser';
 import * as t from '@babel/types';
 import { astToValue } from '../../utils/AstUtils';
-import {
-	getCallExpression,
-	getNameForNode,
-	type JESParserOptions,
-	parseOptions,
-	shallowAttr,
-} from './helper';
+import { getCallExpression, getNameForNode, shallowAttr } from './helper';
 import {
 	NamedBlock,
 	type ParsedNode,
@@ -37,15 +31,6 @@ const toAst = (
 		sourceType: 'module',
 	};
 	return { ast: babelParse(source, parserOptions), source };
-};
-
-export const getASTfor = (
-	file: string,
-	data?: string,
-	options?: JESParserOptions,
-): t.File => {
-	const { ast } = toAst(file, data, parseOptions(file, options));
-	return ast;
 };
 
 const isDescribe = (name?: string) => name === 'describe';
@@ -617,7 +602,7 @@ export const parse = (
 				(name === 'test' &&
 					(lastProperty === 'describe' ||
 						(['parallel', 'serial', 'only', 'skip', 'fixme', 'fail'].includes(
-							lastProperty!,
+							lastProperty ?? '',
 						) &&
 							isTestDescribe(element))))
 			) {

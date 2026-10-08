@@ -39,7 +39,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				.spyOn(vscode.workspace, 'getConfiguration')
 				.mockReturnValue(new WorkspaceConfiguration({}));
 
-			expect(config.nodeTestCommand).toBe('node');
+			expect(config.getNodeTestCommand()).toBe('node');
 		});
 
 		it('should return custom command when set', () => {
@@ -49,7 +49,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				} as any),
 			);
 
-			expect(config.nodeTestCommand).toBe('tsx');
+			expect(config.getNodeTestCommand()).toBe('tsx');
 		});
 
 		it('should return default node command when custom command is empty string', () => {
@@ -59,7 +59,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				} as any),
 			);
 
-			expect(config.nodeTestCommand).toBe('node');
+			expect(config.getNodeTestCommand()).toBe('node');
 		});
 	});
 
@@ -186,7 +186,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				}),
 			);
 
-			expect(config.getEnvironmentForRun('/path/to/test.js')).toBeUndefined();
+			expect(config.getEnvironmentForRun('jest')).toBeUndefined();
 		});
 
 		it('should return NODE_OPTIONS when ESM is enabled', () => {
@@ -196,7 +196,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				}),
 			);
 
-			const env = config.getEnvironmentForRun('/path/to/test.js');
+			const env = config.getEnvironmentForRun('jest');
 
 			expect(env).toEqual({ NODE_OPTIONS: '--experimental-vm-modules' });
 		});

@@ -265,7 +265,11 @@ export class CoverageProvider {
 				if (!file.file) {
 					continue;
 				}
-				const fileCoverage = this.processLcovRecord(file, baseDir);
+				// resolve() would add a drive letter to a rooted path on Windows.
+				const filePath = isAbsolute(file.file)
+					? file.file
+					: resolve(baseDir, file.file);
+				const fileCoverage = this.processLcovRecord(file, filePath);
 				coverageMap[fileCoverage.path] = fileCoverage;
 			}
 
@@ -276,15 +280,11 @@ export class CoverageProvider {
 		}
 	}
 
+	/** `filePath` is the absolute path of the record's source file. */
 	private processLcovRecord(
 		file: LcovCoverageData,
-		baseDir: string,
+		filePath: string,
 	): FileCoverageData {
-		let filePath = file.file!;
-		if (!isAbsolute(filePath)) {
-			filePath = resolve(baseDir, filePath);
-		}
-
 		const lines = file.lines?.details || [];
 		const functions = file.functions?.details || [];
 		const branches = file.branches?.details || [];

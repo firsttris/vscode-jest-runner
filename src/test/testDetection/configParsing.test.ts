@@ -7,7 +7,6 @@ import {
 	getPlaywrightTestDir,
 } from '../../testDetection/configParsers/playwrightParser';
 import {
-	getIncludeFromVitestConfig,
 	getVitestConfig,
 	viteConfigHasTestAttribute,
 } from '../../testDetection/configParsers/vitestParser';
@@ -21,6 +20,12 @@ jest.mock('fs');
 jest.mock('vscode');
 
 const mockedFs = fs as jest.Mocked<typeof fs>;
+
+/** All include patterns of a Vitest config, undefined when it has none. */
+const getIncludeFromVitestConfig = (configPath: string) => {
+	const patterns = getVitestConfig(configPath)?.flatMap((c) => c.patterns);
+	return patterns?.length ? patterns : undefined;
+};
 
 describe('configParsing', () => {
 	describe('viteConfigHasTestAttribute', () => {

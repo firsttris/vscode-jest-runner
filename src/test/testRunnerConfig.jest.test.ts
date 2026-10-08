@@ -31,7 +31,7 @@ describe('TestRunnerConfig', () => {
 				}),
 			);
 
-			expect(jestRunnerConfig.jestCommand).toBe('yarn jest');
+			expect(jestRunnerConfig.getJestCommand()).toBe('yarn jest');
 		});
 
 		it('should resolve ${workspaceFolder} in custom jest command', () => {
@@ -55,7 +55,7 @@ describe('TestRunnerConfig', () => {
 			// Mock failure to find binary
 			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
-			expect(jestRunnerConfig.jestCommand).toBe('npx --no-install jest');
+			expect(jestRunnerConfig.getJestCommand()).toBe('npx --no-install jest');
 		});
 	});
 });

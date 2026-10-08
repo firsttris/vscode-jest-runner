@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
+import { collectTestsByFile } from '../execution/TestCollector';
 import type { TestRunnerConfig } from '../testRunnerConfig';
-import { toTestItemNamePattern } from '../utils/TestNameUtils';
+import { toTestItemsNamePattern } from '../utils/TestNameUtils';
 
 export class DebugHandler {
 	constructor(
@@ -8,48 +9,32 @@ export class DebugHandler {
 		private readonly testRunnerConfig: TestRunnerConfig,
 	) {}
 
+	/**
+	 * Debugs the first requested file in one session. A test or describe
+	 * block is filtered by the names of its tests; a file or folder (whose
+	 * items use their path as id) runs the whole file.
+	 */
 	public async debugHandler(
 		request: vscode.TestRunRequest,
 		token: vscode.CancellationToken,
 	): Promise<void> {
-		const queue: vscode.TestItem[] = [];
-
-		if (request.include) {
-			request.include.forEach((test) => {
-				queue.push(test);
-			});
-		} else {
-			this.testController.items.forEach((test) => {
-				queue.push(test);
-			});
+		if (token.isCancellationRequested) {
+			return;
 		}
 
-		for (const test of queue) {
-			if (token.isCancellationRequested) {
-				break;
-			}
-
-			if (request.exclude?.includes(test)) {
-				continue;
-			}
-
-			if (test.children.size === 0) {
-				await this.debugTest(test);
-				break;
-			} else {
-				test.children.forEach((child) => {
-					queue.push(child);
-				});
-			}
+		const [first] = collectTestsByFile(request, this.testController);
+		if (!first) {
+			return;
 		}
-	}
 
-	private async debugTest(test: vscode.TestItem): Promise<boolean | undefined> {
-		const filePath = test.uri!.fsPath;
-		const testName =
-			test.children.size === 0 ? toTestItemNamePattern(test) : undefined;
+		const [filePath, tests] = first;
+		const runsWholeFile =
+			!request.include ||
+			request.include.some((item) => item.id === item.uri?.fsPath);
+		const testName = runsWholeFile ? undefined : toTestItemsNamePattern(tests);
 
-		const workspaceFolder = vscode.workspace.getWorkspaceFolder(test.uri!);
+		const fileUri = vscode.Uri.file(filePath);
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(fileUri);
 		if (!workspaceFolder) {
 			vscode.window.showErrorMessage('Could not determine workspace folder');
 			return;
@@ -59,6 +44,6 @@ export class DebugHandler {
 			filePath,
 			testName,
 		);
-		return vscode.debug.startDebugging(workspaceFolder, debugConfig);
+		await vscode.debug.startDebugging(workspaceFolder, debugConfig);
 	}
 }

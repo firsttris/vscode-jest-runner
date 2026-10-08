@@ -9,7 +9,7 @@ import {
 	isWindows,
 	toRunnerPath,
 } from '../utils/PathUtils';
-import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
+import { quote, toTestItemsNamePattern } from '../utils/TestNameUtils';
 import { isPartiallySelected } from './TestCollector';
 
 interface TestArgumentStrategy {
@@ -56,11 +56,7 @@ abstract class BaseStrategy {
 	}
 
 	protected getTestNamePattern(tests: vscode.TestItem[]): string | undefined {
-		if (tests.length === 0) return undefined;
-
-		return tests.length > 1
-			? `(${tests.map((test) => toTestItemNamePattern(test)).join('|')})`
-			: toTestItemNamePattern(tests[0]);
+		return toTestItemsNamePattern(tests);
 	}
 
 	protected getNormalizedFiles(allFiles: string[]): string[] {
@@ -145,14 +141,14 @@ abstract class JestLikeStrategy extends BaseStrategy {
 		super();
 	}
 
-	protected isPartialRun(
+	/** The tests of a run of one partially selected file, else undefined. */
+	protected getPartialRunTests(
 		allFiles: string[],
 		testsByFile: Map<string, vscode.TestItem[]>,
-	): boolean {
-		return (
-			allFiles.length === 1 &&
-			this.isPartiallySelected(allFiles[0], testsByFile.get(allFiles[0]))
-		);
+	): vscode.TestItem[] | undefined {
+		const tests =
+			allFiles.length === 1 ? testsByFile.get(allFiles[0]) : undefined;
+		return this.isPartiallySelected(allFiles[0], tests) ? tests : undefined;
 	}
 
 	/**
@@ -201,9 +197,9 @@ class RstestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 		const extraArgs = [...additionalArgs, ...coverageArgs, '--reporter=junit'];
 		const configPath = this.jestConfig.getRstestConfigPath(allFiles[0]);
 
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 
 			return this.jestConfig.buildRstestArgs(
 				allFiles[0],
@@ -290,9 +286,9 @@ class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 	): string[] {
 		const reporters = getReporterPaths();
 
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 
 			const extraArgs = [
 				...additionalArgs,
@@ -356,9 +352,9 @@ class JestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 	): string[] {
 		const reporters = getReporterPaths();
 
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 
 			const extraArgs = [
 				...additionalArgs,
@@ -428,9 +424,9 @@ class PlaywrightStrategy
 		additionalArgs: string[],
 		_collectCoverage: boolean,
 	): string[] {
-		if (this.isPartialRun(allFiles, testsByFile)) {
-			const tests = testsByFile.get(allFiles[0])!;
-			const testNamePattern = this.getTestNamePattern(tests)!;
+		const partialRunTests = this.getPartialRunTests(allFiles, testsByFile);
+		if (partialRunTests) {
+			const testNamePattern = this.getTestNamePattern(partialRunTests);
 			return this.jestConfig.buildPlaywrightArgs(
 				allFiles[0],
 				testNamePattern,
@@ -465,28 +461,22 @@ class PlaywrightStrategy
 	}
 }
 
-export function buildTestArgsFast(
-	filePath: string,
-	testName: string | undefined,
-	framework: TestFrameworkName,
-	jestConfig: TestRunnerConfig,
-): string[] {
-	if (framework === 'rstest') {
-		return jestConfig.buildRstestArgs(filePath, testName, false, []);
-	}
-
-	return jestConfig.buildTestArgs(filePath, testName, true, []);
-}
-
+/**
+ * Fast mode reports a single test by the exit code of its run, so it is only
+ * used for Playwright: its batched run has no per-test results to match, and
+ * it fails when the name filter matches no test. Jest, Vitest and node:test
+ * exit with 0 then, so a test whose runtime name differs from the parsed one
+ * would be reported as passed although it never ran.
+ */
 export function canUseFastMode(
+	framework: TestFrameworkName,
 	testsByFile: Map<string, vscode.TestItem[]>,
 	collectCoverage: boolean,
 ): boolean {
-	if (collectCoverage) return false;
+	if (framework !== 'playwright' || collectCoverage) return false;
 
 	const files = Array.from(testsByFile.keys());
 	if (files.length !== 1) return false;
 
-	const tests = testsByFile.get(files[0])!;
-	return tests.length === 1;
+	return testsByFile.get(files[0])?.length === 1;
 }

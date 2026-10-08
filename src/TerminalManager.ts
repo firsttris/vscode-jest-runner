@@ -23,7 +23,7 @@ export class TerminalManager {
 		options: TerminalCommandOptions,
 	): Promise<void> {
 		const { framework, cwd, env, preserveEditorFocus } = options;
-		const terminalName = framework === 'vitest' ? 'vitest' : 'jest';
+		const terminalName = framework ?? 'jest';
 		const envChanged =
 			JSON.stringify(env) !== JSON.stringify(this.currentTerminalEnv);
 		const cwdChanged = cwd !== this.currentTerminalCwd;

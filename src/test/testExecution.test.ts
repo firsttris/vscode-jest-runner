@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import {
 	buildTestArgs,
-	buildTestArgsFast,
 	canUseFastMode,
 } from '../execution/TestArgumentBuilder';
 import { collectTestsByFile } from '../execution/TestCollector';
@@ -946,71 +945,13 @@ describe('testExecution', () => {
 		});
 	});
 
-	describe('buildTestArgsFast', () => {
-		let mockJestConfig: TestRunnerConfig;
-
-		beforeEach(() => {
-			mockJestConfig = {
-				buildTestArgs: jest.fn().mockReturnValue(['test', 'args']),
-			} as unknown as TestRunnerConfig;
-		});
-
-		it('should use buildTestArgs for node-test framework', () => {
-			buildTestArgsFast(
-				'/path/to/test.test.js',
-				'my test',
-				'node-test',
-				mockJestConfig,
-			);
-
-			expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
-				'/path/to/test.test.js',
-				'my test',
-				true,
-				[],
-			);
-		});
-
-		it('should use buildTestArgs for vitest framework', () => {
-			buildTestArgsFast(
-				'/path/to/test.spec.ts',
-				'my test',
-				'vitest',
-				mockJestConfig,
-			);
-
-			expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
-				'/path/to/test.spec.ts',
-				'my test',
-				true,
-				[],
-			);
-		});
-
-		it('should use buildTestArgs for jest framework', () => {
-			buildTestArgsFast(
-				'/path/to/test.spec.ts',
-				'my test',
-				'jest',
-				mockJestConfig,
-			);
-
-			expect(mockJestConfig.buildTestArgs).toHaveBeenCalledWith(
-				'/path/to/test.spec.ts',
-				'my test',
-				true,
-				[],
-			);
-		});
-	});
-
 	describe('canUseFastMode', () => {
 		it('should return false when coverage is enabled', () => {
 			const testsByFile = new Map([
 				['/path/test.spec.ts', [new TestItem('test', 'test')]],
 			]);
 
-			const result = canUseFastMode(testsByFile as any, true);
+			const result = canUseFastMode('playwright', testsByFile as any, true);
 
 			expect(result).toBe(false);
 		});
@@ -1021,7 +962,7 @@ describe('testExecution', () => {
 				['/path/test2.spec.ts', [new TestItem('test2', 'test2')]],
 			]);
 
-			const result = canUseFastMode(testsByFile as any, false);
+			const result = canUseFastMode('playwright', testsByFile as any, false);
 
 			expect(result).toBe(false);
 		});
@@ -1034,20 +975,33 @@ describe('testExecution', () => {
 				],
 			]);
 
-			const result = canUseFastMode(testsByFile as any, false);
+			const result = canUseFastMode('playwright', testsByFile as any, false);
 
 			expect(result).toBe(false);
 		});
 
-		it('should return true for single test without coverage', () => {
+		it('should return true for a single Playwright test without coverage', () => {
 			const testsByFile = new Map([
 				['/path/test.spec.ts', [new TestItem('test', 'test')]],
 			]);
 
-			const result = canUseFastMode(testsByFile as any, false);
+			const result = canUseFastMode('playwright', testsByFile as any, false);
 
 			expect(result).toBe(true);
 		});
+
+		it.each(['jest', 'vitest', 'node-test', 'bun', 'deno', 'rstest'] as const)(
+			'should return false for a single %s test, whose run exits with 0 when no test matches',
+			(framework) => {
+				const testsByFile = new Map([
+					['/path/test.spec.ts', [new TestItem('test', 'test')]],
+				]);
+
+				expect(canUseFastMode(framework, testsByFile as any, false)).toBe(
+					false,
+				);
+			},
+		);
 	});
 
 	describe('logTestExecution', () => {

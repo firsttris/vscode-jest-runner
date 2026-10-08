@@ -236,9 +236,11 @@ const findFirstValidConfig = <T>(
 		: findFirstValidConfig(rest, getConfig);
 };
 
+const configFilesOf = (framework: TestFrameworkName): string[] =>
+	testFrameworks.find((f) => f.name === framework)?.configFiles ?? [];
+
 const findJestConfigInDir = (dir: string): TestPatternResult[] => {
-	const jestFramework = testFrameworks.find((f) => f.name === 'jest')!;
-	const configPaths = [...jestFramework.configFiles, 'package.json'].map((f) =>
+	const configPaths = [...configFilesOf('jest'), 'package.json'].map((f) =>
 		join(dir, f),
 	);
 
@@ -249,8 +251,7 @@ const findJestConfigInDir = (dir: string): TestPatternResult[] => {
 };
 
 const findVitestConfigInDir = (dir: string): TestPatternResult[] => {
-	const vitestFramework = testFrameworks.find((f) => f.name === 'vitest')!;
-	const configPaths = vitestFramework.configFiles.map((f) => join(dir, f));
+	const configPaths = configFilesOf('vitest').map((f) => join(dir, f));
 
 	const found = findFirstValidConfig(configPaths, getVitestConfig);
 	if (!found) return [createDefaultResult(dir)];
@@ -259,8 +260,7 @@ const findVitestConfigInDir = (dir: string): TestPatternResult[] => {
 };
 
 const findDenoConfigInDir = (dir: string): TestPatternResult[] => {
-	const denoFramework = testFrameworks.find((f) => f.name === 'deno')!;
-	const configPaths = denoFramework.configFiles.map((f) => join(dir, f));
+	const configPaths = configFilesOf('deno').map((f) => join(dir, f));
 
 	const found = findFirstValidConfig(configPaths, getDenoConfig);
 	if (!found) return [createDefaultResult(dir)];
@@ -283,13 +283,10 @@ const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
 		'jestrunner.playwrightConfigPath',
 		join(dir, 'dummy'),
 	);
-	const playwrightFramework = testFrameworks.find(
-		(f) => f.name === 'playwright',
-	)!;
 
 	const configPaths = customConfigPath
 		? [customConfigPath]
-		: playwrightFramework.configFiles.map((f) => join(dir, f));
+		: configFilesOf('playwright').map((f) => join(dir, f));
 
 	const found = findFirstValidConfig(configPaths, getPlaywrightConfig);
 	if (!found?.config || found.config.length === 0)
@@ -306,8 +303,7 @@ const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
 };
 
 const findRstestConfigInDir = (dir: string): TestPatternResult[] => {
-	const rstestFramework = testFrameworks.find((f) => f.name === 'rstest')!;
-	const configPaths = rstestFramework.configFiles.map((f) => join(dir, f));
+	const configPaths = configFilesOf('rstest').map((f) => join(dir, f));
 
 	const found = findFirstValidConfig(configPaths, getRstestConfig);
 	if (!found) return [createDefaultResult(dir)];
@@ -455,57 +451,6 @@ export function matchesTestFilePattern(filePath: string): boolean {
 		logDebug(`File ${filePath} matches pattern ${res.patterns}: ${matches}`);
 		return matches;
 	});
-}
-
-export function isJestTestFile(filePath: string): boolean {
-	if (!matchesTestFilePattern(filePath)) {
-		return false;
-	}
-
-	const hasJestDir = !!findTestFrameworkDirectory(filePath, 'jest')?.directory;
-	const hasCustomConfig = !!resolveAndValidateCustomConfig(
-		'jestrunner.configPath',
-		filePath,
-	);
-
-	return hasJestDir || hasCustomConfig;
-}
-
-export function isVitestTestFile(filePath: string): boolean {
-	if (!matchesTestFilePattern(filePath)) {
-		return false;
-	}
-
-	const hasVitestDir = !!findTestFrameworkDirectory(filePath, 'vitest')
-		?.directory;
-	const hasCustomConfig = !!resolveAndValidateCustomConfig(
-		'jestrunner.vitestConfigPath',
-		filePath,
-	);
-
-	return hasVitestDir || hasCustomConfig;
-}
-
-export function isTestFile(filePath: string): boolean {
-	if (!matchesTestFilePattern(filePath)) {
-		return false;
-	}
-
-	const frameworkResult = findTestFrameworkDirectory(filePath);
-	if (!frameworkResult) {
-		return false;
-	}
-
-	if (hasConflictingTestFramework(filePath, frameworkResult.framework)) {
-		return false;
-	}
-
-	const hasFrameworkDir = !!frameworkResult;
-	const hasCustomConfig =
-		!!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
-		!!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
-
-	return hasFrameworkDir || hasCustomConfig;
 }
 
 export function getTestFrameworkForFile(

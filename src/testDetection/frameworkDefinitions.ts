@@ -37,11 +37,6 @@ export type FrameworkResult = {
 	framework: TestFrameworkName;
 };
 
-export type SearchOutcome =
-	| { status: 'found'; result: FrameworkResult }
-	| { status: 'wrong_framework' }
-	| { status: 'not_found' };
-
 export const DEFAULT_TEST_PATTERNS = [
 	'**/*.{test,spec}.?(c|m)[jt]s?(x)',
 	'**/__tests__/**/*.?(c|m)[jt]s?(x)',
