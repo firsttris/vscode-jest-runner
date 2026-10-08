@@ -1,0 +1,121 @@
+<!doctype html>
+<!-- Source of docs/assets/social-preview.png (GitHub social preview, 1280x640). Render: open in Chromium at a 1280x640 viewport and take a screenshot. -->
+<html><head><meta charset="utf-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:640px;overflow:hidden}
+body{font-family:"Inter",sans-serif;color:#e8e6ef;
+  background:
+    radial-gradient(900px 500px at 85% 115%, rgba(153,66,91,.45), transparent 60%),
+    radial-gradient(700px 420px at 105% -10%, rgba(124,58,237,.30), transparent 60%),
+    radial-gradient(600px 400px at -10% 110%, rgba(34,211,238,.12), transparent 60%),
+    #0d0b12;
+  position:relative}
+.grid{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:40px 40px;
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,rgba(0,0,0,.4) 70%,transparent 100%)}
+.wrap{position:absolute;inset:0;padding:48px 64px}
+.head{display:flex;align-items:center;gap:26px}
+.icon{width:88px;height:88px;border-radius:22px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 10px 40px rgba(153,66,91,.55)}
+h1{font-family:"Inter Display","Inter",sans-serif;font-weight:700;font-size:60px;letter-spacing:-1.5px;line-height:1}
+h1 .muted{color:#a79fb8;font-weight:500}
+.sub{margin-top:24px;font-size:26px;color:#cfc9da;font-weight:400;letter-spacing:-.2px}
+.sub b{color:#fff;font-weight:600}
+.chips{margin-top:20px;display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;font-size:17px;font-weight:500;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10)}
+.dot{width:9px;height:9px;border-radius:50%}
+.feat{margin-top:26px;display:flex;gap:22px;font-size:17px;color:#bdb5cc}
+.feat span{display:flex;align-items:center;gap:8px}
+.feat svg{width:18px;height:18px}
+
+/* editor mock */
+.editor{position:absolute;left:64px;top:290px;width:1152px;height:400px;border-radius:14px;
+  background:#1b1824;border:1px solid rgba(255,255,255,.10);
+  box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.4);overflow:hidden;transform:rotate(-0deg)}
+.tabs{height:38px;background:#15131c;display:flex;align-items:flex-end;padding-left:12px;gap:2px;border-bottom:1px solid rgba(255,255,255,.06)}
+.tab{height:32px;padding:0 16px;display:flex;align-items:center;gap:8px;font-size:13px;color:#8d86a0;border-radius:8px 8px 0 0}
+.tab.active{background:#1b1824;color:#e8e6ef}
+.ts{font-weight:700;font-size:11px;color:#3b82f6}
+.body{display:flex;height:100%}
+.explorer{width:250px;background:#17151f;border-right:1px solid rgba(255,255,255,.06);padding:12px 10px;font-size:13.5px}
+.explorer .title{font-size:10.5px;letter-spacing:1px;color:#8d86a0;font-weight:600;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:8px;height:23px;color:#cfc9da;white-space:nowrap}
+.row.i1{padding-left:12px}.row.i2{padding-left:24px}.row.i3{padding-left:36px}
+.ok{color:#22c55e}.fail{color:#ef4444}.skip{color:#8d86a0}
+.code{flex:1;padding:14px 0 0 0;font-family:"DejaVu Sans Mono",monospace;font-size:14.5px;line-height:22px}
+.ln{display:flex}
+.g{width:28px;text-align:center;font-family:"Inter",sans-serif;font-size:13px}
+.n{width:34px;text-align:right;padding-right:14px;color:#57506a}
+.lens{color:#8d86a0;font-family:"Inter",sans-serif;font-size:12.5px;height:20px;line-height:20px;padding-left:62px}
+.lens a{color:#c084fc;text-decoration:none}
+.lens .sep{color:#57506a;margin:0 6px}
+.k{color:#c678dd}.s{color:#98c379}.f{color:#61afef}.p{color:#e5c07b}.c{color:#7f848e}
+.gut{width:14px;display:inline-flex;justify-content:center}
+.run{position:absolute;left:420px;bottom:-40px}
+.err{background:rgba(239,68,68,.10)}
+.errmsg{margin-left:24px;color:#f87171;font-family:"Inter",sans-serif;font-size:13px;font-style:italic}
+</style></head>
+<body>
+<div class="grid"></div>
+<div class="wrap">
+  <div class="head">
+    <img class="icon" src="../public/icon.png">
+    <h1>Jest Runner <span class="muted">for VS Code</span></h1>
+  </div>
+  <p class="sub">Run and debug tests <b>with one click</b>: CodeLens, Test Explorer, coverage. <b>Zero configuration.</b></p>
+  <div class="chips">
+    <span class="chip"><i class="dot" style="background:#c21325"></i>Jest</span>
+    <span class="chip"><i class="dot" style="background:#facc15"></i>Vitest</span>
+    <span class="chip"><i class="dot" style="background:#2ead33"></i>Playwright</span>
+    <span class="chip"><i class="dot" style="background:#ff6b35"></i>Rstest</span>
+    <span class="chip"><i class="dot" style="background:#fbf0df"></i>Bun</span>
+    <span class="chip"><i class="dot" style="background:#70ffaf"></i>Deno</span>
+    <span class="chip"><i class="dot" style="background:#5fa04e"></i>Node.js</span>
+  </div>
+</div>
+
+<div class="editor">
+  <div class="tabs">
+    <div class="tab active"><span class="ts">TS</span>cart.test.ts</div>
+    <div class="tab"><span class="ts" style="color:#facc15">TS</span>vitest.config.ts</div>
+  </div>
+  <div class="body">
+    <div class="explorer">
+      <div class="title">TESTING</div>
+      <div class="row"><span class="ok">●</span>web</div>
+      <div class="row i1"><span class="ok">●</span>src</div>
+      <div class="row i2"><span class="fail">●</span>cart.test.ts</div>
+      <div class="row i3"><span class="fail">●</span>Cart</div>
+      <div class="row i3" style="padding-left:48px"><span class="ok">✓</span>adds an item</div>
+      <div class="row i3" style="padding-left:48px"><span class="fail">✗</span>applies discount</div>
+      <div class="row i3" style="padding-left:48px"><span class="ok">✓</span>total of %s</div>
+      <div class="row i2"><span class="ok">●</span>user.test.ts</div>
+      <div class="row"><span class="ok">●</span>e2e</div>
+      <div class="row i1"><span class="ok">✓</span>login.spec.ts</div>
+      <div class="row"><span class="ok">●</span>api</div>
+      <div class="row i1"><span class="ok">✓</span>orders.test.ts</div>
+    </div>
+    <div class="code">
+      <div class="ln"><span class="g"></span><span class="n">1</span><span><span class="k">import</span> { describe, it, expect } <span class="k">from</span> <span class="s">'vitest'</span>;</span></div>
+      <div class="ln"><span class="g"></span><span class="n">2</span><span></span></div>
+      <div class="lens"><a>▷ Run</a><span class="sep">|</span><a>⚙ Debug</a></div>
+      <div class="ln"><span class="g"><span class="fail">✗</span></span><span class="n">3</span><span><span class="f">describe</span>(<span class="s">'Cart'</span>, () =&gt; {</span></div>
+      <div class="lens">&nbsp;&nbsp;<a>▷ Run</a><span class="sep">|</span><a>⚙ Debug</a></div>
+      <div class="ln"><span class="g"><span class="ok">✓</span></span><span class="n">4</span><span>&nbsp;&nbsp;<span class="f">it</span>(<span class="s">'adds an item'</span>, () =&gt; {</span></div>
+      <div class="ln"><span class="g"></span><span class="n">5</span><span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f">expect</span>(cart.<span class="f">add</span>(<span class="s">'🍎'</span>).size).<span class="f">toBe</span>(<span class="p">1</span>);</span></div>
+      <div class="ln"><span class="g"></span><span class="n">6</span><span>&nbsp;&nbsp;});</span></div>
+      <div class="lens">&nbsp;&nbsp;<a>▷ Run</a><span class="sep">|</span><a>⚙ Debug</a></div>
+      <div class="ln"><span class="g"><span class="fail">✗</span></span><span class="n">7</span><span>&nbsp;&nbsp;<span class="f">it</span>(<span class="s">'applies discount'</span>, () =&gt; {</span></div>
+      <div class="ln err"><span class="g"></span><span class="n">8</span><span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f">expect</span>(cart.<span class="f">total</span>()).<span class="f">toBe</span>(<span class="p">80</span>);<span class="errmsg">AssertionError: expected 90 to be 80</span></span></div>
+      <div class="ln"><span class="g"></span><span class="n">9</span><span>&nbsp;&nbsp;});</span></div>
+      <div class="lens">&nbsp;&nbsp;<a>▷ Run</a><span class="sep">|</span><a>⚙ Debug</a><span class="sep">|</span><a>Run --coverage</a></div>
+      <div class="ln"><span class="g"><span class="ok">✓</span></span><span class="n">10</span><span>&nbsp;&nbsp;<span class="f">it</span>.<span class="f">each</span>([<span class="p">10</span>, <span class="p">20</span>])(<span class="s">'total of %s'</span>, (n) =&gt; {</span></div>
+      <div class="ln"><span class="g"></span><span class="n">11</span><span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="f">expect</span>(<span class="f">total</span>(n)).<span class="f">toBeGreaterThan</span>(<span class="p">0</span>);</span></div>
+      <div class="ln"><span class="g"></span><span class="n">12</span><span>&nbsp;&nbsp;});</span></div>
+      <div class="ln"><span class="g"></span><span class="n">13</span><span>});</span></div>
+    </div>
+  </div>
+</div>
+</body></html>
