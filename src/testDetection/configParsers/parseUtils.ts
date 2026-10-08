@@ -403,6 +403,3 @@ const evaluateConfigObject = (
 
 	return undefined;
 };
-
-// Deprecated helpers - can be removed eventually but kept for now if I missed some update.
-// Actually I will remove them to force me to update all consumers.
