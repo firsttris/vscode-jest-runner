@@ -1,0 +1,26 @@
+/* Colors of the extension (package.json galleryBanner): #99425B */
+:root {
+  --md-primary-fg-color: #99425b;
+  --md-primary-fg-color--light: #b85d76;
+  --md-primary-fg-color--dark: #7a3449;
+  --md-accent-fg-color: #c2185b;
+}
+[data-md-color-scheme="slate"] {
+  --md-accent-fg-color: #e0719a;
+}
+/* Screenshots: border and shadow, never wider than the text */
+.md-typeset img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+/* The logo is a square icon, not a photo */
+.md-header__button.md-logo img {
+  border-radius: 4px;
+  box-shadow: none;
+}
+/* Wide, scrollable tables (settings reference, module reference) */
+.md-typeset table:not([class]) {
+  font-size: 0.75rem;
+}

@@ -5,3 +5,6 @@ coverage
 *.vsix
 dist
 .eslintcache
+
+# MkDocs build (mkdocs build)
+site/
