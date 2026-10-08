@@ -91,8 +91,6 @@ export const isPlaywrightTestFile = (filePath: string): boolean =>
 export const isRstestTestFile = (filePath: string): boolean =>
 	hasFrameworkImport(filePath, 'rstest');
 
-export const isRstestFile = isRstestTestFile;
-
 function hasFrameworkDependency(
 	packageJson: any,
 	frameworkName: TestFrameworkName,
@@ -114,10 +112,6 @@ function hasFrameworkDependency(
 		sources.some((deps) => deps?.[frameworkName]) ||
 		!!packageJson[frameworkName]
 	);
-}
-
-export function clearNodeTestCache(): void {
-	cacheManager.invalidateAll();
 }
 
 export function invalidateNodeTestCache(filePath: string): void {

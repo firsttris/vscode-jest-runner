@@ -151,34 +151,6 @@ export const getDefaultTestPatterns = (): string[] | undefined =>
 
 // === Computed Settings ===
 
-export const getRunOptionsForFramework = (
-	framework:
-		| 'jest'
-		| 'vitest'
-		| 'node-test'
-		| 'bun'
-		| 'deno'
-		| 'playwright'
-		| 'rstest',
-): string[] | null => {
-	switch (framework) {
-		case 'vitest':
-			return getVitestRunOptions() ?? getJestRunOptions();
-		case 'node-test':
-			return getNodeTestRunOptions();
-		case 'bun':
-			return getBunRunOptions();
-		case 'deno':
-			return getDenoRunOptions();
-		case 'playwright':
-			return getPlaywrightRunOptions();
-		case 'rstest':
-			return getRstestRunOptions();
-		default:
-			return getJestRunOptions();
-	}
-};
-
 export const getDebugOptionsForFramework = (
 	framework: TestFrameworkName,
 ): Partial<vscode.DebugConfiguration> => {

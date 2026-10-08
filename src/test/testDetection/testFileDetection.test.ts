@@ -2,13 +2,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { cacheManager } from '../../cache/CacheManager';
+import type { TestFrameworkName } from '../../testDetection/frameworkDefinitions';
 import { findTestFrameworkDirectory } from '../../testDetection/frameworkDetection';
+import { testFileCache } from '../../testDetection/testFileCache';
 import {
 	getTestFrameworkForFile,
 	hasConflictingTestFramework,
-	isJestTestFile,
-	isTestFile,
-	isVitestTestFile,
 } from '../../testDetection/testFileDetection';
 import { normalizePath } from '../../utils/PathUtils';
 
@@ -16,6 +15,17 @@ jest.mock('fs');
 jest.mock('vscode');
 
 const mockedFs = fs as jest.Mocked<typeof fs>;
+
+const isTestFile = (filePath: string): boolean =>
+	testFileCache.isTestFile(filePath);
+
+const isTestFileOf =
+	(framework: TestFrameworkName) =>
+	(filePath: string): boolean =>
+		isTestFile(filePath) && getTestFrameworkForFile(filePath) === framework;
+
+const isJestTestFile = isTestFileOf('jest');
+const isVitestTestFile = isTestFileOf('vitest');
 
 describe('testFileDetection', () => {
 	beforeEach(() => {

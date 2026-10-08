@@ -457,57 +457,6 @@ export function matchesTestFilePattern(filePath: string): boolean {
 	});
 }
 
-export function isJestTestFile(filePath: string): boolean {
-	if (!matchesTestFilePattern(filePath)) {
-		return false;
-	}
-
-	const hasJestDir = !!findTestFrameworkDirectory(filePath, 'jest')?.directory;
-	const hasCustomConfig = !!resolveAndValidateCustomConfig(
-		'jestrunner.configPath',
-		filePath,
-	);
-
-	return hasJestDir || hasCustomConfig;
-}
-
-export function isVitestTestFile(filePath: string): boolean {
-	if (!matchesTestFilePattern(filePath)) {
-		return false;
-	}
-
-	const hasVitestDir = !!findTestFrameworkDirectory(filePath, 'vitest')
-		?.directory;
-	const hasCustomConfig = !!resolveAndValidateCustomConfig(
-		'jestrunner.vitestConfigPath',
-		filePath,
-	);
-
-	return hasVitestDir || hasCustomConfig;
-}
-
-export function isTestFile(filePath: string): boolean {
-	if (!matchesTestFilePattern(filePath)) {
-		return false;
-	}
-
-	const frameworkResult = findTestFrameworkDirectory(filePath);
-	if (!frameworkResult) {
-		return false;
-	}
-
-	if (hasConflictingTestFramework(filePath, frameworkResult.framework)) {
-		return false;
-	}
-
-	const hasFrameworkDir = !!frameworkResult;
-	const hasCustomConfig =
-		!!resolveAndValidateCustomConfig('jestrunner.configPath', filePath) ||
-		!!resolveAndValidateCustomConfig('jestrunner.vitestConfigPath', filePath);
-
-	return hasFrameworkDir || hasCustomConfig;
-}
-
 export function getTestFrameworkForFile(
 	filePath: string,
 ): TestFrameworkName | undefined {

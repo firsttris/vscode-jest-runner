@@ -1,4 +1,4 @@
-import { pushMany, validateCodeLensOptions } from '../util';
+import { validateCodeLensOptions } from '../util';
 import {
 	escapeRegExpForPath,
 	getDirName,
@@ -188,22 +188,6 @@ describe('unquote', () => {
 	it('should only remove quotes at the beginning and end', () => {
 		expect(unquote('"te"st"')).toBe('te"st');
 		expect(unquote("'te'st'")).toBe("te'st");
-	});
-});
-
-describe('pushMany', () => {
-	it('should push multiple items to an array', () => {
-		const arr = [1, 2, 3];
-		const result = pushMany(arr, [4, 5, 6]);
-		expect(arr).toEqual([1, 2, 3, 4, 5, 6]);
-		expect(result).toBe(6);
-	});
-
-	it('should handle empty arrays', () => {
-		const arr = [1, 2, 3];
-		const result = pushMany(arr, []);
-		expect(arr).toEqual([1, 2, 3]);
-		expect(result).toBe(3);
 	});
 });
 

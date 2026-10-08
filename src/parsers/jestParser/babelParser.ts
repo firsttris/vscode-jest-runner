@@ -5,8 +5,6 @@ import { astToValue } from '../../utils/AstUtils';
 import {
 	getCallExpression,
 	getNameForNode,
-	type JESParserOptions,
-	parseOptions,
 	shallowAttr,
 } from './helper';
 import {
@@ -37,15 +35,6 @@ const toAst = (
 		sourceType: 'module',
 	};
 	return { ast: babelParse(source, parserOptions), source };
-};
-
-export const getASTfor = (
-	file: string,
-	data?: string,
-	options?: JESParserOptions,
-): t.File => {
-	const { ast } = toAst(file, data, parseOptions(file, options));
-	return ast;
 };
 
 const isDescribe = (name?: string) => name === 'describe';

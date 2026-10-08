@@ -13,12 +13,17 @@ import {
 	isPlaywrightTestFile,
 	isRstestTestFile,
 } from '../../testDetection/frameworkDetection';
-import { isJestTestFile } from '../../testDetection/testFileDetection';
+import { testFileCache } from '../../testDetection/testFileCache';
+import { getTestFrameworkForFile } from '../../testDetection/testFileDetection';
 
 jest.mock('fs');
 jest.mock('vscode');
 
 const mockedFs = fs as jest.Mocked<typeof fs>;
+
+const isJestTestFile = (filePath: string): boolean =>
+	testFileCache.isTestFile(filePath) &&
+	getTestFrameworkForFile(filePath) === 'jest';
 
 describe('frameworkDetection', () => {
 	beforeEach(() => {

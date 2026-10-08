@@ -4,7 +4,6 @@ import * as vscode from 'vscode';
 import * as parser from '../parser';
 import { JestTestController } from '../TestController';
 import { testFileCache } from '../testDetection/testFileCache';
-import * as util from '../util';
 import * as TestNameUtils from '../utils/TestNameUtils';
 import {
 	CancellationToken,
@@ -155,12 +154,6 @@ export function setupTestControllerMocks(
 	jest
 		.spyOn(TestNameUtils, 'escapeRegExp')
 		.mockImplementation((str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-	jest
-		.spyOn(util, 'pushMany')
-		.mockImplementation((arr: any[], items: any[]) => {
-			arr.push(...items);
-			return arr.length;
-		});
 
 	jest.spyOn(vscode.debug, 'startDebugging').mockResolvedValue(true);
 }
