@@ -9,7 +9,6 @@ import {
 } from '../coverageProvider';
 import {
 	buildTestArgs,
-	buildTestArgsFast,
 	canUseFastMode,
 } from '../execution/TestArgumentBuilder';
 import {
@@ -163,7 +162,10 @@ export class TestRunExecutor {
 
 		this.cleanupBunCoverage(framework, collectCoverage, cwd);
 
-		if (this.shouldRunFastMode(testsByFile, collectCoverage, additionalArgs)) {
+		if (
+			canUseFastMode(framework, testsByFile, collectCoverage) &&
+			additionalArgs.length === 0
+		) {
 			await this.runFastMode(
 				allFiles[0],
 				allTests[0],
@@ -283,17 +285,6 @@ export class TestRunExecutor {
 		}
 	}
 
-	private shouldRunFastMode(
-		testsByFile: Map<string, vscode.TestItem[]>,
-		collectCoverage: boolean,
-		additionalArgs: string[],
-	): boolean {
-		return (
-			canUseFastMode(testsByFile, collectCoverage) &&
-			additionalArgs.length === 0
-		);
-	}
-
 	private async runFastMode(
 		file: string,
 		test: vscode.TestItem,
@@ -304,14 +295,12 @@ export class TestRunExecutor {
 	): Promise<void> {
 		const testCommand = this.testRunnerConfig.getTestCommand(file);
 
-		const testName = toTestItemNamePattern(test);
-		const args = buildTestArgsFast(
+		const commandArgs = this.testRunnerConfig.buildTestArgs(
 			file,
-			testName,
-			framework,
-			this.testRunnerConfig,
+			toTestItemNamePattern(test),
+			true,
+			[],
 		);
-		const commandArgs = args;
 		const esmEnv = this.getEsmEnv(file, framework);
 
 		logInfo(`Running fast mode: ${testCommand} ${commandArgs.join(' ')}`);

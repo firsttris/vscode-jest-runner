@@ -1,8 +1,5 @@
 import type * as vscode from 'vscode';
-import {
-	buildTestArgs,
-	buildTestArgsFast,
-} from '../execution/TestArgumentBuilder';
+import { buildTestArgs } from '../execution/TestArgumentBuilder';
 import { getFrameworkAdapter } from '../frameworkAdapters';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 import {
@@ -599,29 +596,6 @@ describe('TestArgumentBuilder', () => {
 				false,
 				['--reporter=junit'],
 			);
-		});
-
-		it('should build fast rstest args without quotes', () => {
-			(mockConfig.buildRstestArgs as jest.Mock).mockReturnValue([
-				'-t',
-				'test1',
-			]);
-
-			const args = buildTestArgsFast(
-				'/path/to/prognose.test.ts',
-				'test1',
-				'rstest',
-				mockConfig,
-			);
-
-			expect(mockConfig.buildRstestArgs).toHaveBeenCalledWith(
-				'/path/to/prognose.test.ts',
-				'test1',
-				false,
-				[],
-			);
-			expect(mockConfig.buildTestArgs).not.toHaveBeenCalled();
-			expect(args).toEqual(['-t', 'test1']);
 		});
 	});
 

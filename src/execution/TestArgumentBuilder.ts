@@ -465,28 +465,22 @@ class PlaywrightStrategy
 	}
 }
 
-export function buildTestArgsFast(
-	filePath: string,
-	testName: string | undefined,
-	framework: TestFrameworkName,
-	jestConfig: TestRunnerConfig,
-): string[] {
-	if (framework === 'rstest') {
-		return jestConfig.buildRstestArgs(filePath, testName, false, []);
-	}
-
-	return jestConfig.buildTestArgs(filePath, testName, true, []);
-}
-
+/**
+ * Fast mode reports a single test by the exit code of its run, so it is only
+ * used for Playwright: its batched run has no per-test results to match, and
+ * it fails when the name filter matches no test. Jest, Vitest and node:test
+ * exit with 0 then, so a test whose runtime name differs from the parsed one
+ * would be reported as passed although it never ran.
+ */
 export function canUseFastMode(
+	framework: TestFrameworkName,
 	testsByFile: Map<string, vscode.TestItem[]>,
 	collectCoverage: boolean,
 ): boolean {
-	if (collectCoverage) return false;
+	if (framework !== 'playwright' || collectCoverage) return false;
 
 	const files = Array.from(testsByFile.keys());
 	if (files.length !== 1) return false;
 
-	const tests = testsByFile.get(files[0])!;
-	return tests.length === 1;
+	return testsByFile.get(files[0])?.length === 1;
 }
