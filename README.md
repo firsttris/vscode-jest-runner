@@ -6,9 +6,9 @@
 
 **Run and debug Jest, Vitest, Playwright, Rstest, Bun, Deno and Node.js tests right from your editor. One click, zero configuration.**
 
-[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/firsttris.vscode-jest-runner?label=VS%20Marketplace&logo=visualstudiocode&logoColor=white&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![Visual Studio Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/firsttris.vscode-jest-runner?label=Installs&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
-[![Visual Studio Marketplace Rating](https://img.shields.io/visual-studio-marketplace/stars/firsttris.vscode-jest-runner?label=Rating&style=flat-square)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner&ssr=false#review-details)
+[![VS Marketplace Version](https://vsmarketplacebadges.dev/version-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Installs](https://vsmarketplacebadges.dev/installs-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
+[![Rating](https://vsmarketplacebadges.dev/rating-short/firsttris.vscode-jest-runner.svg)](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner)
 [![Open VSX](https://img.shields.io/open-vsx/v/firsttris/vscode-jest-runner?label=Open%20VSX&style=flat-square)](https://open-vsx.org/extension/firsttris/vscode-jest-runner)
 [![Build](https://img.shields.io/github/actions/workflow/status/firsttris/vscode-jest-runner/ci.yml?branch=master&label=Build&logo=github&style=flat-square)](https://github.com/firsttris/vscode-jest-runner/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/firsttris/vscode-jest-runner?logo=codecov&style=flat-square)](https://codecov.io/gh/firsttris/vscode-jest-runner)
