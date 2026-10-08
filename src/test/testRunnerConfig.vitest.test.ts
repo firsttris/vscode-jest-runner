@@ -32,7 +32,7 @@ describe('TestRunnerConfig', () => {
 				}),
 			);
 
-			expect(jestRunnerConfig.vitestCommand).toBe('pnpm vitest');
+			expect(jestRunnerConfig.getVitestCommand()).toBe('pnpm vitest');
 		});
 
 		it('should return default vitest command when not set', () => {
@@ -43,7 +43,9 @@ describe('TestRunnerConfig', () => {
 			// Mock no Yarn PnP
 			jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
-			expect(jestRunnerConfig.vitestCommand).toBe('npx --no-install vitest');
+			expect(jestRunnerConfig.getVitestCommand()).toBe(
+				'npx --no-install vitest',
+			);
 		});
 
 		it('should use npx even when PnP is detected', () => {
@@ -61,7 +63,9 @@ describe('TestRunnerConfig', () => {
 			});
 			jest.spyOn(fs, 'readdirSync').mockReturnValue(['yarn-3.2.0.cjs' as any]);
 
-			expect(jestRunnerConfig.vitestCommand).toBe('npx --no-install vitest');
+			expect(jestRunnerConfig.getVitestCommand()).toBe(
+				'npx --no-install vitest',
+			);
 		});
 	});
 

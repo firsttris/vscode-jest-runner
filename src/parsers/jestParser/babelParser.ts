@@ -2,11 +2,7 @@ import { readFileSync } from 'node:fs';
 import { parse as babelParse, type ParserOptions } from '@babel/parser';
 import * as t from '@babel/types';
 import { astToValue } from '../../utils/AstUtils';
-import {
-	getCallExpression,
-	getNameForNode,
-	shallowAttr,
-} from './helper';
+import { getCallExpression, getNameForNode, shallowAttr } from './helper';
 import {
 	NamedBlock,
 	type ParsedNode,

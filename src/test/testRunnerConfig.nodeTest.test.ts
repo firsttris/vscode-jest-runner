@@ -39,7 +39,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				.spyOn(vscode.workspace, 'getConfiguration')
 				.mockReturnValue(new WorkspaceConfiguration({}));
 
-			expect(config.nodeTestCommand).toBe('node');
+			expect(config.getNodeTestCommand()).toBe('node');
 		});
 
 		it('should return custom command when set', () => {
@@ -49,7 +49,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				} as any),
 			);
 
-			expect(config.nodeTestCommand).toBe('tsx');
+			expect(config.getNodeTestCommand()).toBe('tsx');
 		});
 
 		it('should return default node command when custom command is empty string', () => {
@@ -59,7 +59,7 @@ describe('TestRunnerConfig - Node Test Runner', () => {
 				} as any),
 			);
 
-			expect(config.nodeTestCommand).toBe('node');
+			expect(config.getNodeTestCommand()).toBe('node');
 		});
 	});
 

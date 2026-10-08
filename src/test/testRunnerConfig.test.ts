@@ -48,7 +48,7 @@ describe('TestRunnerConfig', () => {
 				}),
 			);
 
-			expect(jestRunnerConfig.cwd).toBe('C:\\project\\jestProject');
+			expect(jestRunnerConfig.getCwd()).toBe('C:\\project\\jestProject');
 		});
 	});
 
@@ -75,11 +75,11 @@ describe('TestRunnerConfig', () => {
 				}),
 			);
 
-			expect(jestRunnerConfig.cwd).toBe('/home/user/project/jestProject');
+			expect(jestRunnerConfig.getCwd()).toBe('/home/user/project/jestProject');
 		});
 	});
 
-	describe('currentPackagePath', () => {
+	describe('getCwd without a project path', () => {
 		const scenarios: Array<
 			[
 				os: 'windows' | 'linux',
@@ -180,6 +180,9 @@ describe('TestRunnerConfig', () => {
 				beforeEach(() => {
 					jestRunnerConfig = new TestRunnerConfig();
 					jest
+						.spyOn(vscode.workspace, 'getConfiguration')
+						.mockReturnValue(new WorkspaceConfiguration({}));
+					jest
 						.spyOn(vscode.workspace, 'getWorkspaceFolder')
 						.mockReturnValue(
 							new WorkspaceFolder(new Uri(workspacePath) as any) as any,
@@ -204,13 +207,9 @@ describe('TestRunnerConfig', () => {
 				});
 
 				its[_os](behavior, async () => {
-					if (installedPath) {
-						expect(jestRunnerConfig.currentPackagePath).toBe(
-							normalizePath(installedPath),
-						);
-					} else {
-						expect(jestRunnerConfig.currentPackagePath).toBe('');
-					}
+					expect(jestRunnerConfig.getCwd()).toBe(
+						installedPath ? normalizePath(installedPath) : workspacePath,
+					);
 				});
 			},
 		);
@@ -248,7 +247,7 @@ describe('TestRunnerConfig', () => {
 
 		it('falls back to the active editor without a file', () => {
 			expect(jestRunnerConfig.getCwd()).toBe(`${packagesDir}/a`);
-			expect(jestRunnerConfig.cwd).toBe(`${packagesDir}/a`);
+			expect(jestRunnerConfig.getCwd()).toBe(`${packagesDir}/a`);
 		});
 
 		describe('getTestRunCwd', () => {
@@ -384,7 +383,7 @@ describe('TestRunnerConfig', () => {
 				() => {
 					jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
-					const command = jestRunnerConfig.jestCommand;
+					const command = jestRunnerConfig.getJestCommand();
 
 					// Expect direct execution via resolved path
 					expect(command).toContain('node ');
@@ -397,7 +396,7 @@ describe('TestRunnerConfig', () => {
 				() => {
 					jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
-					const command = jestRunnerConfig.vitestCommand;
+					const command = jestRunnerConfig.getVitestCommand();
 
 					expect(command).toContain('node ');
 					expect(command).toContain('vitest/vitest.mjs');
@@ -408,7 +407,7 @@ describe('TestRunnerConfig', () => {
 				// Mock fail to find script
 				jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
-				const command = jestRunnerConfig.jestCommand;
+				const command = jestRunnerConfig.getJestCommand();
 				expect(command).toBe('npx --no-install jest');
 			});
 		});
