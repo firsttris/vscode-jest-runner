@@ -779,6 +779,19 @@ describe('frameworkDetection', () => {
 		);
 	});
 
+	describe('findTestFrameworkDirectory cache', () => {
+		it('should reuse the result testFileCache stored for the file', () => {
+			const cached = { framework: 'vitest', directory: '/test/project' };
+			cacheManager.setFileFramework('/test/project/a.test.ts', cached);
+			mockedFs.existsSync = jest.fn();
+
+			expect(findTestFrameworkDirectory('/test/project/a.test.ts')).toBe(
+				cached,
+			);
+			expect(mockedFs.existsSync).not.toHaveBeenCalled();
+		});
+	});
+
 	describe('test import checks', () => {
 		const testFile = '/test/project/a.test.ts';
 

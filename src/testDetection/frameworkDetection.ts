@@ -402,6 +402,14 @@ export function findTestFrameworkDirectory(
 	filePath: string,
 	targetFramework?: TestFrameworkName,
 ): FrameworkResult | undefined {
+	// testFileCache stores this function's result for each test file.
+	const cached = targetFramework
+		? undefined
+		: cacheManager.getFileFramework(filePath);
+	if (cached) {
+		return cached as FrameworkResult;
+	}
+
 	const workspaceFolder = vscode.workspace.getWorkspaceFolder(
 		vscode.Uri.file(filePath),
 	);
