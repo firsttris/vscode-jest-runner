@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import { type LcovCoverageData, parseLcov } from './parsers/lcov-parser';
 import { parseCoverageDirectory } from './testDetection/configParsers/jestParser';
@@ -265,10 +265,11 @@ export class CoverageProvider {
 				if (!file.file) {
 					continue;
 				}
-				const fileCoverage = this.processLcovRecord(
-					file,
-					resolve(baseDir, file.file),
-				);
+				// resolve() would add a drive letter to a rooted path on Windows.
+				const filePath = isAbsolute(file.file)
+					? file.file
+					: resolve(baseDir, file.file);
+				const fileCoverage = this.processLcovRecord(file, filePath);
 				coverageMap[fileCoverage.path] = fileCoverage;
 			}
 
