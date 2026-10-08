@@ -1,5 +1,6 @@
 import type * as vscode from 'vscode';
 import * as Settings from '../config/Settings';
+import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import type { TestRunnerConfig } from '../testRunnerConfig';
 import { appendUniqueArgs, prependUniqueArgs } from '../utils/ArgUtils';
 import { logWarning } from '../utils/Logger';
@@ -19,33 +20,44 @@ export const getDebugConfiguration = (
 	filePath?: string,
 	testName?: string,
 ): vscode.DebugConfiguration => {
-	const framework = config.getTestFramework(filePath);
+	const framework = config.getTestFramework(filePath) ?? 'jest';
+	const debugConfig = buildDebugConfiguration(
+		framework,
+		config,
+		filePath,
+		testName,
+	);
 
-	if (framework === 'bun') {
-		return getBunDebugConfig(config, filePath, testName);
+	// The debug options are spread into the base config, but the args built
+	// for the test file replace theirs, so they are appended here.
+	const userArgs = Settings.getDebugOptionsForFramework(framework).args;
+	return Array.isArray(userArgs) && userArgs.length > 0
+		? { ...debugConfig, args: [...(debugConfig.args ?? []), ...userArgs] }
+		: debugConfig;
+};
+
+const buildDebugConfiguration = (
+	framework: TestFrameworkName,
+	config: TestRunnerConfig,
+	filePath?: string,
+	testName?: string,
+): vscode.DebugConfiguration => {
+	switch (framework) {
+		case 'bun':
+			return getBunDebugConfig(config, filePath, testName);
+		case 'deno':
+			return getDenoDebugConfig(config, filePath, testName);
+		case 'node-test':
+			return getNodeTestDebugConfig(config, filePath, testName);
+		case 'rstest':
+			return getRstestDebugConfig(config, filePath, testName);
+		case 'vitest':
+			return getVitestDebugConfig(config, filePath, testName);
+		case 'playwright':
+			return getPlaywrightDebugConfig(config, filePath, testName);
+		default:
+			return getJestDebugConfig(config, filePath, testName);
 	}
-
-	if (framework === 'deno') {
-		return getDenoDebugConfig(config, filePath, testName);
-	}
-
-	if (framework === 'node-test') {
-		return getNodeTestDebugConfig(config, filePath, testName);
-	}
-
-	if (framework === 'rstest') {
-		return getRstestDebugConfig(config, filePath, testName);
-	}
-
-	if (framework === 'vitest') {
-		return getVitestDebugConfig(config, filePath, testName);
-	}
-
-	if (framework === 'playwright') {
-		return getPlaywrightDebugConfig(config, filePath, testName);
-	}
-
-	return getJestDebugConfig(config, filePath, testName);
 };
 
 const getBunDebugConfig = (

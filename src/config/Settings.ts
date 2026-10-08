@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import { type CodeLensOption, validateCodeLensOptions } from '../util';
 
 function getConfig<T>(key: string): T | undefined;
@@ -179,14 +180,7 @@ export const getRunOptionsForFramework = (
 };
 
 export const getDebugOptionsForFramework = (
-	framework:
-		| 'jest'
-		| 'vitest'
-		| 'node-test'
-		| 'bun'
-		| 'deno'
-		| 'playwright'
-		| 'rstest',
+	framework: TestFrameworkName,
 ): Partial<vscode.DebugConfiguration> => {
 	switch (framework) {
 		case 'vitest':

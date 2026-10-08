@@ -69,6 +69,7 @@ type JestRunnerConfigProps = {
 	'jestrunner.vitestCommand'?: string;
 	'jestrunner.vitestConfigPath'?: string | Record<string, string>;
 	'jestrunner.vitestRunOptions'?: string[];
+	'jestrunner.vitestDebugOptions'?: any;
 	'jestrunner.rstestCommand'?: string;
 	'jestrunner.rstestRunOptions'?: string[];
 	'jestrunner.rstestDebugOptions'?: any;
