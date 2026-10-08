@@ -248,14 +248,13 @@ npm test        # unit tests
 npm run build   # bundle to dist/extension.js, then press F5 in VS Code
 ```
 
-## License
-
-[MIT](LICENSE) © Tristan Teufel and contributors.
-
 ---
 
 <div align="center">
 
-⭐ Star the project on [GitHub](https://github.com/firsttris/vscode-jest-runner) • 🐛 [Report a bug](https://github.com/firsttris/vscode-jest-runner/issues/new?template=bug_report.md) • 💡 [Request a feature](https://github.com/firsttris/vscode-jest-runner/issues/new?template=feature_request.md)
+⭐ Like Jest Runner? A [star on GitHub](https://github.com/firsttris/vscode-jest-runner) helps others find it.<br>
+🐛 [Report a bug](https://github.com/firsttris/vscode-jest-runner/issues/new?template=bug_report.md) · 💡 [Request a feature](https://github.com/firsttris/vscode-jest-runner/issues/new?template=feature_request.md)
+
+<sub>License: <a href="LICENSE">MIT</a> · © Tristan Teufel and contributors</sub>
 
 </div>
