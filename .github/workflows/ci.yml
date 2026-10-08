@@ -1,15 +1,20 @@
 name: CI
 
+# Changes to documentation alone don't build.
 on:
   push:
     branches: [master]
     paths-ignore:
-      - '**.md'
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
-      - '**.md'
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
   # The release workflow runs the same checks and publishes the .vsix built here
   workflow_call:
 
