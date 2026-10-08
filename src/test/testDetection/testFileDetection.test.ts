@@ -16,6 +16,15 @@ jest.mock('vscode');
 
 const mockedFs = fs as jest.Mocked<typeof fs>;
 
+/** findTestFrameworkDirectory, when it detects `framework` for the file. */
+const findFrameworkDirectory = (
+	filePath: string,
+	framework: TestFrameworkName,
+) => {
+	const result = findTestFrameworkDirectory(filePath);
+	return result?.framework === framework ? result : undefined;
+};
+
 const isTestFile = (filePath: string): boolean =>
 	testFileCache.isTestFile(filePath);
 
@@ -1120,7 +1129,7 @@ describe('testFileDetection', () => {
 				return fsPath === path.join(rootPath, 'vitest.config.ts');
 			});
 
-			const result = findTestFrameworkDirectory(filePath, 'vitest');
+			const result = findFrameworkDirectory(filePath, 'vitest');
 
 			expect(result).toEqual({
 				directory: rootPath,
@@ -1140,7 +1149,7 @@ describe('testFileDetection', () => {
 				return fsPath === path.join(rootPath, 'vitest.config.ts');
 			});
 
-			const result = findTestFrameworkDirectory(filePath, 'jest');
+			const result = findFrameworkDirectory(filePath, 'jest');
 
 			expect(result).toBeUndefined();
 		});

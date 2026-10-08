@@ -12,7 +12,6 @@ import {
 } from './configParsing';
 import {
 	type FrameworkResult,
-	type SearchOutcome,
 	type TestFrameworkName,
 	testFrameworks,
 } from './frameworkDefinitions';
@@ -256,11 +255,6 @@ export function detectTestFramework(
 	return undefined;
 }
 
-const matchesTarget = (
-	framework: TestFrameworkName,
-	targetFramework?: TestFrameworkName,
-): boolean => !targetFramework || framework === targetFramework;
-
 export const getParentDirectories = (
 	startDir: string,
 	rootPath: string,
@@ -275,7 +269,6 @@ export const getParentDirectories = (
 const resolveCustomConfigs = (
 	filePath: string,
 	rootPath: string,
-	targetFramework?: TestFrameworkName,
 ): FrameworkResult | undefined => {
 	const customJestConfig = resolveAndValidateCustomConfig(
 		'jestrunner.configPath',
@@ -286,61 +279,37 @@ const resolveCustomConfigs = (
 		filePath,
 	);
 
-	if (!customJestConfig && !customVitestConfig) return undefined;
-
 	if (customJestConfig && customVitestConfig) {
-		const frameworkByPattern = detectFrameworkByPatternMatch(
-			rootPath,
-			filePath,
-			customJestConfig,
-			customVitestConfig,
-		);
-
-		if (frameworkByPattern) {
-			return matchesTarget(frameworkByPattern, targetFramework)
-				? { directory: rootPath, framework: frameworkByPattern }
-				: undefined;
-		}
-
-		return matchesTarget('jest', targetFramework)
-			? { directory: rootPath, framework: 'jest' }
-			: undefined;
+		const framework =
+			detectFrameworkByPatternMatch(
+				rootPath,
+				filePath,
+				customJestConfig,
+				customVitestConfig,
+			) ?? 'jest';
+		return { directory: rootPath, framework };
 	}
-
-	if (customJestConfig && matchesTarget('jest', targetFramework)) {
+	if (customJestConfig) {
 		return { directory: rootPath, framework: 'jest' };
 	}
-
-	if (customVitestConfig && matchesTarget('vitest', targetFramework)) {
+	if (customVitestConfig) {
 		return { directory: rootPath, framework: 'vitest' };
 	}
-
 	return undefined;
 };
 
+/** The framework of the nearest parent directory that uses one. */
 const findFrameworkInParentDirs = (
 	filePath: string,
 	rootPath: string,
-	targetFramework?: TestFrameworkName,
-): SearchOutcome => {
-	const dirs = getParentDirectories(dirname(filePath), rootPath);
-
-	const search = (remainingDirs: string[]): SearchOutcome => {
-		if (remainingDirs.length === 0) return { status: 'not_found' };
-
-		const [dir, ...rest] = remainingDirs;
-		const framework = detectTestFramework(dir, filePath);
-
+): FrameworkResult | undefined => {
+	for (const directory of getParentDirectories(dirname(filePath), rootPath)) {
+		const framework = detectTestFramework(directory, filePath);
 		if (framework) {
-			return matchesTarget(framework, targetFramework)
-				? { status: 'found', result: { directory: dir, framework } }
-				: { status: 'wrong_framework' };
+			return { directory, framework };
 		}
-
-		return search(rest);
-	};
-
-	return search(dirs);
+	}
+	return undefined;
 };
 
 const findNearestFrameworkDirectory = (
@@ -352,59 +321,29 @@ const findNearestFrameworkDirectory = (
 	return dirs.find((dir) => isFrameworkUsedIn(dir, framework));
 };
 
+const DEPENDENCY_DETECTION_ORDER: readonly TestFrameworkName[] = [
+	'vitest',
+	'jest',
+	'bun',
+	'deno',
+	'playwright',
+	'rstest',
+];
+
 const detectFrameworkByDependency = (
 	rootPath: string,
-	targetFramework?: TestFrameworkName,
 ): FrameworkResult | undefined => {
-	const checks: Array<{ framework: TestFrameworkName; isUsed: () => boolean }> =
-		targetFramework
-			? [
-					{
-						framework: targetFramework,
-						isUsed: () => isFrameworkUsedIn(rootPath, targetFramework),
-					},
-				]
-			: [
-					{
-						framework: 'vitest',
-						isUsed: () => isFrameworkUsedIn(rootPath, 'vitest'),
-					},
-					{
-						framework: 'jest',
-						isUsed: () => isFrameworkUsedIn(rootPath, 'jest'),
-					},
-					{
-						framework: 'bun',
-						isUsed: () => isFrameworkUsedIn(rootPath, 'bun'),
-					},
-					{
-						framework: 'deno',
-						isUsed: () => isFrameworkUsedIn(rootPath, 'deno'),
-					},
-					{
-						framework: 'playwright',
-						isUsed: () => isFrameworkUsedIn(rootPath, 'playwright'),
-					},
-					{
-						framework: 'rstest',
-						isUsed: () => isFrameworkUsedIn(rootPath, 'rstest'),
-					},
-				];
-
-	const found = checks.find((check) => check.isUsed());
-	return found
-		? { directory: rootPath, framework: found.framework }
-		: undefined;
+	const framework = DEPENDENCY_DETECTION_ORDER.find((name) =>
+		isFrameworkUsedIn(rootPath, name),
+	);
+	return framework ? { directory: rootPath, framework } : undefined;
 };
 
 export function findTestFrameworkDirectory(
 	filePath: string,
-	targetFramework?: TestFrameworkName,
 ): FrameworkResult | undefined {
 	// testFileCache stores this function's result for each test file.
-	const cached = targetFramework
-		? undefined
-		: cacheManager.getFileFramework(filePath);
+	const cached = cacheManager.getFileFramework(filePath);
 	if (cached) {
 		return cached as FrameworkResult;
 	}
@@ -440,10 +379,6 @@ export function findTestFrameworkDirectory(
 
 	const isRstest = isRstestTestFile(filePath);
 	if (isRstest) {
-		if (!matchesTarget('rstest', targetFramework)) {
-			return undefined;
-		}
-
 		const nearestRstestDirectory = findNearestFrameworkDirectory(
 			filePath,
 			rootPath,
@@ -456,30 +391,11 @@ export function findTestFrameworkDirectory(
 		};
 	}
 
-	const customResult = resolveCustomConfigs(
-		filePath,
-		rootPath,
-		targetFramework,
-	);
-	if (customResult) return customResult;
-
-	const parentDirResult = findFrameworkInParentDirs(
-		filePath,
-		rootPath,
-		targetFramework,
-	);
-	if (parentDirResult.status === 'found') {
-		if (
-			parentDirResult.result.framework === 'playwright' &&
-			isPlaywrightDisabled()
-		)
-			return undefined;
-		return parentDirResult.result;
-	}
-	if (parentDirResult.status === 'wrong_framework') return undefined;
-
-	const depResult = detectFrameworkByDependency(rootPath, targetFramework);
-	if (depResult?.framework === 'playwright' && isPlaywrightDisabled())
-		return undefined;
-	return depResult;
+	const result =
+		resolveCustomConfigs(filePath, rootPath) ??
+		findFrameworkInParentDirs(filePath, rootPath) ??
+		detectFrameworkByDependency(rootPath);
+	return result?.framework === 'playwright' && isPlaywrightDisabled()
+		? undefined
+		: result;
 }
