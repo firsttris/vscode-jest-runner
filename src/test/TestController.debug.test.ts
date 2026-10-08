@@ -104,6 +104,62 @@ describe('JestTestController - debug handler', () => {
 		expect(vscode.debug.startDebugging).toHaveBeenCalled();
 	});
 
+	it('should debug all tests of a describe block, not only the first', async () => {
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
+			.calls[1][2];
+		const mockConfig = (setup.controller as any).jestConfig;
+		const getDebugConfiguration = jest
+			.spyOn(mockConfig, 'getDebugConfiguration')
+			.mockReturnValue({ type: 'node', request: 'launch', name: 'Debug' });
+
+		const uri = vscode.Uri.file('/workspace/test.ts');
+		const suite = new TestItem(
+			'/workspace/test.ts:describe:1:Suite',
+			'Suite',
+			uri,
+		);
+		suite.children.add(
+			new TestItem('/workspace/test.ts:it:2:Suite first', 'first', uri),
+		);
+		suite.children.add(
+			new TestItem('/workspace/test.ts:it:3:Suite second', 'second', uri),
+		);
+
+		await debugProfile({ include: [suite], exclude: [] }, mockToken);
+
+		expect(getDebugConfiguration).toHaveBeenCalledWith(
+			'/workspace/test.ts',
+			'(Suite first|Suite second)',
+		);
+		expect(vscode.debug.startDebugging).toHaveBeenCalledTimes(1);
+	});
+
+	it('should debug a file without a name filter', async () => {
+		const mockTestController = (vscode.tests.createTestController as jest.Mock)
+			.mock.results[0].value;
+		const debugProfile = (mockTestController.createRunProfile as jest.Mock).mock
+			.calls[1][2];
+		const mockConfig = (setup.controller as any).jestConfig;
+		const getDebugConfiguration = jest
+			.spyOn(mockConfig, 'getDebugConfiguration')
+			.mockReturnValue({ type: 'node', request: 'launch', name: 'Debug' });
+
+		const uri = vscode.Uri.file('/workspace/test.ts');
+		const file = new TestItem('/workspace/test.ts', 'test.ts', uri);
+		file.children.add(
+			new TestItem('/workspace/test.ts:it:2:first', 'first', uri),
+		);
+
+		await debugProfile({ include: [file], exclude: [] }, mockToken);
+
+		expect(getDebugConfiguration).toHaveBeenCalledWith(
+			'/workspace/test.ts',
+			undefined,
+		);
+	});
+
 	it('should respect cancellation token', async () => {
 		const mockTestController = (vscode.tests.createTestController as jest.Mock)
 			.mock.results[0].value;

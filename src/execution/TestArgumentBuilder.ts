@@ -9,7 +9,7 @@ import {
 	isWindows,
 	toRunnerPath,
 } from '../utils/PathUtils';
-import { quote, toTestItemNamePattern } from '../utils/TestNameUtils';
+import { quote, toTestItemsNamePattern } from '../utils/TestNameUtils';
 import { isPartiallySelected } from './TestCollector';
 
 interface TestArgumentStrategy {
@@ -56,11 +56,7 @@ abstract class BaseStrategy {
 	}
 
 	protected getTestNamePattern(tests: vscode.TestItem[]): string | undefined {
-		if (tests.length === 0) return undefined;
-
-		return tests.length > 1
-			? `(${tests.map((test) => toTestItemNamePattern(test)).join('|')})`
-			: toTestItemNamePattern(tests[0]);
+		return toTestItemsNamePattern(tests);
 	}
 
 	protected getNormalizedFiles(allFiles: string[]): string[] {
