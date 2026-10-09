@@ -3,6 +3,7 @@
 Everything about **Jest Runner for VS Code** in detail: how to install and use it, what it reads from each
 test framework, every setting, and how the extension works inside. The short overview is the
 [README on GitHub](https://github.com/firsttris/vscode-jest-runner#readme).
+Also as a website with search: **https://firsttris.github.io/vscode-jest-runner/**
 
 <img src="Banner.png" alt="Jest Runner in VS Code: Run and Debug CodeLens above a test, the Test Explorer and the terminal output" width="900">
 
