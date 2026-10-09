@@ -5,6 +5,7 @@
   "version": "0.4.151",
   "publisher": "firsttris",
   "author": "Tristan Teufel",
+  "homepage": "https://firsttris.github.io/vscode-jest-runner/",
   "repository": {
     "type": "git",
     "url": "https://github.com/firsttris/vscode-jest-runner.git"

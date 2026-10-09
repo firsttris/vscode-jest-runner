@@ -192,7 +192,7 @@ The full documentation lives at **[firsttris.github.io/vscode-jest-runner](https
 | [Recipes](https://firsttris.github.io/vscode-jest-runner/recipes.html) | [Module Reference](https://firsttris.github.io/vscode-jest-runner/internals/module-reference.html) |
 | [Troubleshooting & FAQ](https://firsttris.github.io/vscode-jest-runner/troubleshooting.html) | [Development & Release](https://firsttris.github.io/vscode-jest-runner/development.html) |
 
-The same pages are browsable in the [docs folder](docs/README.md) of this repository.
+The same pages are browsable in the [docs folder](docs/) of this repository.
 
 ## FAQ
 
