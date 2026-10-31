@@ -1,3 +1,4 @@
+import { sep } from 'node:path';
 import * as vscode from 'vscode';
 import { collectTestsByFile } from '../execution/TestCollector';
 import type { TestRunnerConfig } from '../testRunnerConfig';
@@ -30,7 +31,11 @@ export class DebugHandler {
 		const [filePath, tests] = first;
 		const runsWholeFile =
 			!request.include ||
-			request.include.some((item) => item.id === item.uri?.fsPath);
+			request.include.some(
+				(item) =>
+					item.id === item.uri?.fsPath &&
+					(filePath === item.id || filePath.startsWith(`${item.id}${sep}`)),
+			);
 		const testName = runsWholeFile ? undefined : toTestItemsNamePattern(tests);
 
 		const fileUri = vscode.Uri.file(filePath);
