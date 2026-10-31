@@ -59,20 +59,30 @@ export class TestConfigWatcher {
 
 		const handleConfigChange = () => this._onDidChange.fire();
 
+		// Resolve like ConfigResolver: relative to projectPath inside each
+		// workspace folder.
+		const projectPath = Settings.getProjectPath() || '';
+		const folderPaths = vscode.workspace.workspaceFolders?.map(
+			(f) => f.uri.fsPath,
+		) ?? [''];
+		const resolvedPaths = new Set<string>();
 		for (const configPath of customPaths) {
-			if (configPath) {
-				const resolvedPath = isAbsolute(configPath)
-					? configPath
-					: resolve(
-							vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '',
-							configPath,
-						);
-				const watcher = vscode.workspace.createFileSystemWatcher(resolvedPath);
-				watcher.onDidChange(handleConfigChange);
-				watcher.onDidCreate(handleConfigChange);
-				watcher.onDidDelete(handleConfigChange);
-				this.customConfigWatchers.push(watcher);
+			if (!configPath) continue;
+			if (isAbsolute(configPath)) {
+				resolvedPaths.add(configPath);
+				continue;
 			}
+			for (const folderPath of folderPaths) {
+				resolvedPaths.add(resolve(folderPath, projectPath, configPath));
+			}
+		}
+
+		for (const resolvedPath of resolvedPaths) {
+			const watcher = vscode.workspace.createFileSystemWatcher(resolvedPath);
+			watcher.onDidChange(handleConfigChange);
+			watcher.onDidCreate(handleConfigChange);
+			watcher.onDidDelete(handleConfigChange);
+			this.customConfigWatchers.push(watcher);
 		}
 	}
 
