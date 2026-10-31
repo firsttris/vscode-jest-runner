@@ -33,11 +33,23 @@ const mergeUniqueArgSegments = (
 	const extraSegments = toSegments(extra ?? []);
 	const seen = new Set(baseSegments.map(keyOf));
 
+	const isFlag = (segment: readonly string[]) =>
+		segment.length === 1 && segment[0].startsWith('-');
+
+	// A bare value right after a flag (`--workers 1`) belongs to that flag:
+	// it is kept or dropped together with it, never deduplicated on its own.
+	let previousFlagKept: boolean | undefined;
 	const uniqueExtra = extraSegments.filter((segment) => {
+		const flagKept = previousFlagKept;
+		previousFlagKept = undefined;
+		if (flagKept !== undefined && !segment[0].startsWith('-')) {
+			return flagKept;
+		}
 		const key = keyOf(segment);
-		if (seen.has(key)) return false;
+		const keep = !seen.has(key);
 		seen.add(key);
-		return true;
+		if (isFlag(segment)) previousFlagKept = keep;
+		return keep;
 	});
 
 	const merged =

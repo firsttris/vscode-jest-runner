@@ -1294,7 +1294,7 @@ export default defineConfig({
 			const result = getPlaywrightConfig('/test/playwright.config.ts');
 
 			expect(result).toHaveLength(1);
-			expect(result[0].ignorePatterns).toEqual([
+			expect(result[0].excludePatterns).toEqual([
 				'**/node_modules/**',
 				'**/fixtures/**',
 			]);
@@ -1311,7 +1311,7 @@ export default defineConfig({
 			const result = getPlaywrightConfig('/test/playwright.config.ts');
 
 			expect(result).toHaveLength(1);
-			expect(result[0].ignorePatterns).toEqual(['**/fixtures/**']);
+			expect(result[0].excludePatterns).toEqual(['**/fixtures/**']);
 		});
 
 		it('should extract testDir', () => {
@@ -1396,6 +1396,7 @@ export default defineConfig({
 			const result = getPlaywrightConfig('/test/playwright.config.ts');
 
 			expect(result[0].ignorePatterns).toBeUndefined();
+			expect(result[0].excludePatterns).toBeUndefined();
 		});
 	});
 

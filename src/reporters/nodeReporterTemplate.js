@@ -71,9 +71,32 @@ export default async function* (source) {
 	const assertions = [];
 	const files = new Map();
 
+	// Node reports a test before its enclosing describe blocks and gives only
+	// its nesting level, so finished tests wait here until their suites end.
+	let pending = [];
+
+	const isSuite = (test) => test?.details?.type === 'suite';
+
+	// A suite at nesting n is the innermost describe of every pending test of
+	// its file nested deeper; those then count as being at level n.
+	const closeSuite = (suite) => {
+		const file = suite?.file || 'unknown';
+		const level = typeof suite?.nesting === 'number' ? suite.nesting : 0;
+		let claimed = 0;
+		for (const entry of pending) {
+			if (entry.file === file && entry.nesting > level) {
+				entry.assertion.ancestorTitles.unshift(suite.name);
+				entry.nesting = level;
+				claimed++;
+			}
+		}
+		pending = pending.filter((entry) => entry.nesting > 0);
+		return claimed;
+	};
+
 	const record = (test, status, failureMessage, durationMs) => {
 		const file = test?.file || 'unknown';
-		const ancestors = Array.isArray(test?.nesting) ? test.nesting : [];
+		const ancestors = [];
 		const title = test?.name || 'unknown';
 		const duration =
 			durationMs ??
@@ -87,7 +110,7 @@ export default async function* (source) {
 		const assertion = {
 			ancestorTitles: ancestors,
 			title,
-			fullName: [...ancestors, title].join(' '),
+			fullName: title,
 			status,
 			duration,
 			failureMessages,
@@ -95,6 +118,10 @@ export default async function* (source) {
 		};
 
 		assertions.push(assertion);
+		const nesting = typeof test?.nesting === 'number' ? test.nesting : 0;
+		if (nesting > 0) {
+			pending.push({ assertion, file, nesting });
+		}
 
 		if (!files.has(file)) {
 			files.set(file, []);
@@ -104,6 +131,27 @@ export default async function* (source) {
 
 	for await (const event of source) {
 		try {
+			if (
+				['test:pass', 'test:fail', 'test:skip', 'test:todo'].includes(
+					event?.type,
+				) &&
+				isSuite(event.data)
+			) {
+				const claimed = closeSuite(event.data);
+				// A describe block without reported tests (it failed or was
+				// skipped before running them) keeps its own result
+				if (claimed === 0 && event.type === 'test:fail') {
+					record(
+						event.data,
+						'failed',
+						extractErrorMessage(event.data.details),
+						event.data.details?.duration_ms,
+					);
+				} else if (claimed === 0 && event.type !== 'test:pass') {
+					record(event.data, 'skipped');
+				}
+				continue;
+			}
 			switch (event?.type) {
 				case 'test:pass': {
 					const data = event.data || {};
@@ -126,6 +174,12 @@ export default async function* (source) {
 					break;
 			}
 		} catch (_err) {}
+	}
+
+	for (const assertion of assertions) {
+		assertion.fullName = [...assertion.ancestorTitles, assertion.title].join(
+			' ',
+		);
 	}
 
 	const testResults = Array.from(files.entries()).map(

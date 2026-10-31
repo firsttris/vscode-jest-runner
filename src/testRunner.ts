@@ -137,7 +137,10 @@ export class TestRunner {
 
 		this.isExecuting = true;
 		try {
-			await vscode.debug.startDebugging(undefined, debugCommand.config);
+			await vscode.debug.startDebugging(
+				vscode.workspace.getWorkspaceFolder(debugCommand.documentUri),
+				debugCommand.config,
+			);
 
 			this.previousCommand = debugCommand;
 		} finally {

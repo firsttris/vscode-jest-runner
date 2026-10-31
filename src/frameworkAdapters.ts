@@ -214,6 +214,14 @@ const buildBunArgs: BuildArgsFn = (
 	return [...merged, q(toRunnerPath(filePath))];
 };
 
+/**
+ * Deno treats a --filter as a regex only when it is wrapped in slashes,
+ * anything else is a plain substring. Its Rust regex engine reads `\<` and
+ * `\>` as word boundaries, so those escapes are undone.
+ */
+export const toDenoRegexFilter = (pattern: string): string =>
+	`/${pattern.replace(/\\([<>])/g, '$1')}/`;
+
 const buildDenoArgs: BuildArgsFn = (
 	filePath,
 	testName,
@@ -225,9 +233,10 @@ const buildDenoArgs: BuildArgsFn = (
 	const q = withQuotes ? quote : (s: string) => s;
 	const args = ['test', '--allow-all'];
 
-	const resolved = prepareTestName(testName, withQuotes, true);
+	const resolved = prepareTestName(testName, false, true);
 	if (resolved) {
-		args.push('--filter', resolved);
+		const filter = toDenoRegexFilter(resolved);
+		args.push('--filter', withQuotes ? quote(filter) : filter);
 	}
 	const base = appendUniqueArgs(args, ['--junit-path=.deno-report.xml']);
 	const merged = appendUniqueArgs(

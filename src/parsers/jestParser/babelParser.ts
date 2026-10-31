@@ -47,9 +47,9 @@ const stringifyPlaceholderValue = (
 	}
 
 	switch (specifier) {
-		case 'd':
 		case 'i':
 			return Number.parseInt(String(value), 10).toString();
+		case 'd':
 		case 'f':
 			return Number(value).toString();
 		case 'j':
@@ -58,20 +58,24 @@ const stringifyPlaceholderValue = (
 			} catch {
 				return String(value);
 			}
+		case 'p':
+			// Jest pretty-formats %p, which quotes strings
+			return typeof value === 'string' ? JSON.stringify(value) : String(value);
 		default:
 			return String(value);
 	}
 };
 
 const applyPrintfPlaceholders = (title: string, args: unknown): string => {
-	if (!/%[sdifjoOcp]/.test(title)) {
+	if (!/%[sdifjoOcp%]/.test(title)) {
 		return title;
 	}
 
 	const values = Array.isArray(args) ? args : [args];
 	let argIndex = 0;
 
-	return title.replace(/%([sdifjoOcp])/g, (_match, specifier: string) => {
+	return title.replace(/%([sdifjoOcp%])/g, (_match, specifier: string) => {
+		if (specifier === '%') return '%';
 		const value = values[argIndex++];
 		return stringifyPlaceholderValue(value, specifier);
 	});
@@ -81,10 +85,20 @@ const formatTitle = (title: string, args: any, index: number): string => {
 	let formatted = applyPrintfPlaceholders(title, args);
 
 	if (typeof args === 'object' && args !== null) {
-		formatted = formatted.replace(/\$(\w+)/g, (match, key) => {
-			if (key === '#') return index.toString();
-			return key in args ? String(args[key]) : match;
-		});
+		formatted = formatted.replace(
+			/\$(#|\w+(?:\.\w+)*)/g,
+			(match, keyPath: string) => {
+				if (keyPath === '#') return index.toString();
+				let value: any = args;
+				for (const key of keyPath.split('.')) {
+					if (value === null || typeof value !== 'object' || !(key in value)) {
+						return match;
+					}
+					value = value[key];
+				}
+				return String(value);
+			},
+		);
 	}
 
 	formatted = formatted.replace(/%#/g, index.toString());
@@ -134,7 +148,20 @@ const getResolvableEachTable = (
 		return undefined;
 	}
 
-	const table = astToValue(eachArgs[0] as t.Node, scopeBindings);
+	const tableNode = eachArgs[0] as t.Node;
+	// A spread that cannot be resolved leaves the rows unknown
+	const hasUnresolvedSpread =
+		t.isArrayExpression(tableNode) &&
+		tableNode.elements.some(
+			(e) =>
+				t.isSpreadElement(e) &&
+				!Array.isArray(astToValue(e.argument, scopeBindings)),
+		);
+	if (hasUnresolvedSpread) {
+		return undefined;
+	}
+
+	const table = astToValue(tableNode, scopeBindings);
 	return Array.isArray(table) ? table : undefined;
 };
 

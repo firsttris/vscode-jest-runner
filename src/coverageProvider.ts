@@ -465,7 +465,13 @@ export class CoverageProvider {
 				const range = this.convertLocationToRange(branch.loc);
 
 				const branches = branch.locations.map((loc, index) => {
-					const branchRange = this.convertLocationToRange(loc);
+					// Istanbul writes {start:{},end:{}} for the implicit else of an if.
+					const branchRange = this.convertLocationToRange(
+						typeof loc?.start?.line === 'number' &&
+							typeof loc?.end?.line === 'number'
+							? loc
+							: branch.loc,
+					);
 					const count = branchCounts[index] || 0;
 					return new vscode.BranchCoverage(count, branchRange, branch.type);
 				});
@@ -487,8 +493,8 @@ export class CoverageProvider {
 
 	private convertLocationToRange(location: LocationRange): vscode.Range {
 		return new vscode.Range(
-			new vscode.Position(location.start.line - 1, location.start.column),
-			new vscode.Position(location.end.line - 1, location.end.column),
+			new vscode.Position(location.start.line - 1, location.start.column ?? 0),
+			new vscode.Position(location.end.line - 1, location.end.column ?? 0),
 		);
 	}
 }

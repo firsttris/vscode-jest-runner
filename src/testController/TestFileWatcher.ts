@@ -48,22 +48,16 @@ export class TestFileWatcher {
 		});
 
 		watcher.onDidCreate((uri) => {
-			if (vscode.workspace.workspaceFolders) {
-				for (const workspaceFolder of vscode.workspace.workspaceFolders) {
-					if (uri.fsPath.startsWith(workspaceFolder.uri.fsPath)) {
-						if (!testFileCache.isTestFile(uri.fsPath)) {
-							return;
-						}
-						const testItem = getOrCreateFileTestItem(
-							this.testController,
-							workspaceFolder,
-							uri.fsPath,
-						);
-						parseTestsInFile(uri.fsPath, testItem, this.testController);
-						return;
-					}
-				}
+			const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+			if (!workspaceFolder || !testFileCache.isTestFile(uri.fsPath)) {
+				return;
 			}
+			const testItem = getOrCreateFileTestItem(
+				this.testController,
+				workspaceFolder,
+				uri.fsPath,
+			);
+			parseTestsInFile(uri.fsPath, testItem, this.testController);
 		});
 
 		watcher.onDidDelete((uri) => {

@@ -41,15 +41,10 @@ function matchesExcludePatterns(
 	return false;
 }
 
-function resolveRootDirToken(
-	pattern: string,
-	rootDir: string | undefined,
-): string {
-	const resolved = pattern.replace(/<rootDir>/gi, rootDir || '');
-	if (rootDir && resolved.startsWith(rootDir)) {
-		return resolved;
-	}
-	return resolved.replace(/^\/+/, '');
+// Paths are matched relative to baseDir, which is where <rootDir> points,
+// so the token is simply removed.
+function resolveRootDirToken(pattern: string): string {
+	return pattern.replace(/<rootDir>/gi, '').replace(/^\/+/, '');
 }
 
 export function fileMatchesPatternsExplicit(
@@ -80,11 +75,13 @@ export function fileMatchesPatternsExplicit(
 	if (roots && roots.length > 0) {
 		const absolutePath = resolve(filePath).replace(/\\/g, '/');
 		const isInRoots = roots.some((root) => {
-			const resolvedRoot = resolve(
-				baseDir,
-				resolveRootDirToken(root, rootDir),
-			).replace(/\\/g, '/');
-			return absolutePath.startsWith(resolvedRoot);
+			const resolvedRoot = resolve(baseDir, resolveRootDirToken(root))
+				.replace(/\\/g, '/')
+				.replace(/\/+$/, '');
+			return (
+				absolutePath === resolvedRoot ||
+				absolutePath.startsWith(`${resolvedRoot}/`)
+			);
 		});
 		if (!isInRoots) {
 			return false;
@@ -104,7 +101,7 @@ export function fileMatchesPatternsExplicit(
 				}
 			} catch {}
 		} else {
-			const normalizedPattern = resolveRootDirToken(pattern, rootDir);
+			const normalizedPattern = resolveRootDirToken(pattern);
 			if (isMatch(pathToMatch, normalizedPattern, { nocase: true })) {
 				return true;
 			}

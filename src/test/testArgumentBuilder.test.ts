@@ -1104,7 +1104,7 @@ describe('TestArgumentBuilder', () => {
 			const args = build('deno', partialSelection());
 
 			expect(unquote(argAfter(args, '--filter') ?? '')).toBe(
-				'(adds|multiplies)',
+				'/^(adds|multiplies)$/',
 			);
 		});
 

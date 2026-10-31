@@ -298,7 +298,7 @@ const findPlaywrightConfigInDir = (dir: string): TestPatternResult[] => {
 		configDir: dir,
 		isRegex: config.isRegex ?? false,
 		ignorePatterns: config.ignorePatterns,
-		excludePatterns: undefined,
+		excludePatterns: config.excludePatterns,
 	}));
 };
 
@@ -323,9 +323,17 @@ const detectPatternsInParentDirs = (
 
 		if (framework === 'jest') return findJestConfigInDir(dir);
 		if (framework === 'vitest') return findVitestConfigInDir(dir);
-		if (framework === 'deno') return findDenoConfigInDir(dir);
-		if (framework === 'playwright') return findPlaywrightConfigInDir(dir);
-		if (framework === 'rstest') return findRstestConfigInDir(dir);
+
+		// Deno, Playwright and Rstest are recognised from the file's content, so
+		// `dir` is the file's own directory; their config may live further up.
+		const nearestConfigDir = (fw: TestFrameworkName): string =>
+			dirs.find((d) => getConfigPath(d, fw)) ?? dir;
+		if (framework === 'deno')
+			return findDenoConfigInDir(nearestConfigDir(framework));
+		if (framework === 'playwright')
+			return findPlaywrightConfigInDir(nearestConfigDir(framework));
+		if (framework === 'rstest')
+			return findRstestConfigInDir(nearestConfigDir(framework));
 
 		return search(rest);
 	};
@@ -404,7 +412,7 @@ function getTestFilePatternsForFile(filePath: string): TestPatternResult[] {
 				configDir: rootPath,
 				isRegex: config.isRegex ?? false,
 				ignorePatterns: config.ignorePatterns,
-				excludePatterns: undefined,
+				excludePatterns: config.excludePatterns,
 			}));
 		}
 	}
