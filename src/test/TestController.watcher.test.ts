@@ -182,6 +182,10 @@ describe('JestTestController - file watcher', () => {
 			.calls[0][0];
 
 		(parser.parseTestFile as jest.Mock).mockClear();
+		// VS Code returns no workspace folder for a path outside the workspace
+		jest
+			.spyOn(vscode.workspace, 'getWorkspaceFolder')
+			.mockReturnValue(undefined);
 
 		createCallback(vscode.Uri.file('/other/path/test.ts'));
 
