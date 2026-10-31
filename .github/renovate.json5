@@ -1,16 +1,15 @@
 // Renovate (GitHub App, https://github.com/apps/renovate): a pull request for each new release of
-// what Jest Runner builds on, plus the "Dependency Dashboard" issue listing what is open.
-// Only those: the VS Code API (engines.vscode, @types/vscode and the "VS Code 1.x or newer" of the
-// docs), the test frameworks the end-to-end tests run for real (Jest, Vitest), the Babel parser
-// that finds the tests in a file, and the Node of CI. The other packages and the actions are not
-// tracked here. Check with `npx --package renovate renovate-config-validator .github/renovate.json5`.
+// what Jest Runner builds on, plus the "Dependency Dashboard" issue listing what is open. Their own
+// pull requests: the VS Code API (engines.vscode, @types/vscode and the "VS Code 1.x or newer" of
+// the docs), the test frameworks the end-to-end tests run for real (Jest, Vitest), the Babel parser
+// that finds the tests in a file, and the Node of CI.
+// Everything else (the other packages, the actions, the images) comes with the shared settings of
+// firsttris/workflows (renovate/default.json5): minor and patch updates once a month in one pull
+// request that merges itself when CI is green, majors on request in the dashboard.
+// Check with `npx --package renovate renovate-config-validator .github/renovate.json5`.
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: ["config:recommended"],
-  enabledManagers: ["npm", "custom.regex"],
-  timezone: "Europe/Berlin",
-  labels: ["dependencies"],
-  automerge: false,
+  extends: ["github>firsttris/workflows//renovate/default.json5"],
   customManagers: [
     {
       // engines.vscode, from the same releases as @types/vscode: vsce refuses a package whose
@@ -49,11 +48,6 @@
   ],
   packageRules: [
     {
-      // From npm only the packages below; engines.vscode comes through the regex above
-      matchManagers: ["npm"],
-      enabled: false,
-    },
-    {
       // The lowest VS Code the extension runs on. Raising it shuts out every editor still on an
       // older one (VSCodium, Cursor, Windsurf, Gitpod lag behind VS Code), so the PR is only
       // opened when ticked in the Dependency Dashboard, i.e. when a newer API is needed.
@@ -67,6 +61,8 @@
       prBodyNotes: [
         "`engines.vscode`, `@types/vscode` and the \"VS Code 1.x or newer\" of README.md, docs/getting-started.md and docs/development.md move together (`vsce package` fails when `@types/vscode` is newer than `engines.vscode`). Before merging: is this API really needed? Check which VS Code version the forks on Open VSX are based on (VSCodium, Cursor, Windsurf); users on an older one get no more updates. The history went back down twice (\"lower engine version\"). Then `npm run typecheck`, `npm run build` and `npm run package`, and try the .vsix of this PR's CI in the oldest editor that should still work.",
       ],
+      schedule: ["at any time"],
+      automerge: false,
     },
     {
       // Jest: the e2e tests spawn real Jest processes; their results come from the JSON output
@@ -78,6 +74,9 @@
       prBodyNotes: [
         "Jest runs the unit tests and is one of the frameworks the e2e tests (`npm run test:e2e`) start for real on Linux, Windows and macOS. A new major: read the changelog for the CLI options and the `--json` output (src/frameworkAdapters.ts, src/parsers); docs/frameworks.md names the supported versions. Users keep older Jest majors, so nothing may depend on the new one alone.",
       ],
+      schedule: ["at any time"],
+      automerge: false,
+      dependencyDashboardApproval: false,
     },
     {
       // Vitest: the e2e tests spawn real Vitest processes with Jest Runner's reporter
@@ -89,6 +88,9 @@
       prBodyNotes: [
         "The e2e tests run the new Vitest with Jest Runner's reporter (`vitest-reporter.cjs`) and the `-t` name filter. A new major: docs/frameworks.md says the reporter works with \"Vitest 2 to 5\" and the name filter matches \"the `suite test` format of Vitest 4 and the `suite > test` format of Vitest 5\"; check the reporter API and the test name format, keep the older majors working and update docs/frameworks.md and docs/internals/.",
       ],
+      schedule: ["at any time"],
+      automerge: false,
+      dependencyDashboardApproval: false,
     },
     {
       // Babel parses the users' test files to find describe/it/test blocks
@@ -100,6 +102,9 @@
       prBodyNotes: [
         "`@babel/parser` and `@babel/traverse` find the tests in a file (src/parsers/jestParser/babelParser.ts, src/parsers/nodeTestParser.ts), so a change in the AST changes the CodeLens and the Test Explorer tree. The unit tests in src/test cover the parser; check the changelog for removed plugins or node types.",
       ],
+      schedule: ["at any time"],
+      automerge: false,
+      dependencyDashboardApproval: false,
     },
     {
       matchPackageNames: ["node"],
@@ -108,6 +113,9 @@
       prBodyNotes: [
         "The Node of CI and the e2e tests. The bundle's target (`node18` in vite.config.ts) follows the Node of the oldest supported VS Code, not this one.",
       ],
+      schedule: ["at any time"],
+      automerge: false,
+      dependencyDashboardApproval: false,
     },
   ],
 }
