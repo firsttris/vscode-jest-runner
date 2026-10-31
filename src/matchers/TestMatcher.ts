@@ -3,10 +3,13 @@ import type { JestAssertionResult } from '../testResultTypes';
 
 export type IndexedResult = { result: JestAssertionResult; index: number };
 
-const TEMPLATE_VAR_REGEX = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/i;
+// Same alternatives as resolveTestNameStringInterpolation (TestNameUtils)
+const TEMPLATE_VAR_SOURCE =
+	'(\\$\\{[^}]+\\}|\\$[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*|%[psdifjo#%])';
+const TEMPLATE_VAR_REGEX = new RegExp(TEMPLATE_VAR_SOURCE, 'i');
 
 function escapeRegExpWithTemplateVars(testLabel: string): string {
-	const templateVarRegex = /(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])/gi;
+	const templateVarRegex = new RegExp(TEMPLATE_VAR_SOURCE, 'gi');
 	const placeholder = '\x00TEMPLATE\x00';
 	const templateVars: string[] = [];
 	const withPlaceholders = testLabel.replace(templateVarRegex, (match) => {
@@ -48,7 +51,7 @@ export const hasTemplateVariable = (label: string): boolean =>
 
 const isOnlyTemplateVar = (label: string): boolean => {
 	const trimmed = label.trim();
-	return /^(\$\{?[A-Za-z0-9_]+\}?|%[psdifjo#%])$/i.test(trimmed);
+	return new RegExp(`^${TEMPLATE_VAR_SOURCE}$`, 'i').test(trimmed);
 };
 
 const getAncestorTitles = (test: vscode.TestItem): string[] => {
