@@ -17,7 +17,7 @@
     "color": "#99425B"
   },
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.140.0"
   },
   "categories": [
     "Testing"
@@ -427,7 +427,7 @@
     "@types/micromatch": "^4.0.10",
     "@types/node": "^26.6.3",
     "@types/shell-quote": "^1.7.5",
-    "@types/vscode": "^1.100.0",
+    "@types/vscode": "^1.140.0",
     "@vscode/vsce": "^4.0.0",
     "babel-jest": "^30.5.2",
     "jest": "^30.5.2",

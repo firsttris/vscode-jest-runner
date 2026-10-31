@@ -20,7 +20,7 @@ Jest Runner needs no configuration in most projects: install it, open a test fil
     Editors without access to the Visual Studio Marketplace install from
     [Open VSX](https://open-vsx.org/extension/firsttris/vscode-jest-runner), where every release is published too.
 
-Jest Runner requires VS Code 1.100 or newer. It activates after the editor has finished starting
+Jest Runner requires VS Code 1.140 or newer. It activates after the editor has finished starting
 (`onStartupFinished`), so it never slows down the start of VS Code.
 
 ## Your first test run

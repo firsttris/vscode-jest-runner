@@ -44,7 +44,7 @@ Search for **Jest Runner** in the Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X
 code --install-extension firsttris.vscode-jest-runner
 ```
 
-Also available on [Open VSX](https://open-vsx.org/extension/firsttris/vscode-jest-runner) for VSCodium, Cursor, Windsurf, Gitpod and other VS Code based editors. Requires VS Code 1.100 or newer.
+Also available on [Open VSX](https://open-vsx.org/extension/firsttris/vscode-jest-runner) for VSCodium, Cursor, Windsurf, Gitpod and other VS Code based editors. Requires VS Code 1.140 or newer.
 
 ## Quick Start
 
