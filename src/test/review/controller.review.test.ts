@@ -1,3 +1,4 @@
+import { join, resolve } from 'node:path';
 import * as vscode from 'vscode';
 import * as Settings from '../../config/Settings';
 import { CoverageProvider, DetailedFileCoverage } from '../../coverageProvider';
@@ -69,7 +70,7 @@ describe('TestFileWatcher (multi-root)', () => {
 		// Discovery nests it as <folder item /ws/app-e2e/src> -> file.
 		expect(controller.items.get(file)).toBeUndefined();
 		expect(
-			controller.items.get('/ws/app-e2e/src')?.children.get(file),
+			controller.items.get(join('/ws/app-e2e', 'src'))?.children.get(file),
 		).toBeDefined();
 	});
 });
@@ -95,7 +96,7 @@ describe('TestConfigWatcher', () => {
 		const configWatcher = new TestConfigWatcher();
 
 		const watched = create.mock.calls.map((c) => c[0]);
-		expect(watched).toContain('/ws/packages/app/jest.it.config.js');
+		expect(watched).toContain(resolve('/ws/packages/app/jest.it.config.js'));
 		configWatcher.dispose();
 	});
 });
