@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 22 (the version CI uses) and npm
+- Node.js 26 (the version CI uses) and npm
 - VS Code 1.100 or newer to run the extension
 - For the documentation: Python 3 and `pip install -r requirements-docs.txt`
 
@@ -72,7 +72,7 @@ the process tree on cancel. CI runs it on Ubuntu, Windows and macOS.
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `ci.yml` | push to `master`, pull requests (not drafts), called by `release.yml`; skipped for documentation-only changes | matrix Ubuntu / Windows / macOS with Node 22: `npm ci`; on Ubuntu lint, typecheck and unit tests with coverage (uploaded to Codecov on `master`); unit tests on the others; e2e tests everywhere; then a build job that packages the `.vsix` and uploads it as an artifact |
+| `ci.yml` | push to `master`, pull requests (not drafts), called by `release.yml`; skipped for documentation-only changes | matrix Ubuntu / Windows / macOS with Node 26: `npm ci`; on Ubuntu lint, typecheck and unit tests with coverage (uploaded to Codecov on `master`); unit tests on the others; e2e tests everywhere; then a build job that packages the `.vsix` and uploads it as an artifact |
 | `release.yml` | a `v*` tag, or by hand | runs `ci.yml`, creates the GitHub release with the `.vsix` and publishes to the Visual Studio Marketplace and Open VSX through the shared workflows in [firsttris/workflows](https://github.com/firsttris/workflows) |
 | `bump.yml` | by hand, choose patch / minor / major | bumps `package.json`, tags, and thereby starts `release.yml` |
 | `docs.yml` | push to `master` touching `docs/`, `mkdocs.yml`, `requirements-docs.txt` or the workflow; pull requests (build only); by hand | `mkdocs build --strict` and deployment to GitHub Pages |
