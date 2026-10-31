@@ -31,9 +31,7 @@ function escapeWindowsLiterals(command: string): string {
 }
 
 export function parseShellCommand(command: string): string[] {
-	const entries = parse(
-		isWindows() ? escapeWindowsLiterals(command) : command,
-	);
+	const entries = parse(isWindows() ? escapeWindowsLiterals(command) : command);
 	const args: string[] = [];
 
 	for (const entry of entries) {

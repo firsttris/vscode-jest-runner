@@ -9,8 +9,8 @@ import { testFileCache } from '../../testDetection/testFileCache';
 import { TestRunner } from '../../testRunner';
 import {
 	CancellationToken,
-	TestItem,
 	TestCoverageCount,
+	TestItem,
 } from '../__mocks__/vscode';
 
 jest.mock('child_process');

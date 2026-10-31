@@ -3,8 +3,8 @@ import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parse } from '../../parser';
-import { processTestResultsFromParsed } from '../../testResultProcessor';
 import { parseStructuredResults } from '../../reporting/structuredOutput';
+import { processTestResultsFromParsed } from '../../testResultProcessor';
 import { TestItem, TestRun, Uri } from '../__mocks__/vscode';
 
 jest.mock('vscode');
@@ -25,7 +25,9 @@ describe('review: it.each title expansion matches Jest', () => {
 	it('resolves $key.path into nested object values', () => {
 		// Jest docs: "$variable.path.to.value" injects nested values
 		expect(
-			names(`it.each([{ user: { name: 'ann' } }])('greets $user.name', () => {});`),
+			names(
+				`it.each([{ user: { name: 'ann' } }])('greets $user.name', () => {});`,
+			),
 		).toEqual(['greets ann']);
 	});
 
@@ -140,10 +142,16 @@ describe('review: node:test structured reporter', () => {
 					'--test-reporter-destination=stdout',
 					'a.test.mjs',
 				],
-				{ cwd: dir, encoding: 'utf8', env: { ...process.env, JSTR_SESSION_ID: 's1' } },
+				{
+					cwd: dir,
+					encoding: 'utf8',
+					env: { ...process.env, JSTR_SESSION_ID: 's1' },
+				},
 			);
 			const results = parseStructuredResults(res.stdout, 's1');
-			const assertions = results?.testResults.flatMap((f) => f.assertionResults);
+			const assertions = results?.testResults.flatMap(
+				(f) => f.assertionResults,
+			);
 			expect(assertions?.map((a) => [a.ancestorTitles, a.title])).toEqual([
 				[['A'], 'works'],
 			]);
