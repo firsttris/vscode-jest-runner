@@ -1,6 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import type * as vscode from 'vscode';
-import { buildTestNameFilter } from '../frameworkAdapters';
+import { buildTestNameFilter, toDenoRegexFilter } from '../frameworkAdapters';
 import { getReporterPaths } from '../reporters/reporterPaths';
 import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import type { TestRunnerConfig } from '../testRunnerConfig';
@@ -249,7 +249,7 @@ class DenoTestStrategy
 
 		// Only filter when some file is not fully selected
 		if (testName && this.hasPartialSelection(allFiles, testsByFile)) {
-			args.push('--filter', quote(testName));
+			args.push('--filter', quote(toDenoRegexFilter(`^${testName}$`)));
 		}
 
 		args.push('--junit-path=.deno-report.xml');
