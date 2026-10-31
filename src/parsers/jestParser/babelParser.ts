@@ -148,7 +148,20 @@ const getResolvableEachTable = (
 		return undefined;
 	}
 
-	const table = astToValue(eachArgs[0] as t.Node, scopeBindings);
+	const tableNode = eachArgs[0] as t.Node;
+	// A spread that cannot be resolved leaves the rows unknown
+	const hasUnresolvedSpread =
+		t.isArrayExpression(tableNode) &&
+		tableNode.elements.some(
+			(e) =>
+				t.isSpreadElement(e) &&
+				!Array.isArray(astToValue(e.argument, scopeBindings)),
+		);
+	if (hasUnresolvedSpread) {
+		return undefined;
+	}
+
+	const table = astToValue(tableNode, scopeBindings);
 	return Array.isArray(table) ? table : undefined;
 };
 

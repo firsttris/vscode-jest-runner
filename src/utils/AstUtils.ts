@@ -13,8 +13,19 @@ export const astToValue = (
 		if (node.name === 'undefined') return undefined;
 		if (Object.hasOwn(bindings, node.name)) return bindings[node.name];
 	}
-	if (t.isArrayExpression(node))
-		return node.elements.map((e) => (e ? astToValue(e, bindings) : null));
+	if (t.isArrayExpression(node)) {
+		const values: any[] = [];
+		for (const e of node.elements) {
+			if (t.isSpreadElement(e)) {
+				const spread = astToValue(e.argument, bindings);
+				if (Array.isArray(spread)) values.push(...spread);
+				else values.push(undefined);
+			} else {
+				values.push(e ? astToValue(e, bindings) : null);
+			}
+		}
+		return values;
+	}
 	if (t.isObjectExpression(node)) {
 		return node.properties.reduce((acc, prop) => {
 			if (t.isObjectProperty(prop)) {
