@@ -35,9 +35,9 @@ jobs:
         node-version: [26.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
@@ -59,7 +59,7 @@ jobs:
         run: npm run test:e2e
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && github.ref == 'refs/heads/master'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
@@ -69,16 +69,16 @@ jobs:
     needs: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 26.x
       - run: npm ci
       - run: npm run build
       - run: npm run package
       # Installable from a pull request; the release attaches it and publishes it
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vsix
           path: '*.vsix'
