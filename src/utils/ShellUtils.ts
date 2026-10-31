@@ -12,9 +12,10 @@ export function stripAnsi(str: string): string {
  * shell-quote follows POSIX rules, where a backslash escapes the next
  * character. On Windows it separates path segments (`node .\bin\jest.js`),
  * so outside single quotes (where POSIX keeps it literal) it is escaped to
- * survive parsing.
+ * survive parsing. `$` is escaped the same way: Windows shells do not expand
+ * `$name`, but shell-quote would replace it with an empty string.
  */
-function escapeWindowsBackslashes(command: string): string {
+function escapeWindowsLiterals(command: string): string {
 	let quote: string | undefined;
 	let escaped = '';
 	for (const char of command) {
@@ -23,14 +24,15 @@ function escapeWindowsBackslashes(command: string): string {
 		} else if (!quote && (char === "'" || char === '"')) {
 			quote = char;
 		}
-		escaped += char === '\\' && quote !== "'" ? '\\\\' : char;
+		escaped +=
+			(char === '\\' || char === '$') && quote !== "'" ? `\\${char}` : char;
 	}
 	return escaped;
 }
 
 export function parseShellCommand(command: string): string[] {
 	const entries = parse(
-		isWindows() ? escapeWindowsBackslashes(command) : command,
+		isWindows() ? escapeWindowsLiterals(command) : command,
 	);
 	const args: string[] = [];
 
