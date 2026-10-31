@@ -4,6 +4,7 @@ import { buildTestNameFilter, toDenoRegexFilter } from '../frameworkAdapters';
 import { getReporterPaths } from '../reporters/reporterPaths';
 import type { TestFrameworkName } from '../testDetection/frameworkDefinitions';
 import type { TestRunnerConfig } from '../testRunnerConfig';
+import { appendUniqueArgs } from '../utils/ArgUtils';
 import {
 	escapeRegExpForPath,
 	isWindows,
@@ -31,8 +32,8 @@ export function buildTestArgs(
 	testController: vscode.TestController,
 ): string[] {
 	const strategies: Record<TestFrameworkName, TestArgumentStrategy> = {
-		'node-test': new NodeTestStrategy(),
-		bun: new BunTestStrategy(),
+		'node-test': new NodeTestStrategy(jestConfig),
+		bun: new BunTestStrategy(jestConfig),
 		deno: new DenoTestStrategy(jestConfig, testController),
 		vitest: new VitestStrategy(jestConfig, testController),
 		jest: new JestStrategy(jestConfig, testController),
@@ -65,6 +66,10 @@ abstract class BaseStrategy {
 }
 
 class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
+	constructor(private readonly jestConfig: TestRunnerConfig) {
+		super();
+	}
+
 	build(
 		allFiles: string[],
 		testsByFile: Map<string, vscode.TestItem[]>,
@@ -93,7 +98,9 @@ class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
 		}
 
 		const filteredArgs = additionalArgs.filter((arg) => arg !== '--coverage');
-		args.push(...filteredArgs);
+		args.push(
+			...appendUniqueArgs(filteredArgs, this.jestConfig.nodeTestRunOptions),
+		);
 
 		args.push(...this.getNormalizedFiles(allFiles).map(quote));
 		return args;
@@ -101,6 +108,10 @@ class NodeTestStrategy extends BaseStrategy implements TestArgumentStrategy {
 }
 
 class BunTestStrategy extends BaseStrategy implements TestArgumentStrategy {
+	constructor(private readonly jestConfig: TestRunnerConfig) {
+		super();
+	}
+
 	build(
 		allFiles: string[],
 		testsByFile: Map<string, vscode.TestItem[]>,
@@ -123,7 +134,9 @@ class BunTestStrategy extends BaseStrategy implements TestArgumentStrategy {
 			args.push('--coverage-reporter=lcov');
 		}
 
-		args.push(...additionalArgs);
+		args.push(
+			...appendUniqueArgs(additionalArgs, this.jestConfig.bunRunOptions),
+		);
 
 		if (allFiles.length > 0) {
 			args.push(...this.getNormalizedFiles(allFiles));
@@ -258,7 +271,9 @@ class DenoTestStrategy
 			args.push('--coverage=coverage');
 		}
 
-		args.push(...additionalArgs);
+		args.push(
+			...appendUniqueArgs(additionalArgs, this.jestConfig.denoRunOptions),
+		);
 
 		if (allFiles.length > 0) {
 			args.push(...this.getNormalizedFiles(allFiles));
@@ -333,7 +348,9 @@ class VitestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 			args.push('-t', nameFilter);
 		}
 
-		args.push(...additionalArgs);
+		args.push(
+			...appendUniqueArgs(additionalArgs, this.jestConfig.vitestRunOptions),
+		);
 
 		if (collectCoverage) {
 			args.push(...VITEST_COVERAGE_ARGS);
@@ -404,7 +421,7 @@ class JestStrategy extends JestLikeStrategy implements TestArgumentStrategy {
 			args.push('-t', nameFilter);
 		}
 
-		args.push(...additionalArgs);
+		args.push(...appendUniqueArgs(additionalArgs, this.jestConfig.runOptions));
 
 		if (collectCoverage) {
 			args.push('--coverage', '--coverageReporters=json');

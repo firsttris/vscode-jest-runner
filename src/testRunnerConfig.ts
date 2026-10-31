@@ -375,6 +375,10 @@ export class TestRunnerConfig {
 		return Settings.getNodeTestDebugOptions();
 	}
 
+	public get vitestRunOptions(): string[] | null {
+		return Settings.getVitestRunOptions() ?? this.runOptions;
+	}
+
 	public get nodeTestRunOptions(): string[] | null {
 		return Settings.getNodeTestRunOptions();
 	}
@@ -442,7 +446,7 @@ export class TestRunnerConfig {
 		options: string[] = [],
 	): string[] {
 		const configPath = this.getVitestConfigPath(filePath);
-		const runOptions = Settings.getVitestRunOptions() ?? this.runOptions;
+		const runOptions = this.vitestRunOptions;
 
 		return getFrameworkAdapter('vitest').buildArgs(
 			filePath,
