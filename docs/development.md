@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Node.js 26 (the version CI uses) and npm
-- VS Code 1.140 or newer to run the extension
+- VS Code 1.144 or newer to run the extension
 - For the documentation: Python 3 and `pip install -r requirements-docs.txt`
 
 ## Set up
