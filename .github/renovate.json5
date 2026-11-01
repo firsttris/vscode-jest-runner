@@ -1,8 +1,8 @@
 // Renovate (GitHub App, https://github.com/apps/renovate): a pull request for each new release of
 // what Jest Runner builds on, plus the "Dependency Dashboard" issue listing what is open. Their own
-// pull requests: the VS Code API (engines.vscode, @types/vscode and the "VS Code 1.x or newer" of
-// the docs), the test frameworks the end-to-end tests run for real (Jest, Vitest), the Babel parser
-// that finds the tests in a file, and the Node of CI.
+// pull requests: the test frameworks the end-to-end tests run for real (Jest, Vitest), the Babel
+// parser that finds the tests in a file, and the Node of CI. The VS Code API (engines.vscode,
+// @types/vscode and the "VS Code 1.x or newer" of the docs) is never updated by Renovate.
 // Everything else (the other packages, the actions, the images) comes with the shared settings of
 // firsttris/workflows (renovate/default.json5): minor and patch updates once a month in one pull
 // request that merges itself when CI is green, majors on request in the dashboard.
@@ -49,11 +49,14 @@
   packageRules: [
     {
       // The lowest VS Code the extension runs on. Raising it shuts out every editor still on an
-      // older one (VSCodium, Cursor, Windsurf, Gitpod lag behind VS Code), so the PR is only
-      // opened when ticked in the Dependency Dashboard, i.e. when a newer API is needed.
+      // older one (VSCodium, Cursor, Windsurf, Gitpod lag behind VS Code): with ^1.107.0 (January
+      // 2026) and ^1.140.0 (#533, reverted) Jest Runner no longer showed up in Cursor's extension
+      // search (#403). So Renovate never proposes it, not even in the Dependency Dashboard. Only
+      // when a newer API is really needed: set `enabled: true` here, or raise engines.vscode,
+      // @types/vscode and the docs by hand, after checking the forks' VS Code version.
       matchManagers: ["npm", "custom.regex"],
       matchPackageNames: ["@types/vscode"],
-      enabled: true,
+      enabled: false,
       rangeStrategy: "bump",
       groupName: "VS Code engine",
       commitMessageTopic: "VS Code engine",
