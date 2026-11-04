@@ -16,3 +16,4 @@ vite.config.ts
 examples/**
 mkdocs.yml
 requirements-docs.txt
+bun.lock

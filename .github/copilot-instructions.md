@@ -27,9 +27,9 @@ Key architectural decision: framework selection is **file-aware** and **director
 ### Build & Development
 
 ```bash
-npm run watch        # Vite watch mode for extension bundle
-npm run build        # Production build
-npm run test         # Jest test suite (src/test)
+bun run watch        # Vite watch mode for extension bundle
+bun run build        # Production build
+bun run test         # Jest test suite (src/test)
 ```
 
 Important:

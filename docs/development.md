@@ -2,7 +2,8 @@
 
 ## Prerequisites
 
-- Node.js 26 (the version CI uses) and npm
+- [Bun](https://bun.sh/) (the version in `packageManager` in `package.json`) to install and run the scripts
+- Node.js 26 (the version CI uses): Jest, and the Jest and Vitest processes of the e2e tests, run on Node
 - VS Code 1.100 or newer to run the extension
 - For the documentation: Python 3 and `pip install -r requirements-docs.txt`
 
@@ -11,27 +12,27 @@
 ```bash
 git clone https://github.com/firsttris/vscode-jest-runner.git
 cd vscode-jest-runner
-npm ci
+bun install
 ```
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `npm run build` | Bundles `src/extension.ts` with Vite into `dist/extension.js` (CommonJS, minified, Node 18 target; `vscode` and Node built-ins external) |
-| `npm run watch` | The same in watch mode |
-| `npm test` | Unit tests in `src/test/` with Jest |
-| `npm run test:e2e` | End-to-end tests in `src/e2e/` that spawn real Jest and Vitest processes (`--runInBand`) |
-| `npm run typecheck` | `tsc --noEmit` for the sources and, with `tsconfig.test.json`, for the tests |
-| `npm run lint` / `npm run lint:fix` | Biome: lint and import organization, with `--write` to fix |
-| `npm run format:fix` | Biome formatter (tabs, single quotes) |
-| `npm run package` | `vsce package` → a `.vsix` to install locally |
-| `npm run release:patch\|minor\|major` | `npm version`, which pushes the tag and starts the release workflow |
+| `bun run build` | Bundles `src/extension.ts` with Vite into `dist/extension.js` (CommonJS, minified, Node 18 target; `vscode` and Node built-ins external) |
+| `bun run watch` | The same in watch mode |
+| `bun run test` | Unit tests in `src/test/` with Jest |
+| `bun run test:e2e` | End-to-end tests in `src/e2e/` that spawn real Jest and Vitest processes (`--runInBand`) |
+| `bun run typecheck` | `tsc --noEmit` for the sources and, with `tsconfig.test.json`, for the tests |
+| `bun run lint` / `bun run lint:fix` | Biome: lint and import organization, with `--write` to fix |
+| `bun run format:fix` | Biome formatter (tabs, single quotes) |
+| `bun run package` | The build, then `vsce package --no-dependencies` (everything is bundled into `dist/extension.js`) → a `.vsix` to install locally |
+| `bun run release:patch\|minor\|major` | `bun pm version`, which pushes the tag and starts the release workflow |
 | `mkdocs serve` | The documentation at http://127.0.0.1:8000 with live reload |
 
 ## Debug the extension
 
-Press ++f5++ (**Run Extension**): the `npm: build` task runs and a second VS Code window opens with the
+Press ++f5++ (**Run Extension**): the `npm: build` task runs (with Bun, `npm.packageManager` in `.vscode/settings.json`) and a second VS Code window opens with the
 extension loaded from `dist/`. **Run Extension (Watch)** rebuilds on every change; reload the window
 (**Developer: Reload Window**) to pick it up. **Extension examples** opens the `examples/` folder with a test
 file so you have something to click.
@@ -72,7 +73,7 @@ the process tree on cancel. CI runs it on Ubuntu, Windows and macOS.
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `ci.yml` | push to `master`, pull requests (not drafts), called by `release.yml`; skipped for documentation-only changes | matrix Ubuntu / Windows / macOS with Node 26: `npm ci`; on Ubuntu lint, typecheck and unit tests with coverage (uploaded to Codecov on `master`); unit tests on the others; e2e tests everywhere; then a build job that packages the `.vsix` and uploads it as an artifact |
+| `ci.yml` | push to `master`, pull requests (not drafts), called by `release.yml`; skipped for documentation-only changes | matrix Ubuntu / Windows / macOS with Bun and Node 26: `bun install --frozen-lockfile`; on Ubuntu lint, typecheck and unit tests with coverage (uploaded to Codecov on `master`); unit tests on the others; e2e tests everywhere; then a build job that packages the `.vsix` and uploads it as an artifact |
 | `release.yml` | a `v*` tag, or by hand | runs `ci.yml`, creates the GitHub release with the `.vsix` and publishes to the Visual Studio Marketplace and Open VSX through the shared workflows in [firsttris/workflows](https://github.com/firsttris/workflows) |
 | `bump.yml` | by hand, choose patch / minor / major | bumps `package.json`, tags, and thereby starts `release.yml` |
 | `docs.yml` | push to `master` touching `docs/`, `mkdocs.yml`, `requirements-docs.txt` or the workflow; pull requests (build only); by hand | `mkdocs build --strict` and deployment to GitHub Pages |
@@ -81,7 +82,7 @@ the process tree on cancel. CI runs it on Ubuntu, Windows and macOS.
 
 1. Make sure `master` is green.
 2. Either run **Bump version** in the Actions tab and pick the increment, or locally
-   `npm run release:patch` (or `minor` / `major`), which runs `npm version` and pushes the tag.
+   `bun run release:patch` (or `minor` / `major`), which runs `bun pm version` and pushes the tag.
 3. The tag starts `release.yml`: checks, GitHub release with the `.vsix`, publish to both marketplaces.
    Versions already published are skipped, so re-running on an existing tag is safe.
 

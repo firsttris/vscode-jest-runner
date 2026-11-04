@@ -11,6 +11,7 @@
     "url": "https://github.com/firsttris/vscode-jest-runner.git"
   },
   "license": "MIT",
+  "packageManager": "bun@1.4.4",
   "icon": "public/icon.png",
   "galleryBanner": {
     "theme": "dark",
@@ -403,15 +404,14 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "vite build",
-    "build": "vite build",
-    "watch": "vite build --watch",
+    "build": "bun --bun vite build",
+    "watch": "bun --bun vite build --watch",
     "test": "jest src/test",
     "test:e2e": "jest src/e2e --runInBand",
-    "package": "vsce package",
-    "release:patch": "npm version patch",
-    "release:minor": "npm version minor",
-    "release:major": "npm version major",
+    "package": "bun run build && bunx vsce package --no-dependencies",
+    "release:patch": "bun pm version patch",
+    "release:minor": "bun pm version minor",
+    "release:major": "bun pm version major",
     "postversion": "git push --follow-tags",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "lint": "biome check src",

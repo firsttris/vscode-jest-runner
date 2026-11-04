@@ -36,27 +36,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+      # Bun installs and runs the scripts; Jest stays on Node, since Jest Runner is a Jest runner:
+      # the unit tests run in Jest, and the e2e tests start real Jest and Vitest processes through
+      # their node_modules/.bin shims (#!/usr/bin/env node), as the users' projects do
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm ci
+      - run: bun install --frozen-lockfile
       # Platform independent, so only once (also avoids CRLF checkouts on Windows)
       - name: Lint
         if: matrix.os == 'ubuntu-latest'
-        run: npm run lint
+        run: bun run lint
       - name: Typecheck
         if: matrix.os == 'ubuntu-latest'
-        run: npm run typecheck
+        run: bun run typecheck
       - name: Run tests with coverage
         if: matrix.os == 'ubuntu-latest'
-        run: npm run test -- --coverage
+        run: bun run test --coverage
       - name: Run tests
         if: matrix.os != 'ubuntu-latest'
-        run: npm run test
+        run: bun run test
       # Real Jest/Vitest processes and terminal shells, above all for Windows
       - name: Run end-to-end tests
-        run: npm run test:e2e
+        run: bun run test:e2e
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && github.ref == 'refs/heads/master'
         uses: codecov/codecov-action@v7
@@ -70,13 +76,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@v7
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          node-version: 26.x
-      - run: npm ci
-      - run: npm run build
-      - run: npm run package
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      # Builds with Vite, then vsce package --no-dependencies: the extension is bundled into
+      # dist/extension.js, so no node_modules go into the .vsix (vsce would otherwise call npm list)
+      - run: bun run package
       # Installable from a pull request; the release attaches it and publishes it
       - uses: actions/upload-artifact@v7
         with:

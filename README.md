@@ -243,9 +243,9 @@ Bug reports, feature requests and pull requests are welcome. Start with the [ope
 ```bash
 git clone https://github.com/firsttris/vscode-jest-runner.git
 cd vscode-jest-runner
-npm ci
-npm test        # unit tests
-npm run build   # bundle to dist/extension.js, then press F5 in VS Code
+bun install
+bun run test    # unit tests
+bun run build   # bundle to dist/extension.js, then press F5 in VS Code
 ```
 
 ---

@@ -6,7 +6,7 @@
  * killing the process tree on cancel, and terminal commands (CodeLens) in
  * the shells a VS Code terminal may run.
  *
- * Run with `npm run test:e2e` (CI does on Windows, Linux and macOS).
+ * Run with `bun run test:e2e` (CI does on Windows, Linux and macOS).
  */
 import { spawn, spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';

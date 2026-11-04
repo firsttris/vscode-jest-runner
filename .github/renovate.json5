@@ -1,12 +1,13 @@
 // Renovate (GitHub App, https://github.com/apps/renovate): a pull request for each new release of
 // what Jest Runner builds on, plus the "Dependency Dashboard" issue listing what is open. Their own
 // pull requests: the test frameworks the end-to-end tests run for real (Jest, Vitest), the Babel
-// parser that finds the tests in a file, and the Node of CI. The VS Code API (engines.vscode,
+// parser that finds the tests in a file, Bun (packageManager in package.json, read by Renovate's npm
+// manager) and the Node of CI (Jest runs on it). The VS Code API (engines.vscode,
 // @types/vscode and the "VS Code 1.x or newer" of the docs) is never updated by Renovate.
 // Everything else (the other packages, the actions, the images) comes with the shared settings of
 // firsttris/workflows (renovate/default.json5): minor and patch updates once a month in one pull
 // request that merges itself when CI is green, majors on request in the dashboard.
-// Check with `npx --package renovate renovate-config-validator .github/renovate.json5`.
+// Check with `bunx --package renovate renovate-config-validator .github/renovate.json5`.
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["github>firsttris/workflows//renovate/default.json5"],
@@ -33,13 +34,13 @@
       versioningTemplate: "regex:^(?<major>\\d+)\\.(?<minor>\\d+)$",
     },
     {
-      // The Node of CI (22.x in the matrix and the build job) and of docs/development.md
+      // The Node of CI (the matrix of the test job, where Jest runs) and of docs/development.md
       customType: "regex",
       managerFilePatterns: ["/^\\.github/workflows/ci\\.yml$/", "/^docs/development\\.md$/"],
       matchStrings: [
         "node-version: \\[?(?<currentValue>\\d+)\\.x",
         "Node\\.js (?<currentValue>\\d+) \\(the version CI uses\\)",
-        "with Node (?<currentValue>\\d+): `npm ci`",
+        "with Bun and Node (?<currentValue>\\d+): `bun install",
       ],
       depNameTemplate: "node",
       datasourceTemplate: "node-version",
@@ -62,7 +63,7 @@
       commitMessageTopic: "VS Code engine",
       dependencyDashboardApproval: true,
       prBodyNotes: [
-        "`engines.vscode`, `@types/vscode` and the \"VS Code 1.x or newer\" of README.md, docs/getting-started.md and docs/development.md move together (`vsce package` fails when `@types/vscode` is newer than `engines.vscode`). Before merging: is this API really needed? Check which VS Code version the forks on Open VSX are based on (VSCodium, Cursor, Windsurf); users on an older one get no more updates. The history went back down twice (\"lower engine version\"). Then `npm run typecheck`, `npm run build` and `npm run package`, and try the .vsix of this PR's CI in the oldest editor that should still work.",
+        "`engines.vscode`, `@types/vscode` and the \"VS Code 1.x or newer\" of README.md, docs/getting-started.md and docs/development.md move together (`vsce package` fails when `@types/vscode` is newer than `engines.vscode`). Before merging: is this API really needed? Check which VS Code version the forks on Open VSX are based on (VSCodium, Cursor, Windsurf); users on an older one get no more updates. The history went back down twice (\"lower engine version\"). Then `bun run typecheck`, `bun run build` and `bun run package`, and try the .vsix of this PR's CI in the oldest editor that should still work.",
       ],
       schedule: ["at any time"],
       automerge: false,
@@ -75,7 +76,7 @@
       groupName: "Jest",
       sourceUrl: "https://github.com/jestjs/jest",
       prBodyNotes: [
-        "Jest runs the unit tests and is one of the frameworks the e2e tests (`npm run test:e2e`) start for real on Linux, Windows and macOS. A new major: read the changelog for the CLI options and the `--json` output (src/frameworkAdapters.ts, src/parsers); docs/frameworks.md names the supported versions. Users keep older Jest majors, so nothing may depend on the new one alone.",
+        "Jest runs the unit tests and is one of the frameworks the e2e tests (`bun run test:e2e`) start for real on Linux, Windows and macOS. A new major: read the changelog for the CLI options and the `--json` output (src/frameworkAdapters.ts, src/parsers); docs/frameworks.md names the supported versions. Users keep older Jest majors, so nothing may depend on the new one alone.",
       ],
       schedule: ["at any time"],
       automerge: false,
@@ -110,11 +111,23 @@
       dependencyDashboardApproval: false,
     },
     {
+      // packageManager in package.json: setup-bun's bun-version-file in ci.yml
+      matchPackageNames: ["bun"],
+      groupName: "Bun",
+      sourceUrl: "https://github.com/oven-sh/bun",
+      prBodyNotes: [
+        "`packageManager` in package.json is the Bun of every CI job. Bun installs the packages (`bun.lock`), runs the scripts and Vite (`bun --bun vite build`) and packages the `.vsix` (`vsce package --no-dependencies`); Jest itself runs on Node. Check that `ci.yml` stays green on Ubuntu, Windows and macOS, compare `unzip -l` of the `.vsix` artifact with the last release, and run `bun install` locally if `bun.lock` changes.",
+      ],
+      schedule: ["at any time"],
+      automerge: false,
+      dependencyDashboardApproval: false,
+    },
+    {
       matchPackageNames: ["node"],
       groupName: "Node",
       sourceUrl: "https://github.com/nodejs/node",
       prBodyNotes: [
-        "The Node of CI and the e2e tests. The bundle's target (`node18` in vite.config.ts) follows the Node of the oldest supported VS Code, not this one.",
+        "The Node of CI, on which Jest and the e2e tests run (Bun installs and runs the scripts). The bundle's target (`node18` in vite.config.ts) follows the Node of the oldest supported VS Code, not this one.",
       ],
       schedule: ["at any time"],
       automerge: false,

@@ -12,5 +12,7 @@
 		"source.fixAll": "explicit"
 	},
 	"editor.defaultFormatter": "biomejs.biome",
-	"jestrunner.enableTestExplorer": true
+	"jestrunner.enableTestExplorer": true,
+	// The npm tasks of tasks.json (npm: build, npm: watch) run with Bun
+	"npm.packageManager": "bun"
 }

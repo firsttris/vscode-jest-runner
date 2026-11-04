@@ -1,6 +1,6 @@
 name: Bump version
 
-# Raises the version in package.json, tags it vX.Y.Z and starts release.yml on the tag, without a checkout; the same as npm run release:patch|minor|major.
+# Raises the version in package.json, tags it vX.Y.Z and starts release.yml on the tag, without a checkout; the same as bun run release:patch|minor|major.
 # Same scheme as in every project, see https://github.com/firsttris/workflows#bump-version
 on:
   workflow_dispatch:

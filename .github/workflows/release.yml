@@ -1,6 +1,6 @@
 name: Release
 
-# A tag vX.Y.Z (the button in bump.yml or npm run release:patch|minor|major) publishes that
+# A tag vX.Y.Z (the button in bump.yml or bun run release:patch|minor|major) publishes that
 # version: the CI and the .vsix from ci.yml, then the shared GitHub release with the .vsix and the
 # shared publish to the Visual Studio Marketplace and Open VSX from firsttris/workflows. Started by
 # hand on an existing tag, it publishes that version again (versions already there are skipped);
